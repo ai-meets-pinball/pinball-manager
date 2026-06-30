@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+/*
+  Tailwind v4 CSS-first Konfiguration.
+  Dark Mode wird über die Klasse `.dark` am <html> gesteuert (gesetzt von next-themes).
+*/
+@custom-variant dark (&:is(.dark *));
+
+/* Design-Tokens — Light ist Default (PRD §8). */
+@theme {
+  --color-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-fg: #18181b;
+  --color-muted: #71717a;
+  --color-border: #e4e4e7;
+  --color-primary: #dc2626; /* Pinball-Rot */
+  --color-primary-fg: #ffffff;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --radius: 0.625rem;
+}
+
+/* Dark-Palette: überschreibt die Token-Werte, wenn .dark aktiv ist. */
+.dark {
+  --color-bg: #0a0a0a;
+  --color-surface: #18181b;
+  --color-fg: #fafafa;
+  --color-muted: #a1a1aa;
+  --color-border: #27272a;
+  --color-primary: #ef4444;
+  --color-primary-fg: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: light dark;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

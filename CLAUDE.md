@@ -4,19 +4,24 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-Pre-implementation. The repository currently contains only documentation ([README.md](README.md), [docs/PRD-Pinball-Manager.md](docs/PRD-Pinball-Manager.md)) and a LICENSE — there is **no application code, `package.json`, or build tooling yet**. The first coding task is to scaffold the Next.js app per the stack below. Until that scaffold exists, the commands below are the *intended* workflow from the README, not yet runnable.
+**Phase 1 (MVP) scaffolded and implemented.** The Next.js app exists with auth, machine CRUD, fault tracking, repair history, clubs/memberships, and search/filter. Data access is **Drizzle ORM** ([src/db/schema.ts](src/db/schema.ts)); auth is **Better Auth** ([src/lib/auth.ts](src/lib/auth.ts)); app-layer authorization lives in [src/lib/session.ts](src/lib/session.ts). Runtime needs a Supabase Postgres + a public Storage bucket `machine-photos` (see README).
 
 The product is a repair/management database for pinball machines (German-language domain: *Maschinen* = machines, *Fehler* = faults, *Reparaturen* = repairs). It doubles as a teaching example for the "KI meets Pinball" group, so **readability and visible architecture are valued over scalability** (PRD §8).
 
-## Commands (intended, post-scaffold)
+## Commands
 
 ```bash
-npm install          # install dependencies
+npm install                  # install dependencies
 cp .env.example .env.local   # then fill in values (see README "Umgebungsvariablen")
-npm run dev          # dev server on http://localhost:3000 (Next.js + Turbopack)
+npm run db:migrate           # write schema to the DB (or: npm run db:push)
+npm run dev                  # dev server on http://localhost:3000 (Next.js 16 + Turbopack)
+npm run build                # production build (used to verify changes)
+npm run db:generate          # regenerate SQL migrations after editing src/db/schema.ts
 ```
 
 App runs on http://localhost:3000.
+
+> Note: this project uses **Next.js 16** (App Router, Turbopack). The request-routing edge file is `src/proxy.ts` (Next 16 renamed `middleware` → `proxy`).
 
 ## Tech stack (decided — do not substitute without discussion)
 

@@ -10,7 +10,7 @@
 
 Pinball Manager hilft Einzelsammlern und Clubs, den Überblick über ihre Flipperautomaten zu behalten: Welche Maschine hat welchen Fehler, was wurde wann repariert, welche Teile sind verbaut. Faktische Daten aus Handbüchern (Solenoid-Tabellen, Switch-Matrix, Teilelisten) werden strukturiert nutzbar gemacht — die urheberrechtlich geschützte Ausdrucksform der Handbücher selbst wird **nicht** gespeichert (siehe [Rechtliche Hinweise](#rechtliche-hinweise)).
 
-Das Projekt ist gleichzeitig das durchgängige Lehrbeispiel der Gruppe **„KI meets Pinball"** — vom PRD bis zum Live-Deployment. Details zum Produkt: [`docs/PRD.md`](docs/PRD.md).
+Das Projekt ist gleichzeitig das durchgängige Lehrbeispiel der Gruppe **„KI meets Pinball"** — vom PRD bis zum Live-Deployment. Details zum Produkt: [`docs/PRD-Pinball-Manager.md`](docs/PRD-Pinball-Manager.md).
 
 ## Funktionen
 
@@ -70,10 +70,25 @@ DATABASE_URL="postgresql://..."
 BETTER_AUTH_SECRET="<zufälliges-secret>"
 BETTER_AUTH_URL="http://localhost:3000"
 
-# Supabase Storage
+# Supabase Storage (nur Storage — nicht Auth, nicht Daten)
 NEXT_PUBLIC_SUPABASE_URL="https://<projekt>.supabase.co"
 SUPABASE_SERVICE_ROLE_KEY="<service-role-key>"
+NEXT_PUBLIC_SUPABASE_BUCKET="machine-photos"
 ```
+
+### Datenbank einrichten
+
+```bash
+# Schema in die Datenbank schreiben (erzeugt alle Tabellen)
+npm run db:migrate     # oder für schnelles Iterieren: npm run db:push
+```
+
+Außerdem im Supabase-Dashboard einen **öffentlichen Storage-Bucket** namens
+`machine-photos` anlegen (für die Maschinenfotos).
+
+> Stack-Notiz: Datenzugriff über **Drizzle ORM** (Schema in [`src/db/schema.ts`](src/db/schema.ts)),
+> Auth über **Better Auth** ([`src/lib/auth.ts`](src/lib/auth.ts)). Die Autorisierung liegt
+> bewusst in der App-Schicht ([`src/lib/session.ts`](src/lib/session.ts)) — kein Supabase RLS.
 
 ## Rechtliche Hinweise
 
