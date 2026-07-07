@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Users, Wrench } from "lucide-react";
+import { BookOpen, Users, Wrench } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -24,6 +24,12 @@ export function Nav({ userName }: { userName: string }) {
             className="flex items-center gap-1.5 text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]"
           >
             <Users size={15} /> Clubs
+          </Link>
+          <Link
+            href="/help"
+            className="flex items-center gap-1.5 text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+          >
+            <BookOpen size={15} /> Techstack
           </Link>
         </div>
         <div className="flex items-center gap-2">
