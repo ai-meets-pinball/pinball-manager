@@ -1,25 +1,28 @@
 /** Farbiges Status-/Prioritäts-Label, einheitlich für Fehler & Reparaturen. */
-const colors: Record<string, string> = {
+const styles: Record<string, { bg: string; color: string }> = {
   // Fehler-Status
-  offen: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
-  "in Arbeit": "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300",
-  behoben:
-    "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
+  offen: { bg: "rgba(255,106,61,0.15)", color: "#ff9d78" },
+  "in Arbeit": { bg: "rgba(124,92,255,0.15)", color: "#a48fff" },
+  behoben: { bg: "rgba(77,214,138,0.15)", color: "#4dd68a" },
   // Reparatur-Status
-  erledigt:
-    "bg-green-100 text-green-800 dark:bg-green-950 dark:text-green-300",
+  erledigt: { bg: "rgba(77,214,138,0.15)", color: "#4dd68a" },
   // Priorität
-  niedrig: "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300",
-  mittel: "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300",
-  hoch: "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-300",
+  niedrig: { bg: "rgba(255,255,255,0.06)", color: "#a79fb5" },
+  mittel: { bg: "rgba(255,106,61,0.15)", color: "#ff9d78" },
+  hoch: { bg: "rgba(255,90,90,0.16)", color: "#ff8a8a" },
+  // Rollen (Clubs)
+  admin: { bg: "rgba(124,92,255,0.15)", color: "#a48fff" },
+  member: { bg: "rgba(255,255,255,0.06)", color: "#a79fb5" },
 };
 
+const fallback = { bg: "rgba(255,255,255,0.06)", color: "#a79fb5" };
+
 export function StatusBadge({ value }: { value: string }) {
-  const cls =
-    colors[value] ?? "bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300";
+  const s = styles[value] ?? fallback;
   return (
     <span
-      className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${cls}`}
+      className="inline-flex rounded-full px-2.5 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wide"
+      style={{ background: s.bg, color: s.color }}
     >
       {value}
     </span>

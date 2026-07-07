@@ -1,39 +1,53 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { BookOpen, Users, Wrench } from "lucide-react";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 
-/** Kopfzeile der angemeldeten Bereiche. */
+const links = [
+  { href: "/machines", label: "Maschinen", icon: Wrench },
+  { href: "/clubs", label: "Clubs", icon: Users },
+  { href: "/help", label: "Techstack", icon: BookOpen },
+];
+
+/** Kopfzeile der angemeldeten Bereiche (Arcade-Theme). */
 export function Nav({ userName }: { userName: string }) {
+  const pathname = usePathname();
+
   return (
-    <header className="border-b border-[var(--color-border)]">
-      <nav className="mx-auto flex max-w-4xl items-center justify-between gap-4 px-6 py-3">
+    <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-bg)]/85 backdrop-blur-md">
+      <nav className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-3">
         <div className="flex items-center gap-5">
-          <Link href="/machines" className="flex items-center gap-2 font-semibold">
-            <Wrench size={18} className="text-[var(--color-primary)]" />
-            Pinball Manager
+          <Link href="/machines" className="flex items-center">
+            <span className="font-display text-base tracking-[0.5px]">
+              pinball<span className="text-[var(--color-primary)]">-manager</span>
+            </span>
           </Link>
-          <Link
-            href="/machines"
-            className="flex items-center gap-1.5 text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-          >
-            <Wrench size={15} /> Maschinen
-          </Link>
-          <Link
-            href="/clubs"
-            className="flex items-center gap-1.5 text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-          >
-            <Users size={15} /> Clubs
-          </Link>
-          <Link
-            href="/help"
-            className="flex items-center gap-1.5 text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-          >
-            <BookOpen size={15} /> Techstack
-          </Link>
+
+          <div className="flex items-center gap-1">
+            {links.map(({ href, label, icon: Icon }) => {
+              const active = pathname === href || pathname.startsWith(`${href}/`);
+              return (
+                <Link
+                  key={href}
+                  href={href}
+                  className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors ${
+                    active
+                      ? "bg-[var(--color-overlay)] text-[var(--color-primary-soft)]"
+                      : "text-[var(--color-muted)] hover:bg-[var(--color-overlay)] hover:text-[var(--color-fg)]"
+                  }`}
+                >
+                  <Icon size={15} /> {label}
+                </Link>
+              );
+            })}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <span className="hidden text-sm text-[var(--color-muted)] sm:inline">
+
+        <div className="flex items-center gap-3">
+          <span className="hidden font-mono text-xs text-[var(--color-faint)] sm:inline">
             {userName}
           </span>
           <ThemeToggle />

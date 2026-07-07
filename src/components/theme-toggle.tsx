@@ -5,13 +5,15 @@ import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 
 /**
- * Umschalter zwischen Light- und Dark-Mode.
- * Rendert erst nach dem Mount echtes Icon, um Hydration-Mismatch zu vermeiden.
+ * Umschalter zwischen Light- und Dark-Mode. Das Orange bleibt in beiden Modi
+ * die Markenfarbe. Rendert erst nach dem Mount das echte Icon (Hydration).
  */
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
 
+  // Standard-Hydration-Guard von next-themes: erst nach dem Mount das echte Icon.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
 
   const isDark = resolvedTheme === "dark";
@@ -21,9 +23,9 @@ export function ThemeToggle() {
       type="button"
       aria-label="Theme umschalten"
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="inline-flex h-9 w-9 items-center justify-center rounded-[var(--radius)] border border-[var(--color-border)] text-[var(--color-fg)] transition-colors hover:bg-[var(--color-border)]/40"
+      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-fg)] transition-colors hover:bg-[var(--color-overlay)]"
     >
-      {mounted && isDark ? <Sun size={18} /> : <Moon size={18} />}
+      {mounted && isDark ? <Sun size={17} /> : <Moon size={17} />}
     </button>
   );
 }

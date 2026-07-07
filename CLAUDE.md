@@ -29,7 +29,7 @@ App runs on http://localhost:3000.
 - **Better Auth** for authentication — TS config is intentionally visible/readable
 - **Tailwind CSS v4** (CSS-first config) + Lucide React icons
 - **Supabase used as Postgres + Storage only** — not as an auth or API layer
-- **Vercel** deployment; **light theme default** with dark-mode toggle; mobile-friendly (repairs happen at the machine)
+- **Vercel** deployment; **dark "arcade" theme** (from a Claude Design handoff — dark-only, `forcedTheme="dark"`; tokens + fonts in [src/app/globals.css](src/app/globals.css)); mobile-friendly (repairs happen at the machine)
 
 ## Architectural constraints (the important "why")
 

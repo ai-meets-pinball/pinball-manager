@@ -5,7 +5,8 @@ import type { ComponentProps } from "react";
 
 /**
  * Dünner Client-Wrapper um next-themes, damit das Root-Layout (Server Component)
- * den Provider einbinden kann. Light ist Default (PRD §8).
+ * den Provider einbinden kann. Das Arcade-Design (Handoff) ist dunkel-only —
+ * layout.tsx setzt forcedTheme="dark".
  */
 export function ThemeProvider({
   children,

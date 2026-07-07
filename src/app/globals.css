@@ -1,36 +1,56 @@
 @import "tailwindcss";
 
 /*
-  Tailwind v4 CSS-first Konfiguration.
-  Dark Mode wird über die Klasse `.dark` am <html> gesteuert (gesetzt von next-themes).
+  Tailwind v4 CSS-first Konfiguration — Arcade-Theme (Claude-Design-Handoff).
+  Das Orange bleibt in beiden Modi die Markenfarbe. Light ist der @theme-Default;
+  .dark (von next-themes, Standard) überschreibt auf die dunkle Arcade-Palette.
 */
 @custom-variant dark (&:is(.dark *));
 
-/* Design-Tokens — Light ist Default (PRD §8). */
+/* Design-Tokens — Light-Variante (Default). */
 @theme {
-  --color-bg: #ffffff;
-  --color-surface: #ffffff;
-  --color-fg: #18181b;
-  --color-muted: #71717a;
-  --color-border: #e4e4e7;
-  --color-primary: #dc2626; /* Pinball-Rot */
-  --color-primary-fg: #ffffff;
+  --color-bg: #faf7f0; /* warmes Off-White */
+  --color-surface: #ffffff; /* Karten */
+  --color-surface-2: #f5efe6; /* erhöhte Flächen */
+  --color-inset: #efe8dc; /* eingelassene Flächen (DMD-Box etc.) */
+  --color-fg: #1b1420; /* fast-schwarzes Violett */
+  --color-muted: #6b6478; /* gedämpfter Text */
+  --color-faint: #9a93a3; /* sehr leise / Mono-Labels */
+  --color-border: #e7e0d4;
+  --color-overlay: rgba(27, 20, 32, 0.04); /* subtile erhöhte Fläche */
 
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --color-primary: #ff6a3d; /* Flipper-Orange (in beiden Modi) */
+  --color-primary-soft: #e85a2c; /* auf hellem Grund lesbar */
+  --color-primary-fg: #ffffff;
+  --color-accent: #7c5cff; /* Violett */
+  --color-accent-soft: #5b3fd0; /* auf hellem Grund lesbar */
+  --color-success: #15a34a;
+
+  --font-display: var(--font-bungee), "Bungee", cursive;
+  --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, monospace;
 
   --radius: 0.625rem;
 }
 
-/* Dark-Palette: überschreibt die Token-Werte, wenn .dark aktiv ist. */
+/* Dunkle Arcade-Palette — überschreibt die Tokens, wenn .dark aktiv ist. */
 .dark {
-  --color-bg: #0a0a0a;
-  --color-surface: #18181b;
-  --color-fg: #fafafa;
-  --color-muted: #a1a1aa;
-  --color-border: #27272a;
-  --color-primary: #ef4444;
-  --color-primary-fg: #ffffff;
+  --color-bg: #100c18;
+  --color-surface: #17121f;
+  --color-surface-2: #1b1626;
+  --color-inset: #0a0812;
+  --color-fg: #f4efe4;
+  --color-muted: #a79fb5;
+  --color-faint: #6b6478;
+  --color-border: #241f30;
+  --color-overlay: rgba(255, 255, 255, 0.04);
+
+  --color-primary: #ff6a3d;
+  --color-primary-soft: #ffb98a;
+  --color-primary-fg: #100c18;
+  --color-accent: #7c5cff;
+  --color-accent-soft: #a48fff;
+  --color-success: #4dd68a;
 }
 
 * {
@@ -48,4 +68,68 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+::selection {
+  background: var(--color-primary);
+  color: var(--color-bg);
+}
+
+/* Feine Film-Körnung über der ganzen Seite (Design-Detail). */
+.grain::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.05;
+  background-image: radial-gradient(circle, #fff 1px, transparent 1px);
+  background-size: 3px 3px;
+}
+
+/* Animationen aus dem Handoff. */
+@keyframes flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.82;
+  }
+}
+@keyframes floatSlow {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(-4deg);
+  }
+  50% {
+    transform: translateY(-14px) rotate(-2deg);
+  }
+}
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-flicker {
+  animation: flicker 1.4s infinite;
+}
+.animate-float-slow {
+  animation: floatSlow 6s ease-in-out infinite;
+}
+.animate-marquee {
+  animation: marquee 22s linear infinite;
+}
+
+/* Reduzierte Bewegung respektieren. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-flicker,
+  .animate-float-slow,
+  .animate-marquee {
+    animation: none !important;
+  }
 }
