@@ -3,6 +3,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { nextCookies } from "better-auth/next-js";
 import { db } from "@/db";
 import { account, session, user, verification } from "@/db/auth-schema";
+import { sendResetPasswordEmail } from "@/lib/email";
 
 /*
   Better-Auth-Serverkonfiguration — bewusst sichtbar und lesbar (PRD §7).
@@ -17,6 +18,11 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    // Better Auth erzeugt Token + Link; wir verschicken ihn per Resend.
+    // `url` führt über Better Auth zurück auf /reset-password?token=…
+    sendResetPassword: async ({ user, url }) => {
+      await sendResetPasswordEmail(user.email, url);
+    },
   },
   // nextCookies muss als letztes Plugin stehen, damit Server Actions Cookies setzen können.
   plugins: [nextCookies()],

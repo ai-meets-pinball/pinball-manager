@@ -53,6 +53,14 @@ export default function LoginPage() {
         </Button>
       </form>
       <p className="text-sm text-[var(--color-muted)]">
+        <Link
+          href="/forgot-password"
+          className="text-[var(--color-primary)] underline"
+        >
+          Passwort vergessen?
+        </Link>
+      </p>
+      <p className="text-sm text-[var(--color-muted)]">
         Noch kein Konto?{" "}
         <Link href="/register" className="text-[var(--color-primary)] underline">
           Registrieren
