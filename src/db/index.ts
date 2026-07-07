@@ -8,7 +8,11 @@ import * as schema from "./schema";
 
   `prepare: false` ist für den Supabase-Connection-Pooler (PgBouncer im Transaction-Mode)
   nötig, der keine Prepared Statements unterstützt.
+
+  DATABASE_URL ist unser bevorzugter Name; POSTGRES_URL ist der Fallback, den die
+  Vercel-Supabase-Integration automatisch setzt (gepoolte Verbindung, Port 6543).
 */
-const client = postgres(process.env.DATABASE_URL!, { prepare: false });
+const connectionString = process.env.DATABASE_URL ?? process.env.POSTGRES_URL!;
+const client = postgres(connectionString, { prepare: false });
 
 export const db = drizzle(client, { schema });

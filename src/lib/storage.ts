@@ -7,9 +7,13 @@ import { createClient } from "@supabase/supabase-js";
 
 const bucket = process.env.NEXT_PUBLIC_SUPABASE_BUCKET ?? "machine-photos";
 
+// SUPABASE_URL ist der Fallback, den die Vercel-Supabase-Integration automatisch setzt.
+const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL!;
+
 function storageClient() {
   return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseUrl,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     { auth: { persistSession: false } },
   );
