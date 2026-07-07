@@ -36,11 +36,11 @@ export function Nav({ userName }: { userName: string }) {
                   title={label}
                   className={`flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-sm font-semibold transition-colors sm:px-3 ${
                     active
-                      ? "bg-[var(--color-overlay)] text-[var(--color-primary-soft)]"
+                      ? "bg-[var(--color-overlay)] text-[var(--color-primary)]"
                       : "text-[var(--color-muted)] hover:bg-[var(--color-overlay)] hover:text-[var(--color-fg)]"
                   }`}
                 >
-                  <Icon size={15} />
+                  <Icon size={15} className="text-[var(--color-primary)]" />
                   <span className="hidden sm:inline">{label}</span>
                 </Link>
               );
