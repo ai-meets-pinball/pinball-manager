@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Loader2, Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
@@ -22,26 +22,53 @@ export function OpdbSearch({
 }) {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<OpdbSearchResult[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  // Laufende Nummer der letzten Anfrage — verhindert, dass eine langsamere
+  // frühere Antwort die Ergebnisse einer neueren Suche überschreibt.
+  const latestReq = useRef(0);
 
   // Suche mit kleiner Verzögerung (Debounce), damit nicht jeder Tastendruck feuert.
   useEffect(() => {
     const q = query.trim();
     const timer = setTimeout(() => {
       if (q.length < 2) {
+        latestReq.current += 1; // laufende Anfragen entwerten
         setResults([]);
+        setError(null);
         return;
       }
-      startTransition(async () => setResults(await searchOpdb(q)));
+      const reqId = ++latestReq.current;
+      startTransition(async () => {
+        try {
+          const found = await searchOpdb(q);
+          if (reqId === latestReq.current) {
+            setResults(found);
+            setError(null);
+          }
+        } catch {
+          if (reqId === latestReq.current) {
+            setResults([]);
+            setError("OPDB-Suche fehlgeschlagen. Bitte später erneut versuchen.");
+          }
+        }
+      });
     }, 300);
     return () => clearTimeout(timer);
   }, [query]);
 
   function pick(id: string) {
+    latestReq.current += 1; // laufende Suchen entwerten, damit sie die Auswahl nicht überschreiben
+    setError(null);
     startTransition(async () => {
-      onSelect(await getOpdbMachine(id));
-      setQuery("");
-      setResults([]);
+      try {
+        const machine = await getOpdbMachine(id);
+        onSelect(machine);
+        setQuery("");
+        setResults([]);
+      } catch {
+        setError("OPDB-Details konnten nicht geladen werden.");
+      }
     });
   }
 
@@ -84,9 +111,13 @@ export function OpdbSearch({
         </ul>
       ) : null}
 
-      <span className="text-xs text-[var(--color-muted)]">
-        Füllt Hersteller, Modell, Baujahr und die Referenzen automatisch aus.
-      </span>
+      {error ? (
+        <span className="text-xs text-red-500">{error}</span>
+      ) : (
+        <span className="text-xs text-[var(--color-muted)]">
+          Füllt Hersteller, Modell, Baujahr und die Referenzen automatisch aus.
+        </span>
+      )}
     </div>
   );
 }
