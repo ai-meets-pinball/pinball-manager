@@ -16,6 +16,15 @@ import { machineSchema } from "@/lib/validators";
 
 export type FormState = { error?: string };
 
+/*
+  Nur echte OPDB-Bild-URLs zulassen — der Wert kommt aus einem versteckten
+  Formularfeld und landet ungefiltert als <img src>, darum hier begrenzen.
+*/
+function opdbImageUrl(formData: FormData): string | null {
+  const raw = (formData.get("opdbImageUrl") as string | null)?.trim();
+  return raw && raw.startsWith("https://img.opdb.org/") ? raw : null;
+}
+
 /* Hilfsfunktion: gemeinsame Validierung + optionale Club-Zuordnung prüfen. */
 async function parseMachine(userId: string, formData: FormData) {
   const parsed = machineSchema.safeParse(Object.fromEntries(formData));
@@ -38,10 +47,10 @@ export async function createMachine(
   if ("error" in result) return result;
   const data = result.data;
 
-  const fotoUrl = await uploadMachinePhoto(
-    formData.get("foto") as File | null,
-    user.id,
-  );
+  // Eigenes Foto hat Vorrang; sonst das OPDB-Bild verwenden.
+  const fotoUrl =
+    (await uploadMachinePhoto(formData.get("foto") as File | null, user.id)) ??
+    opdbImageUrl(formData);
 
   const [created] = await db
     .insert(machines)
@@ -72,10 +81,10 @@ export async function updateMachine(
   if ("error" in result) return result;
   const data = result.data;
 
-  const neuesFoto = await uploadMachinePhoto(
-    formData.get("foto") as File | null,
-    user.id,
-  );
+  // Eigenes Foto hat Vorrang; sonst ein neu gewähltes OPDB-Bild.
+  const neuesFoto =
+    (await uploadMachinePhoto(formData.get("foto") as File | null, user.id)) ??
+    opdbImageUrl(formData);
 
   await db
     .update(machines)
@@ -86,7 +95,7 @@ export async function updateMachine(
       baujahr: data.baujahr ?? null,
       opdbRef: data.opdbRef ?? null,
       ipdbRef: data.ipdbRef ?? null,
-      // Foto nur ersetzen, wenn ein neues hochgeladen wurde.
+      // Foto nur ersetzen, wenn ein neues hochgeladen oder aus OPDB gewählt wurde.
       ...(neuesFoto ? { fotoUrl: neuesFoto } : {}),
     })
     .where(eq(machines.id, id));
