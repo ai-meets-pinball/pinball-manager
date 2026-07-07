@@ -52,7 +52,7 @@ export default function RegisterPage() {
             autoComplete="new-password"
           />
         </Field>
-        {error ? <p className="text-sm text-red-600">{error}</p> : null}
+        {error ? <p className="text-sm text-[var(--color-danger)]">{error}</p> : null}
         <Button type="submit" disabled={loading}>
           {loading ? "Registrieren…" : "Konto erstellen"}
         </Button>

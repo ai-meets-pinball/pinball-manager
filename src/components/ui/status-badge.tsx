@@ -9,7 +9,7 @@ const styles: Record<string, { bg: string; color: string }> = {
   // Priorität
   niedrig: { bg: "rgba(255,255,255,0.06)", color: "#a79fb5" },
   mittel: { bg: "rgba(255,106,61,0.15)", color: "#ff9d78" },
-  hoch: { bg: "rgba(255,90,90,0.16)", color: "#ff8a8a" },
+  hoch: { bg: "rgba(194,65,12,0.18)", color: "var(--color-danger)" },
   // Rollen (Clubs)
   admin: { bg: "rgba(124,92,255,0.15)", color: "#a48fff" },
   member: { bg: "rgba(255,255,255,0.06)", color: "#a79fb5" },

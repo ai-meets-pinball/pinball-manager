@@ -25,6 +25,7 @@
   --color-accent: #7c5cff; /* Violett */
   --color-accent-soft: #5b3fd0; /* auf hellem Grund lesbar */
   --color-success: #15a34a;
+  --color-danger: #c2410c; /* gebranntes Orange für Löschen/Fehler (kein Rot) */
 
   --font-display: var(--font-bungee), "Bungee", cursive;
   --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
@@ -51,6 +52,7 @@
   --color-accent: #7c5cff;
   --color-accent-soft: #a48fff;
   --color-success: #4dd68a;
+  --color-danger: #f2662e; /* gebranntes Orange, heller für dunklen Grund */
 }
 
 * {

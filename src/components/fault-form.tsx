@@ -72,7 +72,7 @@ export function FaultForm({
       </div>
 
       {state.error ? (
-        <p className="text-sm text-red-600">{state.error}</p>
+        <p className="text-sm text-[var(--color-danger)]">{state.error}</p>
       ) : null}
 
       <Button type="submit" disabled={pending}>

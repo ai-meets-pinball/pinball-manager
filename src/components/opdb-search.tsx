@@ -112,7 +112,7 @@ export function OpdbSearch({
       ) : null}
 
       {error ? (
-        <span className="text-xs text-red-500">{error}</span>
+        <span className="text-xs text-[var(--color-danger)]">{error}</span>
       ) : (
         <span className="text-xs text-[var(--color-muted)]">
           Füllt Hersteller, Modell, Baujahr und die Referenzen automatisch aus.

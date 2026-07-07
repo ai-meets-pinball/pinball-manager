@@ -63,7 +63,7 @@ export function FaultList({
               <input type="hidden" name="id" value={fault.id} />
               <button
                 type="submit"
-                className="inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-red-600"
+                className="inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-danger)]"
               >
                 <Trash2 size={14} /> Löschen
               </button>

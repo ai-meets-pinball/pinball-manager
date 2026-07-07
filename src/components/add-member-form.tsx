@@ -36,7 +36,7 @@ export function AddMemberForm({
         <UserPlus size={16} /> {pending ? "Hinzufügen…" : "Hinzufügen"}
       </Button>
       {state.error ? (
-        <p className="text-sm text-red-600 sm:basis-full">{state.error}</p>
+        <p className="text-sm text-[var(--color-danger)] sm:basis-full">{state.error}</p>
       ) : null}
     </form>
   );

@@ -10,7 +10,7 @@ const variants: Record<Variant, string> = {
     "bg-[var(--color-primary)] text-[var(--color-primary-fg)] shadow-[0_8px_30px_rgba(255,106,61,0.35)] hover:bg-[var(--color-primary-soft)] hover:-translate-y-0.5",
   secondary:
     "border border-[var(--color-border)] text-[var(--color-fg)] hover:border-[var(--color-accent)] hover:text-[var(--color-accent-soft)]",
-  danger: "bg-red-600 text-white hover:bg-red-500",
+  danger: "bg-[var(--color-danger)] text-white hover:opacity-90",
 };
 
 export function Button({

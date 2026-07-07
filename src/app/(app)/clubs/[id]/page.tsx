@@ -48,7 +48,7 @@ export default async function ClubDetailPage({
             <input type="hidden" name="clubId" value={club.id} />
             <button
               type="submit"
-              className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-red-300 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:border-red-900 dark:hover:bg-red-950"
+              className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-danger)]/40 px-3 py-2 text-sm text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10"
             >
               <Trash2 size={15} /> Club löschen
             </button>
@@ -80,7 +80,7 @@ export default async function ClubDetailPage({
                     <button
                       type="submit"
                       aria-label="Mitglied entfernen"
-                      className="text-[var(--color-muted)] hover:text-red-600"
+                      className="text-[var(--color-muted)] hover:text-[var(--color-danger)]"
                     >
                       <UserMinus size={16} />
                     </button>
