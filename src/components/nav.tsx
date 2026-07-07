@@ -18,35 +18,37 @@ export function Nav({ userName }: { userName: string }) {
 
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-bg)]/85 backdrop-blur-md">
-      <nav className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-3">
-        <div className="flex items-center gap-5">
+      <nav className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-4 py-3 sm:gap-4 sm:px-6">
+        <div className="flex items-center gap-2 sm:gap-5">
           <Link href="/machines" className="flex items-center">
             <span className="font-display text-base tracking-[0.5px]">
               pinball<span className="text-[var(--color-primary)]">-manager</span>
             </span>
           </Link>
 
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1">
             {links.map(({ href, label, icon: Icon }) => {
               const active = pathname === href || pathname.startsWith(`${href}/`);
               return (
                 <Link
                   key={href}
                   href={href}
-                  className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition-colors ${
+                  title={label}
+                  className={`flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-sm font-semibold transition-colors sm:px-3 ${
                     active
                       ? "bg-[var(--color-overlay)] text-[var(--color-primary-soft)]"
                       : "text-[var(--color-muted)] hover:bg-[var(--color-overlay)] hover:text-[var(--color-fg)]"
                   }`}
                 >
-                  <Icon size={15} /> {label}
+                  <Icon size={15} />
+                  <span className="hidden sm:inline">{label}</span>
                 </Link>
               );
             })}
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <span className="hidden font-mono text-xs text-[var(--color-faint)] sm:inline">
             {userName}
           </span>

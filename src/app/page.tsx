@@ -51,7 +51,7 @@ export default function HomePage() {
               KI-Reparaturdiagnose · in Entwicklung
             </div>
 
-            <h1 className="mb-[22px] font-display text-[42px] leading-[1.08] sm:text-[58px]">
+            <h1 className="mb-[22px] font-display text-[34px] leading-[1.08] sm:text-[58px]">
               Halte jeden<br />
               <span className="text-[var(--color-primary)]">Flipper</span> am Laufen.
             </h1>
@@ -77,7 +77,7 @@ export default function HomePage() {
               </Link>
             </div>
 
-            <div className="flex gap-[34px]">
+            <div className="flex flex-wrap gap-6 sm:gap-[34px]">
               {heroStats.map((s) => (
                 <div key={s.label}>
                   <div className="font-display text-2xl text-[var(--color-primary-soft)]">
@@ -94,7 +94,7 @@ export default function HomePage() {
           {/* App-Mockup — als dunkles Gerät gescoped (.dark), auch im Light-Mode. */}
           <div className="relative z-[2] flex justify-center">
             <div
-              className="dark w-[300px] animate-float-slow overflow-hidden rounded-[32px] border-2 border-white/10"
+              className="dark w-[300px] max-w-full animate-float-slow overflow-hidden rounded-[32px] border-2 border-white/10"
               style={{
                 background: "linear-gradient(160deg, #1b1626, #100c18)",
                 boxShadow: "0 40px 90px rgba(0,0,0,0.55)",
@@ -209,7 +209,7 @@ export default function HomePage() {
         {/* ===== CLUB / REPAIR SPLIT ===== */}
         <section className="mx-auto grid max-w-[1280px] grid-cols-1 gap-6 px-6 pb-24 pt-10 sm:px-12 md:grid-cols-2">
           <div
-            className="rounded-[22px] border border-[rgba(124,92,255,0.25)] p-11"
+            className="rounded-[22px] border border-[rgba(124,92,255,0.25)] p-6 sm:p-11"
             style={{
               background:
                 "radial-gradient(circle at 20% 0%, rgba(124,92,255,0.18), transparent 60%), var(--color-surface)",
@@ -237,7 +237,7 @@ export default function HomePage() {
           </div>
 
           <div
-            className="rounded-[22px] border border-[rgba(255,106,61,0.25)] p-11"
+            className="rounded-[22px] border border-[rgba(255,106,61,0.25)] p-6 sm:p-11"
             style={{
               background:
                 "radial-gradient(circle at 80% 0%, rgba(255,106,61,0.18), transparent 60%), var(--color-surface)",

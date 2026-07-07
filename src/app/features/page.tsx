@@ -60,7 +60,7 @@ export default function FeaturesPage() {
           {deepFeatures.map((df) => (
             <div
               key={df.tag}
-              className="grid grid-cols-1 items-center gap-[50px] border-b border-[var(--color-border)] py-[60px] md:grid-cols-2"
+              className="grid grid-cols-1 items-center gap-8 border-b border-[var(--color-border)] py-10 md:grid-cols-2 md:gap-[50px] md:py-[60px]"
             >
               <div className={df.reverse ? "md:order-2" : ""}>
                 <div
