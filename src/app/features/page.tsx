@@ -1,4 +1,5 @@
 import { MarketingFooter, MarketingNav } from "@/components/site-chrome";
+import { STAMMTISCH_URL } from "@/lib/links";
 
 /*
   Öffentliche Funktionen-Seite — editorial Rebrand (Handoff v2). Texte wie im
@@ -13,7 +14,7 @@ const deepFeatures = [
     points: ["Fotos und technische Daten", "Standort- und Eigentumshistorie", "Export für Versicherung oder Inventur"],
   },
   {
-    tag: "Standorte & Club-Roster", roadmap: false,
+    tag: "Standorte & Mitgliederliste", roadmap: false,
     title: "Gemeinsamer Bestand für Vereine.",
     desc: "Mitglieder sehen den vollständigen Maschinenbestand eines Standorts inklusive Eigentümer und Zustand.",
     points: ["Rollenbasierter Zugriff für Mitglieder", "Bestandsübersicht je Standort", "Gemeinsamer Wartungskalender"],
@@ -103,7 +104,7 @@ export default function FeaturesPage() {
               Kontaktiere uns
             </a>
             <a
-              href="https://www.flippermarkt.de/forum/threads/ki-meets-pinball-gemeinsames-projekt-per-teams-stammtisch-wer-macht-mit.292100/"
+              href={STAMMTISCH_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-block rounded-[var(--radius)] border border-[var(--color-border)] px-6 py-3 text-sm font-medium transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"

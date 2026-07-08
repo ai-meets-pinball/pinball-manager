@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MarketingFooter, MarketingNav } from "@/components/site-chrome";
+import { STAMMTISCH_URL } from "@/lib/links";
 
 /*
   Öffentliche Startseite — editorial Rebrand (Claude-Design-Handoff v2).
@@ -7,8 +8,8 @@ import { MarketingFooter, MarketingNav } from "@/components/site-chrome";
 */
 
 const heroStats = [
-  { value: "12.000+", label: "Erfasste Maschinen" },
-  { value: "340", label: "Vereine" },
+  { value: "xxxx", label: "Erfasste Maschinen" },
+  { value: "xxx", label: "Vereine" },
   { value: "0 €", label: "Aktuell kostenlos" },
 ];
 
@@ -27,7 +28,7 @@ const mockMachines = [
 
 const features = [
   { num: "01", title: "Inventar & Stammdaten", desc: "Hersteller, Baujahr, Zustand, Standort und Fotos je Maschine.", roadmap: false },
-  { num: "02", title: "Standorte & Club-Roster", desc: "Gemeinsamer Bestand für Vereine, mit Eigentümerzuordnung.", roadmap: false },
+  { num: "02", title: "Standorte & Mitgliederliste", desc: "Gemeinsamer Bestand für Vereine, mit Eigentümerzuordnung.", roadmap: false },
   { num: "03", title: "Fehler & Reparaturen", desc: "Symptome, Ursachen, Teile und Kosten je Reparatur protokolliert.", roadmap: false },
   { num: "04", title: "KI-Diagnose", desc: "Ursachenvorschläge auf Basis von Handbüchern und Historie.", roadmap: true },
 ];
@@ -65,17 +66,19 @@ export default function HomePage() {
           </p>
 
           <div className="mb-12 flex flex-wrap gap-3">
-            <Link
-              href="/register"
+            <a
+              href={STAMMTISCH_URL}
+              target="_blank"
+              rel="noopener noreferrer"
               className="rounded-[var(--radius)] bg-[var(--color-primary)] px-[26px] py-3.5 font-semibold text-[var(--color-primary-fg)] transition-colors hover:bg-[var(--color-accent)]"
             >
-              Kostenlos registrieren
-            </Link>
+              Beim Stammtisch mitmachen ↗
+            </a>
             <Link
-              href="/preise"
+              href="/login"
               className="rounded-[var(--radius)] border border-[var(--color-border)] px-[26px] py-3.5 font-medium transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
             >
-              Nutzungsmodell
+              Anmelden
             </Link>
           </div>
 
@@ -173,11 +176,6 @@ export default function HomePage() {
                   : "bg-[var(--color-surface)]"
               }`}
             >
-              {f.roadmap ? (
-                <div className="mb-3.5 inline-block rounded-[4px] border border-dashed border-[var(--color-border)] px-2 py-[3px] font-mono text-[10px] uppercase tracking-[0.5px] text-[var(--color-faint)]">
-                  In Entwicklung · Phase 3
-                </div>
-              ) : null}
               <div className="mb-2.5 font-mono text-[11px] text-[var(--color-faint)]">
                 {f.num}
               </div>
@@ -185,6 +183,11 @@ export default function HomePage() {
               <p className="text-[13px] leading-[1.6] text-[var(--color-muted)]">
                 {f.desc}
               </p>
+              {f.roadmap ? (
+                <div className="mt-4 inline-block rounded-[4px] border border-dashed border-[var(--color-border)] px-2 py-[3px] font-mono text-[10px] uppercase tracking-[0.5px] text-[var(--color-faint)]">
+                  In Entwicklung · Phase 3
+                </div>
+              ) : null}
             </div>
           ))}
         </div>
@@ -261,14 +264,16 @@ export default function HomePage() {
           Gemeinsam mit dem Stammtisch entwickelt.
         </h2>
         <p className="mb-6 text-[15px] text-[var(--color-muted)]">
-          Aktuell kostenlos nutzbar. Ein Nutzungsmodell folgt.
+          Aktuell kostenlos nutzbar. Zugang läuft über den Stammtisch.
         </p>
-        <Link
-          href="/register"
+        <a
+          href={STAMMTISCH_URL}
+          target="_blank"
+          rel="noopener noreferrer"
           className="inline-block rounded-[var(--radius)] bg-[var(--color-primary)] px-[30px] py-[15px] font-semibold text-[var(--color-primary-fg)] transition-colors hover:bg-[var(--color-accent)]"
         >
-          Kostenlos registrieren
-        </Link>
+          Beim Stammtisch mitmachen ↗
+        </a>
       </section>
 
       <MarketingFooter />

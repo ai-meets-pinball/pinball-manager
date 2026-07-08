@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { MarketingFooter, MarketingNav } from "@/components/site-chrome";
+import { STAMMTISCH_URL } from "@/lib/links";
 
 /*
   „Preise" → Nutzungsmodell. Es gibt (noch) keine Tarife: Pinball Manager wird
@@ -9,7 +9,7 @@ import { MarketingFooter, MarketingNav } from "@/components/site-chrome";
 
 const faqs = [
   { q: "Was kostet Pinball Manager gerade?", a: "In der aktuellen Entwicklungsphase nichts. Die Nutzung ist kostenlos, ein Nutzungsmodell entsteht gemeinsam mit dem Stammtisch." },
-  { q: "Kann ich Maschinen erfassen, die mir nicht gehören?", a: "Ja. Im Club-Roster lassen sich auch Maschinen anderer Mitglieder einsehen und mitverwalten." },
+  { q: "Kann ich Maschinen erfassen, die mir nicht gehören?", a: "Ja. In der Mitgliederliste lassen sich auch Maschinen anderer Mitglieder einsehen und mitverwalten." },
   { q: "Was leistet die KI-Diagnose bereits?", a: "Sie befindet sich in Entwicklung (Roadmap Phase 3) und ist noch nicht Teil der Anwendung." },
   { q: "Kann ich bestehende Daten importieren?", a: "Ja, CSV-Import ist vorgesehen, damit bestehende Sammlungen ohne Abtippen übernommen werden können." },
 ];
@@ -30,7 +30,7 @@ export default function PricingPage() {
           <p className="text-[15px] leading-[1.7] text-[var(--color-muted)]">
             Pinball Manager wird aktuell gemeinsam mit unserem{" "}
             <a
-              href="https://www.flippermarkt.de/forum/threads/ki-meets-pinball-gemeinsames-projekt-per-teams-stammtisch-wer-macht-mit.292100/"
+              href={STAMMTISCH_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="font-medium text-[var(--color-accent)] underline underline-offset-2 hover:opacity-80"
@@ -52,15 +52,18 @@ export default function PricingPage() {
               Aktuell kostenlos — Modell folgt
             </h2>
             <p className="mb-5 text-sm leading-[1.65] text-[var(--color-muted)]">
-              Wir bauen die Verwaltung zusammen mit dem Stammtisch aus. Solange das
-              läuft, kannst du deine Sammlung ohne Kosten anlegen und pflegen.
+              Wir bauen die Verwaltung zusammen mit dem Stammtisch aus. Neue
+              Zugänge laufen aus Sicherheitsgründen derzeit über den Stammtisch,
+              nicht über Selbstregistrierung.
             </p>
-            <Link
-              href="/register"
+            <a
+              href={STAMMTISCH_URL}
+              target="_blank"
+              rel="noopener noreferrer"
               className="inline-block rounded-[var(--radius)] bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-[var(--color-primary-fg)] transition-colors hover:bg-[var(--color-accent)]"
             >
-              Jetzt kostenlos starten
-            </Link>
+              Beim Stammtisch mitmachen ↗
+            </a>
           </div>
         </div>
 

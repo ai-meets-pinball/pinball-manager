@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { signIn } from "@/lib/auth-client";
+import { STAMMTISCH_URL } from "@/lib/links";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -55,16 +56,22 @@ export default function LoginPage() {
       <p className="text-sm text-[var(--color-muted)]">
         <Link
           href="/forgot-password"
-          className="text-[var(--color-primary)] underline"
+          className="text-[var(--color-accent)] underline"
         >
           Passwort vergessen?
         </Link>
       </p>
       <p className="text-sm text-[var(--color-muted)]">
-        Noch kein Konto?{" "}
-        <Link href="/register" className="text-[var(--color-primary)] underline">
-          Registrieren
-        </Link>
+        Kein Konto? Zugang läuft aktuell über den{" "}
+        <a
+          href={STAMMTISCH_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[var(--color-accent)] underline"
+        >
+          Stammtisch
+        </a>
+        .
       </p>
     </main>
   );

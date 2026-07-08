@@ -47,10 +47,10 @@ export function MarketingNav() {
         <span className="mx-1 hidden h-5 w-px bg-[var(--color-border)] sm:block" />
         <ThemeToggle />
         <Link
-          href="/register"
+          href="/login"
           className="rounded-[var(--radius)] bg-[var(--color-primary)] px-5 py-2.5 text-sm font-semibold text-[var(--color-primary-fg)] transition-colors hover:bg-[var(--color-accent)]"
         >
-          Registrieren
+          Anmelden
         </Link>
       </div>
     </header>

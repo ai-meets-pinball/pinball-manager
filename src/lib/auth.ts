@@ -18,6 +18,10 @@ export const auth = betterAuth({
   }),
   emailAndPassword: {
     enabled: true,
+    // Aus Sicherheitsgründen ist die Selbstregistrierung derzeit deaktiviert.
+    // Das ist die ECHTE Grenze: der Sign-up-Endpoint wird serverseitig gesperrt
+    // (die deaktivierte /register-Seite ist nur die sichtbare Ergänzung).
+    disableSignUp: true,
     // Better Auth erzeugt Token + Link; wir verschicken ihn per Resend.
     // `url` führt über Better Auth zurück auf /reset-password?token=…
     sendResetPassword: async ({ user, url }) => {
