@@ -1,20 +1,13 @@
 import type { Metadata } from "next";
-import { Bungee, Space_Grotesk, Space_Mono } from "next/font/google";
+import { Space_Grotesk, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
 
 /*
-  Arcade-Schriften (Claude-Design-Handoff):
-  - Bungee       → Display/Überschriften
-  - Space Grotesk → Fließtext
-  - Space Mono   → Labels / technische Kürzel
+  Schriften (Claude-Design-Handoff v2):
+  - Space Grotesk → Überschriften (700) + Fließtext
+  - Space Mono   → Labels / Kennzahlen / technische Kürzel
 */
-const bungee = Bungee({
-  variable: "--font-bungee",
-  subsets: ["latin"],
-  weight: "400",
-});
-
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
   subsets: ["latin"],
@@ -29,7 +22,7 @@ const spaceMono = Space_Mono({
 export const metadata: Metadata = {
   title: "Pinball Manager",
   description:
-    "Reparatur- und Verwaltungsdatenbank für Flipperautomaten — Maschinen, Fehler und Reparaturen verwalten.",
+    "Verwaltungssoftware für Flipperautomaten — Stammdaten, Standorte, Fehler und Reparaturen jeder Maschine an einem Ort.",
 };
 
 export default function RootLayout({
@@ -41,14 +34,14 @@ export default function RootLayout({
     <html
       lang="de"
       suppressHydrationWarning
-      className={`${bungee.variable} ${spaceGrotesk.variable} ${spaceMono.variable}`}
+      className={`${spaceGrotesk.variable} ${spaceMono.variable}`}
     >
       <body>
         {/*
-          Dunkles Arcade-Theme als Default (erster Eindruck), aber umschaltbar auf
-          Light über den ThemeToggle in der Nav. Orange bleibt in beiden Modi.
+          Helles editorial Theme als Default, umschaltbar auf eine warme
+          Dunkelvariante über den ThemeToggle in der Nav.
         */}
-        <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+        <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
           {children}
         </ThemeProvider>
       </body>

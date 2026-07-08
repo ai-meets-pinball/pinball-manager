@@ -1,28 +1,33 @@
-/** Farbiges Status-/Prioritäts-Label, einheitlich für Fehler & Reparaturen. */
-const styles: Record<string, { bg: string; color: string }> = {
+/*
+  Status-/Prioritäts-Chip, einheitlich für Fehler, Reparaturen & Rollen.
+  Die Tönung wird per color-mix aus der jeweiligen Token-Farbe abgeleitet,
+  sodass Hell- und Dunkelmodus automatisch passen.
+*/
+const tone: Record<string, string> = {
   // Fehler-Status
-  offen: { bg: "rgba(255,106,61,0.15)", color: "#ff9d78" },
-  "in Arbeit": { bg: "rgba(124,92,255,0.15)", color: "#a48fff" },
-  behoben: { bg: "rgba(77,214,138,0.15)", color: "#4dd68a" },
+  offen: "var(--color-warn)",
+  "in Arbeit": "var(--color-accent)",
+  behoben: "var(--color-success)",
   // Reparatur-Status
-  erledigt: { bg: "rgba(77,214,138,0.15)", color: "#4dd68a" },
+  erledigt: "var(--color-success)",
   // Priorität
-  niedrig: { bg: "rgba(255,255,255,0.06)", color: "#a79fb5" },
-  mittel: { bg: "rgba(255,106,61,0.15)", color: "#ff9d78" },
-  hoch: { bg: "rgba(194,65,12,0.18)", color: "var(--color-danger)" },
+  niedrig: "var(--color-faint)",
+  mittel: "var(--color-warn)",
+  hoch: "var(--color-danger)",
   // Rollen (Clubs)
-  admin: { bg: "rgba(124,92,255,0.15)", color: "#a48fff" },
-  member: { bg: "rgba(255,255,255,0.06)", color: "#a79fb5" },
+  admin: "var(--color-accent)",
+  member: "var(--color-faint)",
 };
 
-const fallback = { bg: "rgba(255,255,255,0.06)", color: "#a79fb5" };
-
 export function StatusBadge({ value }: { value: string }) {
-  const s = styles[value] ?? fallback;
+  const c = tone[value] ?? "var(--color-faint)";
   return (
     <span
-      className="inline-flex rounded-full px-2.5 py-0.5 font-mono text-[11px] font-bold uppercase tracking-wide"
-      style={{ background: s.bg, color: s.color }}
+      className="inline-flex rounded-[4px] px-2 py-0.5 text-[11px] font-semibold"
+      style={{
+        color: c,
+        background: `color-mix(in srgb, ${c} 14%, transparent)`,
+      }}
     >
       {value}
     </span>

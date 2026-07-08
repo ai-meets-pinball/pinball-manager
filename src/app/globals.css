@@ -1,58 +1,62 @@
 @import "tailwindcss";
 
 /*
-  Tailwind v4 CSS-first Konfiguration — Arcade-Theme (Claude-Design-Handoff).
-  Das Orange bleibt in beiden Modi die Markenfarbe. Light ist der @theme-Default;
-  .dark (von next-themes, Standard) überschreibt auf die dunkle Arcade-Palette.
+  Tailwind v4 CSS-first Konfiguration — „editorial" Rebrand (Claude-Design-Handoff v2).
+  Hell als Default, warmes Off-White + fast-schwarze Tinte, Bordeaux-Akzent.
+  next-themes `defaultTheme="light"`; `.dark` liefert eine warme Dunkelvariante.
 */
 @custom-variant dark (&:is(.dark *));
 
 /* Design-Tokens — Light-Variante (Default). */
 @theme {
-  --color-bg: #faf7f0; /* warmes Off-White */
+  --color-bg: #faf9f6; /* warmes Off-White */
   --color-surface: #ffffff; /* Karten */
-  --color-surface-2: #f5efe6; /* erhöhte Flächen */
-  --color-inset: #efe8dc; /* eingelassene Flächen (DMD-Box etc.) */
-  --color-fg: #1b1420; /* fast-schwarzes Violett */
-  --color-muted: #6b6478; /* gedämpfter Text */
-  --color-faint: #9a93a3; /* sehr leise / Mono-Labels */
-  --color-border: #e7e0d4;
-  --color-overlay: rgba(27, 20, 32, 0.04); /* subtile erhöhte Fläche */
+  --color-surface-2: #f6f4f1; /* leicht getönte Fläche */
+  --color-inset: #efece5; /* Hover / eingelassen */
+  --color-fg: #1e1c1a; /* fast-schwarze Tinte */
+  --color-muted: #4a453e; /* Fließtext gedämpft */
+  --color-faint: #6b665f; /* Labels / leise */
+  --color-border: #e6e2da; /* Rahmen */
+  --color-line: #eeebe4; /* feine Trennlinie */
+  --color-overlay: rgba(30, 28, 26, 0.05);
 
-  --color-primary: #ff6a3d; /* Flipper-Orange (in beiden Modi) */
-  --color-primary-soft: #e85a2c; /* auf hellem Grund lesbar */
-  --color-primary-fg: #ffffff;
-  --color-accent: #7c5cff; /* Violett */
-  --color-accent-soft: #5b3fd0; /* auf hellem Grund lesbar */
-  --color-success: #15a34a;
-  --color-danger: #c2410c; /* gebranntes Orange für Löschen/Fehler (kein Rot) */
+  --color-primary: #1e1c1a; /* Tinte — gefüllte Buttons / aktive Elemente */
+  --color-primary-fg: #faf9f6; /* Text auf Tinte */
+  --color-primary-soft: #3a352f;
+  --color-accent: #7a3a44; /* Bordeaux — Markenakzent */
+  --color-accent-soft: #9a5560;
+  --color-success: #4f7359; /* Salbei */
+  --color-warn: #8a6a3f; /* Ocker (z. B. „in Reparatur") */
+  --color-danger: #7a3a44; /* Bordeaux für Löschen/Fehler — kein Rot */
 
-  --font-display: var(--font-bungee), "Bungee", cursive;
   --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-space-mono), ui-monospace, monospace;
+  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
 
-  --radius: 0.625rem;
+  --radius: 0.375rem;
 }
 
-/* Dunkle Arcade-Palette — überschreibt die Tokens, wenn .dark aktiv ist. */
+/* Warme Dunkelvariante — überschreibt die Tokens, wenn .dark aktiv ist. */
 .dark {
-  --color-bg: #100c18;
-  --color-surface: #17121f;
-  --color-surface-2: #1b1626;
-  --color-inset: #0a0812;
-  --color-fg: #f4efe4;
-  --color-muted: #a79fb5;
-  --color-faint: #6b6478;
-  --color-border: #241f30;
-  --color-overlay: rgba(255, 255, 255, 0.04);
+  --color-bg: #17150f;
+  --color-surface: #201d16;
+  --color-surface-2: #24211a;
+  --color-inset: #201d16;
+  --color-fg: #f2efe6;
+  --color-muted: #b8b1a4;
+  --color-faint: #8f887c;
+  --color-border: #322e28;
+  --color-line: #2a2721;
+  --color-overlay: rgba(255, 255, 255, 0.05);
 
-  --color-primary: #ff6a3d;
-  --color-primary-soft: #ffb98a;
-  --color-primary-fg: #100c18;
-  --color-accent: #7c5cff;
-  --color-accent-soft: #a48fff;
-  --color-success: #4dd68a;
-  --color-danger: #f2662e; /* gebranntes Orange, heller für dunklen Grund */
+  --color-primary: #f2efe6; /* Tinte invertiert auf Hell für gefüllte Buttons */
+  --color-primary-fg: #17150f;
+  --color-primary-soft: #d8d3c9;
+  --color-accent: #c98a94; /* helleres Bordeaux für dunklen Grund */
+  --color-accent-soft: #d8a3ac;
+  --color-success: #7fae89;
+  --color-warn: #c2a06a;
+  --color-danger: #c98a94;
 }
 
 * {
@@ -73,65 +77,6 @@ body {
 }
 
 ::selection {
-  background: var(--color-primary);
+  background: var(--color-accent);
   color: var(--color-bg);
-}
-
-/* Feine Film-Körnung über der ganzen Seite (Design-Detail). */
-.grain::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 1;
-  opacity: 0.05;
-  background-image: radial-gradient(circle, #fff 1px, transparent 1px);
-  background-size: 3px 3px;
-}
-
-/* Animationen aus dem Handoff. */
-@keyframes flicker {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.82;
-  }
-}
-@keyframes floatSlow {
-  0%,
-  100% {
-    transform: translateY(0px) rotate(-4deg);
-  }
-  50% {
-    transform: translateY(-14px) rotate(-2deg);
-  }
-}
-@keyframes marquee {
-  0% {
-    transform: translateX(0);
-  }
-  100% {
-    transform: translateX(-50%);
-  }
-}
-
-.animate-flicker {
-  animation: flicker 1.4s infinite;
-}
-.animate-float-slow {
-  animation: floatSlow 6s ease-in-out infinite;
-}
-.animate-marquee {
-  animation: marquee 22s linear infinite;
-}
-
-/* Reduzierte Bewegung respektieren. */
-@media (prefers-reduced-motion: reduce) {
-  .animate-flicker,
-  .animate-float-slow,
-  .animate-marquee {
-    animation: none !important;
-  }
 }

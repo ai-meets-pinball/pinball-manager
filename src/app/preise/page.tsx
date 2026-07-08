@@ -1,133 +1,81 @@
 import Link from "next/link";
-import { Check } from "lucide-react";
 import { MarketingFooter, MarketingNav } from "@/components/site-chrome";
 
 /*
-  Öffentliche „Preise"-Seite. An die Realität angepasst: Pinball Manager ist ein
-  kostenloses, offenes Lehrprojekt („KI meets Pinball"). Keine erfundenen Tarife —
-  die drei Spalten beschreiben Nutzungsarten, alle kostenlos.
+  „Preise" → Nutzungsmodell. Es gibt (noch) keine Tarife: Pinball Manager wird
+  gerade gemeinsam mit dem „KI meets Pinball"-Stammtisch entwickelt und ist in
+  dieser Phase kostenlos. Ein Modell folgt später.
 */
 
-const plans = [
-  {
-    name: "Einzeln", price: "0 €", subtitle: "Deine eigene Sammlung.",
-    items: ["Unbegrenzt Maschinen", "Fehler & Reparatur-Log", "OPDB-Datenabgleich", "Foto-Upload"],
-    bg: "var(--color-surface)", border: "var(--color-border)", tagColor: "var(--color-muted)",
-    btnBg: "var(--color-border)", btnColor: "var(--color-fg)", cta: "Konto erstellen", featured: false,
-  },
-  {
-    name: "Club", price: "0 €", subtitle: "Für Vereine und Standorte.",
-    items: ["Alles aus Einzeln", "Geteilte Club-Roster", "Rollen (Admin / Mitglied)", "Gemeinsamer Zustands-Blick"],
-    bg: "linear-gradient(160deg, rgba(255,106,61,0.16), var(--color-surface))", border: "rgba(255,106,61,0.5)", tagColor: "var(--color-primary-soft)",
-    btnBg: "var(--color-primary)", btnColor: "var(--color-primary-fg)", cta: "Club anlegen", featured: true,
-  },
-  {
-    name: "Lehrgruppe", price: "0 €", subtitle: "Für die KI-meets-Pinball-Gruppe.",
-    items: ["Alles aus Club", "Lesbarer, offener Code", "Selbst hostbar", "KI-Diagnose (Roadmap)"],
-    bg: "var(--color-surface)", border: "rgba(124,92,255,0.35)", tagColor: "var(--color-accent-soft)",
-    btnBg: "rgba(124,92,255,0.18)", btnColor: "var(--color-accent-soft)", cta: "Loslegen", featured: false,
-  },
-];
-
 const faqs = [
-  { q: "Was kostet Pinball Manager?", a: "Nichts. Es ist ein offenes Lehrprojekt — alle Funktionen sind kostenlos und der Code ist einsehbar." },
-  { q: "Kann ich Maschinen tracken, die mir nicht gehören?", a: "Ja — über Club-Roster siehst und wartest du Maschinen anderer Mitglieder mit." },
-  { q: "Diagnostiziert die KI schon Fehler?", a: "Noch nicht. Die KI-Diagnose ist für Phase 3 der Roadmap geplant; heute liegt der Fokus auf Verwaltung und Reparatur-Log." },
-  { q: "Woher kommen die Maschinendaten?", a: "Aus der Open Pinball Database (OPDB): beim Anlegen füllt der Abgleich Hersteller, Modell, Baujahr und Foto automatisch." },
+  { q: "Was kostet Pinball Manager gerade?", a: "In der aktuellen Entwicklungsphase nichts. Die Nutzung ist kostenlos, ein Nutzungsmodell entsteht gemeinsam mit dem Stammtisch." },
+  { q: "Kann ich Maschinen erfassen, die mir nicht gehören?", a: "Ja. Im Club-Roster lassen sich auch Maschinen anderer Mitglieder einsehen und mitverwalten." },
+  { q: "Was leistet die KI-Diagnose bereits?", a: "Sie befindet sich in Entwicklung (Roadmap Phase 3) und ist noch nicht Teil der Anwendung." },
+  { q: "Kann ich bestehende Daten importieren?", a: "Ja, CSV-Import ist vorgesehen, damit bestehende Sammlungen ohne Abtippen übernommen werden können." },
 ];
 
 export default function PricingPage() {
   return (
-    <div className="grain relative min-h-screen overflow-x-hidden">
-      <div className="relative z-[2]">
-        <MarketingNav />
+    <div className="min-h-screen">
+      <MarketingNav />
 
-        <main className="mx-auto max-w-[1180px] px-6 pb-32 pt-20 sm:px-12">
-          <div className="mx-auto mb-[60px] max-w-[600px] text-center">
-            <div className="mb-3.5 font-mono text-xs uppercase tracking-[2px] text-[var(--color-primary-soft)]">
-              Preise
-            </div>
-            <h1 className="mb-4 font-display text-[34px] leading-[1.15] sm:text-[42px]">
-              Kostenlos. Und offen.
-            </h1>
-            <p className="text-base leading-[1.6] text-[var(--color-muted)]">
-              Pinball Manager ist ein Lehrprojekt, kein SaaS. Alle drei Nutzungsarten
-              sind gratis — wähle einfach, wozu es passt.
-            </p>
+      <main className="mx-auto max-w-[1140px] px-5 pb-28 pt-[70px] sm:px-12">
+        <div className="max-w-[640px]">
+          <div className="mb-3 font-mono text-xs uppercase tracking-[1px] text-[var(--color-faint)]">
+            Nutzungsmodell
           </div>
+          <h1 className="mb-4 text-[28px] font-bold tracking-[-0.3px] sm:text-[34px]">
+            Das Nutzungsmodell entsteht gerade.
+          </h1>
+          <p className="text-[15px] leading-[1.7] text-[var(--color-muted)]">
+            Pinball Manager wird aktuell gemeinsam mit unserem
+            <span className="text-[var(--color-fg)]">
+              {" "}
+              &bdquo;KI meets Pinball&ldquo;-Stammtisch{" "}
+            </span>
+            entwickelt. In dieser Phase ist die Nutzung kostenlos — ein konkretes
+            Modell folgt, sobald sich der Funktionsumfang gesetzt hat.
+          </p>
+        </div>
 
-          <div className="grid grid-cols-1 items-start gap-6 md:grid-cols-3">
-            {plans.map((plan) => (
-              <div
-                key={plan.name}
-                className={`relative rounded-[22px] p-8 ${plan.featured ? "md:scale-[1.04]" : ""}`}
-                style={{ background: plan.bg, border: `1px solid ${plan.border}` }}
-              >
-                {plan.featured ? (
-                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-[var(--color-primary)] px-4 py-[5px] text-[11px] font-bold uppercase tracking-[1px] text-[var(--color-primary-fg)]">
-                    Empfohlen
-                  </div>
-                ) : null}
-                <div
-                  className="mb-3 font-mono text-xs uppercase tracking-[2px]"
-                  style={{ color: plan.tagColor }}
-                >
-                  {plan.name}
+        {/* Status-Block */}
+        <div className="mt-10 grid grid-cols-1 items-center gap-6 rounded-[10px] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-2)] p-9 sm:grid-cols-[auto_1fr] sm:gap-8">
+          <div className="w-fit rounded-[4px] border border-dashed border-[var(--color-border)] px-2.5 py-[5px] font-mono text-[11px] uppercase tracking-[1px] text-[var(--color-faint)]">
+            In Entwicklung
+          </div>
+          <div>
+            <h2 className="mb-2 text-[18px] font-bold">
+              Aktuell kostenlos — Modell folgt
+            </h2>
+            <p className="mb-5 text-sm leading-[1.65] text-[var(--color-muted)]">
+              Wir bauen die Verwaltung zusammen mit dem Stammtisch aus. Solange das
+              läuft, kannst du deine Sammlung ohne Kosten anlegen und pflegen.
+            </p>
+            <Link
+              href="/register"
+              className="inline-block rounded-[var(--radius)] bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-[var(--color-primary-fg)] transition-colors hover:bg-[var(--color-accent)]"
+            >
+              Jetzt kostenlos starten
+            </Link>
+          </div>
+        </div>
+
+        <div className="mt-20">
+          <h2 className="mb-6 text-xl font-bold">Fragen</h2>
+          <div className="flex flex-col gap-px border border-[var(--color-border)] bg-[var(--color-border)]">
+            {faqs.map((q) => (
+              <div key={q.q} className="bg-[var(--color-surface)] px-6 py-5">
+                <div className="mb-1.5 text-sm font-bold">{q.q}</div>
+                <div className="text-[13px] leading-[1.6] text-[var(--color-muted)]">
+                  {q.a}
                 </div>
-                <div className="mb-1.5 flex items-baseline gap-1.5">
-                  <span className="font-display text-[40px]">{plan.price}</span>
-                </div>
-                <p className="mb-[26px] text-[13px] text-[var(--color-faint)]">
-                  {plan.subtitle}
-                </p>
-                <div className="mb-[30px] flex flex-col gap-3.5">
-                  {plan.items.map((it) => (
-                    <div
-                      key={it}
-                      className="flex items-start gap-2.5 text-sm text-[var(--color-muted)]"
-                    >
-                      <Check
-                        size={16}
-                        className="mt-0.5 shrink-0"
-                        style={{ color: plan.tagColor }}
-                      />
-                      {it}
-                    </div>
-                  ))}
-                </div>
-                <Link
-                  href="/register"
-                  className="block rounded-[10px] py-3.5 text-center text-sm font-bold transition-opacity hover:opacity-90"
-                  style={{ background: plan.btnBg, color: plan.btnColor }}
-                >
-                  {plan.cta}
-                </Link>
               </div>
             ))}
           </div>
+        </div>
+      </main>
 
-          <div className="mt-[90px] text-center">
-            <h2 className="mb-[30px] font-display text-[24px] sm:text-[26px]">
-              Fragen, die sich lohnen
-            </h2>
-            <div className="mx-auto grid max-w-[900px] grid-cols-1 gap-[22px] text-left md:grid-cols-2">
-              {faqs.map((q) => (
-                <div
-                  key={q.q}
-                  className="rounded-[14px] border border-[var(--color-border)] bg-[var(--color-overlay)] p-6"
-                >
-                  <div className="mb-2 text-[15px] font-bold">{q.q}</div>
-                  <div className="text-sm leading-[1.6] text-[var(--color-muted)]">
-                    {q.a}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </main>
-
-        <MarketingFooter />
-      </div>
+      <MarketingFooter />
     </div>
   );
 }

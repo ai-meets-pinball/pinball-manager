@@ -125,13 +125,13 @@ const sections: StackSection[] = [
     titel: "UI & Styling",
     icon: <Palette size={18} className="text-[var(--color-primary)]" />,
     einleitung:
-      "Aussehen und Bedienung — mobilfreundlich, dunkles Arcade-Theme (Design-Handoff).",
+      "Aussehen und Bedienung — mobilfreundlich, helles „editorial\" Theme mit Bordeaux-Akzent (Design-Handoff), plus Dunkelvariante.",
     items: [
       {
         name: "Tailwind CSS",
         version: "4.3.2",
         beschreibung:
-          "Utility-CSS in der v4-CSS-first-Variante: Die Arcade-Design-Tokens (Farben, Schriften, Radius) stehen als CSS-Variablen in globals.css und werden überall als var(--color-...) genutzt — ein Token-Wechsel färbt die ganze App um.",
+          "Utility-CSS in der v4-CSS-first-Variante: Die Design-Tokens (Farben, Schriften, Radius) stehen als CSS-Variablen in globals.css und werden überall als var(--color-...) genutzt — die .dark-Klasse überschreibt sie für den Dunkelmodus.",
         imCode: "src/app/globals.css",
       },
       {
@@ -145,7 +145,7 @@ const sections: StackSection[] = [
         name: "next-themes",
         version: "0.4.6",
         beschreibung:
-          "Hält per forcedTheme=\"dark\" die Klasse .dark am <html> gesetzt (das Arcade-Design ist bewusst dunkel-only), damit dark:-Utilities weiter greifen.",
+          "Steuert Hell/Dunkel über die .dark-Klasse am <html>. defaultTheme=\"light\"; der ThemeToggle in der Nav schaltet um.",
         imCode: "src/components/theme-provider.tsx, src/app/layout.tsx",
       },
     ],

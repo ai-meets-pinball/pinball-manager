@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { BookOpen, Users, Wrench } from "lucide-react";
+import { Logo } from "@/components/logo";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -12,18 +13,16 @@ const links = [
   { href: "/help", label: "Techstack", icon: BookOpen },
 ];
 
-/** Kopfzeile der angemeldeten Bereiche (Arcade-Theme). */
+/** Kopfzeile der angemeldeten Bereiche. */
 export function Nav({ userName }: { userName: string }) {
   const pathname = usePathname();
 
   return (
-    <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-bg)]/85 backdrop-blur-md">
+    <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-bg)]/90 backdrop-blur-md">
       <nav className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-4 py-3 sm:gap-4 sm:px-6">
         <div className="flex items-center gap-2 sm:gap-5">
           <Link href="/machines" className="flex items-center">
-            <span className="font-display text-base tracking-[0.5px]">
-              pinball<span className="text-[var(--color-primary)]">-manager</span>
-            </span>
+            <Logo size={20} />
           </Link>
 
           <div className="flex items-center gap-0.5 sm:gap-1">
@@ -34,13 +33,16 @@ export function Nav({ userName }: { userName: string }) {
                   key={href}
                   href={href}
                   title={label}
-                  className={`flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-sm font-semibold transition-colors sm:px-3 ${
+                  className={`flex items-center gap-1.5 rounded-[var(--radius)] px-2.5 py-1.5 text-sm font-medium transition-colors sm:px-3 ${
                     active
-                      ? "bg-[var(--color-overlay)] text-[var(--color-primary)]"
-                      : "text-[var(--color-muted)] hover:bg-[var(--color-overlay)] hover:text-[var(--color-fg)]"
+                      ? "bg-[var(--color-inset)] text-[var(--color-fg)]"
+                      : "text-[var(--color-muted)] hover:bg-[var(--color-inset)] hover:text-[var(--color-fg)]"
                   }`}
                 >
-                  <Icon size={15} className="text-[var(--color-primary)]" />
+                  <Icon
+                    size={15}
+                    className={active ? "text-[var(--color-accent)]" : ""}
+                  />
                   <span className="hidden sm:inline">{label}</span>
                 </Link>
               );

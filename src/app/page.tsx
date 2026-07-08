@@ -1,286 +1,277 @@
 import Link from "next/link";
-import { Sparkles, Star, Target, Users, Wrench } from "lucide-react";
 import { MarketingFooter, MarketingNav } from "@/components/site-chrome";
 
 /*
-  Öffentliche Startseite — Arcade-Marketing (Claude-Design-Handoff), Inhalte an
-  das echte Produkt angepasst: KI ist Roadmap (Phase 3), keine erfundenen Preise.
+  Öffentliche Startseite — editorial Rebrand (Claude-Design-Handoff v2).
+  Texte wie im Design (deutsch). Alles über Tokens → hell/dunkel funktioniert.
 */
 
 const heroStats = [
-  { value: "0 €", label: "Für Einzelne" },
-  { value: "Club", label: "Geteilte Roster" },
-  { value: "KI", label: "Auf der Roadmap" },
+  { value: "12.000+", label: "Erfasste Maschinen" },
+  { value: "340", label: "Vereine" },
+  { value: "0 €", label: "Aktuell kostenlos" },
+];
+
+const mockFields = [
+  { label: "Hersteller", value: "Williams" },
+  { label: "Baujahr", value: "1997" },
+  { label: "Standort", value: "Keller" },
+  { label: "Zustand", value: "Sehr gut" },
 ];
 
 const mockMachines = [
-  { name: "Attack From Mars", status: "GUT", bg: "rgba(77,214,138,0.15)", color: "#4dd68a" },
-  { name: "Twilight Zone", status: "REPARATUR", bg: "rgba(255,106,61,0.18)", color: "var(--color-primary-soft)" },
-  { name: "Godzilla", status: "GUT", bg: "rgba(77,214,138,0.15)", color: "#4dd68a" },
-];
-
-const marqueeLabels = [
-  "MASCHINEN-INVENTAR", "CLUB-ROSTER", "REPARATUR-LOGS", "KI-DIAGNOSE",
-  "TEILE-TRACKING", "FEHLER-VERLAUF", "FOTO-DOKU", "OPDB-ABGLEICH",
+  { name: "Attack From Mars", status: "OK", tone: "var(--color-success)" },
+  { name: "Twilight Zone", status: "REPARATUR", tone: "var(--color-warn)" },
+  { name: "Godzilla", status: "OK", tone: "var(--color-success)" },
 ];
 
 const features = [
-  { icon: Target, iconBg: "rgba(255,106,61,0.15)", iconColor: "var(--color-primary-soft)", title: "Maschinen-Inventar", desc: "Jede Maschine mit Daten, Fotos und komplettem Service-Verlauf an einem Ort." },
-  { icon: Users, iconBg: "rgba(124,92,255,0.15)", iconColor: "var(--color-accent-soft)", title: "Club-Roster", desc: "Teile einen Standort-Roster mit deinem Club und sieh, wer was wartet." },
-  { icon: Wrench, iconBg: "rgba(255,106,61,0.15)", iconColor: "var(--color-primary-soft)", title: "Reparatur-Log", desc: "Jede Reparatur mit Teilen, Kosten und Notizen — Muster werden mit der Zeit sichtbar." },
-  { icon: Sparkles, iconBg: "rgba(124,92,255,0.15)", iconColor: "var(--color-accent-soft)", title: "KI-Diagnose", desc: "Symptom beschreiben, wahrscheinliche Ursachen bekommen. Auf der Roadmap (Phase 3)." },
+  { num: "01", title: "Inventar & Stammdaten", desc: "Hersteller, Baujahr, Zustand, Standort und Fotos je Maschine.", roadmap: false },
+  { num: "02", title: "Standorte & Club-Roster", desc: "Gemeinsamer Bestand für Vereine, mit Eigentümerzuordnung.", roadmap: false },
+  { num: "03", title: "Fehler & Reparaturen", desc: "Symptome, Ursachen, Teile und Kosten je Reparatur protokolliert.", roadmap: false },
+  { num: "04", title: "KI-Diagnose", desc: "Ursachenvorschläge auf Basis von Handbüchern und Historie.", roadmap: true },
 ];
 
 const clubRows = [
   { name: "Medieval Madness", owner: "D. Ruiz" },
-  { name: "Fish Tales", owner: "Club" },
+  { name: "Fish Tales", owner: "Verein" },
   { name: "Cactus Canyon", owner: "M. Ortiz" },
 ];
 
+/** Feine haarlinien-getrennte Rasterfläche (1px-Lücken zeigen die Rahmenfarbe). */
+const hairlineGrid =
+  "gap-px border border-[var(--color-border)] bg-[var(--color-border)]";
+
 export default function HomePage() {
   return (
-    <div className="grain relative min-h-screen overflow-x-hidden">
-      <div className="relative z-[2]">
-        <MarketingNav />
+    <div className="min-h-screen">
+      <MarketingNav />
 
-        {/* ===== HERO ===== */}
-        <section className="mx-auto grid max-w-[1320px] items-center gap-10 px-6 pb-16 pt-16 sm:px-12 md:grid-cols-[1.05fr_0.95fr] md:pt-[88px]">
-          <div className="relative z-[2]">
-            <div className="mb-7 inline-flex items-center gap-2 rounded-full border border-[rgba(255,106,61,0.4)] bg-[rgba(255,106,61,0.08)] px-3.5 py-[7px] font-mono text-xs uppercase tracking-[1.5px] text-[var(--color-primary-soft)]">
-              <span className="h-1.5 w-1.5 animate-flicker rounded-full bg-[var(--color-primary)]" />
-              KI-Reparaturdiagnose · in Entwicklung
-            </div>
-
-            <h1 className="mb-[22px] font-display text-[34px] leading-[1.08] sm:text-[58px]">
-              Halte jeden<br />
-              <span className="text-[var(--color-primary)]">Flipper</span> am Laufen.
-            </h1>
-
-            <p className="mb-[34px] max-w-[460px] text-lg leading-[1.65] text-[var(--color-muted)]">
-              Verwalte jede Maschine, die dir gehört, und jede, die dein Club
-              betreibt. Dokumentiere Fehler und Reparaturen — und verliere nie
-              wieder ein Spiel an einen toten Schalter.
-            </p>
-
-            <div className="mb-11 flex flex-wrap gap-3.5">
-              <Link
-                href="/register"
-                className="rounded-[10px] bg-[var(--color-primary)] px-7 py-[15px] font-bold text-[var(--color-primary-fg)] shadow-[0_8px_30px_rgba(255,106,61,0.35)] transition-transform hover:-translate-y-0.5"
-              >
-                Kostenlos starten →
-              </Link>
-              <Link
-                href="/features"
-                className="rounded-[10px] border border-[var(--color-border)] px-7 py-[15px] font-semibold text-[var(--color-fg)] transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent-soft)]"
-              >
-                Funktionen ansehen
-              </Link>
-            </div>
-
-            <div className="flex flex-wrap gap-6 sm:gap-[34px]">
-              {heroStats.map((s) => (
-                <div key={s.label}>
-                  <div className="font-display text-2xl text-[var(--color-primary-soft)]">
-                    {s.value}
-                  </div>
-                  <div className="mt-1 text-xs uppercase tracking-[1px] text-[var(--color-faint)]">
-                    {s.label}
-                  </div>
-                </div>
-              ))}
-            </div>
+      {/* ===== HERO ===== */}
+      <section className="mx-auto grid max-w-[1240px] items-center gap-10 px-5 pb-16 pt-16 sm:px-12 md:grid-cols-[1.05fr_0.95fr] md:gap-14 md:pt-[88px]">
+        <div>
+          <div className="mb-[22px] font-mono text-xs uppercase tracking-[1px] text-[var(--color-faint)]">
+            Verwaltungssoftware für Flipperautomaten
           </div>
 
-          {/* App-Mockup — als dunkles Gerät gescoped (.dark), auch im Light-Mode. */}
-          <div className="relative z-[2] flex justify-center">
-            <div
-              className="dark w-[300px] max-w-full animate-float-slow overflow-hidden rounded-[32px] border-2 border-white/10"
-              style={{
-                background: "linear-gradient(160deg, #1b1626, #100c18)",
-                boxShadow: "0 40px 90px rgba(0,0,0,0.55)",
-              }}
+          <h1 className="mb-[22px] text-[34px] font-bold leading-[1.18] tracking-[-0.5px] sm:text-[46px]">
+            Alle Maschinen, alle Daten, an einem Ort.
+          </h1>
+
+          <p className="mb-[34px] max-w-[480px] text-[17px] leading-[1.7] text-[var(--color-muted)]">
+            Pinball Manager erfasst Stammdaten, Standorte und Historie jeder
+            Maschine in deiner Sammlung oder deinem Club. Fehlererfassung und
+            Reparatur-Log sind Teil davon — nicht der Ausgangspunkt.
+          </p>
+
+          <div className="mb-12 flex flex-wrap gap-3">
+            <Link
+              href="/register"
+              className="rounded-[var(--radius)] bg-[var(--color-primary)] px-[26px] py-3.5 font-semibold text-[var(--color-primary-fg)] transition-colors hover:bg-[var(--color-accent)]"
             >
-              <div className="flex justify-between px-5 pb-2.5 pt-4 font-mono text-[11px] text-[#6b6478]">
-                <span>9:41</span>
-                <span>●●●</span>
-              </div>
-              <div className="border-b border-white/8 px-5 pb-[18px] pt-1">
-                <div className="mb-1.5 text-[11px] uppercase tracking-[1.5px] text-[var(--color-faint)]">
-                  Meine Garage
-                </div>
-                <div className="font-display text-xl">Medieval Madness</div>
-                <div className="mt-2 flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-[var(--color-success)] shadow-[0_0_8px_#4dd68a]" />
-                  <span className="text-xs font-semibold text-[var(--color-success)]">
-                    Betriebsbereit
-                  </span>
-                </div>
-              </div>
-              <div
-                className="m-5 rounded-[10px] border border-[rgba(124,92,255,0.35)] p-3.5"
-                style={{ background: "var(--color-inset)", boxShadow: "inset 0 0 20px rgba(124,92,255,0.08)" }}
-              >
-                <div className="mb-2 flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[1px] text-[var(--color-accent-soft)]">
-                    <Sparkles size={11} /> KI-Diagnose
-                  </span>
-                  <span className="rounded-full bg-white/8 px-1.5 py-0.5 font-mono text-[9px] uppercase text-[var(--color-faint)]">
-                    bald
-                  </span>
-                </div>
-                <div className="font-mono text-xs leading-[1.6] text-[#d9d3ff]">
-                  Linker Flipper schwach. Vermutlich Spulenhülse verschlissen — Teil
-                  #A-13866.
-                </div>
-              </div>
-              <div className="flex flex-col gap-2.5 px-5 pb-[22px]">
-                {mockMachines.map((m) => (
-                  <div
-                    key={m.name}
-                    className="flex items-center justify-between rounded-lg bg-white/3 px-3 py-2.5"
-                  >
-                    <span className="text-[13px] text-[var(--color-fg)]">{m.name}</span>
-                    <span
-                      className="rounded-full px-2.5 py-[3px] text-[11px] font-bold"
-                      style={{ background: m.bg, color: m.color }}
-                    >
-                      {m.status}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+              Kostenlos registrieren
+            </Link>
+            <Link
+              href="/preise"
+              className="rounded-[var(--radius)] border border-[var(--color-border)] px-[26px] py-3.5 font-medium transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
+            >
+              Nutzungsmodell
+            </Link>
           </div>
-        </section>
 
-        {/* ===== MARQUEE ===== */}
-        <div className="overflow-hidden border-y border-[var(--color-border)] bg-white/[0.015] py-5">
-          <div className="flex w-max animate-marquee items-center font-mono text-[13px] uppercase tracking-[2px] text-[var(--color-faint)]">
-            {[...marqueeLabels, ...marqueeLabels].map((txt, i) => (
-              <span key={i} className="flex items-center gap-[34px] pr-[34px]">
-                {txt}
-                <Star size={11} className="text-[var(--color-accent)]" fill="currentColor" />
-              </span>
+          <div className="flex flex-wrap gap-10 border-t border-[var(--color-border)] pt-6">
+            {heroStats.map((s) => (
+              <div key={s.label}>
+                <div className="font-mono text-xl font-bold">{s.value}</div>
+                <div className="mt-1 text-xs text-[var(--color-faint)]">
+                  {s.label}
+                </div>
+              </div>
             ))}
           </div>
         </div>
 
-        {/* ===== FEATURES ===== */}
-        <section className="mx-auto max-w-[1280px] px-6 py-24 sm:px-12">
-          <div className="mx-auto mb-16 max-w-[620px] text-center">
-            <div className="mb-3.5 font-mono text-xs uppercase tracking-[2px] text-[var(--color-primary-soft)]">
-              Das Werkzeug
+        {/* App-Mockup (helle Karte — folgt dem Theme) */}
+        <div className="flex justify-center">
+          <div className="w-[300px] max-w-full overflow-hidden rounded-[20px] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[0_20px_50px_rgba(30,28,26,0.08)]">
+            <div className="flex justify-between px-5 pb-2.5 pt-4 font-mono text-[11px] text-[var(--color-faint)]">
+              <span>9:41</span>
+              <span>●●●</span>
             </div>
-            <h2 className="mb-4 font-display text-[32px] leading-[1.2] sm:text-[38px]">
-              Alles, was die Werkstatt braucht,{" "}
-              <span className="text-[var(--color-accent)]">nichts sonst.</span>
-            </h2>
-            <p className="text-base leading-[1.6] text-[var(--color-muted)]">
-              Von der Garage mit einem Addams Family bis zum Club mit vierzig
-              Maschinen.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-[22px] sm:grid-cols-2 lg:grid-cols-4">
-            {features.map((f) => (
-              <div
-                key={f.title}
-                className="rounded-[18px] border border-[var(--color-border)] p-6 transition-transform hover:-translate-y-1.5 hover:border-[rgba(255,106,61,0.4)]"
-                style={{
-                  background:
-                    "linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.02))",
-                }}
-              >
-                <div
-                  className="mb-5 flex h-[46px] w-[46px] items-center justify-center rounded-xl"
-                  style={{ background: f.iconBg }}
-                >
-                  <f.icon size={22} style={{ color: f.iconColor }} />
-                </div>
-                <h3 className="mb-2.5 text-[17px]">{f.title}</h3>
-                <p className="text-sm leading-[1.6] text-[var(--color-muted)]">
-                  {f.desc}
-                </p>
+            <div className="border-b border-[var(--color-line)] px-5 pb-4 pt-1">
+              <div className="mb-1.5 text-[11px] uppercase tracking-[1px] text-[var(--color-faint)]">
+                Meine Sammlung
               </div>
-            ))}
-          </div>
-        </section>
-
-        {/* ===== CLUB / REPAIR SPLIT ===== */}
-        <section className="mx-auto grid max-w-[1280px] grid-cols-1 gap-6 px-6 pb-24 pt-10 sm:px-12 md:grid-cols-2">
-          <div
-            className="rounded-[22px] border border-[rgba(124,92,255,0.25)] p-6 sm:p-11"
-            style={{
-              background:
-                "radial-gradient(circle at 20% 0%, rgba(124,92,255,0.18), transparent 60%), var(--color-surface)",
-            }}
-          >
-            <div className="mb-4 font-mono text-[11px] uppercase tracking-[2px] text-[var(--color-accent-soft)]">
-              Club-Modus
+              <div className="text-[19px] font-bold">Medieval Madness</div>
+              <div className="mt-2 flex items-center gap-1.5">
+                <span className="h-[7px] w-[7px] rounded-full bg-[var(--color-success)]" />
+                <span className="text-xs font-semibold text-[var(--color-success)]">
+                  Betriebsbereit
+                </span>
+              </div>
             </div>
-            <h3 className="mb-3.5 font-display text-[26px]">Ein Roster, der ganze Club.</h3>
-            <p className="mb-[22px] text-[15px] leading-[1.65] text-[var(--color-muted)]">
-              Teile einen Maschinen-Roster mit deinem Club, weise Eigentümer zu und
-              behalte den Zustand über den ganzen Standort im Blick.
-            </p>
-            <div className="flex flex-col gap-2.5">
-              {clubRows.map((row) => (
+            <div className="m-5 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface-2)] p-3.5">
+              <div className="mb-2.5 font-mono text-[10px] uppercase tracking-[1px] text-[var(--color-faint)]">
+                Stammdaten
+              </div>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {mockFields.map((f) => (
+                  <div key={f.label}>
+                    <div className="text-[10px] text-[var(--color-faint)]">
+                      {f.label}
+                    </div>
+                    <div className="mt-0.5 font-semibold">{f.value}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 px-5 pb-5">
+              {mockMachines.map((m) => (
                 <div
-                  key={row.name}
-                  className="flex items-center justify-between rounded-[10px] bg-[var(--color-overlay)] px-4 py-3"
+                  key={m.name}
+                  className="flex items-center justify-between rounded-md bg-[var(--color-surface-2)] px-3 py-2.5"
                 >
-                  <span className="text-[13px] text-[var(--color-fg)]">{row.name}</span>
-                  <span className="text-xs text-[var(--color-faint)]">{row.owner}</span>
+                  <span className="text-[13px]">{m.name}</span>
+                  <span
+                    className="rounded-[4px] px-2 py-[3px] text-[11px] font-semibold"
+                    style={{
+                      color: m.tone,
+                      background: `color-mix(in srgb, ${m.tone} 14%, transparent)`,
+                    }}
+                  >
+                    {m.status}
+                  </span>
                 </div>
               ))}
             </div>
           </div>
+        </div>
+      </section>
 
-          <div
-            className="rounded-[22px] border border-[rgba(255,106,61,0.25)] p-6 sm:p-11"
-            style={{
-              background:
-                "radial-gradient(circle at 80% 0%, rgba(255,106,61,0.18), transparent 60%), var(--color-surface)",
-            }}
-          >
-            <div className="mb-4 font-mono text-[11px] uppercase tracking-[2px] text-[var(--color-primary-soft)]">
-              Reparatur-Log + KI
-            </div>
-            <h3 className="mb-3.5 font-display text-[26px]">Diagnose, bevor du das Glas öffnest.</h3>
-            <p className="mb-[22px] text-[15px] leading-[1.65] text-[var(--color-muted)]">
-              Beschreibe das Symptom und bekomme eine Rangliste wahrscheinlicher
-              Ursachen — gespeist aus Handbüchern und vergangenen Reparaturen.
-              <span className="text-[var(--color-faint)]"> (Roadmap, Phase 3.)</span>
-            </p>
-            <div
-              className="rounded-xl border border-[rgba(255,106,61,0.3)] p-4 font-mono text-[13px] leading-[1.6] text-[var(--color-primary-soft)]"
-              style={{ background: "var(--color-inset)" }}
-            >
-              &bdquo;Rechter Rampen-Diverter feuert nicht&ldquo; &rarr;
-              Diverter-Spule (Q4) prüfen,
-              Opto-Board checken, 20V-Sicherung F19 verifizieren.
-            </div>
+      {/* ===== FEATURES ===== */}
+      <section className="mx-auto max-w-[1200px] border-t border-[var(--color-border)] px-5 py-[70px] sm:px-12">
+        <div className="mb-12 max-w-[620px]">
+          <div className="mb-3 font-mono text-xs uppercase tracking-[1px] text-[var(--color-faint)]">
+            Funktionsumfang
           </div>
-        </section>
-
-        {/* ===== CTA ===== */}
-        <section className="px-6 pb-32 pt-16 text-center sm:px-12">
-          <h2 className="mb-4 font-display text-[28px] sm:text-[34px]">
-            Bereit für eine straffere Sammlung?
+          <h2 className="mb-3.5 text-[26px] font-bold tracking-[-0.3px] sm:text-[30px]">
+            Vom Inventar bis zur Reparatur-Historie.
           </h2>
-          <p className="mb-7 text-base text-[var(--color-muted)]">
-            Kostenlos für eine Maschine. Keine Kreditkarte.
+          <p className="text-[15px] leading-[1.65] text-[var(--color-muted)]">
+            Verwaltung steht im Zentrum. Fehlererfassung und KI-Diagnose bauen
+            darauf auf.
           </p>
-          <Link
-            href="/register"
-            className="inline-flex rounded-[10px] bg-[var(--color-primary)] px-9 py-[17px] text-base font-bold text-[var(--color-primary-fg)] shadow-[0_10px_40px_rgba(255,106,61,0.4)] transition-transform hover:-translate-y-0.5"
-          >
-            Jetzt kostenlos starten →
-          </Link>
-        </section>
+        </div>
 
-        <MarketingFooter />
-      </div>
+        <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 ${hairlineGrid}`}>
+          {features.map((f) => (
+            <div
+              key={f.num}
+              className={`px-[22px] py-[26px] ${
+                f.roadmap
+                  ? "bg-[var(--color-surface-2)]"
+                  : "bg-[var(--color-surface)]"
+              }`}
+            >
+              {f.roadmap ? (
+                <div className="mb-3.5 inline-block rounded-[4px] border border-dashed border-[var(--color-border)] px-2 py-[3px] font-mono text-[10px] uppercase tracking-[0.5px] text-[var(--color-faint)]">
+                  In Entwicklung · Phase 3
+                </div>
+              ) : null}
+              <div className="mb-2.5 font-mono text-[11px] text-[var(--color-faint)]">
+                {f.num}
+              </div>
+              <h3 className="mb-2 text-base font-bold">{f.title}</h3>
+              <p className="text-[13px] leading-[1.6] text-[var(--color-muted)]">
+                {f.desc}
+              </p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ===== CLUB / REPAIR ===== */}
+      <section className="mx-auto max-w-[1200px] px-5 pb-[70px] sm:px-12">
+        <div className={`grid grid-cols-1 md:grid-cols-2 ${hairlineGrid}`}>
+          <div className="bg-[var(--color-surface)] p-9">
+          <div className="mb-3.5 font-mono text-[11px] uppercase tracking-[1px] text-[var(--color-faint)]">
+            Club-Modus
+          </div>
+          <h3 className="mb-3 text-[21px] font-bold">
+            Gemeinsamer Maschinenbestand für den Verein.
+          </h3>
+          <p className="mb-[22px] text-sm leading-[1.65] text-[var(--color-muted)]">
+            Mitglieder sehen den vollständigen Bestand eines Standorts, inklusive
+            Eigentümer und Zustand.
+          </p>
+          <div className="flex flex-col gap-px bg-[var(--color-line)]">
+            {clubRows.map((row) => (
+              <div
+                key={row.name}
+                className="flex items-center justify-between bg-[var(--color-surface-2)] px-3.5 py-3"
+              >
+                <span className="text-[13px]">{row.name}</span>
+                <span className="text-xs text-[var(--color-faint)]">
+                  {row.owner}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="bg-[var(--color-surface)] p-9">
+          <div className="mb-3.5 font-mono text-[11px] uppercase tracking-[1px] text-[var(--color-faint)]">
+            Fehlererfassung &amp; Reparatur-Log
+          </div>
+          <h3 className="mb-3 text-[21px] font-bold">Jede Reparatur dokumentiert.</h3>
+          <p className="mb-[22px] text-sm leading-[1.65] text-[var(--color-muted)]">
+            Symptom, Ursache, verwendete Teile und Kosten werden pro Maschine
+            protokolliert und sind durchsuchbar.
+          </p>
+          <div className="rounded-[var(--radius)] border border-[var(--color-line)] bg-[var(--color-surface-2)] p-3.5 font-mono text-xs leading-[1.7] text-[var(--color-muted)]">
+            22.06.2026 — Rechter Ramp-Diverter reagiert nicht. Ursache: Spule Q4
+            defekt. Teil #A-13866 ersetzt.
+          </div>
+        </div>
+        </div>
+      </section>
+
+      {/* ===== KI-AUSBLICK ===== */}
+      <section className="mx-auto max-w-[1200px] px-5 pb-[70px] sm:px-12">
+        <div className="grid grid-cols-1 items-center gap-6 rounded-[10px] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-2)] p-9 sm:grid-cols-[auto_1fr] sm:gap-8">
+          <div className="w-fit rounded-[4px] border border-dashed border-[var(--color-border)] px-2.5 py-[5px] font-mono text-[11px] uppercase tracking-[1px] text-[var(--color-faint)]">
+            Roadmap · Phase 3
+          </div>
+          <div>
+            <h3 className="mb-2 text-[18px] font-bold">
+              KI-gestützte Diagnose (geplant)
+            </h3>
+            <p className="text-sm leading-[1.65] text-[var(--color-muted)]">
+              Auf Basis von Handbüchern und dokumentierten Reparaturen soll die
+              Anwendung künftig wahrscheinliche Ursachen und passende Ersatzteile
+              zu einem beschriebenen Symptom vorschlagen.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== CTA ===== */}
+      <section className="mx-auto max-w-[1200px] border-t border-[var(--color-border)] px-5 pb-24 pt-[60px] text-center sm:px-12">
+        <h2 className="mb-3.5 text-[26px] font-bold">
+          Gemeinsam mit dem Stammtisch entwickelt.
+        </h2>
+        <p className="mb-6 text-[15px] text-[var(--color-muted)]">
+          Aktuell kostenlos nutzbar. Ein Nutzungsmodell folgt.
+        </p>
+        <Link
+          href="/register"
+          className="inline-block rounded-[var(--radius)] bg-[var(--color-primary)] px-[30px] py-[15px] font-semibold text-[var(--color-primary-fg)] transition-colors hover:bg-[var(--color-accent)]"
+        >
+          Kostenlos registrieren
+        </Link>
+      </section>
+
+      <MarketingFooter />
     </div>
   );
 }
