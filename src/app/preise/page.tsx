@@ -28,11 +28,15 @@ export default function PricingPage() {
             Das Nutzungsmodell entsteht gerade.
           </h1>
           <p className="text-[15px] leading-[1.7] text-[var(--color-muted)]">
-            Pinball Manager wird aktuell gemeinsam mit unserem
-            <span className="text-[var(--color-fg)]">
-              {" "}
-              &bdquo;KI meets Pinball&ldquo;-Stammtisch{" "}
-            </span>
+            Pinball Manager wird aktuell gemeinsam mit unserem{" "}
+            <a
+              href="https://www.flippermarkt.de/forum/threads/ki-meets-pinball-gemeinsames-projekt-per-teams-stammtisch-wer-macht-mit.292100/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="font-medium text-[var(--color-accent)] underline underline-offset-2 hover:opacity-80"
+            >
+              &bdquo;KI meets Pinball&ldquo;-Stammtisch
+            </a>{" "}
             entwickelt. In dieser Phase ist die Nutzung kostenlos — ein konkretes
             Modell folgt, sobald sich der Funktionsumfang gesetzt hat.
           </p>

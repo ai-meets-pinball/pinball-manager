@@ -95,12 +95,22 @@ export default function FeaturesPage() {
             &bdquo;KI meets Pinball&ldquo;-Stammtisch. Ideen oder Wünsche? Wir
             freuen uns über deine Nachricht.
           </p>
-          <a
-            href="mailto:kontakt@pinball-manager.app?subject=Idee%20f%C3%BCr%20Pinball%20Manager"
-            className="inline-block rounded-[var(--radius)] bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-[var(--color-primary-fg)] transition-colors hover:bg-[var(--color-accent)]"
-          >
-            Kontaktiere uns
-          </a>
+          <div className="flex flex-wrap justify-center gap-3">
+            <a
+              href="mailto:kontakt@pinball-manager.app?subject=Idee%20f%C3%BCr%20Pinball%20Manager"
+              className="inline-block rounded-[var(--radius)] bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-[var(--color-primary-fg)] transition-colors hover:bg-[var(--color-accent)]"
+            >
+              Kontaktiere uns
+            </a>
+            <a
+              href="https://www.flippermarkt.de/forum/threads/ki-meets-pinball-gemeinsames-projekt-per-teams-stammtisch-wer-macht-mit.292100/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block rounded-[var(--radius)] border border-[var(--color-border)] px-6 py-3 text-sm font-medium transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
+            >
+              Zum Stammtisch-Thread ↗
+            </a>
+          </div>
         </div>
       </main>
 
