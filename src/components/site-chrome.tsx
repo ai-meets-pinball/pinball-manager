@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { useSession } from "@/lib/auth-client";
 
 /*
   Öffentliche Marketing-Chrome (Nav + Footer) für Start / Funktionen / Preise.
@@ -18,6 +19,8 @@ const navItems = [
 
 export function MarketingNav() {
   const pathname = usePathname();
+  // Eingeloggte Besucher der öffentlichen Seiten bekommen einen Weg zurück in die App.
+  const { data: session } = useSession();
 
   return (
     <header className="sticky top-0 z-50 flex flex-wrap items-center justify-between gap-y-2 border-b border-[var(--color-border)] bg-[var(--color-bg)]/90 px-5 py-4 backdrop-blur-md sm:px-12 sm:py-5">
@@ -47,10 +50,10 @@ export function MarketingNav() {
         <span className="mx-1 hidden h-5 w-px bg-[var(--color-border)] sm:block" />
         <ThemeToggle />
         <Link
-          href="/login"
+          href={session?.user ? "/machines" : "/login"}
           className="rounded-[var(--radius)] bg-[var(--color-primary)] px-5 py-2.5 text-sm font-semibold text-[var(--color-primary-fg)] transition-colors hover:bg-[var(--color-accent)]"
         >
-          Anmelden
+          {session?.user ? "Zur App" : "Anmelden"}
         </Link>
       </div>
     </header>

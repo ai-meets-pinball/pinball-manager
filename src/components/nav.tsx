@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Users, Wrench } from "lucide-react";
+import { BookOpen, Globe, Users, Wrench } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -51,7 +51,15 @@ export function Nav({ userName }: { userName: string }) {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          <span className="hidden font-mono text-xs text-[var(--color-faint)] sm:inline">
+          <Link
+            href="/"
+            title="Öffentliche Website"
+            className="flex items-center gap-1.5 rounded-[var(--radius)] px-2.5 py-1.5 text-sm font-medium text-[var(--color-muted)] transition-colors hover:bg-[var(--color-inset)] hover:text-[var(--color-fg)]"
+          >
+            <Globe size={15} />
+            <span className="hidden sm:inline">Website</span>
+          </Link>
+          <span className="hidden font-mono text-xs text-[var(--color-faint)] md:inline">
             {userName}
           </span>
           <ThemeToggle />
