@@ -45,17 +45,71 @@ const outputJsonSchema = {
 };
 
 const EXTRACT_PROMPT = `Du erhältst das Handbuch eines Flipperautomaten als PDF.
-Extrahiere AUSSCHLIESSLICH die technischen Referenztabellen, sofern im Handbuch vorhanden:
-- coils: Spulen-/Solenoid-Tabelle (Nummer, Bezeichnung, Ort, ggf. Sicherung/Transistor)
-- switches: Switch-Matrix (Nummer/Position, Bezeichnung)
-- lamps: Lampenmatrix (Nummer/Position, Bezeichnung)
-- fuses: Sicherungen (Bezeichnung, Wert/Ampere, Zweck)
-- parts: Teileliste (Teilenummer, Bezeichnung)
-- rules: einstellbare Regeln/Adjustments (Name, Standard/Werte)
+Extrahiere AUSSCHLIESSLICH die technischen Referenztabellen, sofern im Handbuch vorhanden.
+Verwende je Tabelle GENAU diese Spaltenüberschriften (in dieser Reihenfolge), auch wenn das Handbuch
+sie anders benennt — ordne die Werte entsprechend zu; fehlt ein Wert, gib eine leere Zelle "":
 
-Gib je Tabelle die Spaltenüberschriften ("columns") und die Zeilen ("rows", je Zelle ein String) zurück.
-NUR reine Fakten aus diesen Tabellen — KEINEN Fließtext, KEINE Spielregeln-Erklärungen, KEINE ganzen Seiten,
-KEINE Beschreibungen. Fehlt eine Tabelle im Handbuch, gib für sie leere "columns" und "rows" zurück.`;
+- coils    → ["Sol/No", "Funktion", "Typ", "Drive Q", "Wire", "Board"]
+- switches → ["Sw/No", "Column", "Row", "Funktion"]
+             (Switch-Matrix: Column/Row = Rasterposition; bei nicht-Matrix-Schaltern Column/Row = "")
+- lamps    → ["Lamp/No", "Column", "Row", "Funktion"]
+             (Lampenmatrix 8×8: Lamp/No = Column×10 + Row; also Column/Row aus der Nummer ableiten)
+- fuses    → ["Board", "Fuse", "Rating", "Schützt"]
+- parts    → ["Part No", "Beschreibung"]
+- rules    → ["Adj/No", "Beschreibung", "Bereich/Standard"]
+
+Regeln: NUR reine Fakten aus diesen Tabellen — KEINEN Fließtext, KEINE Spielregeln-Erklärungen,
+KEINE ganzen Seiten, KEINE Beschreibungen. Fehlt eine Tabelle im Handbuch, gib für sie leere
+"columns" und "rows" zurück. Halte dich kompakt, keine Duplikate, keine Wiederholungen.`;
+
+/** JSON aus dem Antworttext lösen (falls das Modell etwas umrahmt). */
+function extractJson(text: string): string {
+  const start = text.indexOf("{");
+  const end = text.lastIndexOf("}");
+  return start >= 0 && end > start ? text.slice(start, end + 1) : text;
+}
+
+/** API-/Netzwerkfehler in eine sichere, spezifische Meldung übersetzen. */
+function apiErrorMessage(e: unknown): string {
+  if (e instanceof Anthropic.AuthenticationError) return "Claude-API-Key ist ungültig.";
+  if (e instanceof Anthropic.PermissionDeniedError)
+    return "Kein Zugriff auf Claude (Rechte oder Guthaben prüfen).";
+  if (e instanceof Anthropic.NotFoundError)
+    return "Modell nicht verfügbar — ANTHROPIC_MODEL prüfen.";
+  if (e instanceof Anthropic.RateLimitError)
+    return "Zu viele Anfragen an Claude. Bitte später erneut versuchen.";
+  if (e instanceof Anthropic.APIConnectionError)
+    return "Verbindung zu Claude fehlgeschlagen. Bitte später erneut versuchen.";
+  return "Extraktion fehlgeschlagen. Bitte später erneut versuchen.";
+}
+
+/** Streamt den Extraktions-Call und liefert die vollständige Antwort. */
+async function anthropicCall(apiKey: string, base64: string) {
+  const client = new Anthropic({ apiKey });
+  return client.messages
+    .stream({
+      model: MODEL,
+      max_tokens: 64000,
+      output_config: { format: { type: "json_schema", schema: outputJsonSchema } },
+      messages: [
+        {
+          role: "user",
+          content: [
+            {
+              type: "document",
+              source: {
+                type: "base64",
+                media_type: "application/pdf",
+                data: base64,
+              },
+            },
+            { type: "text", text: EXTRACT_PROMPT },
+          ],
+        },
+      ],
+    })
+    .finalMessage();
+}
 
 export async function extractManualFacts(
   _prev: ExtractState,
@@ -92,45 +146,41 @@ export async function extractManualFacts(
   // PDF nur im Speicher: base64 → Claude. Danach wird `base64`/`file` verworfen (GC).
   const base64 = Buffer.from(await file.arrayBuffer()).toString("base64");
 
+  // Claude-Aufruf: gestreamt (Output > 16k braucht Streaming, sonst HTTP-Timeout;
+  // hält auch die minutenlange Verbindung bei großen Handbüchern offen).
+  let response: Awaited<ReturnType<typeof anthropicCall>>;
+  try {
+    response = await anthropicCall(apiKey, base64);
+  } catch (e) {
+    console.error("[manual-extract] API:", (e as Error).message);
+    return { error: apiErrorMessage(e) };
+  }
+
+  console.error(
+    `[manual-extract] ${file.name} (${Math.round(file.size / 1024)} KB): in=${response.usage.input_tokens} out=${response.usage.output_tokens} tokens, stop=${response.stop_reason}`,
+  );
+
+  if (response.stop_reason === "refusal") {
+    return { error: "Die Verarbeitung wurde abgelehnt." };
+  }
+  if (response.stop_reason === "max_tokens") {
+    return {
+      error:
+        "Das Handbuch ist sehr umfangreich — die Antwort wurde abgeschnitten. Bitte erneut versuchen oder ein kleineres/kompakteres PDF verwenden.",
+    };
+  }
+
+  const textBlock = response.content.find((b) => b.type === "text");
+  if (!textBlock || textBlock.type !== "text") {
+    return { error: "Es konnten keine Daten extrahiert werden." };
+  }
+
   let parsed: ReturnType<typeof extractSchema.parse>;
   try {
-    const client = new Anthropic({ apiKey });
-    const response = await client.messages.create({
-      model: MODEL,
-      max_tokens: 16000,
-      output_config: { format: { type: "json_schema", schema: outputJsonSchema } },
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "document",
-              source: {
-                type: "base64",
-                media_type: "application/pdf",
-                data: base64,
-              },
-            },
-            { type: "text", text: EXTRACT_PROMPT },
-          ],
-        },
-      ],
-    });
-
-    if (response.stop_reason === "refusal") {
-      return { error: "Die Verarbeitung wurde abgelehnt." };
-    }
-    const textBlock = response.content.find((b) => b.type === "text");
-    if (!textBlock || textBlock.type !== "text") {
-      return { error: "Es konnten keine Daten extrahiert werden." };
-    }
-    console.error(
-      `[manual-extract] ${file.name} (${Math.round(file.size / 1024)} KB): in=${response.usage.input_tokens} out=${response.usage.output_tokens} tokens`,
-    );
-    parsed = extractSchema.parse(JSON.parse(textBlock.text));
+    parsed = extractSchema.parse(JSON.parse(extractJson(textBlock.text)));
   } catch (e) {
-    console.error("[manual-extract]", (e as Error).message);
-    return { error: "Extraktion fehlgeschlagen. Bitte später erneut versuchen." };
+    console.error("[manual-extract] parse:", (e as Error).message);
+    return { error: "Antwort konnte nicht ausgewertet werden. Bitte erneut versuchen." };
   }
 
   // Nur nicht-leere Tabellen behalten; vorhandene Fakten ersetzen (Replace-Semantik).

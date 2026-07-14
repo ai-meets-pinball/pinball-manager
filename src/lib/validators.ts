@@ -78,10 +78,12 @@ export const FACT_TYPES = [
 ] as const;
 export type FactType = (typeof FACT_TYPES)[number];
 
-/** Eine Faktentabelle: Spaltenüberschriften + Zeilen (jede Zeile = Zellen). */
+/** Eine Faktentabelle: Spaltenüberschriften + Zeilen (jede Zeile = Zellen).
+    Zellen werden tolerant zu Strings gecoerct, damit eine Zahl/Null in einer
+    Zelle nicht die ganze Extraktion scheitern lässt. */
 export const factTableSchema = z.object({
-  columns: z.array(z.string()),
-  rows: z.array(z.array(z.string())),
+  columns: z.array(z.coerce.string()),
+  rows: z.array(z.array(z.coerce.string())),
 });
 export type FactTable = z.infer<typeof factTableSchema>;
 

@@ -15,6 +15,11 @@ import {
 } from "@/db/schema";
 import { requireMachineAccess } from "@/lib/session";
 
+// Die Handbuch-Extraktion (Server Action extractManualFacts) läuft in der
+// Function dieser Route und kann bei großen PDFs Minuten dauern → auf Vercel
+// das Default-Timeout anheben (max. 300s auf Pro; lokal ohne Wirkung).
+export const maxDuration = 300;
+
 const FAULT_FILTER = ["alle", "offen", "in Arbeit", "behoben"] as const;
 
 export default async function MachineDetailPage({
