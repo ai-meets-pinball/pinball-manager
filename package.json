@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -p 3100",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -13,6 +13,7 @@
     "auth:generate": "npx @better-auth/cli@latest generate --output src/db/auth-schema.ts --y"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.111.0",
     "@supabase/supabase-js": "^2.109.0",
     "better-auth": "^1.6.23",
     "drizzle-orm": "^0.45.2",

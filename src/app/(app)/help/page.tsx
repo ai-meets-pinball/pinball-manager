@@ -220,6 +220,13 @@ const sections: StackSection[] = [
           "Ein Fehler (fault) kann ohne Reparatur existieren; das Symptom lebt am Fehler. Eine Reparatur kann Fehler beheben und setzt deren Status auf „behoben“. Zwei getrennte Konzepte (PRD §4).",
         imCode: "src/db/schema.ts (faults, repairs)",
       },
+      {
+        name: "Handbuch-Pipeline (Copyright)",
+        version: "Muster · Phase 2",
+        beschreibung:
+          "Eigenes Handbuch-PDF hochladen → Claude (claude-sonnet-5, @anthropic-ai/sdk) extrahiert nur Faktentabellen → in machine_data gespeichert. Der Schutz ist die Pipeline: Attestation Pflicht, das PDF bleibt nur im Speicher und wird NIE gespeichert, nur die Fakten landen in der DB.",
+        imCode: "src/lib/manual-extract.ts, src/components/machine-data-tables.tsx",
+      },
     ],
   },
 ];

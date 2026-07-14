@@ -2,11 +2,17 @@ import { and, desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { Pencil, Plus, Trash2, Users } from "lucide-react";
 import { FaultList } from "@/components/fault-list";
+import { MachineDataTables } from "@/components/machine-data-tables";
+import { ManualUpload } from "@/components/manual-upload";
 import { RepairList } from "@/components/repair-list";
 import { Card } from "@/components/ui/card";
 import { deleteMachine } from "@/db/actions/machines";
 import { db } from "@/db";
-import { faults as faultsTable, repairs as repairsTable } from "@/db/schema";
+import {
+  faults as faultsTable,
+  machineData as machineDataTable,
+  repairs as repairsTable,
+} from "@/db/schema";
 import { requireMachineAccess } from "@/lib/session";
 
 const FAULT_FILTER = ["alle", "offen", "in Arbeit", "behoben"] as const;
@@ -49,6 +55,11 @@ export default async function MachineDetailPage({
     where: eq(repairsTable.machineId, id),
     with: { fault: { columns: { beschreibung: true } } },
     orderBy: [desc(repairsTable.datum)],
+  });
+
+  // Phase-2-Fakten aus dem Handbuch (nur Fakten, kein PDF-Text gespeichert).
+  const machineFacts = await db.query.machineData.findMany({
+    where: eq(machineDataTable.machineId, id),
   });
 
   return (
@@ -111,6 +122,20 @@ export default async function MachineDetailPage({
           </Card>
         ) : null}
       </div>
+
+      {/* Handbuch-Daten / Service-Fakten (Phase 2) */}
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Handbuch-Daten</h2>
+        <MachineDataTables facts={machineFacts} />
+        <Card className="space-y-3">
+          <p className="text-sm text-[var(--color-muted)]">
+            Lade dein eigenes Handbuch hoch, um Referenztabellen (Spulen,
+            Lampen-/Schalter-Matrix, Sicherungen, Teile, Regeln) zu extrahieren.
+            Das PDF wird dabei nicht gespeichert — nur die extrahierten Fakten.
+          </p>
+          <ManualUpload machineId={machine.id} />
+        </Card>
+      </section>
 
       {/* Fehler */}
       <section className="space-y-3">

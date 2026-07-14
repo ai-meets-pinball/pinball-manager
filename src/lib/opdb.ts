@@ -66,13 +66,22 @@ export async function searchOpdb(query: string): Promise<OpdbSearchResult[]> {
 export async function getOpdbMachine(opdbId: string): Promise<OpdbMachine> {
   await requireUser();
   const token = process.env.OPDB_API_KEY;
-  if (!token) throw new Error("OPDB_API_KEY ist nicht gesetzt");
+  if (!token) {
+    // Häufigste Ursache in Produktion: OPDB_API_KEY nicht in den Env-Variablen.
+    console.error("[opdb] getOpdbMachine: OPDB_API_KEY ist nicht gesetzt");
+    throw new Error("OPDB_API_KEY ist nicht gesetzt");
+  }
 
   const res = await fetch(
     `${OPDB_BASE}/machines/${encodeURIComponent(opdbId)}?api_token=${token}`,
     { next: { revalidate: 86400 } },
   );
-  if (!res.ok) throw new Error(`OPDB-Abruf fehlgeschlagen (${res.status})`);
+  if (!res.ok) {
+    console.error(
+      `[opdb] getOpdbMachine ${opdbId}: HTTP ${res.status} ${res.statusText}`,
+    );
+    throw new Error(`OPDB-Abruf fehlgeschlagen (${res.status})`);
+  }
 
   const d = (await res.json()) as {
     opdb_id?: string;

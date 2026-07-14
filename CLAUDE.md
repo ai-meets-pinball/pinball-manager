@@ -55,7 +55,7 @@ These are deliberate decisions, not omissions — preserve them:
 ## Roadmap phasing
 
 - **Phase 1 (MVP):** Auth, machine CRUD, fault tracking, repair history, search/filter.
-- **Phase 2:** Manual upload + OCR fact extraction + WPC-service-console-style display of facts.
-- **Phase 3:** AI fault diagnosis (text), image-based component recognition (vision), club features. The AI model is not yet chosen (PRD §11).
+- **Phase 2:** Manual upload + fact extraction + service-console-style display. **Partially implemented:** per-machine manual (PDF) upload → **Claude (`claude-sonnet-5`) extracts fact tables** (coils/switches/lamps/fuses/parts/rules) → stored in `machine_data`, rendered as tables. The extraction engine is Claude via `@anthropic-ai/sdk` (`src/lib/manual-extract.ts`), **not** a local OCR lib. **Copyright pipeline is load-bearing:** attestation required, the PDF is held **in memory only and never persisted** (no Storage bucket, `serverActions.bodySizeLimit` raised for the upload), only extracted facts are stored. Needs `ANTHROPIC_API_KEY`.
+- **Phase 3:** AI fault diagnosis (text), image-based component recognition (vision), club features. (Claude is now the chosen model family — see Phase 2.)
 
 Build Phase 1 features only unless explicitly directed to later phases.
