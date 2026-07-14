@@ -78,6 +78,8 @@ function apiErrorMessage(e: unknown): string {
     return "Modell nicht verfügbar — ANTHROPIC_MODEL prüfen.";
   if (e instanceof Anthropic.RateLimitError)
     return "Zu viele Anfragen an Claude. Bitte später erneut versuchen.";
+  if (e instanceof Anthropic.InternalServerError)
+    return "Claude ist gerade überlastet. Bitte in ein paar Minuten erneut versuchen.";
   if (e instanceof Anthropic.APIConnectionError)
     return "Verbindung zu Claude fehlgeschlagen. Bitte später erneut versuchen.";
   return "Extraktion fehlgeschlagen. Bitte später erneut versuchen.";
@@ -85,7 +87,9 @@ function apiErrorMessage(e: unknown): string {
 
 /** Streamt den Extraktions-Call und liefert die vollständige Antwort. */
 async function anthropicCall(apiKey: string, base64: string) {
-  const client = new Anthropic({ apiKey });
+  // Mehr Retries als Default (2): transiente 429/5xx/Overloaded-Fehler von Claude
+  // sollen sich möglichst selbst heilen, bevor der Nutzer eine Fehlermeldung sieht.
+  const client = new Anthropic({ apiKey, maxRetries: 4 });
   return client.messages
     .stream({
       model: MODEL,
