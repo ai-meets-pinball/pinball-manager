@@ -50,8 +50,9 @@ Verwende je Tabelle GENAU diese Spaltenüberschriften (in dieser Reihenfolge), a
 sie anders benennt — ordne die Werte entsprechend zu; fehlt ein Wert, gib eine leere Zelle "":
 
 - coils    → ["Sol/No", "Funktion", "Typ", "Drive Q", "Wire", "Board"]
-- switches → ["Sw/No", "Column", "Row", "Funktion"]
-             (Switch-Matrix: Column/Row = Rasterposition; bei nicht-Matrix-Schaltern Column/Row = "")
+- switches → ["Sw/No", "Column", "Row", "Typ", "Funktion"]
+             (Switch-Matrix: Column/Row = Rasterposition; bei nicht-Matrix-Schaltern Column/Row = "".
+              Typ = "opto" wenn es ein Opto-Schalter ist, sonst "mechanisch")
 - lamps    → ["Lamp/No", "Column", "Row", "Funktion"]
              (Lampenmatrix 8×8: Lamp/No = Column×10 + Row; also Column/Row aus der Nummer ableiten)
 - fuses    → ["Board", "Fuse", "Rating", "Schützt"]

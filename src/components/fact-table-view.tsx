@@ -4,20 +4,40 @@ import { useState } from "react";
 import type { FactTable, FactType } from "@/lib/validators";
 
 /*
-  Zeigt eine Faktentabelle als klassische Tabelle und — wo es Sinn ergibt
-  (Switch-/Lamp-Matrix) — alternativ als Raster. Angelehnt an die WPC-Service-
-  Referenz: Nummer je Zelle, Details per Hover; Switch-Matrix nach Typ eingefärbt
-  (mechanisch / opto / nicht belegt), Achsen = Antriebs- × Rückleitung.
+  Faktentabelle als klassische Tabelle und — nur bei Switch-/Lamp-Matrix —
+  alternativ als Raster im Stil der WPC-Service-Referenz: Karten-Zellen mit
+  Bezeichnung + Nummer, Spalten-/Reihenköpfe mit den WPC-Draht-Farbcodes
+  (Antriebs- × Rückleitung), Opto-Schalter farblich markiert.
 */
 
-type MatrixCell = { num: string; label: string };
+type MatrixCell = { num: string; label: string; typ: string };
 type Matrix = { cols: number; rows: number; cells: Map<string, MatrixCell> };
 
-/** Versucht, aus einer Tabelle eine Matrix (Spalte×Reihe) abzuleiten. */
+/** Nur diese Typen ergeben eine Matrix. */
+function isMatrixType(t: FactType): boolean {
+  return t === "switches" || t === "lamps";
+}
+
+/** WPC-Draht-Farbcode: 2. Band nach Widerstands-Reihenfolge; kollidiert es mit
+    der Basisfarbe, wird „Blk" verwendet (z. B. Yel-Blk statt Yel-Yel). */
+const BAND = ["Brn", "Red", "Org", "Yel", "Grn", "Blu", "Vio", "Gry"];
+function wire(base: string, i: number): string {
+  const second = BAND[i - 1] ?? "";
+  return `${base}-${second.toLowerCase() === base.toLowerCase() ? "Blk" : second}`;
+}
+const AXIS: Record<string, { col: string; row: string }> = {
+  lamps: { col: "Yel", row: "Red" }, // Antrieb Gelb, Rückleitung Rot
+  switches: { col: "Grn", row: "Wht" }, // Antrieb Grün, Rückleitung Weiß
+};
+// Opto-Schalter werden dezent grün getönt (color-mix als Inline-Style → theme-aware).
+const OPTO_BG = "color-mix(in srgb, var(--color-success) 12%, transparent)";
+
+/** Leitet aus einer Tabelle eine Matrix (Spalte×Reihe) ab. */
 function buildMatrix(table: FactTable): Matrix | null {
   const lower = table.columns.map((c) => c.toLowerCase());
   const colIdx = lower.findIndex((c) => c === "column" || c === "col" || c === "spalte");
   const rowIdx = lower.findIndex((c) => c === "row" || c === "reihe" || c === "zeile");
+  const typIdx = lower.findIndex((c) => c === "typ" || c === "type" || c === "art");
   const idIdx = 0;
   const labelIdx = table.columns.length - 1;
 
@@ -32,8 +52,7 @@ function buildMatrix(table: FactTable): Matrix | null {
       c = Number.parseInt(r[colIdx], 10);
       rw = Number.parseInt(r[rowIdx], 10);
     } else {
-      // Fallback: zweistellige Nummer = Spalte×10 + Reihe (z. B. Lampen 11..88).
-      const n = Number.parseInt(r[idIdx], 10);
+      const n = Number.parseInt(r[idIdx], 10); // Fallback: Nummer = Spalte×10 + Reihe
       if (!Number.isFinite(n) || n < 11 || n > 99) continue;
       c = Math.floor(n / 10);
       rw = n % 10;
@@ -41,22 +60,32 @@ function buildMatrix(table: FactTable): Matrix | null {
     if (!(c >= 1 && c <= 9 && rw >= 1 && rw <= 9)) continue;
     maxC = Math.max(maxC, c);
     maxR = Math.max(maxR, rw);
-    cells.set(`${c}-${rw}`, { num: r[idIdx] ?? "", label: r[labelIdx] ?? "" });
+    cells.set(`${c}-${rw}`, {
+      num: r[idIdx] ?? "",
+      label: r[labelIdx] ?? "",
+      typ: typIdx >= 0 ? (r[typIdx] ?? "") : "",
+    });
   }
   return cells.size >= 4 ? { cols: maxC, rows: maxR, cells } : null;
 }
 
-/* Farben (theme-aware via color-mix). Switch-Matrix nach Typ, sonst neutral. */
-const OPTO = "color-mix(in srgb, var(--color-success) 22%, transparent)";
-const MECH = "color-mix(in srgb, var(--color-accent) 18%, transparent)";
-const LAMP = "var(--color-inset)";
+function TableGrid({ table, typ }: { table: FactTable; typ: FactType }) {
+  // Bei Switch-/Lamp-Matrix die Column/Row-Zellen um den WPC-Draht-Farbcode ergänzen.
+  const lower = table.columns.map((c) => c.toLowerCase());
+  const colIdx = lower.findIndex((c) => c === "column" || c === "col" || c === "spalte");
+  const rowIdx = lower.findIndex((c) => c === "row" || c === "reihe" || c === "zeile");
+  const axis = AXIS[typ];
 
-function cellBackground(typ: FactType, label: string): string {
-  if (typ === "switches") return /opto/i.test(label) ? OPTO : MECH;
-  return LAMP; // Lampen & sonstige: neutrale Füllung für belegte Zellen
-}
+  const renderCell = (cell: string, ci: number): string => {
+    if (!axis) return cell;
+    const n = Number.parseInt(cell, 10);
+    if (Number.isFinite(n) && n >= 1 && n <= 8) {
+      if (ci === colIdx) return `${cell} · ${wire(axis.col, n)}`;
+      if (ci === rowIdx) return `${cell} · ${wire(axis.row, n)}`;
+    }
+    return cell;
+  };
 
-function TableGrid({ table }: { table: FactTable }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse font-mono text-xs">
@@ -82,7 +111,7 @@ function TableGrid({ table }: { table: FactTable }) {
                   key={c}
                   className="whitespace-nowrap px-3 py-1.5 text-[var(--color-fg)]"
                 >
-                  {cell}
+                  {renderCell(cell, c)}
                 </td>
               ))}
             </tr>
@@ -93,88 +122,135 @@ function TableGrid({ table }: { table: FactTable }) {
   );
 }
 
-function LegendChip({ bg, children }: { bg: string; children: string }) {
-  return (
-    <span className="flex items-center gap-1.5">
-      <span
-        className="inline-block h-3 w-3 rounded-[3px] border border-[var(--color-border)]"
-        style={{ background: bg }}
-      />
-      {children}
-    </span>
-  );
-}
-
 function MatrixGrid({ matrix, typ }: { matrix: Matrix; typ: FactType }) {
   const cols = Array.from({ length: matrix.cols }, (_, i) => i + 1);
   const rows = Array.from({ length: matrix.rows }, (_, i) => i + 1);
   const isSwitch = typ === "switches";
+  const axis = AXIS[typ];
+
+  const hint = isSwitch
+    ? `${matrix.cols}×${matrix.rows}-Matrix · Spalte = Antriebsleitung, Reihe = Rückleitung · Nr. = Spalte×10 + Reihe · Details per Hover`
+    : `${matrix.cols}×${matrix.rows}-Lampenmatrix · Lamp-Nr. = Spalte×10 + Reihe · Details per Hover`;
 
   return (
     <div className="space-y-3 p-3">
-      {/* Achsenbeschriftung */}
-      <div className="font-mono text-[10px] uppercase tracking-[1px] text-[var(--color-faint)]">
-        Spalte {isSwitch ? "= Antriebsleitung" : ""} → · Reihe{" "}
-        {isSwitch ? "= Rückleitung" : ""} ↓ · Nr. = Spalte×10 + Reihe · Details per Hover
-      </div>
+      <p className="font-mono text-[10px] uppercase tracking-[0.5px] text-[var(--color-faint)]">
+        {hint}
+      </p>
 
       <div className="overflow-x-auto">
-        <table className="border-collapse font-mono text-[11px]">
-          <thead>
-            <tr>
-              <th className="p-1" />
-              {cols.map((c) => (
-                <th
-                  key={c}
-                  className="min-w-[46px] border border-[var(--color-border)] px-2 py-1 text-center font-semibold text-[var(--color-fg)]"
-                >
-                  {c}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r}>
-                <th className="border border-[var(--color-border)] px-2 py-1 text-center font-semibold text-[var(--color-fg)]">
-                  {r}
-                </th>
-                {cols.map((c) => {
-                  const cell = matrix.cells.get(`${c}-${r}`);
-                  return (
-                    <td
-                      key={c}
-                      title={cell ? `${cell.num} · ${cell.label}` : "nicht belegt"}
-                      className="border border-[var(--color-border)] px-2 py-1 text-center text-[var(--color-fg)]"
-                      style={
-                        cell
-                          ? { background: cellBackground(typ, cell.label) }
-                          : undefined
-                      }
-                    >
-                      {cell ? (
-                        <span className="font-bold">{cell.num}</span>
-                      ) : (
-                        <span className="text-[var(--color-faint)]">·</span>
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div
+          className="grid gap-1.5"
+          style={{
+            gridTemplateColumns: `2.75rem repeat(${matrix.cols}, minmax(112px, 1fr))`,
+          }}
+        >
+          {/* Kopfzeile: leere Ecke + Spaltenköpfe (Antriebsleitung) */}
+          <div />
+          {cols.map((c) => (
+            <div key={c} className="px-2 pb-1 text-left">
+              <div className="font-mono text-[11px] text-[var(--color-faint)]">{c}</div>
+              {axis ? (
+                <div className="font-mono text-[10px] text-[var(--color-accent)]">
+                  {wire(axis.col, c)}
+                </div>
+              ) : null}
+            </div>
+          ))}
+
+          {/* Datenzeilen: Reihenkopf (Rückleitung) + Zellen */}
+          {rows.map((r) => (
+            <FactTableRow key={r} r={r} cols={cols} matrix={matrix} typ={typ} axis={axis} />
+          ))}
+        </div>
       </div>
 
-      {/* Legende (nur Switch-Matrix, nach Typ) */}
       {isSwitch ? (
         <div className="flex flex-wrap gap-4 font-mono text-[10px] text-[var(--color-muted)]">
-          <LegendChip bg={MECH}>mechanisch</LegendChip>
-          <LegendChip bg={OPTO}>opto</LegendChip>
-          <LegendChip bg="transparent">nicht belegt</LegendChip>
+          <Legend border="var(--color-success)" bg={OPTO_BG}>opto</Legend>
+          <Legend border="var(--color-border)" bg="var(--color-surface)">mechanisch</Legend>
+          <Legend border="var(--color-border)" bg="transparent" dashed>nicht belegt</Legend>
         </div>
       ) : null}
     </div>
+  );
+}
+
+function FactTableRow({
+  r,
+  cols,
+  matrix,
+  typ,
+  axis,
+}: {
+  r: number;
+  cols: number[];
+  matrix: Matrix;
+  typ: FactType;
+  axis?: { col: string; row: string };
+}) {
+  return (
+    <>
+      <div className="flex flex-col justify-center pr-1 text-right">
+        <div className="font-mono text-[11px] text-[var(--color-faint)]">{r}</div>
+        {axis ? (
+          <div className="font-mono text-[10px] text-[var(--color-muted)]">
+            {wire(axis.row, r)}
+          </div>
+        ) : null}
+      </div>
+      {cols.map((c) => {
+        const cell = matrix.cells.get(`${c}-${r}`);
+        if (!cell) {
+          return (
+            <div
+              key={c}
+              className="min-h-[52px] rounded-md border border-dashed border-[var(--color-border)]"
+            />
+          );
+        }
+        const opto = typ === "switches" && /opto/i.test(`${cell.typ} ${cell.label}`);
+        return (
+          <div
+            key={c}
+            title={`${cell.num} · ${cell.label}`}
+            className={`flex min-h-[52px] flex-col justify-between rounded-md border px-2.5 py-2 ${
+              opto ? "border-[var(--color-success)]" : "border-[var(--color-border)]"
+            }`}
+            style={{ background: opto ? OPTO_BG : "var(--color-surface)" }}
+          >
+            <span className="text-[12px] font-medium leading-tight text-[var(--color-fg)]">
+              {cell.label}
+            </span>
+            <span className="self-end font-mono text-[10px] text-[var(--color-faint)]">
+              {cell.num}
+            </span>
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+function Legend({
+  border,
+  bg,
+  dashed,
+  children,
+}: {
+  border: string;
+  bg: string;
+  dashed?: boolean;
+  children: string;
+}) {
+  return (
+    <span className="flex items-center gap-1.5">
+      <span
+        className="inline-block h-3 w-3 rounded-[3px] border"
+        style={{ borderColor: border, background: bg, borderStyle: dashed ? "dashed" : "solid" }}
+      />
+      {children}
+    </span>
   );
 }
 
@@ -187,8 +263,8 @@ export function FactTableView({
   typ: FactType;
   table: FactTable;
 }) {
-  const matrix = buildMatrix(table);
-  const [view, setView] = useState<"table" | "matrix">("table");
+  const matrix = isMatrixType(typ) ? buildMatrix(table) : null;
+  const [view, setView] = useState<"table" | "matrix">(matrix ? "matrix" : "table");
   const showMatrix = matrix !== null && view === "matrix";
 
   return (
@@ -200,7 +276,7 @@ export function FactTableView({
         <div className="flex items-center gap-2">
           {matrix ? (
             <div className="flex overflow-hidden rounded border border-[var(--color-border)] text-[10px]">
-              {(["table", "matrix"] as const).map((v) => (
+              {(["matrix", "table"] as const).map((v) => (
                 <button
                   key={v}
                   type="button"
@@ -224,7 +300,7 @@ export function FactTableView({
       {showMatrix && matrix ? (
         <MatrixGrid matrix={matrix} typ={typ} />
       ) : (
-        <TableGrid table={table} />
+        <TableGrid table={table} typ={typ} />
       )}
     </div>
   );
