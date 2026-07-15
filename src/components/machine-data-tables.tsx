@@ -1,3 +1,4 @@
+import { FactTableView } from "@/components/fact-table-view";
 import { factTableSchema, type FactType } from "@/lib/validators";
 
 /*
@@ -34,51 +35,7 @@ export function MachineDataTables({ facts }: { facts: Row[] }) {
   return (
     <div className="space-y-4">
       {parsed.map(({ typ, table }) => (
-        <div
-          key={typ}
-          className="overflow-hidden rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)]"
-        >
-          <div className="flex items-center justify-between border-b border-[var(--color-border)] px-3 py-2">
-            <span className="font-mono text-[11px] uppercase tracking-[1px] text-[var(--color-faint)]">
-              {LABELS[typ] ?? typ}
-            </span>
-            <span className="font-mono text-[11px] text-[var(--color-faint)]">
-              {table.rows.length}
-            </span>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse font-mono text-xs">
-              {table.columns.length > 0 ? (
-                <thead>
-                  <tr>
-                    {table.columns.map((c, i) => (
-                      <th
-                        key={i}
-                        className="whitespace-nowrap border-b border-[var(--color-border)] px-3 py-2 text-left font-semibold text-[var(--color-muted)]"
-                      >
-                        {c}
-                      </th>
-                    ))}
-                  </tr>
-                </thead>
-              ) : null}
-              <tbody>
-                {table.rows.map((row, r) => (
-                  <tr key={r} className="odd:bg-[var(--color-overlay)]">
-                    {row.map((cell, c) => (
-                      <td
-                        key={c}
-                        className="whitespace-nowrap px-3 py-1.5 text-[var(--color-fg)]"
-                      >
-                        {cell}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
+        <FactTableView key={typ} typ={typ} label={LABELS[typ] ?? typ} table={table} />
       ))}
     </div>
   );
