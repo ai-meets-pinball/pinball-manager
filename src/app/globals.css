@@ -65,6 +65,16 @@
 
 html {
   color-scheme: light dark;
+  /* Verhindert horizontalen Scrollbalken durch Full-Bleed-Bereiche (100vw).
+     `clip` (nicht `hidden`) erzeugt keinen Scroll-Container → sticky Nav bleibt intakt. */
+  overflow-x: clip;
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
 }
 
 body {

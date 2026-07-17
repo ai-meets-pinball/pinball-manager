@@ -5,9 +5,11 @@ import type { FactTable, FactType } from "@/lib/validators";
 
 /*
   Faktentabelle als klassische Tabelle und — nur bei Switch-/Lamp-Matrix —
-  alternativ als Raster im Stil der WPC-Service-Referenz: Karten-Zellen mit
-  Bezeichnung + Nummer, Spalten-/Reihenköpfe mit den WPC-Draht-Farbcodes
-  (Antriebs- × Rückleitung), Opto-Schalter farblich markiert.
+  alternativ als Raster im Stil der WPC-Service-Referenz. Zusätzlich:
+  - Draht-Farbcodes (z. B. „Vio-Brn") werden als zweifarbige Chips visualisiert.
+  - Tabellen mit einer Typ-Spalte bekommen Filter-Pills (Alle · High Power · …).
+  Alles rein aus den extrahierten Fakten abgeleitet — funktioniert generisch für
+  jedes künftige Handbuch.
 */
 
 type MatrixCell = { num: string; label: string; typ: string };
@@ -16,6 +18,81 @@ type Matrix = { cols: number; rows: number; cells: Map<string, MatrixCell> };
 /** Nur diese Typen ergeben eine Matrix. */
 function isMatrixType(t: FactType): boolean {
   return t === "switches" || t === "lamps";
+}
+
+/* ── Draht-Farben ──────────────────────────────────────────────────────────
+   WPC-Kabelbäume nutzen einen Basis-/Zweitband-Farbcode. Wir mappen die
+   üblichen Kürzel (und ausgeschriebenen Namen) auf Hex und rendern einen
+   zweifarbigen Chip. */
+const WIRE_HEX: Record<string, string> = {
+  brn: "#8a5a2b",
+  red: "#cf3a2f",
+  org: "#e07a1f",
+  yel: "#e6b400",
+  grn: "#2f8f3e",
+  blu: "#2f6fd6",
+  vio: "#7a4fc0",
+  gry: "#9aa0a6",
+  blk: "#2b2b2b",
+  wht: "#eef0f2",
+  pnk: "#e879a6",
+  tan: "#c9a96a",
+};
+const FULLNAME: Record<string, string> = {
+  brown: "brn", red: "red", orange: "org", yellow: "yel", green: "grn",
+  blue: "blu", violet: "vio", purple: "vio", gray: "gry", grey: "gry",
+  black: "blk", white: "wht", pink: "pnk", tan: "tan",
+};
+function normColor(t: string): string | null {
+  const k = t.trim().toLowerCase();
+  if (k in WIRE_HEX) return k;
+  if (k in FULLNAME) return FULLNAME[k];
+  return null;
+}
+/** Erkennt einen Draht-Farbcode (min. 2 bekannte Bänder, „-" getrennt; ein
+    optionaler „/ Stecker"-Zusatz wird beibehalten). Sonst null. */
+function parseWire(raw: string): { hexes: string[]; label: string } | null {
+  const s = raw.trim();
+  if (!s) return null;
+  const slash = s.indexOf("/");
+  const colorPart = (slash >= 0 ? s.slice(0, slash) : s).trim();
+  const tokens = colorPart.split("-").map((t) => t.trim()).filter(Boolean);
+  if (tokens.length < 2 || tokens.length > 3) return null;
+  const keys = tokens.map(normColor);
+  if (keys.some((k) => k === null)) return null;
+  return { hexes: keys.map((k) => WIRE_HEX[k as string]), label: s };
+}
+function wireBg(hexes: string[]): string {
+  if (hexes.length === 1) return hexes[0];
+  const n = hexes.length;
+  const stops = hexes
+    .map((h, i) => `${h} ${Math.round((i / n) * 100)}% ${Math.round(((i + 1) / n) * 100)}%`)
+    .join(", ");
+  return `linear-gradient(135deg, ${stops})`;
+}
+
+/** Nur der Farb-Chip (für kompakte Matrix-Köpfe). */
+function WireChip({ code, className }: { code: string; className?: string }) {
+  const p = parseWire(code);
+  if (!p) return null;
+  return (
+    <span
+      title={code}
+      className={`inline-block h-2.5 w-4 flex-none rounded-[2px] border border-black/25 ${className ?? ""}`}
+      style={{ background: wireBg(p.hexes) }}
+    />
+  );
+}
+/** Chip + Text (für Tabellenzellen). */
+function WireSwatch({ code }: { code: string }) {
+  const p = parseWire(code);
+  if (!p) return <>{code}</>;
+  return (
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+      <WireChip code={code} />
+      {p.label}
+    </span>
+  );
 }
 
 /** WPC-Draht-Farbcode: 2. Band nach Widerstands-Reihenfolge; kollidiert es mit
@@ -69,19 +146,39 @@ function buildMatrix(table: FactTable): Matrix | null {
   return cells.size >= 4 ? { cols: maxC, rows: maxR, cells } : null;
 }
 
-function TableGrid({ table, typ }: { table: FactTable; typ: FactType }) {
+function TableGrid({
+  columns,
+  rows,
+  typ,
+}: {
+  columns: string[];
+  rows: string[][];
+  typ: FactType;
+}) {
   // Bei Switch-/Lamp-Matrix die Column/Row-Zellen um den WPC-Draht-Farbcode ergänzen.
-  const lower = table.columns.map((c) => c.toLowerCase());
+  const lower = columns.map((c) => c.toLowerCase());
   const colIdx = lower.findIndex((c) => c === "column" || c === "col" || c === "spalte");
   const rowIdx = lower.findIndex((c) => c === "row" || c === "reihe" || c === "zeile");
   const axis = AXIS[typ];
 
-  const renderCell = (cell: string, ci: number): string => {
-    if (!axis) return cell;
-    const n = Number.parseInt(cell, 10);
-    if (Number.isFinite(n) && n >= 1 && n <= 8) {
-      if (ci === colIdx) return `${cell} · ${wire(axis.col, n)}`;
-      if (ci === rowIdx) return `${cell} · ${wire(axis.row, n)}`;
+  const renderCell = (cell: string, ci: number) => {
+    if (parseWire(cell)) return <WireSwatch code={cell} />; // Draht-Farbe → Chip + Text
+    if (axis) {
+      const n = Number.parseInt(cell, 10);
+      if (Number.isFinite(n) && n >= 1 && n <= 8) {
+        if (ci === colIdx)
+          return (
+            <span className="inline-flex items-center gap-1.5">
+              {cell} · <WireSwatch code={wire(axis.col, n)} />
+            </span>
+          );
+        if (ci === rowIdx)
+          return (
+            <span className="inline-flex items-center gap-1.5">
+              {cell} · <WireSwatch code={wire(axis.row, n)} />
+            </span>
+          );
+      }
     }
     return cell;
   };
@@ -89,10 +186,10 @@ function TableGrid({ table, typ }: { table: FactTable; typ: FactType }) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full border-collapse font-mono text-xs">
-        {table.columns.length > 0 ? (
+        {columns.length > 0 ? (
           <thead>
             <tr>
-              {table.columns.map((c, i) => (
+              {columns.map((c, i) => (
                 <th
                   key={i}
                   className="whitespace-nowrap border-b border-[var(--color-border)] px-3 py-2 text-left font-semibold text-[var(--color-muted)]"
@@ -104,7 +201,7 @@ function TableGrid({ table, typ }: { table: FactTable; typ: FactType }) {
           </thead>
         ) : null}
         <tbody>
-          {table.rows.map((row, r) => (
+          {rows.map((row, r) => (
             <tr key={r} className="odd:bg-[var(--color-overlay)]">
               {row.map((cell, c) => (
                 <td
@@ -140,19 +237,19 @@ function MatrixGrid({ matrix, typ }: { matrix: Matrix; typ: FactType }) {
 
       <div className="overflow-x-auto">
         <div
-          className="grid gap-1.5"
+          className="grid gap-1"
           style={{
-            gridTemplateColumns: `2.75rem repeat(${matrix.cols}, minmax(112px, 1fr))`,
+            gridTemplateColumns: `4.25rem repeat(${matrix.cols}, minmax(104px, 1fr))`,
           }}
         >
           {/* Kopfzeile: leere Ecke + Spaltenköpfe (Antriebsleitung) */}
           <div />
           {cols.map((c) => (
-            <div key={c} className="px-2 pb-1 text-left">
+            <div key={c} className="px-1.5 pb-1 text-left">
               <div className="font-mono text-[11px] text-[var(--color-faint)]">{c}</div>
               {axis ? (
-                <div className="font-mono text-[10px] text-[var(--color-accent)]">
-                  {wire(axis.col, c)}
+                <div className="mt-0.5 font-mono text-[10px] text-[var(--color-accent)]">
+                  <WireSwatch code={wire(axis.col, c)} />
                 </div>
               ) : null}
             </div>
@@ -191,11 +288,11 @@ function FactTableRow({
 }) {
   return (
     <>
-      <div className="flex flex-col justify-center pr-1 text-right">
+      <div className="flex flex-col items-end justify-center gap-0.5 pr-1">
         <div className="font-mono text-[11px] text-[var(--color-faint)]">{r}</div>
         {axis ? (
           <div className="font-mono text-[10px] text-[var(--color-muted)]">
-            {wire(axis.row, r)}
+            <WireSwatch code={wire(axis.row, r)} />
           </div>
         ) : null}
       </div>
@@ -254,6 +351,30 @@ function Legend({
   );
 }
 
+function FilterPill({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full border px-2.5 py-0.5 font-mono text-[11px] uppercase tracking-[0.04em] transition-colors ${
+        active
+          ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-primary-fg)]"
+          : "border-[var(--color-border)] text-[var(--color-muted)] hover:border-[var(--color-primary)] hover:text-[var(--color-fg)]"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
 export function FactTableView({
   label,
   typ,
@@ -266,6 +387,22 @@ export function FactTableView({
   const matrix = isMatrixType(typ) ? buildMatrix(table) : null;
   const [view, setView] = useState<"table" | "matrix">(matrix ? "matrix" : "table");
   const showMatrix = matrix !== null && view === "matrix";
+
+  // Filter über eine Typ-Spalte (z. B. Spulen: High/Low Power/Flasher/…).
+  // Platzhalter (leer, „-", „n/a") ergeben keinen sinnvollen Filter.
+  const isRealValue = (v: string | undefined): v is string =>
+    !!v && !/^(-+|–|—|n\/?a)$/i.test(v.trim());
+  const filterIdx = table.columns.findIndex((c) => /^(typ|type|art)$/i.test(c.trim()));
+  const filterValues =
+    filterIdx >= 0
+      ? Array.from(new Set(table.rows.map((r) => r[filterIdx]?.trim()).filter(isRealValue)))
+      : [];
+  const [filter, setFilter] = useState<string | null>(null);
+  const canFilter = !showMatrix && filterValues.length >= 2;
+  const rows =
+    canFilter && filter
+      ? table.rows.filter((r) => r[filterIdx]?.trim() === filter)
+      : table.rows;
 
   return (
     <div className="overflow-hidden rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)]">
@@ -293,14 +430,28 @@ export function FactTableView({
             </div>
           ) : null}
           <span className="font-mono text-[11px] text-[var(--color-faint)]">
-            {table.rows.length}
+            {rows.length}
           </span>
         </div>
       </div>
+
+      {canFilter ? (
+        <div className="flex flex-wrap gap-1.5 border-b border-[var(--color-border)] px-3 py-2">
+          <FilterPill active={filter === null} onClick={() => setFilter(null)}>
+            Alle
+          </FilterPill>
+          {filterValues.map((v) => (
+            <FilterPill key={v} active={filter === v} onClick={() => setFilter(v)}>
+              {v}
+            </FilterPill>
+          ))}
+        </div>
+      ) : null}
+
       {showMatrix && matrix ? (
         <MatrixGrid matrix={matrix} typ={typ} />
       ) : (
-        <TableGrid table={table} typ={typ} />
+        <TableGrid columns={table.columns} rows={rows} typ={typ} />
       )}
     </div>
   );

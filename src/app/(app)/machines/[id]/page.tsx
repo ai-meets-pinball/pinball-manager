@@ -128,18 +128,23 @@ export default async function MachineDetailPage({
         ) : null}
       </div>
 
-      {/* Handbuch-Daten / Service-Fakten (Phase 2) */}
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Handbuch-Daten</h2>
-        <MachineDataTables facts={machineFacts} />
-        <Card className="space-y-3">
-          <p className="text-sm text-[var(--color-muted)]">
-            Lade dein eigenes Handbuch hoch, um Referenztabellen (Spulen,
-            Lampen-/Schalter-Matrix, Sicherungen, Teile, Regeln) zu extrahieren.
-            Das PDF wird dabei nicht gespeichert — nur die extrahierten Fakten.
-          </p>
-          <ManualUpload machineId={machine.id} />
-        </Card>
+      {/* Handbuch-Daten / Service-Fakten (Phase 2).
+          Full-Bleed: dieser Abschnitt bricht aus der 5xl-Spalte aus und nutzt bis
+          zu ~1440px, damit die Switch-/Lamp-Matrizen genug Breite haben. Der Rest
+          der Seite (Formulare, Listen) bleibt bewusst schmal. */}
+      <section className="mx-[calc(50%-50vw)] px-4 sm:px-6">
+        <div className="mx-auto max-w-[1440px] space-y-3">
+          <h2 className="text-lg font-semibold">Handbuch-Daten</h2>
+          <MachineDataTables facts={machineFacts} />
+          <Card className="space-y-3">
+            <p className="text-sm text-[var(--color-muted)]">
+              Lade dein eigenes Handbuch hoch, um Referenztabellen (Spulen,
+              Lampen-/Schalter-Matrix, Sicherungen, Teile, Regeln) zu extrahieren.
+              Das PDF wird dabei nicht gespeichert — nur die extrahierten Fakten.
+            </p>
+            <ManualUpload machineId={machine.id} />
+          </Card>
+        </div>
       </section>
 
       {/* Fehler */}

@@ -34,8 +34,32 @@ export function MachineDataTables({ facts }: { facts: Row[] }) {
 
   return (
     <div className="space-y-4">
+      {/* Dashboard + Subnavigation: je Faktentyp eine Kennzahl-Karte, die zugleich
+          als Sprungmarke zum Abschnitt dient. */}
+      <nav
+        aria-label="Handbuch-Abschnitte"
+        className="grid grid-cols-3 gap-2 sm:grid-cols-6"
+      >
+        {parsed.map(({ typ, table }) => (
+          <a
+            key={typ}
+            href={`#fact-${typ}`}
+            className="group flex flex-col gap-0.5 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2.5 transition-colors hover:border-[var(--color-primary)]"
+          >
+            <span className="font-mono text-xl font-bold leading-none text-[var(--color-primary)]">
+              {table.rows.length}
+            </span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--color-muted)] group-hover:text-[var(--color-fg)]">
+              {LABELS[typ] ?? typ}
+            </span>
+          </a>
+        ))}
+      </nav>
+
       {parsed.map(({ typ, table }) => (
-        <FactTableView key={typ} typ={typ} label={LABELS[typ] ?? typ} table={table} />
+        <div key={typ} id={`fact-${typ}`} className="scroll-mt-24">
+          <FactTableView typ={typ} label={LABELS[typ] ?? typ} table={table} />
+        </div>
       ))}
     </div>
   );
