@@ -7,6 +7,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uuid,
 } from "drizzle-orm/pg-core";
 import { user } from "./auth-schema";
@@ -34,7 +35,9 @@ export const faultPrioritaet = pgEnum("fault_prioritaet", [
   "hoch",
 ]);
 
-export const clubRole = pgEnum("club_role", ["admin", "member"]);
+// Owner = Ersteller/oberste Rolle (kann Owner befördern & Club löschen);
+// Admin = darf Mitglieder/Einladungen verwalten; Member = einfaches Mitglied.
+export const clubRole = pgEnum("club_role", ["owner", "admin", "member"]);
 
 /* ── Clubs & Mitgliedschaften ─────────────────────────────────────────────── */
 
@@ -47,15 +50,41 @@ export const clubs = pgTable("clubs", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const memberships = pgTable("memberships", {
+export const memberships = pgTable(
+  "memberships",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    clubId: uuid("club_id")
+      .notNull()
+      .references(() => clubs.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    rolle: clubRole("rolle").notNull().default("member"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  // Ein Nutzer kann pro Club nur eine Mitgliedschaft haben (bislang nur app-seitig geprüft).
+  (t) => [unique("memberships_club_user_unique").on(t.clubId, t.userId)],
+);
+
+/* ── Einladungen ──────────────────────────────────────────────────────────── */
+/* Ein Owner/Admin lädt eine E-Mail ein (bestehend oder neu). Der Token landet im
+   Einladungslink; nach Annahme (oder Sign-up über den Link) entsteht eine
+   Mitgliedschaft. Nur ein offener Invite je (clubId, email) — app-seitig geprüft. */
+
+export const invitations = pgTable("invitations", {
   id: uuid("id").primaryKey().defaultRandom(),
   clubId: uuid("club_id")
     .notNull()
     .references(() => clubs.id, { onDelete: "cascade" }),
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
+  email: text("email").notNull(),
   rolle: clubRole("rolle").notNull().default("member"),
+  token: text("token").notNull().unique(),
+  invitedBy: text("invited_by")
+    .notNull()
+    .references(() => user.id),
+  status: text("status").notNull().default("pending"), // pending | accepted | revoked
+  expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -131,12 +160,24 @@ export const machineData = pgTable("machine_data", {
 export const clubsRelations = relations(clubs, ({ many }) => ({
   memberships: many(memberships),
   machines: many(machines),
+  invitations: many(invitations),
+}));
+
+export const invitationsRelations = relations(invitations, ({ one }) => ({
+  club: one(clubs, {
+    fields: [invitations.clubId],
+    references: [clubs.id],
+  }),
 }));
 
 export const membershipsRelations = relations(memberships, ({ one }) => ({
   club: one(clubs, {
     fields: [memberships.clubId],
     references: [clubs.id],
+  }),
+  user: one(user, {
+    fields: [memberships.userId],
+    references: [user.id],
   }),
 }));
 

@@ -1,14 +1,21 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import Link from "next/link";
-import { Trash2, UserMinus } from "lucide-react";
+import { Trash2, X } from "lucide-react";
 import { AddMemberForm } from "@/components/add-member-form";
 import { MachineCard } from "@/components/machine-card";
+import { MemberActions } from "@/components/member-actions";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { addMember, deleteClub, removeMember } from "@/db/actions/clubs";
+import { deleteClub } from "@/db/actions/clubs";
+import { inviteMember, revokeInvitation } from "@/db/actions/invitations";
 import { db } from "@/db";
-import { clubs, machines, memberships, user } from "@/db/schema";
-import { isClubAdmin, requireClubMember } from "@/lib/session";
+import { clubs, invitations, machines, memberships, user } from "@/db/schema";
+import {
+  isClubManager,
+  isClubOwner,
+  requireClubMember,
+} from "@/lib/session";
+import type { ClubRole } from "@/lib/validators";
 
 export default async function ClubDetailPage({
   params,
@@ -17,7 +24,8 @@ export default async function ClubDetailPage({
 }) {
   const { id } = await params;
   const currentUser = await requireClubMember(id);
-  const admin = await isClubAdmin(currentUser.id, id);
+  const manager = await isClubManager(currentUser.id, id);
+  const owner = await isClubOwner(currentUser.id, id);
 
   const club = await db.query.clubs.findFirst({ where: eq(clubs.id, id) });
   if (!club) return null;
@@ -39,11 +47,22 @@ export default async function ClubDetailPage({
     with: { club: { columns: { name: true } } },
   });
 
+  // Offene Einladungen (nur für Manager sichtbar).
+  const pendingInvites = manager
+    ? await db.query.invitations.findMany({
+        where: and(
+          eq(invitations.clubId, id),
+          eq(invitations.status, "pending"),
+        ),
+        orderBy: (i, { desc }) => [desc(i.createdAt)],
+      })
+    : [];
+
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-bold">{club.name}</h1>
-        {admin ? (
+        {owner ? (
           <form action={deleteClub}>
             <input type="hidden" name="clubId" value={club.id} />
             <button
@@ -71,29 +90,55 @@ export default async function ClubDetailPage({
                   {member.email}
                 </p>
               </div>
-              <div className="flex items-center gap-3">
-                <StatusBadge value={member.rolle} />
-                {admin && member.id !== currentUser.id ? (
-                  <form action={removeMember}>
-                    <input type="hidden" name="clubId" value={club.id} />
-                    <input type="hidden" name="userId" value={member.id} />
-                    <button
-                      type="submit"
-                      aria-label="Mitglied entfernen"
-                      className="text-[var(--color-muted)] hover:text-[var(--color-danger)]"
-                    >
-                      <UserMinus size={16} />
-                    </button>
-                  </form>
-                ) : null}
-              </div>
+              <MemberActions
+                clubId={club.id}
+                memberId={member.id}
+                rolle={member.rolle as ClubRole}
+                isSelf={member.id === currentUser.id}
+                canManage={manager}
+                canManageOwner={owner}
+              />
             </Card>
           ))}
         </div>
 
-        {admin ? (
-          <Card>
-            <AddMemberForm action={addMember} clubId={club.id} />
+        {manager ? (
+          <Card className="space-y-4">
+            <AddMemberForm
+              action={inviteMember}
+              clubId={club.id}
+              allowOwner={owner}
+            />
+
+            {pendingInvites.length > 0 ? (
+              <div className="space-y-2 border-t border-[var(--color-border)] pt-3">
+                <p className="text-xs font-medium text-[var(--color-muted)]">
+                  Offene Einladungen
+                </p>
+                {pendingInvites.map((inv) => (
+                  <div
+                    key={inv.id}
+                    className="flex items-center justify-between gap-3 text-sm"
+                  >
+                    <span className="min-w-0 truncate">{inv.email}</span>
+                    <div className="flex items-center gap-2">
+                      <StatusBadge value={inv.rolle} />
+                      <form action={revokeInvitation}>
+                        <input type="hidden" name="clubId" value={club.id} />
+                        <input type="hidden" name="invitationId" value={inv.id} />
+                        <button
+                          type="submit"
+                          aria-label="Einladung zurückziehen"
+                          className="text-[var(--color-muted)] hover:text-[var(--color-danger)]"
+                        >
+                          <X size={16} />
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </Card>
         ) : null}
       </section>

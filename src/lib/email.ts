@@ -42,3 +42,42 @@ export async function sendResetPasswordEmail(to: string, url: string) {
     throw new Error(`E-Mail-Versand fehlgeschlagen: ${error.message}`);
   }
 }
+
+export async function sendInvitationEmail(
+  to: string,
+  url: string,
+  clubName: string,
+  inviterName: string,
+) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error("RESEND_API_KEY ist nicht gesetzt");
+
+  const resend = new Resend(apiKey);
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Einladung zum Club „${clubName}" — Pinball Manager`,
+    html: `
+      <div style="font-family: sans-serif; line-height: 1.5;">
+        <h2>Einladung zu „${clubName}"</h2>
+        <p>${inviterName} lädt dich ein, dem Club <strong>${clubName}</strong>
+           bei Pinball Manager beizutreten.</p>
+        <p>
+          <a href="${url}"
+             style="display:inline-block;padding:10px 18px;background:#7a1f2b;
+                    color:#fff;text-decoration:none;border-radius:8px;">
+            Einladung ansehen
+          </a>
+        </p>
+        <p style="color:#71717a;font-size:13px;">
+          Hast du noch kein Konto, kannst du dich über den Link direkt registrieren.
+          Der Link ist nur begrenzt gültig.
+        </p>
+      </div>
+    `,
+  });
+
+  if (error) {
+    throw new Error(`E-Mail-Versand fehlgeschlagen: ${error.message}`);
+  }
+}

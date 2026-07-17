@@ -6,8 +6,9 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { machines } from "@/db/schema";
 import {
-  isClubAdmin,
+  isClubManager,
   isClubMember,
+  isSuperAdmin,
   requireMachineAccess,
   requireUser,
 } from "@/lib/session";
@@ -109,12 +110,13 @@ export async function deleteMachine(formData: FormData): Promise<void> {
   const id = String(formData.get("id"));
   const { user, machine } = await requireMachineAccess(id);
 
-  // Löschen darf nur der Eigentümer oder ein Club-Admin.
+  // Löschen darf nur der Eigentümer, ein Club-Manager (Owner/Admin) oder ein Super-Admin.
   const darfLoeschen =
+    isSuperAdmin(user) ||
     machine.ownerId === user.id ||
-    (machine.clubId !== null && (await isClubAdmin(user.id, machine.clubId)));
+    (machine.clubId !== null && (await isClubManager(user.id, machine.clubId)));
   if (!darfLoeschen) {
-    throw new Error("Nur Eigentümer oder Club-Admin dürfen löschen");
+    throw new Error("Nur Eigentümer oder Club-Owner/-Admin dürfen löschen");
   }
 
   await db.delete(machines).where(eq(machines.id, id));

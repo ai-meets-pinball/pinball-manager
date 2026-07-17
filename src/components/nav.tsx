@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Globe, Users, Wrench } from "lucide-react";
+import { BookOpen, Globe, ShieldCheck, User, Users, Wrench } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { SignOutButton } from "@/components/sign-out-button";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -14,8 +14,15 @@ const links = [
 ];
 
 /** Kopfzeile der angemeldeten Bereiche. */
-export function Nav({ userName }: { userName: string }) {
+export function Nav({
+  userName,
+  role,
+}: {
+  userName: string;
+  role?: string;
+}) {
   const pathname = usePathname();
+  const isSuperAdmin = role === "superadmin";
 
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-bg)]/90 backdrop-blur-md">
@@ -51,6 +58,20 @@ export function Nav({ userName }: { userName: string }) {
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          {isSuperAdmin ? (
+            <Link
+              href="/admin"
+              title="Administration"
+              className={`flex items-center gap-1.5 rounded-[var(--radius)] px-2.5 py-1.5 text-sm font-medium transition-colors ${
+                pathname.startsWith("/admin")
+                  ? "bg-[var(--color-inset)] text-[var(--color-fg)]"
+                  : "text-[var(--color-muted)] hover:bg-[var(--color-inset)] hover:text-[var(--color-fg)]"
+              }`}
+            >
+              <ShieldCheck size={15} />
+              <span className="hidden sm:inline">Admin</span>
+            </Link>
+          ) : null}
           <Link
             href="/"
             title="Öffentliche Website"
@@ -59,9 +80,18 @@ export function Nav({ userName }: { userName: string }) {
             <Globe size={15} />
             <span className="hidden sm:inline">Website</span>
           </Link>
-          <span className="hidden font-mono text-xs text-[var(--color-faint)] md:inline">
-            {userName}
-          </span>
+          <Link
+            href="/account"
+            title="Konto"
+            className={`flex items-center gap-1.5 rounded-[var(--radius)] px-2.5 py-1.5 text-sm font-medium transition-colors ${
+              pathname.startsWith("/account")
+                ? "bg-[var(--color-inset)] text-[var(--color-fg)]"
+                : "text-[var(--color-muted)] hover:bg-[var(--color-inset)] hover:text-[var(--color-fg)]"
+            }`}
+          >
+            <User size={15} />
+            <span className="hidden font-mono text-xs md:inline">{userName}</span>
+          </Link>
           <ThemeToggle />
           <SignOutButton />
         </div>

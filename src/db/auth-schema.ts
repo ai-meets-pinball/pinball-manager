@@ -16,6 +16,9 @@ export const user = pgTable("user", {
     .$defaultFn(() => false)
     .notNull(),
   image: text("image"),
+  // Globale Rolle: "user" (Standard) oder "superadmin". Bootstrap via SUPER_ADMIN_EMAILS
+  // (siehe lib/session.ts); auch als additionalFields in lib/auth.ts deklariert.
+  role: text("role").notNull().default("user"),
   createdAt: timestamp("created_at")
     .$defaultFn(() => new Date())
     .notNull(),

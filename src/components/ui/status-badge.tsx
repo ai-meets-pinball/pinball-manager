@@ -15,12 +15,25 @@ const tone: Record<string, string> = {
   mittel: "var(--color-warn)",
   hoch: "var(--color-danger)",
   // Rollen (Clubs)
+  owner: "var(--color-primary)",
   admin: "var(--color-accent)",
   member: "var(--color-faint)",
+  // Globale Rolle
+  superadmin: "var(--color-primary)",
+};
+
+/** Anzeigenamen für Club-Rollen (Enum-Werte → deutsche Labels). */
+export const ROLE_LABEL: Record<string, string> = {
+  owner: "Owner",
+  admin: "Admin",
+  member: "Mitglied",
 };
 
 export function StatusBadge({ value }: { value: string }) {
   const c = tone[value] ?? "var(--color-faint)";
+  // Rollen-Enums (owner/admin/member) auf deutsche Labels abbilden; alles andere
+  // (Fehler-/Reparatur-Status) ist bereits deutsch und bleibt unverändert.
+  const label = ROLE_LABEL[value] ?? value;
   return (
     <span
       className="inline-flex rounded-[4px] px-2 py-0.5 text-[11px] font-semibold"
@@ -29,7 +42,7 @@ export function StatusBadge({ value }: { value: string }) {
         background: `color-mix(in srgb, ${c} 14%, transparent)`,
       }}
     >
-      {value}
+      {label}
     </span>
   );
 }

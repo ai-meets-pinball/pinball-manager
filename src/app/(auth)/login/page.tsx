@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
+import { PasswordField } from "@/components/ui/password-field";
 import { signIn } from "@/lib/auth-client";
-import { STAMMTISCH_URL } from "@/lib/links";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -41,9 +41,8 @@ export default function LoginPage() {
           <Input name="email" type="email" required autoComplete="email" />
         </Field>
         <Field label="Passwort">
-          <Input
+          <PasswordField
             name="password"
-            type="password"
             required
             autoComplete="current-password"
           />
@@ -62,16 +61,10 @@ export default function LoginPage() {
         </Link>
       </p>
       <p className="text-sm text-[var(--color-muted)]">
-        Kein Konto? Zugang läuft aktuell über den{" "}
-        <a
-          href={STAMMTISCH_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[var(--color-accent)] underline"
-        >
-          Stammtisch
-        </a>
-        .
+        Kein Konto?{" "}
+        <Link href="/register" className="text-[var(--color-accent)] underline">
+          Jetzt registrieren
+        </Link>
       </p>
     </main>
   );

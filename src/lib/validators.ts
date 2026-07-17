@@ -56,9 +56,45 @@ export const clubSchema = z.object({
   name: z.string().trim().min(1, "Name ist erforderlich"),
 });
 
-export const addMemberSchema = z.object({
+/* ── Rollen & Einladungen ─────────────────────────────────────────────────── */
+
+export const CLUB_ROLES = ["owner", "admin", "member"] as const;
+export type ClubRole = (typeof CLUB_ROLES)[number];
+
+/** Einladung / Rollenzuweisung. Owner-Rolle wird zusätzlich in der Action geprüft
+    (nur ein Owner darf zum Owner befördern). */
+export const inviteSchema = z.object({
   email: z.string().trim().email("Gültige E-Mail erforderlich"),
-  rolle: z.enum(["admin", "member"]),
+  rolle: z.enum(CLUB_ROLES),
+});
+
+export const roleChangeSchema = z.object({
+  rolle: z.enum(CLUB_ROLES),
+});
+
+/* ── Passwort-Policy (eine Quelle der Wahrheit, client + server) ───────────── */
+
+export const PASSWORD_MIN = 8;
+/** Menschlich lesbarer Hinweis auf die Anforderungen (für Formulare). */
+export const PASSWORD_HINT = `Mindestens ${PASSWORD_MIN} Zeichen, mit Groß- und Kleinbuchstaben sowie einer Zahl.`;
+
+/** Prüft die Passwort-Policy. Liefert eine Fehlermeldung oder null (= ok).
+    Bewusst eine simple Funktion, damit sie in Client-Formularen UND im
+    Better-Auth-Before-Hook (lib/auth.ts) identisch genutzt werden kann. */
+export function validatePassword(pw: unknown): string | null {
+  if (typeof pw !== "string" || pw.length < PASSWORD_MIN) {
+    return `Passwort muss mindestens ${PASSWORD_MIN} Zeichen lang sein.`;
+  }
+  if (!/[a-z]/.test(pw)) return "Passwort braucht mindestens einen Kleinbuchstaben.";
+  if (!/[A-Z]/.test(pw)) return "Passwort braucht mindestens einen Großbuchstaben.";
+  if (!/[0-9]/.test(pw)) return "Passwort braucht mindestens eine Zahl.";
+  return null;
+}
+
+/** Zod-Variante derselben Policy (für Schemas). */
+export const passwordSchema = z.string().superRefine((v, ctx) => {
+  const problem = validatePassword(v);
+  if (problem) ctx.addIssue({ code: "custom", message: problem });
 });
 
 /*

@@ -14,7 +14,7 @@ export default async function AppLayout({
 
   return (
     <div className="min-h-screen">
-      <Nav userName={user.name ?? user.email} />
+      <Nav userName={user.name ?? user.email} role={user.role} />
       <main className="mx-auto max-w-5xl px-6 py-8">{children}</main>
     </div>
   );

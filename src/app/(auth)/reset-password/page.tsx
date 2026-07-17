@@ -4,8 +4,10 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Field, Input } from "@/components/ui/input";
+import { Field } from "@/components/ui/input";
+import { PasswordField } from "@/components/ui/password-field";
 import { resetPassword } from "@/lib/auth-client";
+import { PASSWORD_HINT, validatePassword } from "@/lib/validators";
 
 function ResetPasswordForm() {
   const router = useRouter();
@@ -25,10 +27,23 @@ function ResetPasswordForm() {
       setError("Ungültiger oder abgelaufener Link. Fordere einen neuen an.");
       return;
     }
-    setLoading(true);
     const form = new FormData(event.currentTarget);
+    const password = String(form.get("password"));
+    const confirm = String(form.get("passwordConfirm"));
+
+    const policy = validatePassword(password);
+    if (policy) {
+      setError(policy);
+      return;
+    }
+    if (password !== confirm) {
+      setError("Die Passwörter stimmen nicht überein.");
+      return;
+    }
+
+    setLoading(true);
     const { error } = await resetPassword({
-      newPassword: String(form.get("password")),
+      newPassword: password,
       token,
     });
 
@@ -56,12 +71,13 @@ function ResetPasswordForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <Field label="Neues Passwort" hint="Mindestens 8 Zeichen.">
-        <Input
-          name="password"
-          type="password"
+      <Field label="Neues Passwort" hint={PASSWORD_HINT}>
+        <PasswordField name="password" required autoComplete="new-password" />
+      </Field>
+      <Field label="Passwort wiederholen">
+        <PasswordField
+          name="passwordConfirm"
           required
-          minLength={8}
           autoComplete="new-password"
         />
       </Field>
