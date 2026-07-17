@@ -10,7 +10,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 const links = [
   { href: "/machines", label: "Maschinen", icon: Wrench },
   { href: "/clubs", label: "Clubs", icon: Users },
-  { href: "/help", label: "Techstack", icon: BookOpen },
+  { href: "/help", label: "Hilfe", icon: BookOpen },
 ];
 
 /** Kopfzeile der angemeldeten Bereiche. */

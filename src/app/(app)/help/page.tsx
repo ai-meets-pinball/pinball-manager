@@ -1,231 +1,241 @@
 import {
-  BookOpen,
-  Boxes,
-  Database,
+  FileText,
+  Hammer,
   KeyRound,
-  Layers,
-  Palette,
+  Lightbulb,
+  Share2,
   ShieldCheck,
+  TriangleAlert,
+  UserCog,
+  Users,
+  Wrench,
 } from "lucide-react";
 import type { ReactNode } from "react";
+import { HelpTabs } from "@/components/help-tabs";
 import { Card } from "@/components/ui/card";
 
 /*
-  Hilfe-/Techstack-Seite.
-
-  Diese Seite ist bewusst als Lernmaterial gedacht ("KI meets Pinball", PRD §8):
-  Sie listet jede eingesetzte Bibliothek, jeden UI-Baustein und jedes
-  Architektur-Muster auf — mit "Was ist das?", "Warum hier?" und einem Zeiger
-  in den Code. Wer neu dazukommt, kann von hier aus dem Projekt folgen.
-
-  Der Inhalt ist als einfache Daten am Anfang der Datei definiert und darunter
-  gerendert — Daten und Darstellung getrennt, damit beides gut lesbar bleibt.
+  Anleitung / How-To — die benutzerorientierte Hilfe (was kann ich wie tun?).
+  Bewusst als Daten am Dateianfang definiert und darunter gerendert, damit Inhalt
+  und Darstellung getrennt bleiben (wie die Techstack-Seite). Die entwickler-
+  orientierte Architektur-Übersicht liegt unter /help/techstack.
 */
 
-type StackItem = {
-  name: string;
-  /** npm-Version bzw. Kennzeichnung (z. B. "Muster" für Nicht-Pakete). */
-  version?: string;
-  /** Was ist das und warum setzen wir es genau hier ein? */
-  beschreibung: string;
-  /** Wo im Code kann man das nachlesen? (Pfad relativ zum Repo-Wurzelverzeichnis) */
-  imCode?: string;
-};
-
-type StackSection = {
+type Step = { titel?: string; text: string };
+type GuideSection = {
   titel: string;
   icon: ReactNode;
   einleitung: string;
-  items: StackItem[];
+  steps: Step[];
 };
 
-/* Die Versionsnummern spiegeln package.json wider (Stand Phase 1). */
-const sections: StackSection[] = [
+const sections: GuideSection[] = [
   {
-    titel: "Framework & Sprache",
-    icon: <Layers size={18} className="text-[var(--color-primary)]" />,
-    einleitung:
-      "Das Grundgerüst: Wie die App gebaut, gerendert und ausgeliefert wird.",
-    items: [
-      {
-        name: "Next.js",
-        version: "16.2.9",
-        beschreibung:
-          "Das React-Framework mit App Router. Seiten sind standardmäßig Server Components (laufen auf dem Server, holen Daten direkt aus der DB). Turbopack ist der Dev-/Build-Bundler. In Next 16 heißt die Edge-Datei nicht mehr middleware, sondern proxy.",
-        imCode: "src/app/ (App Router), src/proxy.ts",
-      },
-      {
-        name: "React",
-        version: "19.2.4",
-        beschreibung:
-          "Die UI-Bibliothek. Wir nutzen v19 mit Server Components; Formulare rufen Server Actions auf, statt eigene API-Routen zu bauen.",
-        imCode: "alle *.tsx-Komponenten",
-      },
-      {
-        name: "TypeScript",
-        version: "5",
-        beschreibung:
-          "Typsicheres JavaScript. Zieht sich vom DB-Schema (Drizzle) bis in die Komponenten durch, sodass Feldnamen und Typen überall geprüft werden.",
-        imCode: "tsconfig.json",
-      },
-    ],
-  },
-  {
-    titel: "Authentifizierung",
+    titel: "Erste Schritte",
     icon: <KeyRound size={18} className="text-[var(--color-primary)]" />,
-    einleitung:
-      "Wer bist du? — Anmeldung per E-Mail/Passwort, bewusst als lesbare TS-Konfiguration.",
-    items: [
+    einleitung: "Konto erstellen, anmelden, Passwort zurücksetzen.",
+    steps: [
       {
-        name: "Better Auth",
-        version: "1.6.23",
-        beschreibung:
-          "Authentifizierung als sichtbare TypeScript-Konfiguration (kein Fremd-Auth-Dienst). Verwaltet Sessions per Cookie; die Session wird in Server Components über die Better-Auth-API ausgelesen.",
-        imCode: "src/lib/auth.ts, src/app/api/auth/[...all]/route.ts",
+        titel: "Registrieren",
+        text: "Auf der Anmeldeseite »Jetzt registrieren« wählen und Name, E-Mail und Passwort eingeben. Das Passwort braucht mindestens 8 Zeichen mit Groß- und Kleinbuchstaben sowie einer Zahl und muss wiederholt werden. Mit dem Augen-Symbol lässt es sich anzeigen oder verbergen.",
+      },
+      {
+        titel: "Anmelden",
+        text: "Danach mit E-Mail und Passwort anmelden. Passwort vergessen? Der Link auf der Anmeldeseite schickt dir eine E-Mail zum Zurücksetzen.",
+      },
+      {
+        titel: "Per Einladung beitreten",
+        text: "Wurdest du eingeladen, öffne den Link aus der E-Mail. Hast du noch kein Konto, registrierst du dich direkt darüber und trittst dem Club automatisch bei.",
       },
     ],
   },
   {
-    titel: "Datenbank & Daten",
-    icon: <Database size={18} className="text-[var(--color-primary)]" />,
-    einleitung:
-      "Wo die Daten liegen und wie wir sie typsicher lesen und schreiben.",
-    items: [
+    titel: "Maschinen",
+    icon: <Wrench size={18} className="text-[var(--color-primary)]" />,
+    einleitung: "Deine Automaten anlegen, pflegen und verwalten.",
+    steps: [
       {
-        name: "Drizzle ORM",
-        version: "0.45.2",
-        beschreibung:
-          "Typsicheres ORM. Das Schema in TypeScript ist die einzige Quelle der Wahrheit; daraus werden Typen und SQL-Migrationen erzeugt (drizzle-kit). Abfragen sind normale TS-Funktionen — gut lesbar statt versteckt.",
-        imCode: "src/db/schema.ts, src/db/queries.ts",
+        titel: "Anlegen",
+        text: "Maschinen → »Neue Maschine«. Über die OPDB-Suche lassen sich Hersteller, Modell, Baujahr und ein Foto automatisch übernehmen — oder du füllst alles von Hand aus. Ein eigenes Foto kannst du zusätzlich hochladen.",
       },
       {
-        name: "postgres",
-        version: "3.4.9",
-        beschreibung:
-          "Der Postgres-Treiber, den Drizzle nutzt, um sich mit der Supabase-Datenbank zu verbinden.",
-        imCode: "src/db/index.ts",
+        titel: "Ansehen & bearbeiten",
+        text: "Auf eine Maschinenkachel klicken öffnet die Detailseite. Über »Bearbeiten« änderst du Daten, Foto oder die Club-Zuordnung.",
       },
       {
-        name: "Supabase",
-        version: "supabase-js 2.109.0",
-        beschreibung:
-          "Wird BEWUSST nur als Postgres + Datei-Storage verwendet — nicht als Auth- oder API-Ebene. Es gibt absichtlich KEIN Row-Level-Security: die Zugriffsregeln stehen im TypeScript (siehe Architektur unten). Der Storage-Bucket machine-photos hält die Maschinenfotos.",
-        imCode: "src/lib/storage.ts (Upload), src/db",
+        titel: "Private Sammlung",
+        text: "Ohne Club-Zuordnung gehört eine Maschine nur dir und ist auch nur für dich sichtbar.",
       },
       {
-        name: "Zod",
-        version: "4.4.3",
-        beschreibung:
-          "Schema-Validierung. Formulardaten aus Server Actions werden vor dem Speichern gegen ein Zod-Schema geprüft, damit ungültige Eingaben nie die DB erreichen.",
-        imCode: "src/lib/validators.ts, src/db/actions/*.ts",
+        titel: "Löschen",
+        text: "Auf der Detailseite über »Löschen«. Das dürfen nur der Eigentümer, ein Club-Owner/-Admin oder ein Super-Admin.",
       },
     ],
   },
   {
-    titel: "UI & Styling",
-    icon: <Palette size={18} className="text-[var(--color-primary)]" />,
+    titel: "Fehler erfassen",
+    icon: <TriangleAlert size={18} className="text-[var(--color-primary)]" />,
     einleitung:
-      "Aussehen und Bedienung — mobilfreundlich, helles „editorial\" Theme mit Bordeaux-Akzent (Design-Handoff), plus Dunkelvariante.",
-    items: [
+      "Ein Fehler ist das Symptom an einer Maschine — er kann auch ganz ohne Reparatur bestehen.",
+    steps: [
       {
-        name: "Tailwind CSS",
-        version: "4.3.2",
-        beschreibung:
-          "Utility-CSS in der v4-CSS-first-Variante: Die Design-Tokens (Farben, Schriften, Radius) stehen als CSS-Variablen in globals.css und werden überall als var(--color-...) genutzt — die .dark-Klasse überschreibt sie für den Dunkelmodus.",
-        imCode: "src/app/globals.css",
+        titel: "Melden",
+        text: "Auf der Maschinen-Detailseite »Neuer Fehler«. Beschreibe das Symptom und wähle optional eine Kategorie (z. B. Spule, Schalter), eine Priorität (niedrig/mittel/hoch) und den Status.",
       },
       {
-        name: "Lucide React",
-        version: "1.22.0",
-        beschreibung:
-          "Die Icon-Bibliothek (z. B. Wrench, Users). Icons sind React-Komponenten mit size-/className-Props.",
-        imCode: "Importe in *.tsx (z. B. src/components/nav.tsx)",
+        titel: "Status & Filter",
+        text: "Der Status durchläuft offen → in Arbeit → behoben. Über die Chips oben lässt sich die Fehlerliste nach Status filtern.",
       },
       {
-        name: "next-themes",
-        version: "0.4.6",
-        beschreibung:
-          "Steuert Hell/Dunkel über die .dark-Klasse am <html>. defaultTheme=\"light\"; der ThemeToggle in der Nav schaltet um.",
-        imCode: "src/components/theme-provider.tsx, src/app/layout.tsx",
+        titel: "Gut zu wissen",
+        text: "Das Symptom lebt am Fehler und wird nie an die Reparatur dupliziert — Fehler und Reparatur sind bewusst getrennt.",
       },
     ],
   },
   {
-    titel: "UI-Bausteine (eigene Komponenten)",
-    icon: <Boxes size={18} className="text-[var(--color-primary)]" />,
-    einleitung:
-      "Kleine, wiederverwendbare Bausteine, aus denen die Seiten zusammengesetzt sind.",
-    items: [
+    titel: "Reparaturen",
+    icon: <Hammer size={18} className="text-[var(--color-primary)]" />,
+    einleitung: "Was wurde gemacht — mit optionaler Verknüpfung zum Fehler.",
+    steps: [
       {
-        name: "Card",
-        version: "Baustein",
-        beschreibung:
-          "Ein umrahmter Container mit Standard-Radius und Oberflächenfarbe. Grundlage fast jeder Listen- und Detailansicht.",
-        imCode: "src/components/ui/card.tsx",
+        titel: "Erfassen",
+        text: "Auf der Maschinen-Detailseite »Neue Reparatur«. Trage Diagnose, Maßnahme, verbaute Teile, Kosten und Zeitaufwand ein.",
       },
       {
-        name: "Button / Input",
-        version: "Baustein",
-        beschreibung:
-          "Einheitlich gestylte Schaltflächen und Eingabefelder, damit alle Formulare gleich aussehen und sich gleich anfühlen.",
-        imCode: "src/components/ui/button.tsx, input.tsx",
+        titel: "Mit einem Fehler verknüpfen",
+        text: "Optional einen Fehler auswählen. Behebt die Reparatur den Fehler, wird dessen Status automatisch auf »behoben« gesetzt.",
       },
       {
-        name: "StatusBadge",
-        version: "Baustein",
-        beschreibung:
-          "Farbige Plakette für Zustände (z. B. Fehlerstatus offen/behoben, Club-Rolle). Kapselt die Zuordnung Wert → Farbe an einer Stelle.",
-        imCode: "src/components/ui/status-badge.tsx",
-      },
-      {
-        name: "Formulare & Listen",
-        version: "Baustein",
-        beschreibung:
-          "Fachliche Bausteine wie machine-form, fault-list, repair-form. Sie verbinden die UI-Bausteine oben mit den Server Actions.",
-        imCode: "src/components/*.tsx",
+        titel: "Historie",
+        text: "Alle Reparaturen einer Maschine stehen chronologisch auf ihrer Detailseite.",
       },
     ],
   },
   {
-    titel: "Architektur-Muster",
+    titel: "Clubs & Rollen",
+    icon: <Users size={18} className="text-[var(--color-primary)]" />,
+    einleitung:
+      "Clubs teilen Maschinen mit mehreren Mitgliedern. Du kannst in mehreren Clubs sein und behältst dabei deine private Sammlung.",
+    steps: [
+      {
+        titel: "Club erstellen",
+        text: "Clubs → »Neuer Club«. Als Ersteller wirst du automatisch Owner.",
+      },
+      {
+        titel: "Mitglieder einladen",
+        text: "Auf der Club-Seite (als Owner oder Admin) eine E-Mail eingeben, Rolle wählen und »Einladen«. Der Empfänger bekommt eine E-Mail mit Beitritts-Link. Offene Einladungen kannst du jederzeit zurückziehen.",
+      },
+      {
+        titel: "Rollen",
+        text: "Owner: volle Kontrolle — Mitglieder & Einladungen verwalten, zum Owner befördern, Club löschen. Admin: Mitglieder & Einladungen verwalten, aber nicht zum Owner befördern oder den Club löschen. Mitglied: sieht und pflegt die Club-Maschinen.",
+      },
+      {
+        titel: "Owner-Regel",
+        text: "Ein Club braucht immer mindestens einen Owner. Der letzte Owner kann sich nicht degradieren oder austreten, ohne vorher jemanden zum Owner zu befördern.",
+      },
+      {
+        titel: "Verlassen",
+        text: "Über »Verlassen« in der Mitgliederliste trittst du selbst aus einem Club aus.",
+      },
+    ],
+  },
+  {
+    titel: "Maschinen im Club teilen",
+    icon: <Share2 size={18} className="text-[var(--color-primary)]" />,
+    einleitung: "So werden Automaten für ein ganzes Team sichtbar.",
+    steps: [
+      {
+        titel: "Zuordnen",
+        text: "Maschine »Bearbeiten« → einen Club auswählen. Danach sehen alle Club-Mitglieder die Maschine samt ihren Fehlern und Reparaturen.",
+      },
+      {
+        titel: "Sichtbarkeit",
+        text: "Du siehst deine eigenen Maschinen plus die aller Clubs, in denen du Mitglied bist.",
+      },
+      {
+        titel: "Beim Löschen eines Clubs",
+        text: "Die Maschinen werden nicht gelöscht, sondern nur vom Club gelöst — sie bleiben beim Eigentümer.",
+      },
+    ],
+  },
+  {
+    titel: "Handbuch-Daten",
+    icon: <FileText size={18} className="text-[var(--color-primary)]" />,
+    einleitung:
+      "Aus deinem eigenen Handbuch technische Referenztabellen gewinnen — ohne Copyright-Verletzung.",
+    steps: [
+      {
+        titel: "Hochladen",
+        text: "Auf der Maschinen-Detailseite im Abschnitt »Handbuch-Daten« bestätigst du, dass du das Handbuch besitzt bzw. die Rechte hast, wählst das PDF und startest die Auswertung.",
+      },
+      {
+        titel: "Was passiert",
+        text: "Claude liest das PDF und extrahiert ausschließlich Faktentabellen (Spulen, Schalter-/Lampen-Matrix, Sicherungen, Teile, Regeln). Das PDF wird dabei NIE gespeichert — nur die Fakten landen in der Datenbank.",
+      },
+      {
+        titel: "Ansehen",
+        text: "Switch- und Lampen-Matrix erscheinen als farbcodiertes Raster (WPC-Draht-Farbcodes, Opto-Schalter markiert). Über die Kennzahl-Karten springst du zu den Abschnitten; Tabellen mit einer Typ-Spalte lassen sich filtern.",
+      },
+    ],
+  },
+  {
+    titel: "Konto & Sicherheit",
+    icon: <UserCog size={18} className="text-[var(--color-primary)]" />,
+    einleitung: "Deine Profildaten, dein Passwort und deine Einladungen.",
+    steps: [
+      {
+        titel: "Konto öffnen",
+        text: "Oben rechts auf deinen Namen (»Konto«) klicken.",
+      },
+      {
+        titel: "Name & Passwort",
+        text: "Namen ändern; Passwort ändern (aktuelles + neues + Wiederholung, gleiche Passwort-Regeln, mit Anzeigen/Verbergen).",
+      },
+      {
+        titel: "Einladungen",
+        text: "Offene Club-Einladungen kannst du hier annehmen oder ablehnen.",
+      },
+      {
+        titel: "Passwort vergessen",
+        text: "Auf der Anmeldeseite »Passwort vergessen?« → du erhältst eine E-Mail mit einem Reset-Link.",
+      },
+    ],
+  },
+  {
+    titel: "Administration",
     icon: <ShieldCheck size={18} className="text-[var(--color-primary)]" />,
-    einleitung:
-      "Die bewussten Entscheidungen, die das Projekt zusammenhalten (PRD §3, §7).",
-    items: [
+    einleitung: "Nur für Super-Admins — Verwaltung über alle Nutzer und Clubs.",
+    steps: [
       {
-        name: "Autorisierung in der App-Schicht",
-        version: "Muster",
-        beschreibung:
-          "Jeder Datenzugriff läuft durch die require*-Helfer. Die eine Regel „Eigentümer ODER Club-Mitglied“ steht sichtbar im TypeScript — kein verstecktes Row-Level-Security in der DB. Fehler und Reparaturen erben ihre Rechte über die Maschine.",
-        imCode: "src/lib/session.ts",
+        titel: "Zugang",
+        text: "Super-Admins sehen »Admin« in der Navigation. Festgelegt werden sie über die Umgebungsvariable SUPER_ADMIN_EMAILS; weitere lassen sich danach in der Admin-Oberfläche ernennen.",
       },
       {
-        name: "Server Actions",
-        version: "Muster",
-        beschreibung:
-          "Schreibende Operationen (anlegen/ändern/löschen) sind Server-Funktionen, die Formulare direkt aufrufen — validiert per Zod, autorisiert per require*. Keine separate REST-API nötig.",
-        imCode: "src/db/actions/*.ts",
+        titel: "Nutzer",
+        text: "Alle Nutzer einsehen und Super-Admin-Rechte geben oder entziehen. Der letzte Super-Admin bleibt geschützt.",
       },
       {
-        name: "Proxy als optimistischer Check",
-        version: "Muster",
-        beschreibung:
-          "Der Next-16-Proxy leitet Unangemeldete nur früh weg (Cookie vorhanden?). Er ist NICHT die Sicherheitsgrenze — die echte Prüfung machen die require*-Helfer.",
-        imCode: "src/proxy.ts",
+        titel: "Clubs",
+        text: "Alle Clubs einsehen und bei Bedarf löschen. Ein Super-Admin darf grundsätzlich alles verwalten.",
+      },
+    ],
+  },
+  {
+    titel: "Tipps",
+    icon: <Lightbulb size={18} className="text-[var(--color-primary)]" />,
+    einleitung: "Kleinigkeiten, die den Alltag leichter machen.",
+    steps: [
+      {
+        titel: "Mobil nutzen",
+        text: "Die App ist für unterwegs gedacht — erfasse Fehler und Reparaturen direkt an der Maschine.",
       },
       {
-        name: "Fehler ≠ Reparatur",
-        version: "Muster",
-        beschreibung:
-          "Ein Fehler (fault) kann ohne Reparatur existieren; das Symptom lebt am Fehler. Eine Reparatur kann Fehler beheben und setzt deren Status auf „behoben“. Zwei getrennte Konzepte (PRD §4).",
-        imCode: "src/db/schema.ts (faults, repairs)",
+        titel: "Hell/Dunkel",
+        text: "Über den Umschalter in der Navigation zwischen hellem und dunklem Design wechseln.",
       },
       {
-        name: "Handbuch-Pipeline (Copyright)",
-        version: "Muster · Phase 2",
-        beschreibung:
-          "Eigenes Handbuch-PDF hochladen → Claude (claude-sonnet-5, @anthropic-ai/sdk) extrahiert nur Faktentabellen → in machine_data gespeichert. Der Schutz ist die Pipeline: Attestation Pflicht, das PDF bleibt nur im Speicher und wird NIE gespeichert, nur die Fakten landen in der DB.",
-        imCode: "src/lib/manual-extract.ts, src/components/machine-data-tables.tsx",
+        titel: "Suchen & filtern",
+        text: "Maschinen lassen sich per Suche einschränken, Fehler nach Status filtern.",
       },
     ],
   },
@@ -234,15 +244,14 @@ const sections: StackSection[] = [
 export default function HelpPage() {
   return (
     <div className="space-y-8">
+      <HelpTabs active="anleitung" />
+
       <div className="space-y-2">
-        <h1 className="flex items-center gap-2 text-2xl font-bold">
-          <BookOpen size={22} className="text-[var(--color-primary)]" />
-          Techstack &amp; Architektur
-        </h1>
+        <h1 className="text-2xl font-bold">Anleitung &amp; How-To</h1>
         <p className="text-[var(--color-muted)]">
-          Ein Überblick über alle Bibliotheken, Bausteine und Muster dieses
-          Projekts — mit einem Zeiger in den Code. Gedacht als Einstieg für alle,
-          die dem Aufbau folgen möchten.
+          Schritt für Schritt durch alle Funktionen — von der Anmeldung über
+          Maschinen, Fehler und Reparaturen bis zu Clubs, Einladungen,
+          Handbuch-Daten und Konto.
         </p>
       </div>
 
@@ -258,28 +267,23 @@ export default function HelpPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            {section.items.map((item) => (
-              <Card key={item.name} className="space-y-2">
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="font-medium">{item.name}</span>
-                  {item.version && (
-                    <span className="rounded-[var(--radius)] bg-[var(--color-border)]/50 px-2 py-0.5 font-mono text-xs text-[var(--color-muted)]">
-                      {item.version}
-                    </span>
-                  )}
-                </div>
-                <p className="text-sm text-[var(--color-muted)]">
-                  {item.beschreibung}
-                </p>
-                {item.imCode && (
-                  <p className="font-mono text-xs text-[var(--color-muted)]">
-                    → {item.imCode}
+          <Card>
+            <ol className="space-y-3">
+              {section.steps.map((step, i) => (
+                <li key={i} className="flex gap-3">
+                  <span className="flex h-6 w-6 flex-none items-center justify-center rounded-full bg-[var(--color-inset)] font-mono text-xs text-[var(--color-primary)]">
+                    {i + 1}
+                  </span>
+                  <p className="text-sm leading-relaxed">
+                    {step.titel ? (
+                      <span className="font-medium">{step.titel}. </span>
+                    ) : null}
+                    <span className="text-[var(--color-muted)]">{step.text}</span>
                   </p>
-                )}
-              </Card>
-            ))}
-          </div>
+                </li>
+              ))}
+            </ol>
+          </Card>
         </section>
       ))}
     </div>
