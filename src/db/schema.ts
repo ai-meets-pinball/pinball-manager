@@ -1,5 +1,6 @@
 import { relations, sql } from "drizzle-orm";
 import {
+  boolean,
   integer,
   jsonb,
   numeric,
@@ -215,6 +216,51 @@ export const repairs = pgTable("repairs", {
   kosten: numeric("kosten", { precision: 10, scale: 2 }),
   zeit: integer("zeit"), // Aufwand in Minuten
   status: repairStatus("status").notNull().default("offen"),
+});
+
+/* ── Freigaben (geteiltes Wissen) ─────────────────────────────────────────── */
+/*
+  Was wird wie weit geteilt. Bewusst EINE Tabelle für alle Artefakttypen und
+  Reichweite × Flag statt eines Enums mit vier Kombinationen:
+    scope "platform" = alle angemeldeten Nutzer   (+ anonym → „public anonym")
+    scope "club"     = Mitglieder der Ziel-Clubs
+    scope "users"    = ausdrücklich benannte Nutzer (unabhängig vom Club)
+
+  Bei Handbuch-Fakten ist artefaktId die MASCHINEN-id, nicht die machine_data-Zeile:
+  ein erneuter Upload löscht und ersetzt alle Faktenzeilen der Maschine
+  (manual-extract.ts), eine Freigabe auf Zeilen-IDs wäre danach tot.
+*/
+export const shares = pgTable(
+  "shares",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    artefaktTyp: text("artefakt_typ").notNull(), // machine_facts | repair
+    artefaktId: uuid("artefakt_id").notNull(),
+    // Gerätetyp, auf den sich das Wissen bezieht — der Anker zum Wiederfinden.
+    modelId: uuid("model_id")
+      .notNull()
+      .references(() => machineModels.id, { onDelete: "cascade" }),
+    ownerId: text("owner_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    scope: text("scope").notNull(), // platform | club | users
+    anonym: boolean("anonym").notNull().default(true),
+    zeigeKosten: boolean("zeige_kosten").notNull().default(false),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  // Ein Artefakt hat höchstens eine Freigabe — Reichweite ändern = Zeile ändern.
+  (t) => [unique("shares_artefakt_unique").on(t.artefaktTyp, t.artefaktId)],
+);
+
+/* Ziele für scope "club"/"users" — nullbare FKs wie bei role_assignments.
+   Bei scope "platform" gibt es keine Zeilen. */
+export const shareTargets = pgTable("share_targets", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  shareId: uuid("share_id")
+    .notNull()
+    .references(() => shares.id, { onDelete: "cascade" }),
+  clubId: uuid("club_id").references(() => clubs.id, { onDelete: "cascade" }),
+  userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
 });
 
 /* ── Aus dem Handbuch extrahierte Faktentabellen ──────────────────────────── */

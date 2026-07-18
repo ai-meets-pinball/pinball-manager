@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/db";
@@ -128,6 +128,20 @@ export async function isClubManager(userId: string, clubId: string) {
   return rolle === "owner" || rolle === "admin";
 }
 
+/** Club-IDs, in denen der Nutzer Mitglied ist (= club-bezogene Zuweisungen).
+    Liegt hier bei den übrigen Mitgliedschafts-Helfern, damit lib/sharing.ts
+    sie nutzen kann, ohne db/queries.ts zu importieren — das ergäbe einen
+    Import-Zyklus (queries → sharing → queries). */
+export async function getUserClubIds(userId: string): Promise<string[]> {
+  const rows = await db
+    .select({ clubId: roleAssignments.clubId })
+    .from(roleAssignments)
+    .where(
+      and(eq(roleAssignments.userId, userId), isNotNull(roleAssignments.clubId)),
+    );
+  return rows.map((r) => r.clubId).filter((id): id is string => id !== null);
+}
+
 /** Anzahl der Owner eines Clubs — für die „mind. 1 Owner"-Invariante. */
 export async function countClubOwners(clubId: string) {
   const rows = await db
@@ -159,7 +173,29 @@ export async function requireMachineAccess(machineId: string) {
     throw new Error("Kein Zugriff auf diese Maschine");
   }
 
-  return { user, machine };
+  /*
+    Berechtigungsstufe mitliefern, damit die UI dieselben Regeln zeigt, die die
+    Server Actions durchsetzen. Vorher rendete die Detailseite „Löschen" für
+    jedes Club-Mitglied, obwohl deleteMachine es ablehnt — ein Knopf, der
+    zuverlässig in einen Fehler läuft.
+  */
+  const clubManager =
+    machine.clubId !== null &&
+    (await isClubManager(user.id, machine.clubId));
+
+  return {
+    user,
+    machine,
+    darf: {
+      // Bearbeiten darf jeder mit Zugriff (so verhält sich updateMachine).
+      bearbeiten: true,
+      // Löschen nur Eigentümer, Club-Manager oder Super-Admin (= deleteMachine).
+      loeschen:
+        isSuperAdmin(user) || machine.ownerId === user.id || clubManager,
+      // Teilen darf, wer auch löschen darf — es gibt Daten nach außen.
+      teilen: isSuperAdmin(user) || machine.ownerId === user.id || clubManager,
+    },
+  };
 }
 
 /** Mitgliedschaft erzwingen (für Club-Detailseiten). Super-Admin darf immer. */

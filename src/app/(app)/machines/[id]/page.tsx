@@ -5,9 +5,16 @@ import { FaultList } from "@/components/fault-list";
 import { MachineDataTables } from "@/components/machine-data-tables";
 import { ManualUpload } from "@/components/manual-upload";
 import { RepairList } from "@/components/repair-list";
+import { ShareFactsForm } from "@/components/share-facts-form";
+import { SharedFacts } from "@/components/shared-facts";
 import { Card } from "@/components/ui/card";
 import { deleteMachine } from "@/db/actions/machines";
 import { db } from "@/db";
+import {
+  getFactsShare,
+  getSharedFactsForModel,
+  getUserClubs,
+} from "@/db/queries";
 import {
   faults as faultsTable,
   machineData as machineDataTable,
@@ -32,7 +39,9 @@ export default async function MachineDetailPage({
   const { id } = await params;
   const { faultStatus } = await searchParams;
   // Autorisierung: Eigentum ODER Club-Mitgliedschaft (kein RLS).
-  await requireMachineAccess(id);
+  // `darf` trägt die Berechtigungsstufe, damit die UI dieselben Regeln zeigt,
+  // die die Server Actions durchsetzen.
+  const { user: currentUser, darf } = await requireMachineAccess(id);
 
   const machine = await db.query.machines.findFirst({
     where: (m, { eq }) => eq(m.id, id),
@@ -67,6 +76,14 @@ export default async function MachineDetailPage({
     where: eq(machineDataTable.machineId, id),
   });
 
+  // Geteiltes Wissen zum selben Gerätetyp: eigene Freigabe + fremde Fakten,
+  // die dieser Nutzer sehen darf. Ohne OPDB-Bezug gibt es keinen Typ.
+  const eigeneFreigabe = machine.modelId ? await getFactsShare(id) : null;
+  const geteilteFakten = machine.modelId
+    ? await getSharedFactsForModel(currentUser, machine.modelId, id)
+    : [];
+  const meineClubs = await getUserClubs(currentUser.id);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -90,15 +107,20 @@ export default async function MachineDetailPage({
           >
             <Pencil size={15} /> Bearbeiten
           </Link>
-          <form action={deleteMachine}>
-            <input type="hidden" name="id" value={machine.id} />
-            <button
-              type="submit"
-              className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-danger)]/40 px-3 py-2 text-sm text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10"
-            >
-              <Trash2 size={15} /> Löschen
-            </button>
-          </form>
+          {/* Nur zeigen, wenn deleteMachine es auch zulässt (Eigentümer,
+              Club-Manager, Super-Admin) — sonst ein Knopf, der garantiert
+              in einen Fehler läuft. */}
+          {darf.loeschen ? (
+            <form action={deleteMachine}>
+              <input type="hidden" name="id" value={machine.id} />
+              <button
+                type="submit"
+                className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-danger)]/40 px-3 py-2 text-sm text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10"
+              >
+                <Trash2 size={15} /> Löschen
+              </button>
+            </form>
+          ) : null}
         </div>
       </div>
 
@@ -136,6 +158,33 @@ export default async function MachineDetailPage({
         <div className="mx-auto max-w-[1440px] space-y-3">
           <h2 className="text-lg font-semibold">Handbuch-Daten</h2>
           <MachineDataTables facts={machineFacts} />
+
+          {/* Eigene Fakten teilen — nur wenn es welche gibt und ein Gerätetyp
+              bekannt ist (ohne OPDB-Bezug fehlt der Anker zum Wiederfinden). */}
+          {machineFacts.length > 0 && darf.teilen ? (
+            <Card>
+              <ShareFactsForm
+                machineId={machine.id}
+                hatModell={machine.modelId !== null}
+                aktuell={
+                  eigeneFreigabe
+                    ? {
+                        scope: eigeneFreigabe.scope,
+                        anonym: eigeneFreigabe.anonym,
+                      }
+                    : null
+                }
+                clubs={meineClubs.map((c) => ({ id: c.id, name: c.name }))}
+              />
+            </Card>
+          ) : null}
+
+          {/* Von anderen Besitzern desselben Gerätetyps geteilte Fakten. */}
+          <SharedFacts
+            eintraege={geteilteFakten}
+            eigeneVorhanden={machineFacts.length > 0}
+          />
+
           <Card className="space-y-3">
             <p className="text-sm text-[var(--color-muted)]">
               Lade dein eigenes Handbuch hoch, um Referenztabellen (Spulen,
