@@ -1,7 +1,7 @@
 import { count, eq, isNotNull, isNull } from "drizzle-orm";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Trash2 } from "lucide-react";
+import { FlaskConical, Trash2 } from "lucide-react";
 import { RoleInfo } from "@/components/role-info";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -71,6 +71,11 @@ export default async function AdminPage() {
             titel="Globale Rollen"
           />
         </h2>
+        <p className="text-sm text-[var(--color-muted)]">
+          &bdquo;Sichtbarkeit&ldquo; ist ein temporäres Debug-Werkzeug (zeigt,
+          welche Maschinen ein Nutzer sehen kann) und wird später wieder
+          entfernt.
+        </p>
         <div className="space-y-2">
           {users.map((u) => {
             const meineRollen = rolesByUser.get(u.id) ?? [];
@@ -87,6 +92,15 @@ export default async function AdminPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-3">
+                  {/* TEMPORÄR (Debug): Sichtbarkeits-Ansicht — siehe
+                      admin/visibility/[userId]/page.tsx. Später mit entfernen. */}
+                  <Link
+                    href={`/admin/visibility/${u.id}`}
+                    title="Debug: Welche Maschinen sieht dieser Nutzer?"
+                    className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+                  >
+                    <FlaskConical size={14} /> Sichtbarkeit
+                  </Link>
                   {istSuper ? (
                     <StatusBadge value="superadmin" />
                   ) : (
