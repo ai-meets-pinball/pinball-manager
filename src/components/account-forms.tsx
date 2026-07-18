@@ -5,7 +5,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { PasswordField } from "@/components/ui/password-field";
-import { changePassword, updateUser } from "@/lib/auth-client";
+import { changeEmail, changePassword, updateUser } from "@/lib/auth-client";
 import { PASSWORD_HINT, validatePassword } from "@/lib/validators";
 
 /** Name ändern (Better Auth updateUser). */
@@ -45,6 +45,69 @@ export function ProfileForm({ initialName }: { initialName: string }) {
       <div>
         <Button type="submit" disabled={loading}>
           {loading ? "Speichern…" : "Name speichern"}
+        </Button>
+      </div>
+    </form>
+  );
+}
+
+/** E-Mail-Adresse ändern. Ist die bisherige Adresse verifiziert, verschickt
+    Better Auth einen Bestätigungslink an die BISHERIGE Adresse. */
+export function EmailForm({ initialEmail }: { initialEmail: string }) {
+  const router = useRouter();
+  const [msg, setMsg] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setMsg(null);
+    setError(null);
+
+    const neu = String(new FormData(event.currentTarget).get("email"))
+      .trim()
+      .toLowerCase();
+    if (!neu) {
+      setError("E-Mail ist erforderlich.");
+      return;
+    }
+    if (neu === initialEmail.toLowerCase()) {
+      setError("Das ist bereits deine aktuelle Adresse.");
+      return;
+    }
+
+    setLoading(true);
+    const { error } = await changeEmail({
+      newEmail: neu,
+      callbackURL: "/account",
+    });
+    setLoading(false);
+    if (error) {
+      setError(error.message ?? "Änderung fehlgeschlagen");
+      return;
+    }
+    setMsg(
+      `Bestätigungslink an ${initialEmail} verschickt. Die Adresse wird erst nach dem Klick geändert.`,
+    );
+    router.refresh();
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      <Field label="E-Mail-Adresse">
+        <Input
+          name="email"
+          type="email"
+          defaultValue={initialEmail}
+          required
+          autoComplete="email"
+        />
+      </Field>
+      {error ? <p className="text-sm text-[var(--color-danger)]">{error}</p> : null}
+      {msg ? <p className="text-sm text-[var(--color-success)]">{msg}</p> : null}
+      <div>
+        <Button type="submit" disabled={loading}>
+          {loading ? "Senden…" : "E-Mail ändern"}
         </Button>
       </div>
     </form>

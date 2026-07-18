@@ -1,21 +1,43 @@
 import Link from "next/link";
 import { and, eq, gte, sql } from "drizzle-orm";
-import { ChangePasswordForm, ProfileForm } from "@/components/account-forms";
+import { ChevronDown, LogOut } from "lucide-react";
+import {
+  ChangePasswordForm,
+  EmailForm,
+  ProfileForm,
+} from "@/components/account-forms";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { leaveClub } from "@/db/actions/clubs";
 import {
   acceptInvitation,
   declineInvitation,
 } from "@/db/actions/invitations";
 import { db } from "@/db";
-import { clubs, invitations, roles } from "@/db/schema";
-import { getUserClubs } from "@/db/queries";
+import { clubs, invitations, roleAssignments, roles } from "@/db/schema";
 import { isSuperAdmin, requireUser } from "@/lib/session";
 
 export default async function AccountPage() {
   const user = await requireUser();
 
-  const myClubs = await getUserClubs(user.id);
+  // Clubs des Nutzers inkl. Owner-Anzahl — damit der letzte Owner nicht
+  // versehentlich austritt (die Action würde es ohnehin ablehnen).
+  const myClubs = await db
+    .select({
+      id: clubs.id,
+      name: clubs.name,
+      rolle: roles.key,
+      ownerCount: sql<number>`(
+        SELECT count(*)::int FROM ${roleAssignments} ra2
+        JOIN ${roles} r2 ON r2.id = ra2.role_id
+        WHERE ra2.club_id = ${clubs.id} AND r2.key = 'owner'
+      )`,
+    })
+    .from(roleAssignments)
+    .innerJoin(clubs, eq(roleAssignments.clubId, clubs.id))
+    .innerJoin(roles, eq(roleAssignments.roleId, roles.id))
+    .where(eq(roleAssignments.userId, user.id))
+    .orderBy(clubs.name);
 
   // Ablauf serverseitig per SQL now() prüfen (kein Date.now() im Render).
   const offeneInvites = await db
@@ -56,9 +78,9 @@ export default async function AccountPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Passwort ändern</h2>
+        <h2 className="text-lg font-semibold">E-Mail-Adresse</h2>
         <Card>
-          <ChangePasswordForm />
+          <EmailForm initialEmail={user.email} />
         </Card>
       </section>
 
@@ -112,19 +134,63 @@ export default async function AccountPage() {
           </p>
         ) : (
           <div className="space-y-2">
-            {myClubs.map((c) => (
-              <Card
-                key={c.id}
-                className="flex items-center justify-between gap-3"
-              >
-                <Link href={`/clubs/${c.id}`} className="font-medium hover:underline">
-                  {c.name}
-                </Link>
-                <StatusBadge value={c.rolle} />
-              </Card>
-            ))}
+            {myClubs.map((c) => {
+              // Der letzte Owner muss erst jemanden befördern.
+              const letzterOwner =
+                c.rolle === "owner" && Number(c.ownerCount) <= 1;
+              return (
+                <Card
+                  key={c.id}
+                  className="flex items-center justify-between gap-3"
+                >
+                  <Link
+                    href={`/clubs/${c.id}`}
+                    className="font-medium hover:underline"
+                  >
+                    {c.name}
+                  </Link>
+                  <div className="flex items-center gap-3">
+                    <StatusBadge value={c.rolle} />
+                    {letzterOwner ? (
+                      <span
+                        className="text-xs text-[var(--color-faint)]"
+                        title="Als letzter Owner kannst du nicht austreten — befördere zuerst jemanden zum Owner."
+                      >
+                        letzter Owner
+                      </span>
+                    ) : (
+                      <form action={leaveClub}>
+                        <input type="hidden" name="clubId" value={c.id} />
+                        <button
+                          type="submit"
+                          className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)] hover:text-[var(--color-danger)]"
+                        >
+                          <LogOut size={14} /> Verlassen
+                        </button>
+                      </form>
+                    )}
+                  </div>
+                </Card>
+              );
+            })}
           </div>
         )}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Sicherheit</h2>
+        <details className="group overflow-hidden rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)]">
+          <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium hover:bg-[var(--color-inset)]">
+            Passwort ändern
+            <ChevronDown
+              size={16}
+              className="text-[var(--color-muted)] transition-transform group-open:rotate-180"
+            />
+          </summary>
+          <div className="border-t border-[var(--color-border)] px-4 py-4">
+            <ChangePasswordForm />
+          </div>
+        </details>
       </section>
     </div>
   );

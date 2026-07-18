@@ -4,7 +4,10 @@ import { APIError, createAuthMiddleware } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { db } from "@/db";
 import { account, session, user, verification } from "@/db/auth-schema";
-import { sendResetPasswordEmail } from "@/lib/email";
+import {
+  sendChangeEmailVerification,
+  sendResetPasswordEmail,
+} from "@/lib/email";
 import { PASSWORD_MIN, validatePassword } from "@/lib/validators";
 
 /*
@@ -20,6 +23,24 @@ export const auth = betterAuth({
   }),
   // Globale Rollen liegen bewusst NICHT am user-Datensatz, sondern in
   // role_assignments (siehe lib/session.ts) — ein Modell für globale und Club-Rollen.
+  user: {
+    changeEmail: {
+      enabled: true,
+      // Bei verifizierter Adresse verlangt Better Auth eine Bestätigung; der Link
+      // geht an die BISHERIGE Adresse (Schutz vor stiller Übernahme).
+      sendChangeEmailVerification: async ({
+        user,
+        newEmail,
+        url,
+      }: {
+        user: { email: string };
+        newEmail: string;
+        url: string;
+      }) => {
+        await sendChangeEmailVerification(user.email, newEmail, url);
+      },
+    },
+  },
   emailAndPassword: {
     enabled: true,
     // Offene Selbstregistrierung (zusätzlich gibt es den Einladungsfluss).
