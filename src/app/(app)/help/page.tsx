@@ -61,7 +61,7 @@ const sections: GuideSection[] = [
     steps: [
       {
         titel: "Anlegen",
-        text: "Maschinen → »Neue Maschine«. Über die OPDB-Suche lassen sich Hersteller, Modell, Baujahr und ein Foto automatisch übernehmen — oder du füllst alles von Hand aus. Ein eigenes Foto kannst du zusätzlich hochladen.",
+        text: "Maschinen → »Neue Maschine«. Über die OPDB-Suche lassen sich Hersteller, Modell, Baujahr und ein Foto automatisch übernehmen — oder du füllst alles von Hand aus. Ein eigenes Foto kannst du zusätzlich hochladen. Tipp: Die OPDB-Auswahl verknüpft die Maschine mit dem Gerätetyp — nur damit lassen sich später Handbuch-Daten und Reparaturen teilen.",
       },
       {
         titel: "Ansehen & bearbeiten",
@@ -248,6 +248,10 @@ const sections: GuideSection[] = [
       {
         titel: "Passwort ändern",
         text: "Unter »Sicherheit« den Bereich »Passwort ändern« aufklappen: aktuelles Passwort, neues Passwort und Wiederholung — gleiche Regeln, mit Anzeigen/Verbergen.",
+      },
+      {
+        titel: "Freigabe-Voreinstellungen",
+        text: "Hier legst du fest, was beim Teilen von Handbuch-Daten und Reparaturen vorbelegt wird (Reichweite, anonym, Kosten) und ob automatisch freigegeben wird. Details siehe Abschnitt »Wissen teilen«.",
       },
       {
         titel: "Passwort vergessen",
