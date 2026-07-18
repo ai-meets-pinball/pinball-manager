@@ -57,6 +57,20 @@
       "when": 1784391547650,
       "tag": "0007_glossy_gabe_jones",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1784393642975,
+      "tag": "0008_huge_wild_child",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1784393649876,
+      "tag": "0009_machine_models_backfill",
+      "breakpoints": true
     }
   ]
 }

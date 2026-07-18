@@ -7,6 +7,7 @@ import {
   pgTable,
   text,
   timestamp,
+  unique,
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
@@ -135,6 +136,30 @@ export const emailTemplates = pgTable("email_templates", {
   updatedBy: text("updated_by").references(() => user.id),
 });
 
+/* ── Gerätetyp-Katalog ────────────────────────────────────────────────────── */
+/*
+  Ein Eintrag je OPDB-MASCHINE (Edition), nicht je Gruppe/Titel — „Godzilla
+  Premium" und „Godzilla Pro" sind getrennte Typen, weil sich Spulen- und
+  Schaltermatrizen unterscheiden. `opdbGroupRef` hält den Titel fest, damit
+  Editionen später gebündelt werden können.
+
+  Der Katalog ist GETEILT: er gehört niemandem. Deshalb wird beim Anlegen nur
+  eingefügt, wenn der Eintrag fehlt (first writer wins) — sonst könnte ein
+  Nutzer, der seine Instanzfelder überschreibt, die Daten aller anderen ändern.
+  Die Felder an `machines` bleiben Instanz-Overrides für die Anzeige.
+*/
+export const machineModels = pgTable("machine_models", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  opdbRef: text("opdb_ref").notNull().unique(), // z. B. "G50Wr-MLeZP"
+  opdbGroupRef: text("opdb_group_ref"), // z. B. "G50Wr"
+  hersteller: text("hersteller").notNull(),
+  modell: text("modell").notNull(),
+  baujahr: integer("baujahr"),
+  ipdbRef: text("ipdb_ref"),
+  imageUrl: text("image_url"),
+  fetchedAt: timestamp("fetched_at").notNull().defaultNow(),
+});
+
 /* ── Maschinen ────────────────────────────────────────────────────────────── */
 
 export const machines = pgTable("machines", {
@@ -145,6 +170,9 @@ export const machines = pgTable("machines", {
     .references(() => user.id),
   // Optional: Maschine einem Club zugeordnet (geteilt mit den Mitgliedern).
   clubId: uuid("club_id").references(() => clubs.id),
+  // Verweis auf den geteilten Gerätetyp. Nullable: Handeingaben ohne OPDB
+  // bleiben erlaubt (können später zugeordnet werden).
+  modelId: uuid("model_id").references(() => machineModels.id),
   hersteller: text("hersteller").notNull(),
   modell: text("modell").notNull(),
   baujahr: integer("baujahr"),
@@ -189,18 +217,27 @@ export const repairs = pgTable("repairs", {
   status: repairStatus("status").notNull().default("offen"),
 });
 
-/* ── Phase-2-Stub: extrahierte Faktendaten ────────────────────────────────── */
-/* Bewusst schon im Schema, damit es kohärent bleibt — es gibt aber noch KEINE UI. */
+/* ── Aus dem Handbuch extrahierte Faktentabellen ──────────────────────────── */
+/* Je Maschine und Faktentyp genau EINE Zeile. Befüllt von lib/manual-extract.ts
+   (Replace-Semantik: alle Zeilen der Maschine löschen, dann neu einfügen). */
 
-export const machineData = pgTable("machine_data", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  machineId: uuid("machine_id")
-    .notNull()
-    .references(() => machines.id, { onDelete: "cascade" }),
-  typ: text("typ").notNull(), // "solenoids" | "switches" | "parts"
-  daten: jsonb("daten").notNull(),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+export const machineData = pgTable(
+  "machine_data",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    machineId: uuid("machine_id")
+      .notNull()
+      .references(() => machines.id, { onDelete: "cascade" }),
+    // Werte: siehe FACT_TYPES in lib/validators.ts
+    // (coils | switches | lamps | fuses | parts | rules)
+    typ: text("typ").notNull(),
+    daten: jsonb("daten").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  // Die Ein-Zeile-je-Typ-Regel lebte bisher nur in der Transaktion in
+  // manual-extract.ts — hier wird sie auch von der DB durchgesetzt.
+  (t) => [unique("machine_data_machine_typ_unique").on(t.machineId, t.typ)],
+);
 
 /* ── Relations (für db.query-Eager-Loading) ───────────────────────────────── */
 
@@ -240,10 +277,18 @@ export const invitationsRelations = relations(invitations, ({ one }) => ({
   }),
 }));
 
+export const machineModelsRelations = relations(machineModels, ({ many }) => ({
+  machines: many(machines),
+}));
+
 export const machinesRelations = relations(machines, ({ one, many }) => ({
   club: one(clubs, {
     fields: [machines.clubId],
     references: [clubs.id],
+  }),
+  model: one(machineModels, {
+    fields: [machines.modelId],
+    references: [machineModels.id],
   }),
   faults: many(faults),
   repairs: many(repairs),

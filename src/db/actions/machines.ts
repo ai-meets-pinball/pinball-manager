@@ -4,7 +4,8 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { machines } from "@/db/schema";
+import { machineModels, machines } from "@/db/schema";
+import { parseOpdbRef } from "@/lib/opdb-ref";
 import {
   isClubManager,
   isClubMember,
@@ -39,6 +40,51 @@ async function parseMachine(userId: string, formData: FormData) {
   return { data };
 }
 
+/*
+  Sorgt dafür, dass es zum OPDB-Bezug einen Eintrag im geteilten Gerätetyp-Katalog
+  gibt, und liefert dessen id (oder null).
+
+  Zwei bewusste Regeln:
+  - Nur EDITIONS-Referenzen taugen als Gerätetyp. Eine reine Gruppen-Referenz
+    (nur Titel) wird verworfen, weil sich Spulen-/Schaltermatrizen je Edition
+    unterscheiden. Aliasse werden auf ihre Edition normalisiert.
+  - `onConflictDoNothing`: der Katalog gehört niemandem. Wer eine Maschine später
+    anlegt (und seine Instanzfelder frei editiert hat), darf die Katalogdaten
+    aller anderen NICHT überschreiben — first writer wins.
+*/
+async function ensureMachineModel(
+  data: {
+    opdbRef?: string;
+    hersteller: string;
+    modell: string;
+    baujahr?: number;
+    ipdbRef?: string;
+  },
+  imageUrl: string | null,
+): Promise<string | null> {
+  const teile = parseOpdbRef(data.opdbRef);
+  if (!teile?.machineRef) return null;
+
+  await db
+    .insert(machineModels)
+    .values({
+      opdbRef: teile.machineRef,
+      opdbGroupRef: teile.groupRef,
+      hersteller: data.hersteller,
+      modell: data.modell,
+      baujahr: data.baujahr ?? null,
+      ipdbRef: data.ipdbRef ?? null,
+      imageUrl,
+    })
+    .onConflictDoNothing();
+
+  const model = await db.query.machineModels.findFirst({
+    where: eq(machineModels.opdbRef, teile.machineRef),
+    columns: { id: true },
+  });
+  return model?.id ?? null;
+}
+
 export async function createMachine(
   _prev: FormState,
   formData: FormData,
@@ -53,11 +99,14 @@ export async function createMachine(
     (await uploadMachinePhoto(formData.get("foto") as File | null, user.id)) ??
     opdbImageUrl(formData);
 
+  const modelId = await ensureMachineModel(data, opdbImageUrl(formData));
+
   const [created] = await db
     .insert(machines)
     .values({
       ownerId: user.id,
       clubId: data.clubId ?? null,
+      modelId,
       hersteller: data.hersteller,
       modell: data.modell,
       baujahr: data.baujahr ?? null,
@@ -91,6 +140,8 @@ export async function updateMachine(
     .update(machines)
     .set({
       clubId: data.clubId ?? null,
+      // Beim Ändern des OPDB-Bezugs wandert die Maschine zum passenden Gerätetyp.
+      modelId: await ensureMachineModel(data, opdbImageUrl(formData)),
       hersteller: data.hersteller,
       modell: data.modell,
       baujahr: data.baujahr ?? null,
