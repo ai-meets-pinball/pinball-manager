@@ -47,6 +47,10 @@ const sections: GuideSection[] = [
         titel: "Per Einladung beitreten",
         text: "Wurdest du eingeladen, öffne den Link aus der E-Mail. Hast du noch kein Konto, registrierst du dich direkt darüber und trittst dem Club automatisch bei.",
       },
+      {
+        titel: "Wo finde ich was?",
+        text: "Oben links liegen Maschinen und Hilfe. Hinter dem Nutzer-Icon oben rechts findest du Clubs, Konto, Administration (nur Super-Admins) und Abmelden. Daneben schaltest du zwischen hellem und dunklem Design um.",
+      },
     ],
   },
   {
@@ -119,7 +123,7 @@ const sections: GuideSection[] = [
     steps: [
       {
         titel: "Club erstellen",
-        text: "Clubs → »Neuer Club«. Als Ersteller wirst du automatisch Owner.",
+        text: "Nutzer-Icon → Clubs → »Neuer Club«. Als Ersteller wirst du automatisch Owner.",
       },
       {
         titel: "Mitglieder einladen",
@@ -127,7 +131,11 @@ const sections: GuideSection[] = [
       },
       {
         titel: "Rollen",
-        text: "Owner: volle Kontrolle — Mitglieder & Einladungen verwalten, zum Owner befördern, Club löschen. Admin: Mitglieder & Einladungen verwalten, aber nicht zum Owner befördern oder den Club löschen. Mitglied: sieht und pflegt die Club-Maschinen.",
+        text: "Owner: volle Kontrolle — Mitglieder & Einladungen verwalten, zum Owner befördern, Club löschen. Admin: Mitglieder & Einladungen verwalten, aber nicht zum Owner befördern oder den Club löschen. Mitglied: sieht und pflegt die Club-Maschinen. Das Info-Icon neben »Mitglieder« zeigt die Erklärung jederzeit direkt im Club.",
+      },
+      {
+        titel: "Rolle ändern",
+        text: "Als Owner oder Admin wählst du in der Mitgliederliste eine andere Rolle aus und speicherst. Die Owner-Rolle kann nur ein Owner vergeben oder entziehen.",
       },
       {
         titel: "Owner-Regel",
@@ -181,19 +189,32 @@ const sections: GuideSection[] = [
   {
     titel: "Konto & Sicherheit",
     icon: <UserCog size={18} className="text-[var(--color-primary)]" />,
-    einleitung: "Deine Profildaten, dein Passwort und deine Einladungen.",
+    einleitung:
+      "Deine Profildaten, deine E-Mail-Adresse, dein Passwort, deine Einladungen und Clubs.",
     steps: [
       {
         titel: "Konto öffnen",
-        text: "Oben rechts auf deinen Namen (»Konto«) klicken.",
+        text: "Nutzer-Icon oben rechts → »Konto«.",
       },
       {
-        titel: "Name & Passwort",
-        text: "Namen ändern; Passwort ändern (aktuelles + neues + Wiederholung, gleiche Passwort-Regeln, mit Anzeigen/Verbergen).",
+        titel: "Name ändern",
+        text: "Im Abschnitt »Profil« den Namen anpassen und speichern.",
+      },
+      {
+        titel: "E-Mail-Adresse ändern",
+        text: "Im Abschnitt »E-Mail-Adresse« die neue Adresse eintragen. Zur Sicherheit geht ein Bestätigungslink an deine BISHERIGE Adresse — erst nach dem Klick darauf wird gewechselt.",
       },
       {
         titel: "Einladungen",
         text: "Offene Club-Einladungen kannst du hier annehmen oder ablehnen.",
+      },
+      {
+        titel: "Clubs verlassen",
+        text: "Unter »Meine Clubs« siehst du deine Clubs samt Rolle und kannst sie über »Verlassen« verlassen. Bist du letzter Owner, musst du vorher jemanden zum Owner befördern — dann steht dort statt des Buttons ein Hinweis.",
+      },
+      {
+        titel: "Passwort ändern",
+        text: "Unter »Sicherheit« den Bereich »Passwort ändern« aufklappen: aktuelles Passwort, neues Passwort und Wiederholung — gleiche Regeln, mit Anzeigen/Verbergen.",
       },
       {
         titel: "Passwort vergessen",
@@ -208,15 +229,15 @@ const sections: GuideSection[] = [
     steps: [
       {
         titel: "Zugang",
-        text: "Super-Admins sehen »Admin« in der Navigation. Festgelegt werden sie über die Umgebungsvariable SUPER_ADMIN_EMAILS; weitere lassen sich danach in der Admin-Oberfläche ernennen.",
+        text: "Super-Admins finden »Administration« im Nutzer-Menü oben rechts. Festgelegt werden sie über die Umgebungsvariable SUPER_ADMIN_EMAILS; weitere lassen sich danach in der Admin-Oberfläche ernennen.",
       },
       {
         titel: "Nutzer",
         text: "Alle Nutzer einsehen und Super-Admin-Rechte geben oder entziehen. Der letzte Super-Admin bleibt geschützt.",
       },
       {
-        titel: "Clubs",
-        text: "Alle Clubs einsehen und bei Bedarf löschen. Ein Super-Admin darf grundsätzlich alles verwalten.",
+        titel: "Clubs & Rollen-Katalog",
+        text: "Alle Clubs einsehen und bei Bedarf löschen. Darunter steht der Rollen-Katalog mit allen Rollen und ihrer Bedeutung. Ein Super-Admin darf grundsätzlich alles verwalten.",
       },
     ],
   },
