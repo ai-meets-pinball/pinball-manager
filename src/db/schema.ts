@@ -100,14 +100,13 @@ export const roleAssignments = pgTable(
 
 export const invitations = pgTable("invitations", {
   id: uuid("id").primaryKey().defaultRandom(),
-  clubId: uuid("club_id")
-    .notNull()
-    .references(() => clubs.id, { onDelete: "cascade" }),
+  // NULL = Plattform-Einladung (nur „du darfst dich registrieren", ohne Club).
+  // Gesetzt = Club-Einladung; dann trägt roleId die Rolle, die die Annahme vergibt.
+  clubId: uuid("club_id").references(() => clubs.id, { onDelete: "cascade" }),
   email: text("email").notNull(),
-  // Welche Club-Rolle die Annahme vergibt (Katalog-FK statt Enum).
-  roleId: uuid("role_id")
-    .notNull()
-    .references(() => roles.id),
+  // Welche Club-Rolle die Annahme vergibt (Katalog-FK statt Enum); NULL bei
+  // Plattform-Einladungen.
+  roleId: uuid("role_id").references(() => roles.id),
   token: text("token").notNull().unique(),
   invitedBy: text("invited_by")
     .notNull()

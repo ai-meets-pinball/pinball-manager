@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { db } from "@/db";
 import { machines, roleAssignments, roles } from "@/db/schema";
 import { auth } from "@/lib/auth";
+import { istSuperAdminEmail } from "@/lib/super-admins";
 import { SUPERADMIN_ROLE } from "@/lib/validators";
 
 /*
@@ -18,12 +19,8 @@ import { SUPERADMIN_ROLE } from "@/lib/validators";
   genau diesem Club. Eine club-bezogene Zuweisung IST die Mitgliedschaft.
 */
 
-/** Bootstrap-Allowlist für Super-Admins (Komma-Liste in der Env). Diese Konten
-    erhalten beim nächsten Request automatisch die globale superadmin-Rolle. */
-const SUPER_ADMIN_EMAILS = (process.env.SUPER_ADMIN_EMAILS ?? "")
-  .split(",")
-  .map((e) => e.trim().toLowerCase())
-  .filter(Boolean);
+/* Bootstrap-Allowlist (siehe lib/super-admins.ts): diese Konten erhalten beim
+   nächsten Request automatisch die globale superadmin-Rolle. */
 
 export type SessionUser = {
   id: string;
@@ -62,10 +59,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
 
   let keys = await globalRoleKeys(u.id);
 
-  if (
-    SUPER_ADMIN_EMAILS.includes(u.email.toLowerCase()) &&
-    !keys.includes(SUPERADMIN_ROLE)
-  ) {
+  if (istSuperAdminEmail(u.email) && !keys.includes(SUPERADMIN_ROLE)) {
     await db
       .insert(roleAssignments)
       .values({ userId: u.id, roleId: await roleIdByKey(SUPERADMIN_ROLE) })

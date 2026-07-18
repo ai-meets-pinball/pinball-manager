@@ -33,11 +33,12 @@ const sections: GuideSection[] = [
   {
     titel: "Erste Schritte",
     icon: <KeyRound size={18} className="text-[var(--color-primary)]" />,
-    einleitung: "Konto erstellen, anmelden, Passwort zurücksetzen.",
+    einleitung:
+      "Konto anlegen (nur mit Einladung), anmelden, Passwort zurücksetzen.",
     steps: [
       {
-        titel: "Registrieren",
-        text: "Auf der Anmeldeseite »Jetzt registrieren« wählen und Name, E-Mail und Passwort eingeben. Das Passwort braucht mindestens 8 Zeichen mit Groß- und Kleinbuchstaben sowie einer Zahl und muss wiederholt werden. Mit dem Augen-Symbol lässt es sich anzeigen oder verbergen.",
+        titel: "Konto anlegen — nur mit Einladung",
+        text: "Eine Registrierung ist ausschließlich über einen Einladungslink möglich. Den bekommst du per E-Mail: entweder als Club-Einladung oder als allgemeine Einladung von einem Super-Admin. Über den Link gibst du Name, E-Mail und Passwort ein — mindestens 8 Zeichen mit Groß- und Kleinbuchstaben sowie einer Zahl, dazu die Wiederholung. Mit dem Augen-Symbol lässt sich das Passwort anzeigen oder verbergen.",
       },
       {
         titel: "Anmelden",
@@ -230,6 +231,10 @@ const sections: GuideSection[] = [
       {
         titel: "Zugang",
         text: "Super-Admins finden »Administration« im Nutzer-Menü oben rechts. Festgelegt werden sie über die Umgebungsvariable SUPER_ADMIN_EMAILS; weitere lassen sich danach in der Admin-Oberfläche ernennen.",
+      },
+      {
+        titel: "Nutzer einladen",
+        text: "Da die Registrierung nur mit Einladung möglich ist, lädst du neue Personen unter »Nutzer einladen« per E-Mail ein — sie erhalten einen Registrierungslink. Diese Einladung ordnet keinem Club zu; dafür lädst du zusätzlich im jeweiligen Club ein. Offene Einladungen lassen sich zurückziehen.",
       },
       {
         titel: "Nutzer",

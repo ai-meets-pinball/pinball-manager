@@ -1,14 +1,16 @@
-import { count, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, count, desc, eq, gte, isNotNull, isNull, sql } from "drizzle-orm";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { FlaskConical, Trash2 } from "lucide-react";
+import { InviteUserForm } from "@/components/invite-user-form";
 import { RoleInfo } from "@/components/role-info";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { setSuperAdmin } from "@/db/actions/admin";
 import { deleteClub } from "@/db/actions/clubs";
+import { revokePlatformInvitation } from "@/db/actions/invitations";
 import { db } from "@/db";
-import { clubs, roleAssignments, roles, user } from "@/db/schema";
+import { clubs, invitations, roleAssignments, roles, user } from "@/db/schema";
 import { isSuperAdmin, requireUser } from "@/lib/session";
 import { SUPERADMIN_ROLE } from "@/lib/validators";
 
@@ -59,9 +61,59 @@ export default async function AdminPage() {
     .from(roleAssignments)
     .where(isNotNull(roleAssignments.clubId));
 
+  // Offene Plattform-Einladungen (ohne Club), noch nicht abgelaufen.
+  const offeneEinladungen = await db
+    .select({ id: invitations.id, email: invitations.email })
+    .from(invitations)
+    .where(
+      and(
+        isNull(invitations.clubId),
+        eq(invitations.status, "pending"),
+        gte(invitations.expiresAt, sql`now()`),
+      ),
+    )
+    .orderBy(desc(invitations.createdAt));
+
   return (
     <div className="space-y-8">
       <h1 className="text-2xl font-bold">Administration</h1>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Nutzer einladen</h2>
+        <p className="text-sm text-[var(--color-muted)]">
+          Die Registrierung ist nur mit Einladung möglich. Wer hier eingeladen
+          wird, kann sich über den Link ein Konto anlegen — eine Club-Zuordnung
+          passiert dabei nicht (dafür lädst du im jeweiligen Club ein).
+        </p>
+        <Card className="space-y-4">
+          <InviteUserForm />
+
+          {offeneEinladungen.length > 0 ? (
+            <div className="space-y-2 border-t border-[var(--color-border)] pt-3">
+              <p className="text-xs font-medium text-[var(--color-muted)]">
+                Offene Einladungen
+              </p>
+              {offeneEinladungen.map((inv) => (
+                <div
+                  key={inv.id}
+                  className="flex items-center justify-between gap-3 text-sm"
+                >
+                  <span className="min-w-0 truncate">{inv.email}</span>
+                  <form action={revokePlatformInvitation}>
+                    <input type="hidden" name="invitationId" value={inv.id} />
+                    <button
+                      type="submit"
+                      className="text-xs text-[var(--color-muted)] hover:text-[var(--color-danger)]"
+                    >
+                      Zurückziehen
+                    </button>
+                  </form>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </Card>
+      </section>
 
       <section className="space-y-3">
         <h2 className="flex items-center gap-1.5 text-lg font-semibold">

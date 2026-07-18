@@ -1,17 +1,22 @@
 "use server";
 
 import { randomBytes } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
+import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { clubs, invitations, roleAssignments, user } from "@/db/schema";
-import { sendInvitationEmail } from "@/lib/email";
+import {
+  sendInvitationEmail,
+  sendPlatformInvitationEmail,
+} from "@/lib/email";
 import {
   getClubRole,
   isClubOwner,
   isSuperAdmin,
   requireClubManager,
+  requireSuperAdmin,
   requireUser,
   roleIdByKey,
 } from "@/lib/session";
@@ -101,8 +106,72 @@ export async function inviteMember(
   return { message: `Einladung an ${email} verschickt.` };
 }
 
+/** Plattform-Einladung (ohne Club): berechtigt nur zur Registrierung.
+    Nur Super-Admins. */
+export async function invitePlatformUser(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const currentUser = await requireSuperAdmin();
+
+  const parsed = z
+    .object({ email: z.string().trim().email("Gültige E-Mail erforderlich") })
+    .safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
+  }
+  const email = parsed.data.email.toLowerCase();
+
+  const vorhanden = await db.query.user.findFirst({
+    where: eq(user.email, email),
+  });
+  if (vorhanden) {
+    return { error: "Es gibt bereits ein Konto mit dieser E-Mail." };
+  }
+
+  // Offene Plattform-Einladung für diese Adresse ersetzen.
+  await db
+    .update(invitations)
+    .set({ status: "revoked" })
+    .where(
+      and(
+        eq(invitations.email, email),
+        eq(invitations.status, "pending"),
+        isNull(invitations.clubId),
+      ),
+    );
+
+  const token = randomBytes(24).toString("hex");
+  await db.insert(invitations).values({
+    clubId: null,
+    roleId: null,
+    email,
+    token,
+    invitedBy: currentUser.id,
+    status: "pending",
+    expiresAt: new Date(Date.now() + INVITE_TTL_MS),
+  });
+
+  try {
+    await sendPlatformInvitationEmail(
+      email,
+      `${baseUrl()}/register?invite=${token}`,
+      currentUser.name,
+    );
+  } catch (e) {
+    console.error("[invite] platform email:", (e as Error).message);
+    return {
+      error: "Einladung gespeichert, aber der E-Mail-Versand ist fehlgeschlagen.",
+    };
+  }
+
+  revalidatePath("/admin");
+  return { message: `Einladung an ${email} verschickt.` };
+}
+
 /** Gemeinsame Annahme-Logik. Legt (idempotent) die Mitgliedschaft an und markiert
-    die Einladung als akzeptiert. Liefert die clubId oder einen Fehler. */
+    die Einladung als akzeptiert. Liefert die clubId oder einen Fehler.
+    Bei einer Plattform-Einladung (clubId = NULL) wird nur quittiert. */
 async function acceptForUser(
   token: string,
   userId: string,
@@ -121,19 +190,22 @@ async function acceptForUser(
     return { error: "Diese Einladung gilt für eine andere E-Mail-Adresse." };
   }
 
-  // Rollenzuweisung = Mitgliedschaft. Idempotent: nur anlegen, wenn noch keine da ist.
-  if (!(await getClubRole(userId, inv.clubId))) {
-    await db
-      .insert(roleAssignments)
-      .values({ clubId: inv.clubId, userId, roleId: inv.roleId })
-      .onConflictDoNothing();
+  // Club-Einladung: Rollenzuweisung = Mitgliedschaft (idempotent).
+  // Plattform-Einladung (clubId/roleId NULL): nichts zuzuweisen, nur quittieren.
+  if (inv.clubId && inv.roleId) {
+    if (!(await getClubRole(userId, inv.clubId))) {
+      await db
+        .insert(roleAssignments)
+        .values({ clubId: inv.clubId, userId, roleId: inv.roleId })
+        .onConflictDoNothing();
+    }
   }
   await db
     .update(invitations)
     .set({ status: "accepted" })
     .where(eq(invitations.id, inv.id));
 
-  return { clubId: inv.clubId };
+  return { clubId: inv.clubId ?? undefined };
 }
 
 /** Einladung annehmen (Button auf der Invite-Landing-Seite). */
@@ -174,6 +246,23 @@ export async function declineInvitation(formData: FormData): Promise<void> {
     .where(eq(invitations.id, invitationId));
 
   revalidatePath("/account");
+}
+
+/** Offene Plattform-Einladung zurückziehen (nur Super-Admin). */
+export async function revokePlatformInvitation(
+  formData: FormData,
+): Promise<void> {
+  await requireSuperAdmin();
+  const invitationId = String(formData.get("invitationId"));
+
+  await db
+    .update(invitations)
+    .set({ status: "revoked" })
+    .where(
+      and(eq(invitations.id, invitationId), isNull(invitations.clubId)),
+    );
+
+  revalidatePath("/admin");
 }
 
 /** Offene Einladung zurückziehen (Manager). */

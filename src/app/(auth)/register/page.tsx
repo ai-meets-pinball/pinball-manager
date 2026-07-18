@@ -62,6 +62,12 @@ function RegisterForm() {
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+      {!invite ? (
+        <p className="rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-3 text-sm text-[var(--color-muted)]">
+          Ein Konto lässt sich nur mit Einladung anlegen. Nutze bitte den Link
+          aus deiner Einladungs-E-Mail.
+        </p>
+      ) : null}
       <Field label="Name">
         <Input name="name" required autoComplete="name" />
       </Field>

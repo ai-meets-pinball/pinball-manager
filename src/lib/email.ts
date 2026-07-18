@@ -82,6 +82,44 @@ export async function sendChangeEmailVerification(
   }
 }
 
+/** Plattform-Einladung (ohne Club): berechtigt zur Registrierung. */
+export async function sendPlatformInvitationEmail(
+  to: string,
+  url: string,
+  inviterName: string,
+) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error("RESEND_API_KEY ist nicht gesetzt");
+
+  const resend = new Resend(apiKey);
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to,
+    subject: "Einladung zum Pinball Manager",
+    html: `
+      <div style="font-family: sans-serif; line-height: 1.5;">
+        <h2>Einladung zum Pinball Manager</h2>
+        <p>${inviterName} lädt dich ein, ein Konto beim Pinball Manager anzulegen.</p>
+        <p>
+          <a href="${url}"
+             style="display:inline-block;padding:10px 18px;background:#7a1f2b;
+                    color:#fff;text-decoration:none;border-radius:8px;">
+            Konto erstellen
+          </a>
+        </p>
+        <p style="color:#71717a;font-size:13px;">
+          Eine Registrierung ist nur über diesen Link möglich. Er ist begrenzt gültig
+          und gilt ausschließlich für diese E-Mail-Adresse.
+        </p>
+      </div>
+    `,
+  });
+
+  if (error) {
+    throw new Error(`E-Mail-Versand fehlgeschlagen: ${error.message}`);
+  }
+}
+
 export async function sendInvitationEmail(
   to: string,
   url: string,

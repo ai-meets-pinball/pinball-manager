@@ -20,6 +20,7 @@ export default async function InvitePage({
   const { token } = await params;
 
   // Ablauf serverseitig per SQL now() prüfen (kein Date.now() im Render).
+  // leftJoin: Plattform-Einladungen haben keine Rolle (role_id NULL).
   const [invite] = await db
     .select({
       status: invitations.status,
@@ -29,11 +30,11 @@ export default async function InvitePage({
       expired: sql<boolean>`${invitations.expiresAt} < now()`,
     })
     .from(invitations)
-    .innerJoin(roles, eq(invitations.roleId, roles.id))
+    .leftJoin(roles, eq(invitations.roleId, roles.id))
     .where(eq(invitations.token, token))
     .limit(1);
 
-  const club = invite
+  const club = invite?.clubId
     ? await db.query.clubs.findFirst({ where: eq(clubs.id, invite.clubId) })
     : null;
 
@@ -56,9 +57,15 @@ export default async function InvitePage({
       ) : (
         <>
           <p className="text-sm text-[var(--color-muted)]">
-            Du wurdest zum Club <strong>{club?.name}</strong> eingeladen (Rolle:{" "}
-            {invite!.rolle}). Die Einladung gilt für{" "}
-            <strong>{invite!.email}</strong>.
+            {club ? (
+              <>
+                Du wurdest zum Club <strong>{club.name}</strong> eingeladen
+                (Rolle: {invite!.rolle}).{" "}
+              </>
+            ) : (
+              <>Du wurdest zum Pinball Manager eingeladen. </>
+            )}
+            Die Einladung gilt für <strong>{invite!.email}</strong>.
           </p>
 
           {!user ? (
