@@ -9,7 +9,32 @@ import {
   type SQL,
 } from "drizzle-orm";
 import { db } from "@/db";
-import { clubs, machines, roleAssignments, roles } from "@/db/schema";
+import {
+  clubs,
+  emailTemplates,
+  machines,
+  roleAssignments,
+  roles,
+} from "@/db/schema";
+import {
+  DEFAULT_TEMPLATES,
+  type ResolvedTemplate,
+  type TemplateKey,
+} from "@/lib/email-templates";
+
+/** E-Mail-Vorlage laden: DB-Eintrag falls angepasst, sonst der Standard aus dem
+    Code. Liegt hier (Server-Seite), damit lib/email-templates.ts client-safe
+    bleibt — sonst landet der Postgres-Treiber im Client-Bundle. */
+export async function getTemplate(
+  key: TemplateKey,
+): Promise<ResolvedTemplate> {
+  const row = await db.query.emailTemplates.findFirst({
+    where: eq(emailTemplates.key, key),
+  });
+  if (row) return { subject: row.subject, body: row.body, angepasst: true };
+  const std = DEFAULT_TEMPLATES[key];
+  return { subject: std.subject, body: std.body, angepasst: false };
+}
 
 /* Lesbare, wiederverwendbare Lese-Queries.
    Mitgliedschaft = eine club-bezogene Rollenzuweisung (role_assignments.clubId). */

@@ -3,7 +3,7 @@
 import { Mail } from "lucide-react";
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
-import { Field, Input, Select } from "@/components/ui/input";
+import { Field, Input, Select, Textarea } from "@/components/ui/input";
 import type { FormState } from "@/db/actions/clubs";
 
 export function AddMemberForm({
@@ -21,8 +21,9 @@ export function AddMemberForm({
   );
 
   return (
-    <form action={formAction} className="flex flex-col gap-3 sm:flex-row sm:items-end">
+    <form action={formAction} className="flex flex-col gap-3">
       <input type="hidden" name="clubId" value={clubId} />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-end">
       <div className="flex-1">
         <Field
           label="E-Mail einladen"
@@ -38,16 +39,23 @@ export function AddMemberForm({
           {allowOwner ? <option value="owner">Owner</option> : null}
         </Select>
       </Field>
-      <Button type="submit" disabled={pending}>
-        <Mail size={16} /> {pending ? "Senden…" : "Einladen"}
-      </Button>
+      </div>
+      <Field
+        label="Persönliche Nachricht (optional)"
+        hint="Wird in der Einladungsmail als zitierter Absatz ergänzt."
+      >
+        <Textarea name="message" rows={3} />
+      </Field>
+      <div>
+        <Button type="submit" disabled={pending}>
+          <Mail size={16} /> {pending ? "Senden…" : "Einladen"}
+        </Button>
+      </div>
       {state.error ? (
-        <p className="text-sm text-[var(--color-danger)] sm:basis-full">{state.error}</p>
+        <p className="text-sm text-[var(--color-danger)]">{state.error}</p>
       ) : null}
       {state.message ? (
-        <p className="text-sm text-[var(--color-success)] sm:basis-full">
-          {state.message}
-        </p>
+        <p className="text-sm text-[var(--color-success)]">{state.message}</p>
       ) : null}
     </form>
   );

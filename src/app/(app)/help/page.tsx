@@ -234,7 +234,11 @@ const sections: GuideSection[] = [
       },
       {
         titel: "Nutzer einladen",
-        text: "Da die Registrierung nur mit Einladung möglich ist, lädst du neue Personen unter »Nutzer einladen« per E-Mail ein — sie erhalten einen Registrierungslink. Diese Einladung ordnet keinem Club zu; dafür lädst du zusätzlich im jeweiligen Club ein. Offene Einladungen lassen sich zurückziehen.",
+        text: "Da die Registrierung nur mit Einladung möglich ist, lädst du neue Personen unter »Nutzer einladen« per E-Mail ein — sie erhalten einen Registrierungslink. Optional kannst du eine persönliche Nachricht mitschicken. Diese Einladung ordnet keinem Club zu; dafür lädst du zusätzlich im jeweiligen Club ein. Offene Einladungen lassen sich zurückziehen.",
+      },
+      {
+        titel: "E-Mail-Vorlagen",
+        text: "Unter »E-Mail-Vorlagen« passt du Betreff und Einleitungstext der Einladungsmails an — mit Platzhaltern wie {{einlader}} und {{clubname}} sowie einer Vorschau. Der Button mit dem Einladungslink und der Gültigkeitshinweis bleiben fest, damit eine Vorlage den Link nicht versehentlich entfernt. »Zurücksetzen« stellt den Standardtext wieder her.",
       },
       {
         titel: "Nutzer",

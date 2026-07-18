@@ -116,6 +116,25 @@ export const invitations = pgTable("invitations", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+/* ── E-Mail-Vorlagen ──────────────────────────────────────────────────────── */
+/*
+  Editierbare Texte für verschickte E-Mails. Nur Betreff und Einleitungstext
+  sind anpassbar — der Button mit dem Einladungslink und der Gültigkeitshinweis
+  werden fest im Code gerendert, damit eine bearbeitete Vorlage den Link nicht
+  versehentlich entfernen kann.
+
+  Es gibt NUR Zeilen für abweichende Vorlagen: fehlt der Eintrag, gilt der
+  Standard aus lib/email-templates.ts. „Zurücksetzen" = Zeile löschen.
+*/
+export const emailTemplates = pgTable("email_templates", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  key: text("key").notNull().unique(), // invite_platform | invite_club
+  subject: text("subject").notNull(),
+  body: text("body").notNull(), // reiner Text mit {{platzhaltern}}
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  updatedBy: text("updated_by").references(() => user.id),
+});
+
 /* ── Maschinen ────────────────────────────────────────────────────────────── */
 
 export const machines = pgTable("machines", {

@@ -94,6 +94,7 @@ export async function inviteMember(
       `${baseUrl()}/invite/${token}`,
       club?.name ?? "Club",
       currentUser.name,
+      String(formData.get("message") ?? ""),
     );
   } catch (e) {
     console.error("[invite] email:", (e as Error).message);
@@ -157,6 +158,7 @@ export async function invitePlatformUser(
       email,
       `${baseUrl()}/register?invite=${token}`,
       currentUser.name,
+      String(formData.get("message") ?? ""),
     );
   } catch (e) {
     console.error("[invite] platform email:", (e as Error).message);

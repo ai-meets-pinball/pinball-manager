@@ -1,4 +1,6 @@
 import { Resend } from "resend";
+import { getTemplate } from "@/db/queries";
+import { renderPlaceholders, textToHtml } from "@/lib/email-templates";
 
 /*
   E-Mail-Versand über Resend. Bislang nur für „Passwort vergessen".
@@ -82,37 +84,73 @@ export async function sendChangeEmailVerification(
   }
 }
 
+/*
+  Einladungsmails werden aus einer Vorlage gebaut (lib/email-templates.ts):
+  Betreff + Einleitung sind im Admin editierbar, der CTA-Button mit dem Link
+  und der Gültigkeitshinweis stehen FEST hier — so kann eine bearbeitete
+  Vorlage den Einladungslink nicht entfernen.
+*/
+function invitationHtml({
+  body,
+  url,
+  ctaLabel,
+  hinweis,
+  message,
+}: {
+  body: string;
+  url: string;
+  ctaLabel: string;
+  hinweis: string;
+  message?: string | null;
+}) {
+  // Persönliche Nachricht als zitierter Block — escaped, kein rohes HTML.
+  const persoenlich = message?.trim()
+    ? `<div style="margin:16px 0;padding:12px 14px;border-left:3px solid #7a1f2b;
+                  background:#f6f4f2;color:#333;">${textToHtml(message.trim())}</div>`
+    : "";
+
+  return `
+      <div style="font-family: sans-serif; line-height: 1.5;">
+        ${textToHtml(body)}
+        ${persoenlich}
+        <p>
+          <a href="${url}"
+             style="display:inline-block;padding:10px 18px;background:#7a1f2b;
+                    color:#fff;text-decoration:none;border-radius:8px;">
+            ${ctaLabel}
+          </a>
+        </p>
+        <p style="color:#71717a;font-size:13px;">${hinweis}</p>
+      </div>
+    `;
+}
+
 /** Plattform-Einladung (ohne Club): berechtigt zur Registrierung. */
 export async function sendPlatformInvitationEmail(
   to: string,
   url: string,
   inviterName: string,
+  message?: string | null,
 ) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) throw new Error("RESEND_API_KEY ist nicht gesetzt");
+
+  const vorlage = await getTemplate("invite_platform");
+  const vars = { einlader: inviterName };
 
   const resend = new Resend(apiKey);
   const { error } = await resend.emails.send({
     from: FROM,
     to,
-    subject: "Einladung zum Pinball Manager",
-    html: `
-      <div style="font-family: sans-serif; line-height: 1.5;">
-        <h2>Einladung zum Pinball Manager</h2>
-        <p>${inviterName} lädt dich ein, ein Konto beim Pinball Manager anzulegen.</p>
-        <p>
-          <a href="${url}"
-             style="display:inline-block;padding:10px 18px;background:#7a1f2b;
-                    color:#fff;text-decoration:none;border-radius:8px;">
-            Konto erstellen
-          </a>
-        </p>
-        <p style="color:#71717a;font-size:13px;">
-          Eine Registrierung ist nur über diesen Link möglich. Er ist begrenzt gültig
-          und gilt ausschließlich für diese E-Mail-Adresse.
-        </p>
-      </div>
-    `,
+    subject: renderPlaceholders(vorlage.subject, vars),
+    html: invitationHtml({
+      body: renderPlaceholders(vorlage.body, vars),
+      url,
+      ctaLabel: "Konto erstellen",
+      hinweis:
+        "Eine Registrierung ist nur über diesen Link möglich. Er ist begrenzt gültig und gilt ausschließlich für diese E-Mail-Adresse.",
+      message,
+    }),
   });
 
   if (error) {
@@ -125,33 +163,27 @@ export async function sendInvitationEmail(
   url: string,
   clubName: string,
   inviterName: string,
+  message?: string | null,
 ) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) throw new Error("RESEND_API_KEY ist nicht gesetzt");
+
+  const vorlage = await getTemplate("invite_club");
+  const vars = { einlader: inviterName, clubname: clubName };
 
   const resend = new Resend(apiKey);
   const { error } = await resend.emails.send({
     from: FROM,
     to,
-    subject: `Einladung zum Club „${clubName}" — Pinball Manager`,
-    html: `
-      <div style="font-family: sans-serif; line-height: 1.5;">
-        <h2>Einladung zu „${clubName}"</h2>
-        <p>${inviterName} lädt dich ein, dem Club <strong>${clubName}</strong>
-           bei Pinball Manager beizutreten.</p>
-        <p>
-          <a href="${url}"
-             style="display:inline-block;padding:10px 18px;background:#7a1f2b;
-                    color:#fff;text-decoration:none;border-radius:8px;">
-            Einladung ansehen
-          </a>
-        </p>
-        <p style="color:#71717a;font-size:13px;">
-          Hast du noch kein Konto, kannst du dich über den Link direkt registrieren.
-          Der Link ist nur begrenzt gültig.
-        </p>
-      </div>
-    `,
+    subject: renderPlaceholders(vorlage.subject, vars),
+    html: invitationHtml({
+      body: renderPlaceholders(vorlage.body, vars),
+      url,
+      ctaLabel: "Einladung ansehen",
+      hinweis:
+        "Hast du noch kein Konto, kannst du dich über den Link direkt registrieren. Der Link ist nur begrenzt gültig.",
+      message,
+    }),
   });
 
   if (error) {
