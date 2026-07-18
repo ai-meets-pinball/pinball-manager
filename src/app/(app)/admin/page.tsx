@@ -2,6 +2,7 @@ import { count, eq, isNotNull, isNull } from "drizzle-orm";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Trash2 } from "lucide-react";
+import { RoleInfo } from "@/components/role-info";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { setSuperAdmin } from "@/db/actions/admin";
@@ -63,7 +64,13 @@ export default async function AdminPage() {
       <h1 className="text-2xl font-bold">Administration</h1>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Nutzer ({users.length})</h2>
+        <h2 className="flex items-center gap-1.5 text-lg font-semibold">
+          Nutzer ({users.length})
+          <RoleInfo
+            roles={katalog.filter((r) => r.scope === "global")}
+            titel="Globale Rollen"
+          />
+        </h2>
         <div className="space-y-2">
           {users.map((u) => {
             const meineRollen = rolesByUser.get(u.id) ?? [];

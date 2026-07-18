@@ -4,6 +4,7 @@ import { Trash2, X } from "lucide-react";
 import { AddMemberForm } from "@/components/add-member-form";
 import { MachineCard } from "@/components/machine-card";
 import { MemberActions } from "@/components/member-actions";
+import { RoleInfo } from "@/components/role-info";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { deleteClub } from "@/db/actions/clubs";
@@ -56,6 +57,17 @@ export default async function ClubDetailPage({
     with: { club: { columns: { name: true } } },
   });
 
+  // Rollen-Katalog (Club-Rollen) für die Erklärung hinter dem Info-Icon.
+  const rollenKatalog = await db
+    .select({
+      key: roles.key,
+      label: roles.label,
+      beschreibung: roles.beschreibung,
+    })
+    .from(roles)
+    .where(eq(roles.scope, "club"))
+    .orderBy(desc(roles.rang));
+
   // Offene Einladungen (nur für Manager sichtbar).
   const pendingInvites = manager
     ? await db
@@ -91,7 +103,10 @@ export default async function ClubDetailPage({
 
       {/* Mitglieder */}
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Mitglieder</h2>
+        <h2 className="flex items-center gap-1.5 text-lg font-semibold">
+          Mitglieder
+          <RoleInfo roles={rollenKatalog} />
+        </h2>
         <div className="space-y-2">
           {members.map((member) => (
             <Card

@@ -2,14 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Globe, ShieldCheck, User, Users, Wrench } from "lucide-react";
+import { BookOpen, Globe, Wrench } from "lucide-react";
 import { Logo } from "@/components/logo";
-import { SignOutButton } from "@/components/sign-out-button";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { UserMenu } from "@/components/user-menu";
 
+/* Hauptziele bleiben in der Kopfzeile; Clubs, Konto, Administration und
+   Abmelden liegen gebündelt im Nutzer-Menü (siehe user-menu.tsx). */
 const links = [
   { href: "/machines", label: "Maschinen", icon: Wrench },
-  { href: "/clubs", label: "Clubs", icon: Users },
   { href: "/help", label: "Hilfe", icon: BookOpen },
 ];
 
@@ -57,20 +58,6 @@ export function Nav({
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          {isSuperAdmin ? (
-            <Link
-              href="/admin"
-              title="Administration"
-              className={`flex items-center gap-1.5 rounded-[var(--radius)] px-2.5 py-1.5 text-sm font-medium transition-colors ${
-                pathname.startsWith("/admin")
-                  ? "bg-[var(--color-inset)] text-[var(--color-fg)]"
-                  : "text-[var(--color-muted)] hover:bg-[var(--color-inset)] hover:text-[var(--color-fg)]"
-              }`}
-            >
-              <ShieldCheck size={15} />
-              <span className="hidden sm:inline">Admin</span>
-            </Link>
-          ) : null}
           <Link
             href="/"
             title="Öffentliche Website"
@@ -79,20 +66,8 @@ export function Nav({
             <Globe size={15} />
             <span className="hidden sm:inline">Website</span>
           </Link>
-          <Link
-            href="/account"
-            title="Konto"
-            className={`flex items-center gap-1.5 rounded-[var(--radius)] px-2.5 py-1.5 text-sm font-medium transition-colors ${
-              pathname.startsWith("/account")
-                ? "bg-[var(--color-inset)] text-[var(--color-fg)]"
-                : "text-[var(--color-muted)] hover:bg-[var(--color-inset)] hover:text-[var(--color-fg)]"
-            }`}
-          >
-            <User size={15} />
-            <span className="hidden font-mono text-xs md:inline">{userName}</span>
-          </Link>
           <ThemeToggle />
-          <SignOutButton />
+          <UserMenu userName={userName} isSuperAdmin={isSuperAdmin} />
         </div>
       </nav>
     </header>
