@@ -5,7 +5,9 @@ import { AddMemberForm } from "@/components/add-member-form";
 import { MachineCard } from "@/components/machine-card";
 import { MemberActions } from "@/components/member-actions";
 import { RoleInfo } from "@/components/role-info";
+import { ShareSettingsForm } from "@/components/share-settings-form";
 import { Card } from "@/components/ui/card";
+import { getSettingsFor } from "@/db/queries";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { deleteClub } from "@/db/actions/clubs";
 import { inviteMember, revokeInvitation } from "@/db/actions/invitations";
@@ -56,6 +58,8 @@ export default async function ClubDetailPage({
     where: eq(machines.clubId, id),
     with: { club: { columns: { name: true } } },
   });
+
+  const clubShareSettings = await getSettingsFor("club", id);
 
   // Rollen-Katalog (Club-Rollen) für die Erklärung hinter dem Info-Icon.
   const rollenKatalog = await db
@@ -171,6 +175,20 @@ export default async function ClubDetailPage({
           </Card>
         ) : null}
       </section>
+
+      {/* Freigabe-Voreinstellungen für Club-Maschinen (nur Owner/Admin) */}
+      {manager ? (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">Freigabe-Voreinstellungen</h2>
+          <Card>
+            <ShareSettingsForm
+              werte={clubShareSettings.werte}
+              angepasst={clubShareSettings.angepasst}
+              clubId={club.id}
+            />
+          </Card>
+        </section>
+      ) : null}
 
       {/* Maschinen des Clubs */}
       <section className="space-y-3">

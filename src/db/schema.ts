@@ -263,6 +263,38 @@ export const shareTargets = pgTable("share_targets", {
   userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
 });
 
+/* ── Freigabe-Voreinstellungen ────────────────────────────────────────────── */
+/*
+  Wie beim email_templates-Muster: eine Zeile bedeutet ABWEICHUNG vom Standard.
+  Fehlt sie, gelten die Werte aus dem Code (lib/share-defaults.ts) —
+  „Zurücksetzen" ist damit ein Löschen, und es braucht keine Seed-Migration.
+
+  Welche Voreinstellung greift: gehört die Maschine einem Club, entscheidet der
+  Club; sonst der Eigentümer. Im Einzelfall ist alles übersteuerbar.
+*/
+const shareDefaultSpalten = {
+  defaultScope: text("default_scope").notNull().default("platform"),
+  defaultAnonym: boolean("default_anonym").notNull().default(true),
+  defaultZeigeKosten: boolean("default_zeige_kosten").notNull().default(false),
+  autoShareFacts: boolean("auto_share_facts").notNull().default(false),
+  autoShareRepairs: boolean("auto_share_repairs").notNull().default(false),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+};
+
+export const userSettings = pgTable("user_settings", {
+  userId: text("user_id")
+    .primaryKey()
+    .references(() => user.id, { onDelete: "cascade" }),
+  ...shareDefaultSpalten,
+});
+
+export const clubSettings = pgTable("club_settings", {
+  clubId: uuid("club_id")
+    .primaryKey()
+    .references(() => clubs.id, { onDelete: "cascade" }),
+  ...shareDefaultSpalten,
+});
+
 /* ── Aus dem Handbuch extrahierte Faktentabellen ──────────────────────────── */
 /* Je Maschine und Faktentyp genau EINE Zeile. Befüllt von lib/manual-extract.ts
    (Replace-Semantik: alle Zeilen der Maschine löschen, dann neu einfügen). */

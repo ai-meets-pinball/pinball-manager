@@ -12,15 +12,20 @@ import {
 import { db } from "@/db";
 import {
   clubs,
+  clubSettings,
   emailTemplates,
+  faults,
   machineData,
   machines,
+  repairs,
   roleAssignments,
   roles,
   shareTargets,
   shares,
   user,
+  userSettings,
 } from "@/db/schema";
+import { SHARE_DEFAULTS, type ShareDefaults } from "@/lib/share-defaults";
 import {
   getUserClubIds,
   isSuperAdmin,
@@ -177,6 +182,142 @@ export async function getSharedFactsForModel(
       }),
     })),
   );
+}
+
+/**
+ * Geteilte Reparaturen zu einem Gerätetyp — die wachsende Reparaturdatenbank.
+ *
+ * Die Feldprojektion passiert HIER, serverseitig: Kosten/Aufwand und der Name
+ * des Urhebers werden gar nicht erst geladen bzw. auf null gesetzt, wenn die
+ * Freigabe sie nicht freigibt. Ein Ausblenden erst im JSX würde die Werte an
+ * den Client ausliefern.
+ */
+export async function getSharedRepairsForModel(
+  currentUser: SessionUser,
+  modelId: string,
+  exkludiereMachineId?: string,
+) {
+  const sichtbar = await shareVisibilityFilter(currentUser);
+
+  const zeilen = await db
+    .select({
+      shareId: shares.id,
+      anonym: shares.anonym,
+      zeigeKosten: shares.zeigeKosten,
+      ownerName: user.name,
+      repairId: repairs.id,
+      datum: repairs.datum,
+      status: repairs.status,
+      diagnose: repairs.diagnose,
+      massnahme: repairs.massnahme,
+      teile: repairs.teile,
+      kosten: repairs.kosten,
+      zeit: repairs.zeit,
+      faultBeschreibung: faults.beschreibung,
+      faultKategorie: faults.kategorie,
+    })
+    .from(shares)
+    .innerJoin(repairs, eq(repairs.id, shares.artefaktId))
+    .innerJoin(machines, eq(machines.id, repairs.machineId))
+    .innerJoin(user, eq(user.id, shares.ownerId))
+    .leftJoin(faults, eq(faults.id, repairs.faultId))
+    .where(
+      and(
+        eq(shares.artefaktTyp, "repair"),
+        eq(shares.modelId, modelId),
+        exkludiereMachineId
+          ? ne(repairs.machineId, exkludiereMachineId)
+          : undefined,
+        sichtbar,
+      ),
+    )
+    .orderBy(desc(repairs.datum));
+
+  // Projektion anwenden — verborgene Felder verlassen den Server nicht.
+  return zeilen.map((z) => ({
+    shareId: z.shareId,
+    repairId: z.repairId,
+    datum: z.datum,
+    status: z.status,
+    diagnose: z.diagnose,
+    massnahme: z.massnahme,
+    teile: z.teile,
+    faultBeschreibung: z.faultBeschreibung,
+    faultKategorie: z.faultKategorie,
+    kosten: z.zeigeKosten ? z.kosten : null,
+    zeit: z.zeigeKosten ? z.zeit : null,
+    herkunft: z.anonym ? null : z.ownerName,
+  }));
+}
+
+/** Freigaben der Reparaturen EINER Maschine (für die eigenen Teilen-Schalter). */
+export async function getRepairShares(machineId: string) {
+  const zeilen = await db
+    .select({
+      artefaktId: shares.artefaktId,
+      scope: shares.scope,
+      anonym: shares.anonym,
+      zeigeKosten: shares.zeigeKosten,
+    })
+    .from(shares)
+    .innerJoin(repairs, eq(repairs.id, shares.artefaktId))
+    .where(
+      and(eq(shares.artefaktTyp, "repair"), eq(repairs.machineId, machineId)),
+    );
+  return new Map(zeilen.map((z) => [z.artefaktId, z]));
+}
+
+/**
+ * Freigabe-Voreinstellungen für eine Maschine.
+ * Club-Maschine → Club-Einstellungen, sonst die des Eigentümers; fehlt die
+ * Zeile, gilt der Standard aus dem Code.
+ */
+export async function getShareDefaults(machine: {
+  ownerId: string;
+  clubId: string | null;
+}): Promise<ShareDefaults> {
+  const row = machine.clubId
+    ? await db.query.clubSettings.findFirst({
+        where: eq(clubSettings.clubId, machine.clubId),
+      })
+    : await db.query.userSettings.findFirst({
+        where: eq(userSettings.userId, machine.ownerId),
+      });
+
+  if (!row) return SHARE_DEFAULTS;
+  return {
+    defaultScope: row.defaultScope as ShareDefaults["defaultScope"],
+    defaultAnonym: row.defaultAnonym,
+    defaultZeigeKosten: row.defaultZeigeKosten,
+    autoShareFacts: row.autoShareFacts,
+    autoShareRepairs: row.autoShareRepairs,
+  };
+}
+
+/** Gespeicherte Einstellungen eines Nutzers bzw. Clubs (oder der Standard). */
+export async function getSettingsFor(
+  art: "user" | "club",
+  id: string,
+): Promise<{ werte: ShareDefaults; angepasst: boolean }> {
+  const row =
+    art === "user"
+      ? await db.query.userSettings.findFirst({
+          where: eq(userSettings.userId, id),
+        })
+      : await db.query.clubSettings.findFirst({
+          where: eq(clubSettings.clubId, id),
+        });
+  if (!row) return { werte: SHARE_DEFAULTS, angepasst: false };
+  return {
+    werte: {
+      defaultScope: row.defaultScope as ShareDefaults["defaultScope"],
+      defaultAnonym: row.defaultAnonym,
+      defaultZeigeKosten: row.defaultZeigeKosten,
+      autoShareFacts: row.autoShareFacts,
+      autoShareRepairs: row.autoShareRepairs,
+    },
+    angepasst: true,
+  };
 }
 
 /** Die eigene Freigabe einer Maschine (oder null). */

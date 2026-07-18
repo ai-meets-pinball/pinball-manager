@@ -6,8 +6,10 @@ import {
   EmailForm,
   ProfileForm,
 } from "@/components/account-forms";
+import { ShareSettingsForm } from "@/components/share-settings-form";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { getSettingsFor } from "@/db/queries";
 import { leaveClub } from "@/db/actions/clubs";
 import {
   acceptInvitation,
@@ -19,6 +21,7 @@ import { isSuperAdmin, requireUser } from "@/lib/session";
 
 export default async function AccountPage() {
   const user = await requireUser();
+  const shareSettings = await getSettingsFor("user", user.id);
 
   // Clubs des Nutzers inkl. Owner-Anzahl — damit der letzte Owner nicht
   // versehentlich austritt (die Action würde es ohnehin ablehnen).
@@ -175,6 +178,16 @@ export default async function AccountPage() {
             })}
           </div>
         )}
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Freigabe-Voreinstellungen</h2>
+        <Card>
+          <ShareSettingsForm
+            werte={shareSettings.werte}
+            angepasst={shareSettings.angepasst}
+          />
+        </Card>
       </section>
 
       <section className="space-y-3">

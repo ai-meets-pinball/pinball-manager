@@ -78,6 +78,13 @@
       "when": 1784393916222,
       "tag": "0010_high_dracula",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1784394463362,
+      "tag": "0011_jazzy_genesis",
+      "breakpoints": true
     }
   ]
 }

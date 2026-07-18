@@ -188,6 +188,38 @@ const sections: GuideSection[] = [
     ],
   },
   {
+    titel: "Wissen teilen",
+    icon: <Share2 size={18} className="text-[var(--color-primary)]" />,
+    einleitung:
+      "Handbuch-Daten und Reparaturen mit anderen Besitzern desselben Automaten teilen — so entsteht mit der Zeit eine Reparaturdatenbank je Gerät.",
+    steps: [
+      {
+        titel: "Voraussetzung: OPDB-Bezug",
+        text: "Geteilt wird immer über den Gerätetyp. Den erkennt die App am OPDB-Eintrag (edition-genau, also Pro und Premium getrennt, weil sich die Matrizen unterscheiden). Maschinen ohne OPDB-Bezug lassen sich nicht teilen — beim Bearbeiten einen OPDB-Eintrag auswählen.",
+      },
+      {
+        titel: "Handbuch-Daten teilen",
+        text: "Hast du ein Handbuch ausgewertet, erscheint im Abschnitt »Handbuch-Daten« der Teilen-Bereich. Reichweite wählen, fertig.",
+      },
+      {
+        titel: "Reparaturen teilen",
+        text: "Unter jeder Reparatur gibt es »Teilen«. Standardmäßig anonym und ohne Kosten/Aufwand — beides lässt sich je Eintrag umschalten. Die Vorschau zeigt exakt, was andere lesen.",
+      },
+      {
+        titel: "Reichweiten",
+        text: "»Alle angemeldeten Nutzer« (öffentlich innerhalb der App, kein Zugriff aus dem offenen Internet), »Bestimmte Clubs« oder »Bestimmte Personen« per E-Mail — unabhängig von Clubs. Zusammen mit dem Anonym-Schalter deckt das alle Fälle ab.",
+      },
+      {
+        titel: "Was du siehst",
+        text: "Geteilte Handbuch-Daten anderer erscheinen auf deiner Maschinenseite; hast du selbst noch keine, ist der Bereich aufgeklappt — du sparst dir dann die eigene Auswertung. Geteilte Reparaturen stehen unter »Geteiltes Wissen«. Alles nur lesend: ändern kann nur, wer es geteilt hat.",
+      },
+      {
+        titel: "Voreinstellungen",
+        text: "Unter Konto → »Freigabe-Voreinstellungen« legst du fest, was beim Teilen vorbelegt ist, und ob neue Handbuch-Daten/Reparaturen automatisch freigegeben werden. Für Club-Maschinen gilt die Voreinstellung des Clubs (Club-Seite, nur Owner/Admin). Im Einzelfall ist alles übersteuerbar.",
+      },
+    ],
+  },
+  {
     titel: "Konto & Sicherheit",
     icon: <UserCog size={18} className="text-[var(--color-primary)]" />,
     einleitung:

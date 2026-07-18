@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { LinkIcon, Pencil, Trash2 } from "lucide-react";
+import { ShareRepairControl } from "@/components/share-repair-control";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { deleteRepair } from "@/db/actions/repairs";
+import type { ShareDefaults } from "@/lib/share-defaults";
 
 type Repair = {
   id: string;
@@ -16,12 +18,26 @@ type Repair = {
   fault: { beschreibung: string } | null;
 };
 
+/* Optional: Teilen-Schalter je Reparatur. Bewusst als reine Daten übergeben
+   (keine Render-Funktion), damit diese Server-Komponente die Client-Komponente
+   ShareRepairControl selbst rendern kann. */
+type TeilenProps = {
+  clubs: { id: string; name: string }[];
+  defaults: ShareDefaults;
+  shares: Record<
+    string,
+    { scope: string; anonym: boolean; zeigeKosten: boolean }
+  >;
+};
+
 export function RepairList({
   repairs,
   machineId,
+  teilen,
 }: {
   repairs: Repair[];
   machineId: string;
+  teilen?: TeilenProps;
 }) {
   if (repairs.length === 0) {
     return (
@@ -87,6 +103,23 @@ export function RepairList({
               </button>
             </form>
           </div>
+
+          {teilen ? (
+            <ShareRepairControl
+              machineId={machineId}
+              repairId={repair.id}
+              vorschau={{
+                diagnose: repair.diagnose,
+                massnahme: repair.massnahme,
+                teile: repair.teile,
+                kosten: repair.kosten,
+                zeit: repair.zeit,
+              }}
+              aktuell={teilen.shares[repair.id] ?? null}
+              defaults={teilen.defaults}
+              clubs={teilen.clubs}
+            />
+          ) : null}
         </Card>
       ))}
     </div>

@@ -7,12 +7,16 @@ import { ManualUpload } from "@/components/manual-upload";
 import { RepairList } from "@/components/repair-list";
 import { ShareFactsForm } from "@/components/share-facts-form";
 import { SharedFacts } from "@/components/shared-facts";
+import { SharedRepairs } from "@/components/shared-repairs";
 import { Card } from "@/components/ui/card";
 import { deleteMachine } from "@/db/actions/machines";
 import { db } from "@/db";
 import {
   getFactsShare,
+  getRepairShares,
+  getShareDefaults,
   getSharedFactsForModel,
+  getSharedRepairsForModel,
   getUserClubs,
 } from "@/db/queries";
 import {
@@ -82,7 +86,12 @@ export default async function MachineDetailPage({
   const geteilteFakten = machine.modelId
     ? await getSharedFactsForModel(currentUser, machine.modelId, id)
     : [];
+  const geteilteReparaturen = machine.modelId
+    ? await getSharedRepairsForModel(currentUser, machine.modelId, id)
+    : [];
   const meineClubs = await getUserClubs(currentUser.id);
+  const shareDefaults = await getShareDefaults(machine);
+  const repairShares = await getRepairShares(id);
 
   return (
     <div className="space-y-6">
@@ -246,8 +255,23 @@ export default async function MachineDetailPage({
             <Plus size={15} /> Neue Reparatur
           </Link>
         </div>
-        <RepairList repairs={machineRepairs} machineId={machine.id} />
+        <RepairList
+          repairs={machineRepairs}
+          machineId={machine.id}
+          teilen={
+            darf.teilen && machine.modelId
+              ? {
+                  clubs: meineClubs.map((c) => ({ id: c.id, name: c.name })),
+                  defaults: shareDefaults,
+                  shares: Object.fromEntries(repairShares),
+                }
+              : undefined
+          }
+        />
       </section>
+
+      {/* Reparaturdatenbank: geteiltes Wissen zum selben Gerätetyp. */}
+      <SharedRepairs eintraege={geteilteReparaturen} />
     </div>
   );
 }
