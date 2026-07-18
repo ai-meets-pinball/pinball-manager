@@ -18,13 +18,8 @@ export const auth = betterAuth({
     provider: "pg",
     schema: { user, session, account, verification },
   }),
-  // Globale Rolle am Session-User verfügbar machen (Spalte in db/auth-schema.ts).
-  // input: false → Nutzer können ihre Rolle nicht selbst beim Sign-up setzen.
-  user: {
-    additionalFields: {
-      role: { type: "string", required: false, defaultValue: "user", input: false },
-    },
-  },
+  // Globale Rollen liegen bewusst NICHT am user-Datensatz, sondern in
+  // role_assignments (siehe lib/session.ts) — ein Modell für globale und Club-Rollen.
   emailAndPassword: {
     enabled: true,
     // Offene Selbstregistrierung (zusätzlich gibt es den Einladungsfluss).

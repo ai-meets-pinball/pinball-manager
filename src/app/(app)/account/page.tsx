@@ -8,32 +8,33 @@ import {
   declineInvitation,
 } from "@/db/actions/invitations";
 import { db } from "@/db";
-import { clubs, invitations, memberships } from "@/db/schema";
-import { requireUser } from "@/lib/session";
+import { clubs, invitations, roles } from "@/db/schema";
+import { getUserClubs } from "@/db/queries";
+import { isSuperAdmin, requireUser } from "@/lib/session";
 
 export default async function AccountPage() {
   const user = await requireUser();
 
-  const myClubs = await db
-    .select({
-      id: clubs.id,
-      name: clubs.name,
-      rolle: memberships.rolle,
-    })
-    .from(memberships)
-    .innerJoin(clubs, eq(memberships.clubId, clubs.id))
-    .where(eq(memberships.userId, user.id))
-    .orderBy(clubs.name);
+  const myClubs = await getUserClubs(user.id);
 
   // Ablauf serverseitig per SQL now() prüfen (kein Date.now() im Render).
-  const offeneInvites = await db.query.invitations.findMany({
-    where: and(
-      eq(invitations.email, user.email.toLowerCase()),
-      eq(invitations.status, "pending"),
-      gte(invitations.expiresAt, sql`now()`),
-    ),
-    with: { club: { columns: { name: true } } },
-  });
+  const offeneInvites = await db
+    .select({
+      id: invitations.id,
+      token: invitations.token,
+      rolle: roles.key,
+      clubName: clubs.name,
+    })
+    .from(invitations)
+    .innerJoin(roles, eq(invitations.roleId, roles.id))
+    .innerJoin(clubs, eq(invitations.clubId, clubs.id))
+    .where(
+      and(
+        eq(invitations.email, user.email.toLowerCase()),
+        eq(invitations.status, "pending"),
+        gte(invitations.expiresAt, sql`now()`),
+      ),
+    );
 
   return (
     <div className="mx-auto max-w-xl space-y-8">
@@ -44,7 +45,7 @@ export default async function AccountPage() {
         <Card>
           <p className="mb-3 text-sm text-[var(--color-muted)]">
             Angemeldet als {user.email}
-            {user.role === "superadmin" ? (
+            {isSuperAdmin(user) ? (
               <span className="ml-2">
                 <StatusBadge value="superadmin" />
               </span>
@@ -70,7 +71,7 @@ export default async function AccountPage() {
               className="flex flex-wrap items-center justify-between gap-3"
             >
               <div>
-                <p className="font-medium">{inv.club?.name}</p>
+                <p className="font-medium">{inv.clubName}</p>
                 <p className="text-sm text-[var(--color-muted)]">
                   Rolle: <StatusBadge value={inv.rolle} />
                 </p>

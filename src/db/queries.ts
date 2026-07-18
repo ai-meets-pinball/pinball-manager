@@ -1,29 +1,45 @@
-import { and, desc, eq, ilike, inArray, or, type SQL } from "drizzle-orm";
+import {
+  and,
+  desc,
+  eq,
+  ilike,
+  inArray,
+  isNotNull,
+  or,
+  type SQL,
+} from "drizzle-orm";
 import { db } from "@/db";
-import { clubs, machines, memberships } from "@/db/schema";
+import { clubs, machines, roleAssignments, roles } from "@/db/schema";
 
-/* Lesbare, wiederverwendbare Lese-Queries. */
+/* Lesbare, wiederverwendbare Lese-Queries.
+   Mitgliedschaft = eine club-bezogene Rollenzuweisung (role_assignments.clubId). */
 
 /** Club-IDs, in denen der Nutzer Mitglied ist. */
 export async function getUserClubIds(userId: string) {
-  const rows = await db.query.memberships.findMany({
-    where: eq(memberships.userId, userId),
-    columns: { clubId: true },
-  });
-  return rows.map((r) => r.clubId);
+  const rows = await db
+    .select({ clubId: roleAssignments.clubId })
+    .from(roleAssignments)
+    .where(
+      and(
+        eq(roleAssignments.userId, userId),
+        isNotNull(roleAssignments.clubId),
+      ),
+    );
+  return rows.map((r) => r.clubId).filter((id): id is string => id !== null);
 }
 
-/** Clubs des Nutzers (inkl. Rolle). */
+/** Clubs des Nutzers (inkl. Rollen-Key). */
 export async function getUserClubs(userId: string) {
   return db
     .select({
       id: clubs.id,
       name: clubs.name,
-      rolle: memberships.rolle,
+      rolle: roles.key,
     })
-    .from(memberships)
-    .innerJoin(clubs, eq(memberships.clubId, clubs.id))
-    .where(eq(memberships.userId, userId))
+    .from(roleAssignments)
+    .innerJoin(clubs, eq(roleAssignments.clubId, clubs.id))
+    .innerJoin(roles, eq(roleAssignments.roleId, roles.id))
+    .where(eq(roleAssignments.userId, userId))
     .orderBy(clubs.name);
 }
 

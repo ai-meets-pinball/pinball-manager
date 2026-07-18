@@ -5,13 +5,15 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { clubs, invitations, memberships, user } from "@/db/schema";
+import { clubs, invitations, roleAssignments, user } from "@/db/schema";
 import { sendInvitationEmail } from "@/lib/email";
 import {
+  getClubRole,
   isClubOwner,
   isSuperAdmin,
   requireClubManager,
   requireUser,
+  roleIdByKey,
 } from "@/lib/session";
 import { inviteSchema } from "@/lib/validators";
 import type { FormState } from "@/db/actions/clubs";
@@ -49,18 +51,12 @@ export async function inviteMember(
     return { error: "Nur Owner dürfen jemanden zum Owner einladen" };
   }
 
-  // Bereits Mitglied?
+  // Bereits Mitglied? (= hat schon eine Rolle in diesem Club)
   const existingUser = await db.query.user.findFirst({
     where: eq(user.email, email),
   });
-  if (existingUser) {
-    const m = await db.query.memberships.findFirst({
-      where: and(
-        eq(memberships.clubId, clubId),
-        eq(memberships.userId, existingUser.id),
-      ),
-    });
-    if (m) return { error: "Nutzer ist bereits Mitglied" };
+  if (existingUser && (await getClubRole(existingUser.id, clubId))) {
+    return { error: "Nutzer ist bereits Mitglied" };
   }
 
   // Nur ein offener Invite je (clubId, email) — bestehende offene entwerten.
@@ -79,7 +75,7 @@ export async function inviteMember(
   await db.insert(invitations).values({
     clubId,
     email,
-    rolle,
+    roleId: await roleIdByKey(rolle),
     token,
     invitedBy: currentUser.id,
     status: "pending",
@@ -125,18 +121,12 @@ async function acceptForUser(
     return { error: "Diese Einladung gilt für eine andere E-Mail-Adresse." };
   }
 
-  const existing = await db.query.memberships.findFirst({
-    where: and(
-      eq(memberships.clubId, inv.clubId),
-      eq(memberships.userId, userId),
-    ),
-  });
-  if (!existing) {
-    await db.insert(memberships).values({
-      clubId: inv.clubId,
-      userId,
-      rolle: inv.rolle,
-    });
+  // Rollenzuweisung = Mitgliedschaft. Idempotent: nur anlegen, wenn noch keine da ist.
+  if (!(await getClubRole(userId, inv.clubId))) {
+    await db
+      .insert(roleAssignments)
+      .values({ clubId: inv.clubId, userId, roleId: inv.roleId })
+      .onConflictDoNothing();
   }
   await db
     .update(invitations)

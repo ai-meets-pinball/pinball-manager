@@ -16,13 +16,12 @@ const links = [
 /** Kopfzeile der angemeldeten Bereiche. */
 export function Nav({
   userName,
-  role,
+  isSuperAdmin = false,
 }: {
   userName: string;
-  role?: string;
+  isSuperAdmin?: boolean;
 }) {
   const pathname = usePathname();
-  const isSuperAdmin = role === "superadmin";
 
   return (
     <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-bg)]/90 backdrop-blur-md">

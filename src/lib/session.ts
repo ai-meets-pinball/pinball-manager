@@ -1,9 +1,10 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/db";
-import { machines, memberships, user } from "@/db/schema";
+import { machines, roleAssignments, roles } from "@/db/schema";
 import { auth } from "@/lib/auth";
+import { SUPERADMIN_ROLE } from "@/lib/validators";
 
 /*
   Das Herzstück der sichtbaren Autorisierung.
@@ -11,10 +12,14 @@ import { auth } from "@/lib/auth";
   Es gibt KEIN Row-Level-Security in der Datenbank. Jeder Zugriffspfad läuft
   bewusst durch eine dieser Funktionen, damit die Regeln im TypeScript-Code
   nachlesbar bleiben (PRD §3, §7).
+
+  Rollenmodell: EIN Katalog (`roles`) + Zuweisungen (`role_assignments`).
+  clubId = NULL → globale Rolle (z. B. superadmin); clubId gesetzt → Rolle in
+  genau diesem Club. Eine club-bezogene Zuweisung IST die Mitgliedschaft.
 */
 
 /** Bootstrap-Allowlist für Super-Admins (Komma-Liste in der Env). Diese Konten
-    werden beim nächsten Login automatisch zu Super-Admins hochgestuft. */
+    erhalten beim nächsten Request automatisch die globale superadmin-Rolle. */
 const SUPER_ADMIN_EMAILS = (process.env.SUPER_ADMIN_EMAILS ?? "")
   .split(",")
   .map((e) => e.trim().toLowerCase())
@@ -24,26 +29,51 @@ export type SessionUser = {
   id: string;
   name: string;
   email: string;
-  role: string;
+  /** Globale Rollen-Keys (clubId = NULL), z. B. ["superadmin"]. */
+  roles: string[];
 };
 
-/** Aktuell angemeldeter Nutzer (oder null). In Server Components / Server Actions verwendbar.
-    Überlagert die effektive Rolle anhand der SUPER_ADMIN_EMAILS-Allowlist und schreibt
-    eine abweichende gespeicherte Rolle einmalig zurück. */
+/** Katalog-ID zu einem Rollen-Key. Wirft, wenn die Rolle fehlt (Seed-Fehler). */
+export async function roleIdByKey(key: string): Promise<string> {
+  const rolle = await db.query.roles.findFirst({ where: eq(roles.key, key) });
+  if (!rolle) throw new Error(`Rolle "${key}" fehlt im roles-Katalog`);
+  return rolle.id;
+}
+
+/** Globale Rollen-Keys eines Nutzers. */
+async function globalRoleKeys(userId: string): Promise<string[]> {
+  const rows = await db
+    .select({ key: roles.key })
+    .from(roleAssignments)
+    .innerJoin(roles, eq(roleAssignments.roleId, roles.id))
+    .where(
+      and(eq(roleAssignments.userId, userId), isNull(roleAssignments.clubId)),
+    );
+  return rows.map((r) => r.key);
+}
+
+/** Aktuell angemeldeter Nutzer (oder null). Lädt die globalen Rollen mit und
+    stuft Konten aus SUPER_ADMIN_EMAILS einmalig zum Super-Admin hoch. */
 export async function getCurrentUser(): Promise<SessionUser | null> {
   // In Next 16 ist headers() async — sonst liefert getSession null.
   const sessionData = await auth.api.getSession({ headers: await headers() });
   const u = sessionData?.user;
   if (!u) return null;
 
-  const stored = (u as { role?: string }).role ?? "user";
-  const shouldBeSuper = SUPER_ADMIN_EMAILS.includes(u.email.toLowerCase());
+  let keys = await globalRoleKeys(u.id);
 
-  if (shouldBeSuper && stored !== "superadmin") {
-    await db.update(user).set({ role: "superadmin" }).where(eq(user.id, u.id));
-    return { id: u.id, name: u.name, email: u.email, role: "superadmin" };
+  if (
+    SUPER_ADMIN_EMAILS.includes(u.email.toLowerCase()) &&
+    !keys.includes(SUPERADMIN_ROLE)
+  ) {
+    await db
+      .insert(roleAssignments)
+      .values({ userId: u.id, roleId: await roleIdByKey(SUPERADMIN_ROLE) })
+      .onConflictDoNothing();
+    keys = [...keys, SUPERADMIN_ROLE];
   }
-  return { id: u.id, name: u.name, email: u.email, role: stored };
+
+  return { id: u.id, name: u.name, email: u.email, roles: keys };
 }
 
 /** Erzwingt eine Anmeldung; leitet sonst auf /login um. */
@@ -56,8 +86,8 @@ export async function requireUser(): Promise<SessionUser> {
 /* ── Globale Rolle ────────────────────────────────────────────────────────── */
 
 /** Ist der Nutzer Super-Admin (darf alles administrieren)? */
-export function isSuperAdmin(user: { role?: string } | null): boolean {
-  return user?.role === "superadmin";
+export function isSuperAdmin(user: { roles?: string[] } | null): boolean {
+  return Boolean(user?.roles?.includes(SUPERADMIN_ROLE));
 }
 
 /** Super-Admin erzwingen (für /admin). */
@@ -69,36 +99,49 @@ export async function requireSuperAdmin(): Promise<SessionUser> {
 
 /* ── Club-Rollen ──────────────────────────────────────────────────────────── */
 
-/** Ist der Nutzer Mitglied des Clubs? */
+/** Rollen-Key des Nutzers in diesem Club — oder null (= kein Mitglied). */
+export async function getClubRole(
+  userId: string,
+  clubId: string,
+): Promise<string | null> {
+  const [row] = await db
+    .select({ key: roles.key })
+    .from(roleAssignments)
+    .innerJoin(roles, eq(roleAssignments.roleId, roles.id))
+    .where(
+      and(
+        eq(roleAssignments.userId, userId),
+        eq(roleAssignments.clubId, clubId),
+      ),
+    )
+    .limit(1);
+  return row?.key ?? null;
+}
+
+/** Mitglied = hat irgendeine Rolle in diesem Club. */
 export async function isClubMember(userId: string, clubId: string) {
-  const membership = await db.query.memberships.findFirst({
-    where: and(eq(memberships.userId, userId), eq(memberships.clubId, clubId)),
-  });
-  return Boolean(membership);
+  return (await getClubRole(userId, clubId)) !== null;
 }
 
 /** Owner = oberste Club-Rolle (befördert Owner, löscht den Club). */
 export async function isClubOwner(userId: string, clubId: string) {
-  const membership = await db.query.memberships.findFirst({
-    where: and(eq(memberships.userId, userId), eq(memberships.clubId, clubId)),
-  });
-  return membership?.rolle === "owner";
+  return (await getClubRole(userId, clubId)) === "owner";
 }
 
 /** Manager = Owner ODER Admin (darf Mitglieder/Einladungen verwalten). */
 export async function isClubManager(userId: string, clubId: string) {
-  const membership = await db.query.memberships.findFirst({
-    where: and(eq(memberships.userId, userId), eq(memberships.clubId, clubId)),
-  });
-  return membership?.rolle === "owner" || membership?.rolle === "admin";
+  const rolle = await getClubRole(userId, clubId);
+  return rolle === "owner" || rolle === "admin";
 }
 
 /** Anzahl der Owner eines Clubs — für die „mind. 1 Owner"-Invariante. */
 export async function countClubOwners(clubId: string) {
-  const owners = await db.query.memberships.findMany({
-    where: and(eq(memberships.clubId, clubId), eq(memberships.rolle, "owner")),
-  });
-  return owners.length;
+  const rows = await db
+    .select({ id: roleAssignments.id })
+    .from(roleAssignments)
+    .innerJoin(roles, eq(roleAssignments.roleId, roles.id))
+    .where(and(eq(roleAssignments.clubId, clubId), eq(roles.key, "owner")));
+  return rows.length;
 }
 
 /**

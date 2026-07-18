@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { Trash2, X } from "lucide-react";
 import { AddMemberForm } from "@/components/add-member-form";
@@ -9,7 +9,14 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { deleteClub } from "@/db/actions/clubs";
 import { inviteMember, revokeInvitation } from "@/db/actions/invitations";
 import { db } from "@/db";
-import { clubs, invitations, machines, memberships, user } from "@/db/schema";
+import {
+  clubs,
+  invitations,
+  machines,
+  roleAssignments,
+  roles,
+  user,
+} from "@/db/schema";
 import {
   isClubManager,
   isClubOwner,
@@ -30,17 +37,19 @@ export default async function ClubDetailPage({
   const club = await db.query.clubs.findFirst({ where: eq(clubs.id, id) });
   if (!club) return null;
 
+  // Mitglieder = club-bezogene Rollenzuweisungen (nach Rang sortiert: Owner zuerst).
   const members = await db
     .select({
       id: user.id,
       name: user.name,
       email: user.email,
-      rolle: memberships.rolle,
+      rolle: roles.key,
     })
-    .from(memberships)
-    .innerJoin(user, eq(memberships.userId, user.id))
-    .where(eq(memberships.clubId, id))
-    .orderBy(memberships.rolle);
+    .from(roleAssignments)
+    .innerJoin(user, eq(roleAssignments.userId, user.id))
+    .innerJoin(roles, eq(roleAssignments.roleId, roles.id))
+    .where(eq(roleAssignments.clubId, id))
+    .orderBy(desc(roles.rang));
 
   const clubMachines = await db.query.machines.findMany({
     where: eq(machines.clubId, id),
@@ -49,13 +58,18 @@ export default async function ClubDetailPage({
 
   // Offene Einladungen (nur für Manager sichtbar).
   const pendingInvites = manager
-    ? await db.query.invitations.findMany({
-        where: and(
-          eq(invitations.clubId, id),
-          eq(invitations.status, "pending"),
-        ),
-        orderBy: (i, { desc }) => [desc(i.createdAt)],
-      })
+    ? await db
+        .select({
+          id: invitations.id,
+          email: invitations.email,
+          rolle: roles.key,
+        })
+        .from(invitations)
+        .innerJoin(roles, eq(invitations.roleId, roles.id))
+        .where(
+          and(eq(invitations.clubId, id), eq(invitations.status, "pending")),
+        )
+        .orderBy(desc(invitations.createdAt))
     : [];
 
   return (

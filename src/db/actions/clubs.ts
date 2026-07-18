@@ -4,17 +4,20 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { clubs, machines, memberships } from "@/db/schema";
+import { clubs, machines, roleAssignments } from "@/db/schema";
 import {
   countClubOwners,
+  getClubRole,
   isClubOwner,
   isSuperAdmin,
   requireClubManager,
   requireClubOwner,
   requireUser,
+  roleIdByKey,
 } from "@/lib/session";
-// Hinweis: Mitglieder werden per Einladung hinzugefügt — siehe actions/invitations.ts.
 import { clubSchema, roleChangeSchema } from "@/lib/validators";
+// Hinweis: Mitglieder werden per Einladung hinzugefügt — siehe actions/invitations.ts.
+// Eine club-bezogene Rollenzuweisung IST die Mitgliedschaft (keine memberships-Tabelle).
 
 export type FormState = { error?: string; message?: string };
 
@@ -33,11 +36,11 @@ export async function createClub(
     .values({ name: parsed.data.name, createdBy: currentUser.id })
     .returning({ id: clubs.id });
 
-  // Der Ersteller wird automatisch Owner (oberste Rolle).
-  await db.insert(memberships).values({
-    clubId: club.id,
+  // Der Ersteller wird automatisch Owner (= zugleich seine Mitgliedschaft).
+  await db.insert(roleAssignments).values({
     userId: currentUser.id,
-    rolle: "owner",
+    clubId: club.id,
+    roleId: await roleIdByKey("owner"),
   });
 
   revalidatePath("/clubs");
@@ -60,17 +63,12 @@ export async function changeMemberRole(
   }
   const neueRolle = parsed.data.rolle;
 
-  const target = await db.query.memberships.findFirst({
-    where: and(
-      eq(memberships.clubId, clubId),
-      eq(memberships.userId, targetUserId),
-    ),
-  });
-  if (!target) return { error: "Mitglied nicht gefunden" };
-  if (target.rolle === neueRolle) return {};
+  const aktuelleRolle = await getClubRole(targetUserId, clubId);
+  if (!aktuelleRolle) return { error: "Mitglied nicht gefunden" };
+  if (aktuelleRolle === neueRolle) return {};
 
   // Owner-betreffende Änderungen (rein oder raus) nur durch Owner / Super-Admin.
-  const betrifftOwner = neueRolle === "owner" || target.rolle === "owner";
+  const betrifftOwner = neueRolle === "owner" || aktuelleRolle === "owner";
   if (
     betrifftOwner &&
     !isSuperAdmin(currentUser) &&
@@ -80,16 +78,19 @@ export async function changeMemberRole(
   }
 
   // Letzten Owner nicht degradieren.
-  if (target.rolle === "owner" && neueRolle !== "owner") {
-    if ((await countClubOwners(clubId)) <= 1) {
-      return { error: "Ein Club braucht mindestens einen Owner" };
-    }
+  if (aktuelleRolle === "owner" && (await countClubOwners(clubId)) <= 1) {
+    return { error: "Ein Club braucht mindestens einen Owner" };
   }
 
   await db
-    .update(memberships)
-    .set({ rolle: neueRolle })
-    .where(and(eq(memberships.clubId, clubId), eq(memberships.userId, targetUserId)));
+    .update(roleAssignments)
+    .set({ roleId: await roleIdByKey(neueRolle) })
+    .where(
+      and(
+        eq(roleAssignments.clubId, clubId),
+        eq(roleAssignments.userId, targetUserId),
+      ),
+    );
 
   revalidatePath(`/clubs/${clubId}`);
   return {};
@@ -104,27 +105,30 @@ export async function removeMember(formData: FormData): Promise<void> {
     throw new Error("Zum Austreten bitte »Club verlassen« verwenden");
   }
 
-  const target = await db.query.memberships.findFirst({
-    where: and(eq(memberships.clubId, clubId), eq(memberships.userId, userId)),
-  });
-  if (!target) return;
+  const zielRolle = await getClubRole(userId, clubId);
+  if (!zielRolle) return;
 
   // Owner dürfen nur von Ownern/Super-Admins entfernt werden.
   if (
-    target.rolle === "owner" &&
+    zielRolle === "owner" &&
     !isSuperAdmin(currentUser) &&
     !(await isClubOwner(currentUser.id, clubId))
   ) {
     throw new Error("Nur Owner dürfen einen Owner entfernen");
   }
   // Letzten Owner nicht entfernen.
-  if (target.rolle === "owner" && (await countClubOwners(clubId)) <= 1) {
+  if (zielRolle === "owner" && (await countClubOwners(clubId)) <= 1) {
     throw new Error("Ein Club braucht mindestens einen Owner");
   }
 
   await db
-    .delete(memberships)
-    .where(and(eq(memberships.clubId, clubId), eq(memberships.userId, userId)));
+    .delete(roleAssignments)
+    .where(
+      and(
+        eq(roleAssignments.clubId, clubId),
+        eq(roleAssignments.userId, userId),
+      ),
+    );
 
   revalidatePath(`/clubs/${clubId}`);
 }
@@ -134,24 +138,22 @@ export async function leaveClub(formData: FormData): Promise<void> {
   const clubId = String(formData.get("clubId"));
   const currentUser = await requireUser();
 
-  const own = await db.query.memberships.findFirst({
-    where: and(
-      eq(memberships.clubId, clubId),
-      eq(memberships.userId, currentUser.id),
-    ),
-  });
-  if (!own) throw new Error("Du bist kein Mitglied dieses Clubs");
+  const eigeneRolle = await getClubRole(currentUser.id, clubId);
+  if (!eigeneRolle) throw new Error("Du bist kein Mitglied dieses Clubs");
 
-  if (own.rolle === "owner" && (await countClubOwners(clubId)) <= 1) {
+  if (eigeneRolle === "owner" && (await countClubOwners(clubId)) <= 1) {
     throw new Error(
       "Als letzter Owner kannst du nicht austreten — befördere zuerst jemanden zum Owner",
     );
   }
 
   await db
-    .delete(memberships)
+    .delete(roleAssignments)
     .where(
-      and(eq(memberships.clubId, clubId), eq(memberships.userId, currentUser.id)),
+      and(
+        eq(roleAssignments.clubId, clubId),
+        eq(roleAssignments.userId, currentUser.id),
+      ),
     );
 
   revalidatePath("/clubs");
@@ -169,7 +171,7 @@ export async function deleteClub(formData: FormData): Promise<void> {
     .set({ clubId: null })
     .where(eq(machines.clubId, clubId));
 
-  // Mitgliedschaften werden per ON DELETE CASCADE entfernt.
+  // Rollenzuweisungen und Einladungen entfernt ON DELETE CASCADE.
   await db.delete(clubs).where(eq(clubs.id, clubId));
 
   revalidatePath("/clubs");

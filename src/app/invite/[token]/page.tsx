@@ -3,7 +3,7 @@ import { eq, sql } from "drizzle-orm";
 import { Button } from "@/components/ui/button";
 import { acceptInvitation } from "@/db/actions/invitations";
 import { db } from "@/db";
-import { clubs, invitations } from "@/db/schema";
+import { clubs, invitations, roles } from "@/db/schema";
 import { getCurrentUser } from "@/lib/session";
 
 /*
@@ -24,11 +24,12 @@ export default async function InvitePage({
     .select({
       status: invitations.status,
       email: invitations.email,
-      rolle: invitations.rolle,
+      rolle: roles.label,
       clubId: invitations.clubId,
       expired: sql<boolean>`${invitations.expiresAt} < now()`,
     })
     .from(invitations)
+    .innerJoin(roles, eq(invitations.roleId, roles.id))
     .where(eq(invitations.token, token))
     .limit(1);
 

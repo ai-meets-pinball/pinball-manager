@@ -1,5 +1,5 @@
 import { Nav } from "@/components/nav";
-import { requireUser } from "@/lib/session";
+import { isSuperAdmin, requireUser } from "@/lib/session";
 
 /*
   Layout aller angemeldeten Bereiche. requireUser() ist hier die ECHTE Auth-Grenze
@@ -14,7 +14,7 @@ export default async function AppLayout({
 
   return (
     <div className="min-h-screen">
-      <Nav userName={user.name ?? user.email} role={user.role} />
+      <Nav userName={user.name ?? user.email} isSuperAdmin={isSuperAdmin(user)} />
       <main className="mx-auto max-w-5xl px-6 py-8">{children}</main>
     </div>
   );

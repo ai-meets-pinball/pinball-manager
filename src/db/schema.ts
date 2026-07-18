@@ -1,4 +1,4 @@
-import { relations } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 import {
   integer,
   jsonb,
@@ -7,7 +7,7 @@ import {
   pgTable,
   text,
   timestamp,
-  unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { user } from "./auth-schema";
@@ -35,11 +35,7 @@ export const faultPrioritaet = pgEnum("fault_prioritaet", [
   "hoch",
 ]);
 
-// Owner = Ersteller/oberste Rolle (kann Owner befördern & Club löschen);
-// Admin = darf Mitglieder/Einladungen verwalten; Member = einfaches Mitglied.
-export const clubRole = pgEnum("club_role", ["owner", "admin", "member"]);
-
-/* ── Clubs & Mitgliedschaften ─────────────────────────────────────────────── */
+/* ── Clubs ────────────────────────────────────────────────────────────────── */
 
 export const clubs = pgTable("clubs", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -50,21 +46,51 @@ export const clubs = pgTable("clubs", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
-export const memberships = pgTable(
-  "memberships",
+/* ── Rollen (Katalog) & Zuweisungen ───────────────────────────────────────── */
+/*
+  EIN einheitliches Rollenmodell für globale UND Club-Rollen:
+
+  - `roles` ist der Katalog (Daten statt Enum): superadmin (scope "global"),
+    owner/admin/member (scope "club"). `rang` erlaubt Vergleiche (owner > admin).
+  - `role_assignments` weist einem Nutzer eine Rolle zu — mit `clubId` für
+    Club-Rollen, `clubId = NULL` für globale Rollen.
+  - Eine club-bezogene Zuweisung IST die Mitgliedschaft (es gibt keine separate
+    memberships-Tabelle mehr) — eine Quelle der Wahrheit, kein Auseinanderdriften.
+*/
+
+export const roles = pgTable("roles", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  key: text("key").notNull().unique(), // superadmin | owner | admin | member
+  label: text("label").notNull(), // Anzeigename (deutsch)
+  beschreibung: text("beschreibung"),
+  scope: text("scope").notNull(), // "global" | "club"
+  rang: integer("rang").notNull().default(0),
+});
+
+export const roleAssignments = pgTable(
+  "role_assignments",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    clubId: uuid("club_id")
-      .notNull()
-      .references(() => clubs.id, { onDelete: "cascade" }),
     userId: text("user_id")
       .notNull()
       .references(() => user.id, { onDelete: "cascade" }),
-    rolle: clubRole("rolle").notNull().default("member"),
+    roleId: uuid("role_id")
+      .notNull()
+      .references(() => roles.id),
+    // NULL = globale Rolle; gesetzt = Rolle in genau diesem Club (= Mitgliedschaft).
+    clubId: uuid("club_id").references(() => clubs.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
-  // Ein Nutzer kann pro Club nur eine Mitgliedschaft haben (bislang nur app-seitig geprüft).
-  (t) => [unique("memberships_club_user_unique").on(t.clubId, t.userId)],
+  (t) => [
+    // Pro Club genau eine Rolle je Nutzer.
+    uniqueIndex("role_assignments_club_unique")
+      .on(t.userId, t.clubId)
+      .where(sql`club_id IS NOT NULL`),
+    // Global jede Rolle höchstens einmal je Nutzer (mehrere globale Rollen erlaubt).
+    uniqueIndex("role_assignments_global_unique")
+      .on(t.userId, t.roleId)
+      .where(sql`club_id IS NULL`),
+  ],
 );
 
 /* ── Einladungen ──────────────────────────────────────────────────────────── */
@@ -78,7 +104,10 @@ export const invitations = pgTable("invitations", {
     .notNull()
     .references(() => clubs.id, { onDelete: "cascade" }),
   email: text("email").notNull(),
-  rolle: clubRole("rolle").notNull().default("member"),
+  // Welche Club-Rolle die Annahme vergibt (Katalog-FK statt Enum).
+  roleId: uuid("role_id")
+    .notNull()
+    .references(() => roles.id),
   token: text("token").notNull().unique(),
   invitedBy: text("invited_by")
     .notNull()
@@ -158,9 +187,28 @@ export const machineData = pgTable("machine_data", {
 /* ── Relations (für db.query-Eager-Loading) ───────────────────────────────── */
 
 export const clubsRelations = relations(clubs, ({ many }) => ({
-  memberships: many(memberships),
+  roleAssignments: many(roleAssignments),
   machines: many(machines),
   invitations: many(invitations),
+}));
+
+export const rolesRelations = relations(roles, ({ many }) => ({
+  assignments: many(roleAssignments),
+}));
+
+export const roleAssignmentsRelations = relations(roleAssignments, ({ one }) => ({
+  user: one(user, {
+    fields: [roleAssignments.userId],
+    references: [user.id],
+  }),
+  role: one(roles, {
+    fields: [roleAssignments.roleId],
+    references: [roles.id],
+  }),
+  club: one(clubs, {
+    fields: [roleAssignments.clubId],
+    references: [clubs.id],
+  }),
 }));
 
 export const invitationsRelations = relations(invitations, ({ one }) => ({
@@ -168,16 +216,9 @@ export const invitationsRelations = relations(invitations, ({ one }) => ({
     fields: [invitations.clubId],
     references: [clubs.id],
   }),
-}));
-
-export const membershipsRelations = relations(memberships, ({ one }) => ({
-  club: one(clubs, {
-    fields: [memberships.clubId],
-    references: [clubs.id],
-  }),
-  user: one(user, {
-    fields: [memberships.userId],
-    references: [user.id],
+  role: one(roles, {
+    fields: [invitations.roleId],
+    references: [roles.id],
   }),
 }));
 

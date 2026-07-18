@@ -1,31 +1,56 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { user } from "@/db/schema";
-import { requireSuperAdmin } from "@/lib/session";
+import { roleAssignments, roles } from "@/db/schema";
+import { requireSuperAdmin, roleIdByKey } from "@/lib/session";
+import { SUPERADMIN_ROLE } from "@/lib/validators";
 
-/** Globale Rolle setzen (nur Super-Admin). Der letzte Super-Admin bleibt geschützt. */
-export async function setUserRole(formData: FormData): Promise<void> {
+/** Globale Super-Admin-Rolle geben oder entziehen (nur Super-Admin).
+    Der letzte Super-Admin bleibt geschützt. */
+export async function setSuperAdmin(formData: FormData): Promise<void> {
   await requireSuperAdmin();
 
   const userId = String(formData.get("userId"));
-  const role = String(formData.get("role"));
-  if (role !== "user" && role !== "superadmin") {
-    throw new Error("Ungültige Rolle");
-  }
+  const grant = String(formData.get("grant")) === "true";
+  const roleId = await roleIdByKey(SUPERADMIN_ROLE);
 
-  if (role === "user") {
-    const admins = await db.query.user.findMany({
-      where: eq(user.role, "superadmin"),
-      columns: { id: true },
-    });
-    if (admins.length <= 1 && admins.some((a) => a.id === userId)) {
+  if (grant) {
+    await db
+      .insert(roleAssignments)
+      .values({ userId, roleId })
+      .onConflictDoNothing();
+  } else {
+    // Mindestens ein Super-Admin muss übrig bleiben.
+    const alle = await db
+      .select({ userId: roleAssignments.userId })
+      .from(roleAssignments)
+      .where(
+        and(
+          eq(roleAssignments.roleId, roleId),
+          isNull(roleAssignments.clubId),
+        ),
+      );
+    if (alle.length <= 1 && alle.some((a) => a.userId === userId)) {
       throw new Error("Der letzte Super-Admin kann nicht entfernt werden");
     }
+
+    await db
+      .delete(roleAssignments)
+      .where(
+        and(
+          eq(roleAssignments.userId, userId),
+          eq(roleAssignments.roleId, roleId),
+          isNull(roleAssignments.clubId),
+        ),
+      );
   }
 
-  await db.update(user).set({ role }).where(eq(user.id, userId));
   revalidatePath("/admin");
+}
+
+/** Rollen-Katalog (für die Anzeige im Admin-Bereich). */
+export async function listRoles() {
+  return db.select().from(roles).orderBy(roles.scope, roles.rang);
 }

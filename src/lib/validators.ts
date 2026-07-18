@@ -58,8 +58,13 @@ export const clubSchema = z.object({
 
 /* ── Rollen & Einladungen ─────────────────────────────────────────────────── */
 
+/* Rollen-Keys. Die Rollen selbst liegen als Daten im `roles`-Katalog (DB);
+   diese Konstanten sind nur die stabilen Schlüssel, gegen die der Code prüft. */
 export const CLUB_ROLES = ["owner", "admin", "member"] as const;
 export type ClubRole = (typeof CLUB_ROLES)[number];
+
+/** Globale Rolle mit Vollzugriff (scope "global" im Katalog). */
+export const SUPERADMIN_ROLE = "superadmin";
 
 /** Einladung / Rollenzuweisung. Owner-Rolle wird zusätzlich in der Action geprüft
     (nur ein Owner darf zum Owner befördern). */

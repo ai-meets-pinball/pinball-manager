@@ -22,6 +22,27 @@
       "when": 1784318880121,
       "tag": "0002_owner_backfill",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1784380012184,
+      "tag": "0003_blue_moondragon",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1784380029408,
+      "tag": "0004_roles_data_migration",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1784380086222,
+      "tag": "0005_modern_komodo",
+      "breakpoints": true
     }
   ]
 }
