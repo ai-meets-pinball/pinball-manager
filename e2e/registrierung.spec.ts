@@ -58,8 +58,8 @@ test.describe("Registrierung", () => {
     await page.goto(`/register?invite=${token}`);
     await page.getByLabel("Name").fill("Neue Person");
     await page.getByLabel("E-Mail").fill(email);
-    await page.getByLabel("Passwort", { exact: true }).fill(TEST_PASSWORD);
-    await page.getByLabel("Passwort wiederholen").fill(TEST_PASSWORD);
+    await page.locator('input[name="password"]').fill(TEST_PASSWORD);
+    await page.locator('input[name="passwordConfirm"]').fill(TEST_PASSWORD);
     await page.getByRole("button", { name: "Registrieren" }).click();
 
     await page.waitForURL("**/machines");
@@ -82,8 +82,8 @@ test.describe("Registrierung", () => {
     await page.getByLabel("Name").fill("Fremd");
     // Andere Adresse als die eingeladene:
     await page.getByLabel("E-Mail").fill("e2e-fremd@e2e.local");
-    await page.getByLabel("Passwort", { exact: true }).fill(TEST_PASSWORD);
-    await page.getByLabel("Passwort wiederholen").fill(TEST_PASSWORD);
+    await page.locator('input[name="password"]').fill(TEST_PASSWORD);
+    await page.locator('input[name="passwordConfirm"]').fill(TEST_PASSWORD);
     await page.getByRole("button", { name: "Registrieren" }).click();
 
     await expect(page.getByText(/für eine andere Adresse|ungültig/i)).toBeVisible();
