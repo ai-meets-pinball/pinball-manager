@@ -214,6 +214,18 @@ export async function unshareRepair(formData: FormData): Promise<void> {
   const { darf } = await requireMachineAccess(machineId);
   if (!darf.teilen) throw new Error("Nur Eigentümer oder Club-Manager dürfen das");
 
+  /*
+    Die Reparatur MUSS zu dieser Maschine gehören. Vorher wurde gegen
+    `machineId` autorisiert, aber nach `repairId` gelöscht — wer eine eigene
+    Maschine besaß, konnte mit einer fremden repairId die Freigabe eines
+    anderen löschen. shareRepair prüft das bereits, unshareRepair fehlte es.
+  */
+  const reparatur = await db.query.repairs.findFirst({
+    where: and(eq(repairs.id, repairId), eq(repairs.machineId, machineId)),
+    columns: { id: true },
+  });
+  if (!reparatur) throw new Error("Reparatur nicht gefunden");
+
   await db
     .delete(shares)
     .where(and(eq(shares.artefaktTyp, "repair"), eq(shares.artefaktId, repairId)));

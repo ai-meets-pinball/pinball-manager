@@ -1,4 +1,4 @@
-import { and, eq, gt } from "drizzle-orm";
+import { and, count, eq, gt } from "drizzle-orm";
 import { betterAuth } from "better-auth";
 import { drizzleAdapter } from "better-auth/adapters/drizzle";
 import { APIError, createAuthMiddleware } from "better-auth/api";
@@ -10,6 +10,7 @@ import { istSuperAdminEmail } from "@/lib/super-admins";
 import {
   sendChangeEmailVerification,
   sendResetPasswordEmail,
+  sendVerifyEmail,
 } from "@/lib/email";
 import { PASSWORD_MIN, validatePassword } from "@/lib/validators";
 
@@ -26,20 +27,31 @@ export const auth = betterAuth({
   }),
   // Globale Rollen liegen bewusst NICHT am user-Datensatz, sondern in
   // role_assignments (siehe lib/session.ts) — ein Modell für globale und Club-Rollen.
+  /*
+    E-Mail-Verifikation ist die Voraussetzung dafür, dass Better Auth den
+    E-Mail-Wechsel überhaupt zulässt (siehe update-user-Route: ohne
+    `emailVerification.sendVerificationEmail` wirft /change-email pauschal
+    "Verification email isn't enabled").
+
+    ACHTUNG: `requireEmailVerification` wird bewusst NICHT gesetzt — das würde
+    bestehende Konten aussperren.
+  */
+  emailVerification: {
+    sendVerificationEmail: async ({ user, url }) => {
+      await sendVerifyEmail(user.email, url);
+    },
+  },
   user: {
     changeEmail: {
       enabled: true,
-      // Bei verifizierter Adresse verlangt Better Auth eine Bestätigung; der Link
-      // geht an die BISHERIGE Adresse (Schutz vor stiller Übernahme).
-      sendChangeEmailVerification: async ({
-        user,
-        newEmail,
-        url,
-      }: {
-        user: { email: string };
-        newEmail: string;
-        url: string;
-      }) => {
+      /*
+        Bei verifizierter Adresse verlangt Better Auth eine Bestätigung. `user`
+        ist hier die AKTUELLE Session, der Link geht also an die bisherige
+        Adresse — Schutz davor, dass eine offene Sitzung das Konto still
+        übernimmt. Die Parameter werden bewusst NICHT von Hand typisiert:
+        eine falsch benannte Option fiele sonst wieder nicht auf.
+      */
+      sendChangeEmailConfirmation: async ({ user, newEmail, url }) => {
         await sendChangeEmailVerification(user.email, newEmail, url);
       },
     },
@@ -67,25 +79,37 @@ export const auth = betterAuth({
         if (problem) throw new APIError("BAD_REQUEST", { message: problem });
       }
 
-      // 2. Registrierung NUR mit Einladung.
-      //    Hinweis: `disableSignUp: true` wäre hier falsch — es würde den
-      //    Endpoint komplett sperren und damit auch Eingeladene aussperren.
-      //    DAS hier ist die echte Grenze (lesbares TS, PRD §7).
+      /*
+        2. Registrierung NUR mit eingelöster Einladung.
+
+        `disableSignUp: true` wäre hier falsch — es würde den Endpoint komplett
+        sperren und damit auch Eingeladene aussperren. DAS hier ist die echte
+        Grenze (lesbares TS, PRD §7).
+
+        Wichtig: Es genügt NICHT zu prüfen, ob für die E-Mail eine Einladung
+        existiert — wer eine eingeladene Adresse kennt, hätte sie sonst fremd
+        registriert (es gibt keine E-Mail-Verifikation). Erlaubt ist Sign-up nur
+        für Einladungen im Zustand `claiming`; dorthin bringt sie ausschließlich
+        registerAccount() nach Prüfung des TOKENS aus der Einladungs-Mail.
+      */
       if (ctx.path === "/sign-up/email") {
         const email = String(ctx.body?.email ?? "").trim().toLowerCase();
 
-        // Bootstrap: konfigurierte Super-Admins dürfen immer — sonst wäre eine
-        // frische Installation ausgesperrt (ohne Nutzer kann niemand einladen).
-        if (istSuperAdminEmail(email)) return;
+        // Bootstrap NUR auf einer leeren Installation: dort kann niemand
+        // einladen. Danach braucht auch ein Super-Admin eine Einladung —
+        // sonst wäre jede noch kontenlose Adresse aus SUPER_ADMIN_EMAILS
+        // von Fremden registrierbar und damit sofort Super-Admin.
+        const [{ anzahl }] = await db.select({ anzahl: count() }).from(user);
+        if (anzahl === 0 && istSuperAdminEmail(email)) return;
 
-        const einladung = await db.query.invitations.findFirst({
+        const eingeloest = await db.query.invitations.findFirst({
           where: and(
             eq(invitations.email, email),
-            eq(invitations.status, "pending"),
+            eq(invitations.status, "claiming"),
             gt(invitations.expiresAt, new Date()),
           ),
         });
-        if (!einladung) {
+        if (!eingeloest) {
           throw new APIError("FORBIDDEN", {
             message:
               "Registrierung ist nur mit Einladung möglich. Bitte nutze den Link aus deiner Einladungs-E-Mail.",

@@ -2,72 +2,49 @@
 
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useActionState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { PasswordField } from "@/components/ui/password-field";
-import { acceptInvitationAction } from "@/db/actions/invitations";
-import { signUp } from "@/lib/auth-client";
-import { PASSWORD_HINT, validatePassword } from "@/lib/validators";
+import type { FormState } from "@/db/actions/clubs";
+import { registerAccount } from "@/db/actions/register";
+import { PASSWORD_HINT } from "@/lib/validators";
 
+/*
+  Registrierung läuft über die Server Action registerAccount(), nicht über
+  signUp.email() im Client: nur so kann der Einladungs-TOKEN geprüft werden,
+  bevor ein Konto entsteht. Ohne gültigen Token (oder leere Installation)
+  lehnt der Auth-Hook den Sign-up ohnehin ab.
+*/
 function RegisterForm() {
   const router = useRouter();
   const params = useSearchParams();
   const invite = params.get("invite");
 
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [state, formAction, pending] = useActionState<FormState, FormData>(
+    registerAccount,
+    {},
+  );
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setError(null);
-
-    const form = new FormData(event.currentTarget);
-    const name = String(form.get("name"));
-    const email = String(form.get("email"));
-    const password = String(form.get("password"));
-    const confirm = String(form.get("passwordConfirm"));
-
-    const policy = validatePassword(password);
-    if (policy) {
-      setError(policy);
-      return;
-    }
-    if (password !== confirm) {
-      setError("Die Passwörter stimmen nicht überein.");
-      return;
-    }
-
-    setLoading(true);
-    const { error } = await signUp.email({ name, email, password });
-    if (error) {
-      setLoading(false);
-      setError(error.message ?? "Registrierung fehlgeschlagen");
-      return;
-    }
-
-    // Bei Registrierung über einen Einladungslink direkt beitreten.
-    if (invite) {
-      const res = await acceptInvitationAction(invite);
-      setLoading(false);
-      router.push(res.clubId ? `/clubs/${res.clubId}` : "/machines");
+  // Nach erfolgreicher Registrierung ist die Session gesetzt → weiterleiten.
+  useEffect(() => {
+    if (state.message) {
+      router.push("/machines");
       router.refresh();
-      return;
     }
-
-    setLoading(false);
-    router.push("/machines");
-    router.refresh();
-  }
+  }, [state.message, router]);
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+    <form action={formAction} className="flex flex-col gap-4">
+      {invite ? <input type="hidden" name="invite" value={invite} /> : null}
+
       {!invite ? (
         <p className="rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-3 text-sm text-[var(--color-muted)]">
           Ein Konto lässt sich nur mit Einladung anlegen. Nutze bitte den Link
           aus deiner Einladungs-E-Mail.
         </p>
       ) : null}
+
       <Field label="Name">
         <Input name="name" required autoComplete="name" />
       </Field>
@@ -84,9 +61,13 @@ function RegisterForm() {
           autoComplete="new-password"
         />
       </Field>
-      {error ? <p className="text-sm text-[var(--color-danger)]">{error}</p> : null}
-      <Button type="submit" disabled={loading}>
-        {loading ? "Konto wird erstellt…" : "Registrieren"}
+
+      {state.error ? (
+        <p className="text-sm text-[var(--color-danger)]">{state.error}</p>
+      ) : null}
+
+      <Button type="submit" disabled={pending}>
+        {pending ? "Konto wird erstellt…" : "Registrieren"}
       </Button>
     </form>
   );

@@ -1,10 +1,10 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { machineModels, machines } from "@/db/schema";
+import { machineModels, machines, repairs, shares } from "@/db/schema";
 import { parseOpdbRef } from "@/lib/opdb-ref";
 import {
   isClubManager,
@@ -85,6 +85,30 @@ async function ensureMachineModel(
   return model?.id ?? null;
 }
 
+/** Alle Freigaben einer Maschine aufheben: die Fakten-Freigabe (artefaktId =
+    machineId) und die Freigaben ihrer Reparaturen. */
+async function widerrufeFreigaben(machineId: string) {
+  await db
+    .delete(shares)
+    .where(
+      and(
+        eq(shares.artefaktTyp, "machine_facts"),
+        eq(shares.artefaktId, machineId),
+      ),
+    );
+
+  const eigeneReparaturen = db
+    .select({ id: repairs.id })
+    .from(repairs)
+    .where(eq(repairs.machineId, machineId));
+
+  await db
+    .delete(shares)
+    .where(
+      and(eq(shares.artefaktTyp, "repair"), inArray(shares.artefaktId, eigeneReparaturen)),
+    );
+}
+
 export async function createMachine(
   _prev: FormState,
   formData: FormData,
@@ -125,23 +149,44 @@ export async function updateMachine(
   formData: FormData,
 ): Promise<FormState> {
   const id = String(formData.get("id"));
-  const { user } = await requireMachineAccess(id);
+  const { user, machine, darf } = await requireMachineAccess(id);
 
   const result = await parseMachine(user.id, formData);
   if ("error" in result) return result;
   const data = result.data;
+
+  /*
+    Die Club-Zuordnung darf NUR ändern, wer die Maschine auch löschen dürfte
+    (Eigentümer, Club-Manager, Super-Admin).
+
+    Vorher genügte Bearbeitungsrecht — und das hat jedes Club-Mitglied. Ein
+    einfaches Mitglied konnte eine fremde Maschine samt Fehlern, Reparaturen
+    und Handbuch-Fakten in einen eigenen Club verschieben oder sie aus dem
+    bisherigen Club herauslösen. Für alle anderen bleibt die Zuordnung stehen.
+  */
+  const clubId = darf.loeschen ? (data.clubId ?? null) : machine.clubId;
 
   // Eigenes Foto hat Vorrang; sonst ein neu gewähltes OPDB-Bild.
   const neuesFoto =
     (await uploadMachinePhoto(formData.get("foto") as File | null, user.id)) ??
     opdbImageUrl(formData);
 
+  /*
+    Wechselt der Gerätetyp, werden bestehende Freigaben dieser Maschine
+    WIDERRUFEN. Sonst blieben sie am alten Typ hängen und andere Besitzer
+    bekämen die Daten eines ganz anderen Automaten als passende Referenz
+    angezeigt — bei Spulen- und Schaltermatrizen ist das kein Schönheitsfehler.
+  */
+  const neuerModelId = await ensureMachineModel(data, opdbImageUrl(formData));
+  if (neuerModelId !== machine.modelId) {
+    await widerrufeFreigaben(id);
+  }
+
   await db
     .update(machines)
     .set({
-      clubId: data.clubId ?? null,
-      // Beim Ändern des OPDB-Bezugs wandert die Maschine zum passenden Gerätetyp.
-      modelId: await ensureMachineModel(data, opdbImageUrl(formData)),
+      clubId,
+      modelId: neuerModelId,
       hersteller: data.hersteller,
       modell: data.modell,
       baujahr: data.baujahr ?? null,
