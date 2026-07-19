@@ -26,9 +26,17 @@ npm run e2e:ui               # interaktiv
 
 App runs on http://localhost:3000.
 
-> **E2E-Setup:** `E2E_DATABASE_URL` in `.env.local` setzen (**zweite** Datenbank!), dann
-> `DATABASE_URL="$E2E_DATABASE_URL" npm run db:migrate`. Zeigt sie auf dieselbe DB wie
-> `POSTGRES_URL`, brechen die Tests ab. **Es gibt bewusst keinen Auth-Bypass:** die
+> **E2E-Setup:** `E2E_DATABASE_URL` in `.env.local` setzen (**zweite** Datenbank!). Lokal z. B.
+> `docker run -d --name pinball-e2e -e POSTGRES_PASSWORD=e2e -p 5433:5432 postgres:16`.
+> Schema einspielen mit **`push`**, nicht `migrate`:
+> `DATABASE_URL="$E2E_DATABASE_URL" npx drizzle-kit push --force` — `drizzle-kit migrate`
+> wendet auf einer **frischen** DB nichts an und meldet trotzdem Erfolg (siehe unten).
+> Danach den `roles`-Katalog seeden (superadmin/owner/admin/member), sonst bricht das
+> Global-Setup mit einer klaren Meldung ab. Zeigt `E2E_DATABASE_URL` auf dieselbe DB wie
+> `POSTGRES_URL`, brechen die Tests ab.
+>
+> **Achtung:** Next 16 lässt pro Verzeichnis nur EINEN Dev-Server zu — vor `npm run e2e`
+> muss ein laufendes `npm run dev` beendet werden. **Es gibt bewusst keinen Auth-Bypass:** die
 > Testkonten entstehen über den regulären Einladungs-/Sign-up-Pfad und melden sich über
 > den echten Login an — ein Bypass würde an genau der Rechtelogik vorbeitesten, die
 > abgesichert werden soll.
