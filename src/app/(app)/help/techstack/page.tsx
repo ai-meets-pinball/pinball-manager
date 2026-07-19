@@ -10,6 +10,7 @@ import {
 import type { ReactNode } from "react";
 import { HelpTabs } from "@/components/help-tabs";
 import { Card } from "@/components/ui/card";
+import { isSuperAdmin, requireUser } from "@/lib/session";
 
 /*
   Hilfe-/Techstack-Seite.
@@ -232,10 +233,12 @@ const sections: StackSection[] = [
   },
 ];
 
-export default function HelpPage() {
+export default async function HelpPage() {
+  // Der Tab „Aufbau & Betrieb" ist nur für Super-Admins.
+  const user = await requireUser();
   return (
     <div className="space-y-8">
-      <HelpTabs active="techstack" />
+      <HelpTabs active="techstack" istSuperAdmin={isSuperAdmin(user)} />
       <div className="space-y-2">
         <h1 className="flex items-center gap-2 text-2xl font-bold">
           <BookOpen size={22} className="text-[var(--color-primary)]" />

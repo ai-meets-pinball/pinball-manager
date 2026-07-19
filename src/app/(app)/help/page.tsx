@@ -13,6 +13,7 @@ import {
 import type { ReactNode } from "react";
 import { HelpTabs } from "@/components/help-tabs";
 import { Card } from "@/components/ui/card";
+import { isSuperAdmin, requireUser } from "@/lib/session";
 
 /*
   Anleitung / How-To — die benutzerorientierte Hilfe (was kann ich wie tun?).
@@ -307,10 +308,12 @@ const sections: GuideSection[] = [
   },
 ];
 
-export default function HelpPage() {
+export default async function HelpPage() {
+  // Der Tab „Aufbau & Betrieb" ist nur für Super-Admins.
+  const user = await requireUser();
   return (
     <div className="space-y-8">
-      <HelpTabs active="anleitung" />
+      <HelpTabs active="anleitung" istSuperAdmin={isSuperAdmin(user)} />
 
       <div className="space-y-2">
         <h1 className="text-2xl font-bold">Anleitung &amp; How-To</h1>
