@@ -17,9 +17,21 @@ npm run db:migrate           # write schema to the DB (or: npm run db:push)
 npm run dev                  # dev server on http://localhost:3000 (Next.js 16 + Turbopack)
 npm run build                # production build (used to verify changes)
 npm run db:generate          # regenerate SQL migrations after editing src/db/schema.ts
+
+# E2E (Playwright) — läuft gegen eine EIGENE Test-DB, nie gegen die produktive
+npm run e2e:install          # Chromium einmalig holen
+npm run e2e                  # Suite starten (Test-Server auf Port 3101)
+npm run e2e:ui               # interaktiv
 ```
 
 App runs on http://localhost:3000.
+
+> **E2E-Setup:** `E2E_DATABASE_URL` in `.env.local` setzen (**zweite** Datenbank!), dann
+> `DATABASE_URL="$E2E_DATABASE_URL" npm run db:migrate`. Zeigt sie auf dieselbe DB wie
+> `POSTGRES_URL`, brechen die Tests ab. **Es gibt bewusst keinen Auth-Bypass:** die
+> Testkonten entstehen über den regulären Einladungs-/Sign-up-Pfad und melden sich über
+> den echten Login an — ein Bypass würde an genau der Rechtelogik vorbeitesten, die
+> abgesichert werden soll.
 
 > Note: this project uses **Next.js 16** (App Router, Turbopack). The request-routing edge file is `src/proxy.ts` (Next 16 renamed `middleware` → `proxy`).
 
