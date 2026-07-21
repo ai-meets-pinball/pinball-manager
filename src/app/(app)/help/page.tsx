@@ -2,6 +2,7 @@ import {
   FileText,
   Hammer,
   KeyRound,
+  LifeBuoy,
   Lightbulb,
   Share2,
   ShieldCheck,
@@ -189,6 +190,34 @@ const sections: GuideSection[] = [
     ],
   },
   {
+    titel: "Troubleshooting-Guide",
+    icon: <LifeBuoy size={18} className="text-[var(--color-primary)]" />,
+    einleitung:
+      "Ein KI-erzeugter FAQ- und Reparatur-Leitfaden für genau dein Modell — verfügbar, sobald Handbuch-Daten vorliegen.",
+    steps: [
+      {
+        titel: "Voraussetzung",
+        text: "Der Guide erscheint auf der Maschinen-Detailseite, sobald für die Maschine Handbuch-Daten (z. B. Lampen-/Schalter-Matrix) ausgewertet wurden.",
+      },
+      {
+        titel: "Erstellen",
+        text: "Im Bereich »Troubleshooting-Guide« auf »Troubleshooting-Guide erstellen« (nur mit Schreibrecht). Claude bestimmt zunächst die Plattform bzw. Geräte-Generation und prüft sie samt bekannter Serienfehler per Websuche gegen Community-Quellen (IPDB, PinWiki, Pinside). Das dauert ein bis zwei Minuten.",
+      },
+      {
+        titel: "Was drinsteht",
+        text: "Plattformspezifische Sicherheitshinweise, systematische Fehlersuche nach Subsystemen (als Symptom-/Diagnose-Tabellen), bekannte Modellprobleme, Wege ins Diagnose-/Testmenü, ein FAQ, ein Wartungsplan und eine Werkzeug-/Ersatzteilliste — dazu Quellen zum Gegenprüfen.",
+      },
+      {
+        titel: "Neu erstellen",
+        text: "Über »Guide neu erstellen« lässt sich der Leitfaden jederzeit neu erzeugen; er ersetzt den bisherigen.",
+      },
+      {
+        titel: "Wichtig",
+        text: "Der Guide ist KI-generiert. Vor sicherheitsrelevanten Arbeiten immer mit dem Original-Manual und dem Schaltplan gegenprüfen.",
+      },
+    ],
+  },
+  {
     titel: "Wissen teilen",
     icon: <Share2 size={18} className="text-[var(--color-primary)]" />,
     einleitung:
@@ -297,6 +326,10 @@ const sections: GuideSection[] = [
     einleitung: "Kleinigkeiten, die den Alltag leichter machen.",
     steps: [
       {
+        titel: "Bereiche ein- und ausklappen",
+        text: "Auf der Maschinen-Detailseite sind Fehler, Reparaturen, Handbuch-Daten und Troubleshooting-Guide ein-/ausklappbare Bereiche — standardmäßig eingeklappt. Die Titelzeile zeigt jeweils die Anzahl (z. B. offene Fehler), sodass du auf einen Blick siehst, was drinsteckt.",
+      },
+      {
         titel: "Mobil nutzen",
         text: "Die App ist für unterwegs gedacht — erfasse Fehler und Reparaturen direkt an der Maschine.",
       },
@@ -324,7 +357,7 @@ export default async function HelpPage() {
         <p className="text-[var(--color-muted)]">
           Schritt für Schritt durch alle Funktionen — von der Anmeldung über
           Maschinen, Fehler und Reparaturen bis zu Clubs, Einladungen,
-          Handbuch-Daten und Konto.
+          Handbuch-Daten, Troubleshooting-Guide und Konto.
         </p>
       </div>
 

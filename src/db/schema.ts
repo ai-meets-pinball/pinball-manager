@@ -317,6 +317,31 @@ export const machineData = pgTable(
   (t) => [unique("machine_data_machine_typ_unique").on(t.machineId, t.typ)],
 );
 
+/* ── Troubleshooting-Guide (Phase 3) ──────────────────────────────────────── */
+/*
+  Ein von Claude erzeugter FAQ- & Troubleshooting-Guide je Maschine. Er wird nur
+  angeboten, wenn schon Handbuch-Fakten vorliegen (Lampenmatrix o. ä.) — siehe
+  lib/troubleshooting.ts. Anders als machine_data ist das KEIN Handbuch-Text,
+  sondern von Claude generierte Inhalte (kein Copyright-Thema), darum dürfen sie
+  gespeichert werden.
+
+  Genau EINE Zeile je Maschine (Neu-Erzeugen ersetzt sie). `daten` hält den
+  strukturierten Guide (plattform + Abschnitte + Quellen, siehe
+  troubleshootingGuideSchema in lib/validators.ts).
+*/
+export const troubleshootingGuides = pgTable("troubleshooting_guides", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  machineId: uuid("machine_id")
+    .notNull()
+    .unique()
+    .references(() => machines.id, { onDelete: "cascade" }),
+  daten: jsonb("daten").notNull(),
+  // Welches Claude-Modell den Guide erzeugt hat — für Transparenz (Lehrbeispiel).
+  model: text("model").notNull(),
+  erstelltVon: text("erstellt_von").references(() => user.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 /* ── Relations (für db.query-Eager-Loading) ───────────────────────────────── */
 
 export const clubsRelations = relations(clubs, ({ many }) => ({
@@ -370,6 +395,10 @@ export const machinesRelations = relations(machines, ({ one, many }) => ({
   }),
   faults: many(faults),
   repairs: many(repairs),
+  troubleshootingGuide: one(troubleshootingGuides, {
+    fields: [machines.id],
+    references: [troubleshootingGuides.machineId],
+  }),
 }));
 
 export const faultsRelations = relations(faults, ({ one, many }) => ({

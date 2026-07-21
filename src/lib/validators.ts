@@ -139,3 +139,96 @@ export const extractSchema = z.object({
   parts: factTableSchema,
   rules: factTableSchema,
 });
+
+/*
+  Phase-3-Troubleshooting-Guide (lib/troubleshooting.ts). Wie bei den Fakten
+  bewusst eine strukturierte Form statt Freitext/Markdown: ein Guide besteht aus
+  Abschnitten, jeder Abschnitt aus Blöcken. Ein Block ist Fließtext, ein
+  Warnhinweis oder eine Symptom-Diagnose-Tabelle. So lässt sich der Guide mit
+  eigenen Komponenten (themebar, ohne Markdown-Abhängigkeit) rendern.
+*/
+
+/** Ein Baustein eines Guide-Abschnitts (discriminated union über `typ`). Zellen/
+    Texte werden tolerant zu Strings gecoerct, damit eine Zahl nicht scheitert. */
+export const guideBlockSchema = z.discriminatedUnion("typ", [
+  z.object({ typ: z.literal("text"), text: z.coerce.string() }),
+  z.object({ typ: z.literal("warnung"), text: z.coerce.string() }),
+  z.object({
+    typ: z.literal("tabelle"),
+    titel: z.coerce.string(),
+    spalten: z.array(z.coerce.string()),
+    zeilen: z.array(z.array(z.coerce.string())),
+  }),
+]);
+export type GuideBlock = z.infer<typeof guideBlockSchema>;
+
+export const guideSectionSchema = z.object({
+  titel: z.coerce.string(),
+  bloecke: z.array(guideBlockSchema),
+});
+export type GuideSection = z.infer<typeof guideSectionSchema>;
+
+/** Vollständiger Guide: identifizierte Plattform + Abschnitte + Quellen. */
+export const troubleshootingGuideSchema = z.object({
+  plattform: z.coerce.string(),
+  abschnitte: z.array(guideSectionSchema),
+  quellen: z.array(z.coerce.string()),
+});
+export type TroubleshootingGuide = z.infer<typeof troubleshootingGuideSchema>;
+
+/* JSON-Schema für Claudes Structured Output — spiegelt die zod-Schemas oben.
+   Structured Outputs verlangen additionalProperties:false und dass jede
+   Eigenschaft in `required` steht; darum ist `titel` bei Tabellen Pflicht
+   (leerer String, wenn ohne Titel). */
+const guideBlockJsonSchema = {
+  anyOf: [
+    {
+      type: "object",
+      properties: { typ: { const: "text" }, text: { type: "string" } },
+      required: ["typ", "text"],
+      additionalProperties: false,
+    },
+    {
+      type: "object",
+      properties: { typ: { const: "warnung" }, text: { type: "string" } },
+      required: ["typ", "text"],
+      additionalProperties: false,
+    },
+    {
+      type: "object",
+      properties: {
+        typ: { const: "tabelle" },
+        titel: { type: "string" },
+        spalten: { type: "array", items: { type: "string" } },
+        zeilen: {
+          type: "array",
+          items: { type: "array", items: { type: "string" } },
+        },
+      },
+      required: ["typ", "titel", "spalten", "zeilen"],
+      additionalProperties: false,
+    },
+  ],
+} as const;
+
+export const troubleshootingGuideJsonSchema = {
+  type: "object",
+  properties: {
+    plattform: { type: "string" },
+    abschnitte: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          titel: { type: "string" },
+          bloecke: { type: "array", items: guideBlockJsonSchema },
+        },
+        required: ["titel", "bloecke"],
+        additionalProperties: false,
+      },
+    },
+    quellen: { type: "array", items: { type: "string" } },
+  },
+  required: ["plattform", "abschnitte", "quellen"],
+  additionalProperties: false,
+} as const;
