@@ -1,5 +1,7 @@
+"use client";
+
 import Link from "next/link";
-import { Users, Wrench } from "lucide-react";
+import { Check, Users, Wrench } from "lucide-react";
 
 type Machine = {
   id: string;
@@ -13,16 +15,16 @@ type Machine = {
 export function MachineCard({
   machine,
   wartungFaellig = 0,
+  selection,
 }: {
   machine: Machine;
   /** Anzahl fälliger Wartungen — zeigt eine „needs attention"-Badge. */
   wartungFaellig?: number;
+  /** Gesetzt = Auswahlmodus: die Karte wird zum Auswahl-Umschalter statt Link. */
+  selection?: { selected: boolean; onToggle: () => void };
 }) {
-  return (
-    <Link
-      href={`/machines/${machine.id}`}
-      className="flex gap-4 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition-colors hover:border-[var(--color-primary)]"
-    >
+  const inner = (
+    <>
       <div className="h-16 w-16 shrink-0 overflow-hidden rounded-[var(--radius)] bg-[var(--color-border)]/40">
         {machine.fotoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
@@ -54,6 +56,43 @@ export function MachineCard({
           </p>
         ) : null}
       </div>
+    </>
+  );
+
+  // Auswahlmodus: die ganze Karte ist ein Umschalter (kein Link), mit Häkchen
+  // und hervorgehobenem Rahmen für die aktuelle Auswahl.
+  if (selection) {
+    return (
+      <button
+        type="button"
+        onClick={selection.onToggle}
+        aria-pressed={selection.selected}
+        className={`relative flex gap-4 rounded-[var(--radius)] border bg-[var(--color-surface)] p-3 text-left transition-colors ${
+          selection.selected
+            ? "border-[var(--color-primary)] ring-1 ring-[var(--color-primary)]"
+            : "border-[var(--color-border)] hover:border-[var(--color-primary)]"
+        }`}
+      >
+        <span
+          className={`absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded border ${
+            selection.selected
+              ? "border-[var(--color-primary)] bg-[var(--color-primary)] text-[var(--color-primary-fg)]"
+              : "border-[var(--color-border)] bg-[var(--color-surface)]"
+          }`}
+        >
+          {selection.selected ? <Check size={13} /> : null}
+        </span>
+        {inner}
+      </button>
+    );
+  }
+
+  return (
+    <Link
+      href={`/machines/${machine.id}`}
+      className="flex gap-4 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] p-3 transition-colors hover:border-[var(--color-primary)]"
+    >
+      {inner}
     </Link>
   );
 }

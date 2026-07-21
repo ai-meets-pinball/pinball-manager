@@ -1,9 +1,10 @@
 import Link from "next/link";
 import { Plus, Search } from "lucide-react";
-import { MachineCard } from "@/components/machine-card";
+import { MachinesBoard } from "@/components/machines-board";
 import { Input } from "@/components/ui/input";
 import {
   getDueMaintenanceCountByMachine,
+  getUserClubs,
   getVisibleMachines,
 } from "@/db/queries";
 import { requireUser } from "@/lib/session";
@@ -20,6 +21,18 @@ export default async function MachinesPage({
   const wartungFaellig = await getDueMaintenanceCountByMachine(
     machines.map((m) => m.id),
   );
+  // Clubs des Nutzers — Ziele für die Bulk-Zuweisung.
+  const meineClubs = await getUserClubs(user.id);
+
+  const items = machines.map((m) => ({
+    id: m.id,
+    hersteller: m.hersteller,
+    modell: m.modell,
+    baujahr: m.baujahr,
+    fotoUrl: m.fotoUrl,
+    club: m.club,
+    wartungFaellig: wartungFaellig.get(m.id) ?? 0,
+  }));
 
   return (
     <div className="space-y-6">
@@ -47,22 +60,17 @@ export default async function MachinesPage({
         />
       </form>
 
-      {machines.length === 0 ? (
+      {items.length === 0 ? (
         <p className="text-[var(--color-muted)]">
           {q
             ? "Keine Maschinen gefunden."
             : "Noch keine Maschinen. Lege deine erste an."}
         </p>
       ) : (
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {machines.map((machine) => (
-            <MachineCard
-              key={machine.id}
-              machine={machine}
-              wartungFaellig={wartungFaellig.get(machine.id) ?? 0}
-            />
-          ))}
-        </div>
+        <MachinesBoard
+          machines={items}
+          clubs={meineClubs.map((c) => ({ id: c.id, name: c.name }))}
+        />
       )}
     </div>
   );
