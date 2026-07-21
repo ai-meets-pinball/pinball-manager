@@ -30,6 +30,7 @@ export default async function MachinesPage({
     modell: m.modell,
     baujahr: m.baujahr,
     fotoUrl: m.fotoUrl,
+    clubId: m.clubId,
     club: m.club,
     wartungFaellig: wartungFaellig.get(m.id) ?? 0,
   }));

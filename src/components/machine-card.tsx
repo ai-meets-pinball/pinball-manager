@@ -16,12 +16,15 @@ export function MachineCard({
   machine,
   wartungFaellig = 0,
   selection,
+  hinweis,
 }: {
   machine: Machine;
   /** Anzahl fälliger Wartungen — zeigt eine „needs attention"-Badge. */
   wartungFaellig?: number;
   /** Gesetzt = Auswahlmodus: die Karte wird zum Auswahl-Umschalter statt Link. */
   selection?: { selected: boolean; onToggle: () => void };
+  /** Optionaler Status-Chip, z. B. „bereits zugewiesen" im Zuweisungs-Modus. */
+  hinweis?: string;
 }) {
   const inner = (
     <>
@@ -52,6 +55,13 @@ export function MachineCard({
             <span className="inline-flex items-center gap-1 rounded-full border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-2 py-0.5 text-xs font-medium text-[var(--color-danger)]">
               <Wrench size={11} /> {wartungFaellig} Wartung
               {wartungFaellig === 1 ? "" : "en"} fällig
+            </span>
+          </p>
+        ) : null}
+        {hinweis ? (
+          <p className="mt-1.5">
+            <span className="inline-flex items-center gap-1 rounded-full border border-[var(--color-success)]/40 bg-[var(--color-success)]/10 px-2 py-0.5 text-xs font-medium text-[var(--color-success)]">
+              <Check size={11} /> {hinweis}
             </span>
           </p>
         ) : null}
