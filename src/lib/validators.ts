@@ -232,3 +232,89 @@ export const troubleshootingGuideJsonSchema = {
   required: ["plattform", "abschnitte", "quellen"],
   additionalProperties: false,
 } as const;
+
+/* ── Wartungsplan (Phase „interaktiver Wartungsplan") ──────────────────────── */
+
+export const MAINTENANCE_PRIORITAETEN = [
+  "niedrig",
+  "mittel",
+  "hoch",
+  "sehr hoch",
+  "kritisch",
+] as const;
+export const MAINTENANCE_INTERVALL_TYPEN = ["zeit", "spiele", "bedarf"] as const;
+
+/** Ein Wartungspunkt (Anlegen/Bearbeiten). `intervallTage` ist nur bei
+    `intervallTyp = "zeit"` sinnvoll (die Action berechnet daraus die Fälligkeit). */
+export const maintenanceTaskSchema = z.object({
+  titel: z.string().trim().min(1, "Titel ist erforderlich"),
+  kategorie: optionalString,
+  bauteil: optionalString,
+  taetigkeit: optionalString,
+  beschreibung: optionalString,
+  prioritaet: z.enum(MAINTENANCE_PRIORITAETEN),
+  intervallTyp: z.enum(MAINTENANCE_INTERVALL_TYPEN),
+  intervallTage: optionalInt,
+  intervallText: optionalString,
+});
+
+/** Eine Erledigung (Historien-Eintrag). `datum` als yyyy-mm-dd aus dem
+    Date-Input; die Action wandelt es in ein Date (leer = heute). */
+export const maintenanceLogSchema = z.object({
+  datum: optionalString,
+  notiz: optionalString,
+});
+
+/* JSON-Schema für den KI-Import aus dem Troubleshooting-Guide (Structured
+   Output erzwingt gültige Enum-Werte; `intervallTage` 0 = kein Zeitintervall,
+   weil nullable-Typen im Schema unnötig Komplexität brächten). */
+export const maintenanceImportJsonSchema = {
+  type: "object",
+  properties: {
+    punkte: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          titel: { type: "string" },
+          kategorie: { type: "string" },
+          bauteil: { type: "string" },
+          taetigkeit: { type: "string" },
+          intervallTyp: { enum: [...MAINTENANCE_INTERVALL_TYPEN] },
+          intervallTage: { type: "integer" },
+          prioritaet: { enum: [...MAINTENANCE_PRIORITAETEN] },
+          beschreibung: { type: "string" },
+        },
+        required: [
+          "titel",
+          "kategorie",
+          "bauteil",
+          "taetigkeit",
+          "intervallTyp",
+          "intervallTage",
+          "prioritaet",
+          "beschreibung",
+        ],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["punkte"],
+  additionalProperties: false,
+} as const;
+
+/** zod-Gegenstück zum Import-Schema (tolerant zu Strings gecoerct). */
+export const maintenanceImportSchema = z.object({
+  punkte: z.array(
+    z.object({
+      titel: z.coerce.string(),
+      kategorie: z.coerce.string(),
+      bauteil: z.coerce.string(),
+      taetigkeit: z.coerce.string(),
+      intervallTyp: z.enum(MAINTENANCE_INTERVALL_TYPEN),
+      intervallTage: z.coerce.number().int(),
+      prioritaet: z.enum(MAINTENANCE_PRIORITAETEN),
+      beschreibung: z.coerce.string(),
+    }),
+  ),
+});

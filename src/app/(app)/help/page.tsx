@@ -1,4 +1,5 @@
 import {
+  CalendarClock,
   FileText,
   Hammer,
   KeyRound,
@@ -115,6 +116,34 @@ const sections: GuideSection[] = [
       {
         titel: "Historie",
         text: "Alle Reparaturen einer Maschine stehen chronologisch auf ihrer Detailseite.",
+      },
+    ],
+  },
+  {
+    titel: "Wartungsplan",
+    icon: <CalendarClock size={18} className="text-[var(--color-primary)]" />,
+    einleitung:
+      "Wiederkehrende Wartungen je Gerät planen, abhaken und im Blick behalten — mit Fälligkeit, Historie und Erinnerung.",
+    steps: [
+      {
+        titel: "Punkte anlegen",
+        text: "Auf der Maschinen-Detailseite im Bereich »Wartungsplan«: »Standard-Wartungsplan übernehmen« legt eine bewährte Grundausstattung an, »Aus Guide übernehmen« zieht Punkte aus dem Troubleshooting-Guide, oder »Neuer Wartungspunkt« für eigene Einträge.",
+      },
+      {
+        titel: "Intervall & Fälligkeit",
+        text: "Nur zeitbasierte Punkte (z. B. »alle 30 Tage«) bekommen einen Termin und eine Fälligkeits-Anzeige (überfällig / bald fällig). Spielzahl- und Bedarf-Punkte sind reine Checkliste ohne Termin.",
+      },
+      {
+        titel: "Erledigt eintragen",
+        text: "»Erledigt eintragen« schreibt einen Eintrag in die Historie (Datum, optionale Notiz) und verschiebt die nächste Fälligkeit automatisch um das Intervall.",
+      },
+      {
+        titel: "Historie",
+        text: "Je Wartungspunkt lässt sich die Historie aller Erledigungen auf- und zuklappen; einzelne Einträge können gelöscht werden.",
+      },
+      {
+        titel: "Erinnerungen",
+        text: "Fällige Wartungen erscheinen als Badge auf der Maschinenkachel und im Wartungsplan. Zusätzlich verschickt die App eine E-Mail-Erinnerung an den Eigentümer, sobald zeitbasierte Punkte fällig sind.",
       },
     ],
   },
@@ -356,8 +385,8 @@ export default async function HelpPage() {
         <h1 className="text-2xl font-bold">Anleitung &amp; How-To</h1>
         <p className="text-[var(--color-muted)]">
           Schritt für Schritt durch alle Funktionen — von der Anmeldung über
-          Maschinen, Fehler und Reparaturen bis zu Clubs, Einladungen,
-          Handbuch-Daten, Troubleshooting-Guide und Konto.
+          Maschinen, Fehler, Reparaturen und Wartungsplan bis zu Clubs,
+          Einladungen, Handbuch-Daten, Troubleshooting-Guide und Konto.
         </p>
       </div>
 

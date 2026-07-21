@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Users } from "lucide-react";
+import { Users, Wrench } from "lucide-react";
 
 type Machine = {
   id: string;
@@ -10,7 +10,14 @@ type Machine = {
   club?: { name: string } | null;
 };
 
-export function MachineCard({ machine }: { machine: Machine }) {
+export function MachineCard({
+  machine,
+  wartungFaellig = 0,
+}: {
+  machine: Machine;
+  /** Anzahl fälliger Wartungen — zeigt eine „needs attention"-Badge. */
+  wartungFaellig?: number;
+}) {
   return (
     <Link
       href={`/machines/${machine.id}`}
@@ -36,6 +43,14 @@ export function MachineCard({ machine }: { machine: Machine }) {
         {machine.club ? (
           <p className="mt-1 flex items-center gap-1 text-xs text-[var(--color-muted)]">
             <Users size={12} /> {machine.club.name}
+          </p>
+        ) : null}
+        {wartungFaellig > 0 ? (
+          <p className="mt-1.5">
+            <span className="inline-flex items-center gap-1 rounded-full border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-2 py-0.5 text-xs font-medium text-[var(--color-danger)]">
+              <Wrench size={11} /> {wartungFaellig} Wartung
+              {wartungFaellig === 1 ? "" : "en"} fällig
+            </span>
           </p>
         ) : null}
       </div>

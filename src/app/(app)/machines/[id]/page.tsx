@@ -4,6 +4,7 @@ import { Pencil, Plus, Trash2, Users } from "lucide-react";
 import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { FaultList } from "@/components/fault-list";
 import { MachineDataTables } from "@/components/machine-data-tables";
+import { MaintenancePlan } from "@/components/maintenance-plan";
 import { ManualUpload } from "@/components/manual-upload";
 import { RepairList } from "@/components/repair-list";
 import { ShareFactsForm } from "@/components/share-facts-form";
@@ -16,6 +17,7 @@ import { deleteMachine } from "@/db/actions/machines";
 import { db } from "@/db";
 import {
   getFactsShare,
+  getMaintenanceTasks,
   getRepairShares,
   getShareDefaults,
   getSharedFactsForModel,
@@ -87,6 +89,13 @@ export default async function MachineDetailPage({
   const troubleshootingGuide = await db.query.troubleshootingGuides.findFirst({
     where: eq(troubleshootingGuidesTable.machineId, id),
   });
+
+  // Wartungsplan: Wartungspunkte samt Historie und berechneter Fälligkeit.
+  const wartungsTasks = await getMaintenanceTasks(id);
+  const wartungFaellig = wartungsTasks.filter(
+    (t) => t.status === "ueberfaellig",
+  ).length;
+  const wartungBald = wartungsTasks.filter((t) => t.status === "bald").length;
 
   // Geteiltes Wissen zum selben Gerätetyp: eigene Freigabe + fremde Fakten,
   // die dieser Nutzer sehen darf. Ohne OPDB-Bezug gibt es keinen Typ.
@@ -266,6 +275,36 @@ export default async function MachineDetailPage({
             }
           />
         </div>
+      </CollapsibleSection>
+
+      {/* Wartungsplan: interaktiv, mit Fälligkeit & Historie. Öffnet automatisch,
+          wenn etwas überfällig ist. */}
+      <CollapsibleSection
+        title="Wartungsplan"
+        defaultOpen={wartungFaellig > 0}
+        badge={
+          wartungFaellig > 0 || wartungBald > 0 ? (
+            <span className="flex items-center gap-1.5 text-xs">
+              {wartungFaellig > 0 ? (
+                <span className="rounded-full border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-2 py-0.5 text-[var(--color-danger)]">
+                  {wartungFaellig} fällig
+                </span>
+              ) : null}
+              {wartungBald > 0 ? (
+                <span className="rounded-full border border-[var(--color-warn)]/40 bg-[var(--color-warn)]/10 px-2 py-0.5 text-[var(--color-warn)]">
+                  {wartungBald} bald
+                </span>
+              ) : null}
+            </span>
+          ) : undefined
+        }
+      >
+        <MaintenancePlan
+          tasks={wartungsTasks}
+          machineId={machine.id}
+          schreibbar={darf.bearbeiten}
+          hatGuide={troubleshootingGuide !== undefined}
+        />
       </CollapsibleSection>
 
       {/* Reparaturdatenbank: geteiltes Wissen zum selben Gerätetyp (nur wenn vorhanden). */}

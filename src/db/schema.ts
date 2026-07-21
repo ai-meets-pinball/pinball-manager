@@ -37,6 +37,24 @@ export const faultPrioritaet = pgEnum("fault_prioritaet", [
   "hoch",
 ]);
 
+/* Wartungs-Priorität — eigene Skala (Timms Wartungsliste kennt zusätzlich
+   „sehr hoch" und „kritisch", darum nicht faultPrioritaet wiederverwendet). */
+export const maintenancePrioritaet = pgEnum("maintenance_prioritaet", [
+  "niedrig",
+  "mittel",
+  "hoch",
+  "sehr hoch",
+  "kritisch",
+]);
+
+/* Wie das Wartungsintervall zu verstehen ist. Nur „zeit" ergibt einen
+   berechenbaren Termin; „spiele"/„bedarf" sind reine Checklisten-Punkte. */
+export const maintenanceIntervallTyp = pgEnum("maintenance_intervall_typ", [
+  "zeit",
+  "spiele",
+  "bedarf",
+]);
+
 /* ── Clubs ────────────────────────────────────────────────────────────────── */
 
 export const clubs = pgTable("clubs", {
@@ -342,6 +360,54 @@ export const troubleshootingGuides = pgTable("troubleshooting_guides", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+/* ── Wartungsplan (interaktiv, mit Historie & Erinnerung) ─────────────────── */
+/*
+  Je Gerät eine Liste von Wartungspunkten (`maintenance_tasks`) plus eine
+  Historie erledigter Wartungen (`maintenance_log`). Spiegelt bewusst das
+  repairs-Muster (per-Gerät, datiert, geloggt).
+
+  Fälligkeit nur zeitbasiert: nur `intervallTyp = "zeit"` (mit `intervallTage`)
+  ergibt eine `naechsteFaelligkeit`; „spiele"/„bedarf" sind Checkliste ohne
+  Termin. `zuletztErledigt`/`naechsteFaelligkeit`/`zuletztErinnert` sind bewusst
+  denormalisiert, damit In-App-Fälligkeit und der Reminder-Cron ohne Aggregation
+  über die Historie auskommen (aktualisiert beim Erledigen/Ändern).
+*/
+export const maintenanceTasks = pgTable("maintenance_tasks", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  machineId: uuid("machine_id")
+    .notNull()
+    .references(() => machines.id, { onDelete: "cascade" }),
+  titel: text("titel").notNull(),
+  kategorie: text("kategorie"), // Freitext (wie faults.kategorie)
+  bauteil: text("bauteil"),
+  taetigkeit: text("taetigkeit"), // Prüfen / Reinigen / Ersetzen / Testen …
+  beschreibung: text("beschreibung"),
+  prioritaet: maintenancePrioritaet("prioritaet").notNull().default("mittel"),
+  intervallTyp: maintenanceIntervallTyp("intervall_typ").notNull().default("bedarf"),
+  intervallTage: integer("intervall_tage"), // nur bei intervallTyp "zeit"
+  intervallText: text("intervall_text"), // Original-Label, z. B. „500 Spiele / monatlich"
+  aktiv: boolean("aktiv").notNull().default(true),
+  zuletztErledigt: timestamp("zuletzt_erledigt"),
+  naechsteFaelligkeit: timestamp("naechste_faelligkeit"), // nur bei „zeit"
+  zuletztErinnert: timestamp("zuletzt_erinnert"), // Cron-Dedup (siehe reminders-Route)
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const maintenanceLog = pgTable("maintenance_log", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  taskId: uuid("task_id")
+    .notNull()
+    .references(() => maintenanceTasks.id, { onDelete: "cascade" }),
+  // Denormalisiert für einfache maschinen-bezogene Queries/Autorisierung.
+  machineId: uuid("machine_id")
+    .notNull()
+    .references(() => machines.id, { onDelete: "cascade" }),
+  datum: timestamp("datum").notNull().defaultNow(),
+  erledigtVon: text("erledigt_von").references(() => user.id),
+  notiz: text("notiz"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 /* ── Relations (für db.query-Eager-Loading) ───────────────────────────────── */
 
 export const clubsRelations = relations(clubs, ({ many }) => ({
@@ -398,6 +464,25 @@ export const machinesRelations = relations(machines, ({ one, many }) => ({
   troubleshootingGuide: one(troubleshootingGuides, {
     fields: [machines.id],
     references: [troubleshootingGuides.machineId],
+  }),
+  maintenanceTasks: many(maintenanceTasks),
+}));
+
+export const maintenanceTasksRelations = relations(
+  maintenanceTasks,
+  ({ one, many }) => ({
+    machine: one(machines, {
+      fields: [maintenanceTasks.machineId],
+      references: [machines.id],
+    }),
+    logs: many(maintenanceLog),
+  }),
+);
+
+export const maintenanceLogRelations = relations(maintenanceLog, ({ one }) => ({
+  task: one(maintenanceTasks, {
+    fields: [maintenanceLog.taskId],
+    references: [maintenanceTasks.id],
   }),
 }));
 
