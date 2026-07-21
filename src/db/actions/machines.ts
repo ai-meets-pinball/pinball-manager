@@ -11,6 +11,7 @@ import {
   isClubMember,
   isSuperAdmin,
   requireMachineAccess,
+  requireMachineWrite,
   requireUser,
 } from "@/lib/session";
 import { uploadMachinePhoto } from "@/lib/storage";
@@ -149,7 +150,8 @@ export async function updateMachine(
   formData: FormData,
 ): Promise<FormState> {
   const id = String(formData.get("id"));
-  const { user, machine, darf } = await requireMachineAccess(id);
+  // Schreib-Gate: lehnt Supporter (nur Lesezugriff) ab.
+  const { user, machine, darf } = await requireMachineWrite(id);
 
   const result = await parseMachine(user.id, formData);
   if ("error" in result) return result;

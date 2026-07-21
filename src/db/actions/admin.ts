@@ -5,16 +5,23 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { roleAssignments, roles } from "@/db/schema";
 import { requireSuperAdmin, roleIdByKey } from "@/lib/session";
-import { SUPERADMIN_ROLE } from "@/lib/validators";
+import { SUPERADMIN_ROLE, SUPPORTER_ROLE } from "@/lib/validators";
 
-/** Globale Super-Admin-Rolle geben oder entziehen (nur Super-Admin).
+/** Vergebbare globale Rollen (per /admin). Founder o. Ä. ließen sich hier ergänzen. */
+const VERGEBBARE_GLOBALE_ROLLEN = [SUPERADMIN_ROLE, SUPPORTER_ROLE] as const;
+
+/** Eine globale Rolle geben oder entziehen (nur Super-Admin).
     Der letzte Super-Admin bleibt geschützt. */
-export async function setSuperAdmin(formData: FormData): Promise<void> {
+export async function setGlobalRole(formData: FormData): Promise<void> {
   await requireSuperAdmin();
 
   const userId = String(formData.get("userId"));
+  const rolle = String(formData.get("rolle"));
   const grant = String(formData.get("grant")) === "true";
-  const roleId = await roleIdByKey(SUPERADMIN_ROLE);
+  if (!VERGEBBARE_GLOBALE_ROLLEN.includes(rolle as never)) {
+    throw new Error("Unbekannte Rolle");
+  }
+  const roleId = await roleIdByKey(rolle);
 
   if (grant) {
     await db
@@ -23,17 +30,16 @@ export async function setSuperAdmin(formData: FormData): Promise<void> {
       .onConflictDoNothing();
   } else {
     // Mindestens ein Super-Admin muss übrig bleiben.
-    const alle = await db
-      .select({ userId: roleAssignments.userId })
-      .from(roleAssignments)
-      .where(
-        and(
-          eq(roleAssignments.roleId, roleId),
-          isNull(roleAssignments.clubId),
-        ),
-      );
-    if (alle.length <= 1 && alle.some((a) => a.userId === userId)) {
-      throw new Error("Der letzte Super-Admin kann nicht entfernt werden");
+    if (rolle === SUPERADMIN_ROLE) {
+      const alle = await db
+        .select({ userId: roleAssignments.userId })
+        .from(roleAssignments)
+        .where(
+          and(eq(roleAssignments.roleId, roleId), isNull(roleAssignments.clubId)),
+        );
+      if (alle.length <= 1 && alle.some((a) => a.userId === userId)) {
+        throw new Error("Der letzte Super-Admin kann nicht entfernt werden");
+      }
     }
 
     await db

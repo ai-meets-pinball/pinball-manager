@@ -20,6 +20,7 @@ const tone: Record<string, string> = {
   member: "var(--color-faint)",
   // Globale Rolle
   superadmin: "var(--color-primary)",
+  supporter: "var(--color-accent)",
 };
 
 /** Anzeigenamen für Club-Rollen (Enum-Werte → deutsche Labels). */

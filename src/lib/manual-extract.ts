@@ -5,7 +5,7 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { machineData } from "@/db/schema";
-import { requireMachineAccess } from "@/lib/session";
+import { requireMachineWrite } from "@/lib/session";
 import { extractSchema, FACT_TYPES } from "@/lib/validators";
 
 /*
@@ -122,7 +122,7 @@ export async function extractManualFacts(
 ): Promise<ExtractState> {
   const machineId = String(formData.get("machineId"));
   // Autorisierung: Eigentümer ODER Club-Mitglied (kein RLS). Wirft sonst.
-  await requireMachineAccess(machineId);
+  await requireMachineWrite(machineId);
 
   if (formData.get("attest") !== "on") {
     return {

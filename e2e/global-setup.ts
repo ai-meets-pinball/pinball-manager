@@ -1,6 +1,6 @@
 import { request } from "@playwright/test";
 import { cleanupTestData, sql } from "./helpers/db";
-import { BASE_URL, createAccount, USERS } from "./helpers/auth";
+import { BASE_URL, createAccount, grantGlobalRole, USERS } from "./helpers/auth";
 
 /*
   Einmaliges Setup vor der Suite:
@@ -34,9 +34,12 @@ export default async function globalSetup() {
       USERS.owner,
       USERS.member,
       USERS.outsider,
+      USERS.supporter,
     ]) {
       await createAccount(ctx, email);
     }
+    // Der Supporter bekommt die globale Nur-Lese-Rolle.
+    await grantGlobalRole(USERS.supporter, "supporter");
   } finally {
     await ctx.dispose();
   }

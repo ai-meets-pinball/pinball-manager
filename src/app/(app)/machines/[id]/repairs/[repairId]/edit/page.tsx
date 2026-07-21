@@ -4,7 +4,7 @@ import { RepairForm } from "@/components/repair-form";
 import { updateRepair } from "@/db/actions/repairs";
 import { db } from "@/db";
 import { faults, repairs } from "@/db/schema";
-import { requireMachineAccess } from "@/lib/session";
+import { requireMachineWrite } from "@/lib/session";
 
 export default async function EditRepairPage({
   params,
@@ -12,7 +12,7 @@ export default async function EditRepairPage({
   params: Promise<{ id: string; repairId: string }>;
 }) {
   const { id, repairId } = await params;
-  await requireMachineAccess(id);
+  await requireMachineWrite(id);
 
   const repair = await db.query.repairs.findFirst({
     where: and(eq(repairs.id, repairId), eq(repairs.machineId, id)),

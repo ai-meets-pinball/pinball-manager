@@ -3,7 +3,7 @@ import { RepairForm } from "@/components/repair-form";
 import { createRepair } from "@/db/actions/repairs";
 import { db } from "@/db";
 import { faults } from "@/db/schema";
-import { requireMachineAccess } from "@/lib/session";
+import { requireMachineWrite } from "@/lib/session";
 
 export default async function NewRepairPage({
   params,
@@ -14,7 +14,7 @@ export default async function NewRepairPage({
 }) {
   const { id } = await params;
   const { faultId } = await searchParams;
-  const { machine } = await requireMachineAccess(id);
+  const { machine } = await requireMachineWrite(id);
 
   const machineFaults = await db.query.faults.findMany({
     where: eq(faults.machineId, id),

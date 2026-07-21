@@ -270,6 +270,10 @@ const sections: GuideSection[] = [
         text: "Super-Admins finden »Administration« im Nutzer-Menü oben rechts. Festgelegt werden sie über die Umgebungsvariable SUPER_ADMIN_EMAILS; weitere lassen sich danach in der Admin-Oberfläche ernennen.",
       },
       {
+        titel: "Supporter (globale Nur-Lese-Rolle)",
+        text: "Unter »Nutzer« kannst du jemandem die Supporter-Rolle geben. Ein Supporter sieht zur Unterstützung alle Clubs und deren Maschinen (mit Fehlern und Reparaturen), aber KEINE privaten Sammlungen einzelner Nutzer — und kann nichts ändern, anlegen oder löschen. Rein lesend.",
+      },
+      {
         titel: "Nutzer einladen",
         text: "Da die Registrierung nur mit Einladung möglich ist, lädst du neue Personen unter »Nutzer einladen« per E-Mail ein — sie erhalten einen Registrierungslink. Optional kannst du eine persönliche Nachricht mitschicken. Diese Einladung ordnet keinem Club zu; dafür lädst du zusätzlich im jeweiligen Club ein. Offene Einladungen lassen sich zurückziehen.",
       },

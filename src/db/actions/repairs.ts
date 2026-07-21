@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { faults, repairs } from "@/db/schema";
-import { requireMachineAccess } from "@/lib/session";
+import { requireMachineWrite } from "@/lib/session";
 import { repairSchema } from "@/lib/validators";
 
 export type FormState = { error?: string };
@@ -27,7 +27,7 @@ export async function createRepair(
   formData: FormData,
 ): Promise<FormState> {
   const machineId = String(formData.get("machineId"));
-  await requireMachineAccess(machineId);
+  await requireMachineWrite(machineId);
 
   const parsed = repairSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -69,7 +69,7 @@ export async function updateRepair(
 ): Promise<FormState> {
   const machineId = String(formData.get("machineId"));
   const id = String(formData.get("id"));
-  await requireMachineAccess(machineId);
+  await requireMachineWrite(machineId);
 
   const parsed = repairSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -108,7 +108,7 @@ export async function updateRepair(
 export async function deleteRepair(formData: FormData): Promise<void> {
   const machineId = String(formData.get("machineId"));
   const id = String(formData.get("id"));
-  await requireMachineAccess(machineId);
+  await requireMachineWrite(machineId);
 
   await db
     .delete(repairs)

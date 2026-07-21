@@ -110,12 +110,16 @@ export default async function MachineDetailPage({
           ) : null}
         </div>
         <div className="flex gap-2">
-          <Link
-            href={`/machines/${machine.id}/edit`}
-            className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-2 text-sm hover:bg-[var(--color-border)]/40"
-          >
-            <Pencil size={15} /> Bearbeiten
-          </Link>
+          {/* Schreibende Bedienelemente nur, wenn der Nutzer auch schreiben darf
+              (Supporter haben nur Lesezugriff). */}
+          {darf.bearbeiten ? (
+            <Link
+              href={`/machines/${machine.id}/edit`}
+              className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-2 text-sm hover:bg-[var(--color-border)]/40"
+            >
+              <Pencil size={15} /> Bearbeiten
+            </Link>
+          ) : null}
           {/* Nur zeigen, wenn deleteMachine es auch zulässt (Eigentümer,
               Club-Manager, Super-Admin) — sonst ein Knopf, der garantiert
               in einen Fehler läuft. */}
@@ -194,14 +198,17 @@ export default async function MachineDetailPage({
             eigeneVorhanden={machineFacts.length > 0}
           />
 
-          <Card className="space-y-3">
-            <p className="text-sm text-[var(--color-muted)]">
-              Lade dein eigenes Handbuch hoch, um Referenztabellen (Spulen,
-              Lampen-/Schalter-Matrix, Sicherungen, Teile, Regeln) zu extrahieren.
-              Das PDF wird dabei nicht gespeichert — nur die extrahierten Fakten.
-            </p>
-            <ManualUpload machineId={machine.id} />
-          </Card>
+          {darf.bearbeiten ? (
+            <Card className="space-y-3">
+              <p className="text-sm text-[var(--color-muted)]">
+                Lade dein eigenes Handbuch hoch, um Referenztabellen (Spulen,
+                Lampen-/Schalter-Matrix, Sicherungen, Teile, Regeln) zu
+                extrahieren. Das PDF wird dabei nicht gespeichert — nur die
+                extrahierten Fakten.
+              </p>
+              <ManualUpload machineId={machine.id} />
+            </Card>
+          ) : null}
         </div>
       </section>
 
@@ -209,12 +216,14 @@ export default async function MachineDetailPage({
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-lg font-semibold">Fehler</h2>
-          <Link
-            href={`/machines/${machine.id}/faults/new`}
-            className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 text-sm hover:bg-[var(--color-border)]/40"
-          >
-            <Plus size={15} /> Neuer Fehler
-          </Link>
+          {darf.bearbeiten ? (
+            <Link
+              href={`/machines/${machine.id}/faults/new`}
+              className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 text-sm hover:bg-[var(--color-border)]/40"
+            >
+              <Plus size={15} /> Neuer Fehler
+            </Link>
+          ) : null}
         </div>
 
         {/* Statusfilter — setzt nur den ?faultStatus=-Suchparameter (server-seitige Filterung). */}
@@ -241,23 +250,30 @@ export default async function MachineDetailPage({
           })}
         </div>
 
-        <FaultList faults={machineFaults} machineId={machine.id} />
+        <FaultList
+          faults={machineFaults}
+          machineId={machine.id}
+          schreibbar={darf.bearbeiten}
+        />
       </section>
 
       {/* Reparaturen */}
       <section className="space-y-3">
         <div className="flex items-center justify-between gap-4">
           <h2 className="text-lg font-semibold">Reparaturen</h2>
-          <Link
-            href={`/machines/${machine.id}/repairs/new`}
-            className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 text-sm hover:bg-[var(--color-border)]/40"
-          >
-            <Plus size={15} /> Neue Reparatur
-          </Link>
+          {darf.bearbeiten ? (
+            <Link
+              href={`/machines/${machine.id}/repairs/new`}
+              className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 text-sm hover:bg-[var(--color-border)]/40"
+            >
+              <Plus size={15} /> Neue Reparatur
+            </Link>
+          ) : null}
         </div>
         <RepairList
           repairs={machineRepairs}
           machineId={machine.id}
+          schreibbar={darf.bearbeiten}
           teilen={
             darf.teilen && machine.modelId
               ? {

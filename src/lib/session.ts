@@ -5,7 +5,7 @@ import { db } from "@/db";
 import { machines, roleAssignments, roles } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { istSuperAdminEmail } from "@/lib/super-admins";
-import { SUPERADMIN_ROLE } from "@/lib/validators";
+import { SUPERADMIN_ROLE, SUPPORTER_ROLE } from "@/lib/validators";
 
 /*
   Das Herzstück der sichtbaren Autorisierung.
@@ -91,6 +91,12 @@ export async function requireSuperAdmin(): Promise<SessionUser> {
   return user;
 }
 
+/** Supporter = globale NUR-LESE-Rolle: Einblick in alle Clubs und deren
+    Maschinen (nicht in private Sammlungen), ohne jede Änderung. */
+export function isSupporter(user: { roles?: string[] } | null): boolean {
+  return Boolean(user?.roles?.includes(SUPPORTER_ROLE));
+}
+
 /* ── Club-Rollen ──────────────────────────────────────────────────────────── */
 
 /** Rollen-Key des Nutzers in diesem Club — oder null (= kein Mitglied). */
@@ -153,9 +159,15 @@ export async function countClubOwners(clubId: string) {
 }
 
 /**
- * Zugriff auf eine Maschine: erlaubt, wenn der Nutzer Eigentümer ist, Super-Admin ist
- * ODER Mitglied des zugeordneten Clubs. Wirft sonst — die eine Regel, überall wiederverwendet.
- * Fehler und Reparaturen erben ihre Autorisierung hierüber (via fault.machineId).
+ * LESE-Zugriff auf eine Maschine: erlaubt, wenn der Nutzer Eigentümer ist,
+ * Super-Admin ist, Mitglied des zugeordneten Clubs — ODER Supporter UND die
+ * Maschine gehört einem Club (Supporter sehen keine privaten Sammlungen).
+ * Wirft sonst — die eine Regel, überall wiederverwendet. Fehler und Reparaturen
+ * erben ihre Autorisierung hierüber (via fault.machineId).
+ *
+ * `darf` trägt die SCHREIB-Berechtigung. Wichtig: Lesen und Schreiben sind
+ * getrennt, damit die Nur-Lese-Rolle Supporter nichts verändern kann — vorher
+ * gewährte requireMachineAccess implizit auch Schreibrechte.
  */
 export async function requireMachineAccess(machineId: string) {
   const user = await requireUser();
@@ -164,44 +176,57 @@ export async function requireMachineAccess(machineId: string) {
   });
   if (!machine) notFound();
 
-  const erlaubt =
-    isSuperAdmin(user) ||
-    machine.ownerId === user.id ||
-    (machine.clubId !== null && (await isClubMember(user.id, machine.clubId)));
+  const eigentuemer = machine.ownerId === user.id;
+  const mitglied =
+    machine.clubId !== null && (await isClubMember(user.id, machine.clubId));
+  const supporterLesen = isSupporter(user) && machine.clubId !== null;
 
+  const erlaubt =
+    isSuperAdmin(user) || eigentuemer || mitglied || supporterLesen;
   if (!erlaubt) {
     throw new Error("Kein Zugriff auf diese Maschine");
   }
 
-  /*
-    Berechtigungsstufe mitliefern, damit die UI dieselben Regeln zeigt, die die
-    Server Actions durchsetzen. Vorher rendete die Detailseite „Löschen" für
-    jedes Club-Mitglied, obwohl deleteMachine es ablehnt — ein Knopf, der
-    zuverlässig in einen Fehler läuft.
-  */
   const clubManager =
-    machine.clubId !== null &&
-    (await isClubManager(user.id, machine.clubId));
+    machine.clubId !== null && (await isClubManager(user.id, machine.clubId));
+
+  // Schreiben darf, wer Eigentümer, echtes Club-Mitglied oder Super-Admin ist —
+  // NICHT ein Supporter (der hat nur über supporterLesen Zugriff).
+  const schreibberechtigt = isSuperAdmin(user) || eigentuemer || mitglied;
 
   return {
     user,
     machine,
     darf: {
-      // Bearbeiten darf jeder mit Zugriff (so verhält sich updateMachine).
-      bearbeiten: true,
+      bearbeiten: schreibberechtigt,
       // Löschen nur Eigentümer, Club-Manager oder Super-Admin (= deleteMachine).
-      loeschen:
-        isSuperAdmin(user) || machine.ownerId === user.id || clubManager,
+      loeschen: isSuperAdmin(user) || eigentuemer || clubManager,
       // Teilen darf, wer auch löschen darf — es gibt Daten nach außen.
-      teilen: isSuperAdmin(user) || machine.ownerId === user.id || clubManager,
+      teilen: isSuperAdmin(user) || eigentuemer || clubManager,
     },
   };
 }
 
-/** Mitgliedschaft erzwingen (für Club-Detailseiten). Super-Admin darf immer. */
+/** SCHREIB-Zugriff auf eine Maschine erzwingen (anlegen/ändern/löschen von
+    Maschine, Fehlern, Reparaturen, Handbuch-Fakten). Lehnt Supporter ab, die
+    nur Lesezugriff haben. */
+export async function requireMachineWrite(machineId: string) {
+  const res = await requireMachineAccess(machineId);
+  if (!res.darf.bearbeiten) {
+    throw new Error("Nur lesender Zugriff auf diese Maschine");
+  }
+  return res;
+}
+
+/** Lese-Zugriff auf einen Club (für Club-Detailseiten). Super-Admin und
+    Supporter dürfen jeden Club lesen. */
 export async function requireClubMember(clubId: string) {
   const user = await requireUser();
-  if (!isSuperAdmin(user) && !(await isClubMember(user.id, clubId))) {
+  if (
+    !isSuperAdmin(user) &&
+    !isSupporter(user) &&
+    !(await isClubMember(user.id, clubId))
+  ) {
     throw new Error("Kein Zugriff auf diesen Club");
   }
   return user;

@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { faults } from "@/db/schema";
-import { requireMachineAccess } from "@/lib/session";
+import { requireMachineWrite } from "@/lib/session";
 import { faultSchema } from "@/lib/validators";
 
 export type FormState = { error?: string };
@@ -16,7 +16,7 @@ export async function createFault(
 ): Promise<FormState> {
   const machineId = String(formData.get("machineId"));
   // Autorisierung erbt sich von der Maschine.
-  const { user } = await requireMachineAccess(machineId);
+  const { user } = await requireMachineWrite(machineId);
 
   const parsed = faultSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -42,7 +42,7 @@ export async function updateFault(
 ): Promise<FormState> {
   const machineId = String(formData.get("machineId"));
   const id = String(formData.get("id"));
-  await requireMachineAccess(machineId);
+  await requireMachineWrite(machineId);
 
   const parsed = faultSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
@@ -66,7 +66,7 @@ export async function updateFault(
 export async function deleteFault(formData: FormData): Promise<void> {
   const machineId = String(formData.get("machineId"));
   const id = String(formData.get("id"));
-  await requireMachineAccess(machineId);
+  await requireMachineWrite(machineId);
 
   await db
     .delete(faults)

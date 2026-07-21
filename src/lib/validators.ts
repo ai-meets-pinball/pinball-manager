@@ -65,6 +65,8 @@ export type ClubRole = (typeof CLUB_ROLES)[number];
 
 /** Globale Rolle mit Vollzugriff (scope "global" im Katalog). */
 export const SUPERADMIN_ROLE = "superadmin";
+/** Globale Nur-Lese-Rolle: Einblick in Club-Daten, keine Mutationen. */
+export const SUPPORTER_ROLE = "supporter";
 
 /** Einladung / Rollenzuweisung. Owner-Rolle wird zusätzlich in der Action geprüft
     (nur ein Owner darf zum Owner befördern). */

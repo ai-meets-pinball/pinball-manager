@@ -1,6 +1,6 @@
 import { FaultForm } from "@/components/fault-form";
 import { createFault } from "@/db/actions/faults";
-import { requireMachineAccess } from "@/lib/session";
+import { requireMachineWrite } from "@/lib/session";
 
 export default async function NewFaultPage({
   params,
@@ -8,7 +8,7 @@ export default async function NewFaultPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { machine } = await requireMachineAccess(id);
+  const { machine } = await requireMachineWrite(id);
 
   return (
     <div className="space-y-6">

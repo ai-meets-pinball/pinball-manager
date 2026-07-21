@@ -16,9 +16,12 @@ type Fault = {
 export function FaultList({
   faults,
   machineId,
+  schreibbar = true,
 }: {
   faults: Fault[];
   machineId: string;
+  /** false = nur Lesen (z. B. Supporter): keine Bearbeiten-/Lösch-/Reparatur-Aktionen. */
+  schreibbar?: boolean;
 }) {
   if (faults.length === 0) {
     return (
@@ -45,30 +48,32 @@ export function FaultList({
 
           <p className="whitespace-pre-wrap">{fault.beschreibung}</p>
 
-          <div className="flex gap-3 text-sm">
-            <Link
-              href={`/machines/${machineId}/repairs/new?faultId=${fault.id}`}
-              className="inline-flex items-center gap-1 text-[var(--color-primary)] hover:underline"
-            >
-              <Wrench size={14} /> Reparatur erfassen
-            </Link>
-            <Link
-              href={`/machines/${machineId}/faults/${fault.id}/edit`}
-              className="inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-            >
-              <Pencil size={14} /> Bearbeiten
-            </Link>
-            <form action={deleteFault}>
-              <input type="hidden" name="machineId" value={machineId} />
-              <input type="hidden" name="id" value={fault.id} />
-              <button
-                type="submit"
-                className="inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-danger)]"
+          {schreibbar ? (
+            <div className="flex gap-3 text-sm">
+              <Link
+                href={`/machines/${machineId}/repairs/new?faultId=${fault.id}`}
+                className="inline-flex items-center gap-1 text-[var(--color-primary)] hover:underline"
               >
-                <Trash2 size={14} /> Löschen
-              </button>
-            </form>
-          </div>
+                <Wrench size={14} /> Reparatur erfassen
+              </Link>
+              <Link
+                href={`/machines/${machineId}/faults/${fault.id}/edit`}
+                className="inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+              >
+                <Pencil size={14} /> Bearbeiten
+              </Link>
+              <form action={deleteFault}>
+                <input type="hidden" name="machineId" value={machineId} />
+                <input type="hidden" name="id" value={fault.id} />
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-danger)]"
+                >
+                  <Trash2 size={14} /> Löschen
+                </button>
+              </form>
+            </div>
+          ) : null}
         </Card>
       ))}
     </div>

@@ -1,7 +1,7 @@
 import { MachineForm } from "@/components/machine-form";
 import { updateMachine } from "@/db/actions/machines";
 import { getUserClubs } from "@/db/queries";
-import { requireMachineAccess } from "@/lib/session";
+import { requireMachineWrite } from "@/lib/session";
 
 export default async function EditMachinePage({
   params,
@@ -9,7 +9,7 @@ export default async function EditMachinePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { user, machine } = await requireMachineAccess(id);
+  const { user, machine } = await requireMachineWrite(id);
   const clubs = await getUserClubs(user.id);
 
   return (

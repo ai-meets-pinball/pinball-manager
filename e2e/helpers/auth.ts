@@ -21,7 +21,16 @@ export const USERS = {
   owner: "e2e-owner@e2e.local",
   member: "e2e-member@e2e.local",
   outsider: "e2e-outsider@e2e.local",
+  supporter: "e2e-supporter@e2e.local", // globale Nur-Lese-Rolle
 } as const;
+
+/** Weist einem Testnutzer eine globale Rolle zu (clubId = NULL). */
+export async function grantGlobalRole(email: string, roleKey: string) {
+  const [{ id: userId }] = await sql`SELECT id FROM "user" WHERE email=${email}`;
+  const [{ id: roleId }] = await sql`SELECT id FROM roles WHERE key=${roleKey}`;
+  await sql`INSERT INTO role_assignments (user_id, role_id, club_id)
+            VALUES (${userId}, ${roleId}, NULL) ON CONFLICT DO NOTHING`;
+}
 
 /** Konto über den echten Sign-up-Endpunkt anlegen.
     Der erste Nutzer nutzt den Bootstrap (leere Nutzertabelle + Allowlist),

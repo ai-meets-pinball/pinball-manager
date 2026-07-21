@@ -34,10 +34,13 @@ export function RepairList({
   repairs,
   machineId,
   teilen,
+  schreibbar = true,
 }: {
   repairs: Repair[];
   machineId: string;
   teilen?: TeilenProps;
+  /** false = nur Lesen (z. B. Supporter): keine Bearbeiten-/Lösch-Aktionen. */
+  schreibbar?: boolean;
 }) {
   if (repairs.length === 0) {
     return (
@@ -85,24 +88,26 @@ export function RepairList({
             {repair.zeit != null ? <span>Zeit: {repair.zeit} min</span> : null}
           </div>
 
-          <div className="flex gap-3 text-sm">
-            <Link
-              href={`/machines/${machineId}/repairs/${repair.id}/edit`}
-              className="inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-            >
-              <Pencil size={14} /> Bearbeiten
-            </Link>
-            <form action={deleteRepair}>
-              <input type="hidden" name="machineId" value={machineId} />
-              <input type="hidden" name="id" value={repair.id} />
-              <button
-                type="submit"
-                className="inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-danger)]"
+          {schreibbar ? (
+            <div className="flex gap-3 text-sm">
+              <Link
+                href={`/machines/${machineId}/repairs/${repair.id}/edit`}
+                className="inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-fg)]"
               >
-                <Trash2 size={14} /> Löschen
-              </button>
-            </form>
-          </div>
+                <Pencil size={14} /> Bearbeiten
+              </Link>
+              <form action={deleteRepair}>
+                <input type="hidden" name="machineId" value={machineId} />
+                <input type="hidden" name="id" value={repair.id} />
+                <button
+                  type="submit"
+                  className="inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-danger)]"
+                >
+                  <Trash2 size={14} /> Löschen
+                </button>
+              </form>
+            </div>
+          ) : null}
 
           {teilen ? (
             <ShareRepairControl

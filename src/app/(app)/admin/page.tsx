@@ -7,7 +7,7 @@ import { InviteUserForm } from "@/components/invite-user-form";
 import { RoleInfo } from "@/components/role-info";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { setSuperAdmin } from "@/db/actions/admin";
+import { setGlobalRole } from "@/db/actions/admin";
 import { deleteClub } from "@/db/actions/clubs";
 import { revokePlatformInvitation } from "@/db/actions/invitations";
 import { db } from "@/db";
@@ -15,7 +15,7 @@ import { clubs, invitations, roleAssignments, roles, user } from "@/db/schema";
 import { getTemplate } from "@/db/queries";
 import { DEFAULT_TEMPLATES, TEMPLATE_KEYS } from "@/lib/email-templates";
 import { isSuperAdmin, requireUser } from "@/lib/session";
-import { SUPERADMIN_ROLE } from "@/lib/validators";
+import { SUPERADMIN_ROLE, SUPPORTER_ROLE } from "@/lib/validators";
 
 /* Fester Teil der Einladungsmails (nicht editierbar) — nur für die Vorschau. */
 const FESTTEIL: Record<string, { ctaLabel: string; hinweis: string }> = {
@@ -162,6 +162,7 @@ export default async function AdminPage() {
           {users.map((u) => {
             const meineRollen = rolesByUser.get(u.id) ?? [];
             const istSuper = meineRollen.includes(SUPERADMIN_ROLE);
+            const istSupporter = meineRollen.includes(SUPPORTER_ROLE);
             return (
               <Card
                 key={u.id}
@@ -183,28 +184,46 @@ export default async function AdminPage() {
                   >
                     <FlaskConical size={14} /> Sichtbarkeit
                   </Link>
-                  {istSuper ? (
-                    <StatusBadge value="superadmin" />
-                  ) : (
+                  {istSuper ? <StatusBadge value="superadmin" /> : null}
+                  {istSupporter ? <StatusBadge value="supporter" /> : null}
+                  {!istSuper && !istSupporter ? (
                     <span className="text-xs text-[var(--color-faint)]">
                       keine globale Rolle
                     </span>
-                  )}
+                  ) : null}
                   {u.id !== me.id ? (
-                    <form action={setSuperAdmin}>
-                      <input type="hidden" name="userId" value={u.id} />
-                      <input
-                        type="hidden"
-                        name="grant"
-                        value={istSuper ? "false" : "true"}
-                      />
-                      <button
-                        type="submit"
-                        className="rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 text-sm hover:bg-[var(--color-border)]/40"
-                      >
-                        {istSuper ? "Super-Admin entziehen" : "Zum Super-Admin"}
-                      </button>
-                    </form>
+                    <div className="flex items-center gap-2">
+                      <form action={setGlobalRole}>
+                        <input type="hidden" name="userId" value={u.id} />
+                        <input type="hidden" name="rolle" value="superadmin" />
+                        <input
+                          type="hidden"
+                          name="grant"
+                          value={istSuper ? "false" : "true"}
+                        />
+                        <button
+                          type="submit"
+                          className="rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 text-sm hover:bg-[var(--color-border)]/40"
+                        >
+                          {istSuper ? "Super-Admin entziehen" : "Zum Super-Admin"}
+                        </button>
+                      </form>
+                      <form action={setGlobalRole}>
+                        <input type="hidden" name="userId" value={u.id} />
+                        <input type="hidden" name="rolle" value="supporter" />
+                        <input
+                          type="hidden"
+                          name="grant"
+                          value={istSupporter ? "false" : "true"}
+                        />
+                        <button
+                          type="submit"
+                          className="rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 text-sm hover:bg-[var(--color-border)]/40"
+                        >
+                          {istSupporter ? "Supporter entziehen" : "Zum Supporter"}
+                        </button>
+                      </form>
+                    </div>
                   ) : null}
                 </div>
               </Card>
