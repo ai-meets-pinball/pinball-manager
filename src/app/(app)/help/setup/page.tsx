@@ -9,6 +9,7 @@ import {
   KeyRound,
   Layers,
   Mail,
+  RefreshCw,
   Rocket,
   Share2,
   Sparkles,
@@ -400,7 +401,53 @@ const abschnitte: Abschnitt[] = [
     ],
   },
   {
-    titel: "14 · Was uns wirklich Zeit gekostet hat",
+    titel: "14 · Nicht fertig, sondern laufend: Pflege",
+    icon: <RefreshCw size={18} className={ICON} />,
+    einleitung:
+      "Eine Anwendung ist mit dem ersten Deployment nicht fertig, sondern erst geboren. Ohne regelmäßige Pflege verrottet Software leise — sie tut noch, aber wird von Monat zu Monat unsicherer und schwerer zu ändern. Diese Dinge gehören in einen festen Rhythmus, nicht in „irgendwann\".",
+    schritte: [
+      {
+        titel: "Code-Reviews — auch als Einzelperson",
+        text: "Jede Änderung noch einmal mit Abstand durchsehen, bevor sie bleibt. Wer allein arbeitet, lässt einen zweiten Blick draufsehen — eine Kollegin oder einen KI-Assistenten. In diesem Projekt hat genau so ein Review gravierende Lücken gefunden, die beim Schreiben niemandem aufgefallen waren.",
+        falle:
+          "Der gefährlichste Satz ist „läuft doch\". Dass etwas funktioniert, heißt nicht, dass es richtig oder sicher ist — die kritischste Lücke hier lief monatelang fehlerfrei.",
+      },
+      {
+        titel: "Security-Audits regelmäßig, nicht nur einmal",
+        text: "Gezielt aus Angreifersicht draufschauen: Kann jemand etwas sehen, ändern oder löschen, das ihm nicht gehört? Kann sich jemand unberechtigt anmelden oder Rechte verschaffen? Solche Prüfungen wiederholen — mit jeder neuen Funktion entsteht neue Angriffsfläche.",
+        falle:
+          "Ein Test muss den ANGRIFF versuchen, nicht den Normalfall. Ein Test, der nur zeigt „Registrierung klappt\", übersieht die Lücke „Registrierung klappt auch für Fremde\".",
+      },
+      {
+        titel: "Unit-Tests für die kniffligen Stellen",
+        text: "Kleine, schnelle Tests für einzelne Funktionen mit fieser Logik — Passwortregeln, das Zerlegen einer Kennung, das Ausblenden von Feldern. Sie laufen in Millisekunden und sagen sofort, wenn eine spätere Änderung eine alte Annahme bricht.",
+      },
+      {
+        titel: "End-to-End-Tests für die wichtigen Wege",
+        text: "Tests, die die Anwendung wie ein echter Nutzer bedienen — anmelden, teilen, Rechte prüfen (Abschnitt 13). Nach jeder Änderung an Anmeldung, Rollen oder Freigaben laufen lassen: genau diese Pfade sichern sie ab. Kaputt heißt hier: sofort anhalten, nicht ausliefern.",
+      },
+      {
+        titel: "Abhängigkeiten aktuell halten",
+        text: "Die verwendeten Bibliotheken (in package.json) bekommen laufend Updates — auch Sicherheitskorrekturen. Regelmäßig prüfen, was veraltet oder verwundbar ist, und in kleinen Schritten aktualisieren, nicht alles auf einmal.",
+        befehl:
+          "npm outdated        # was ist neuer verfügbar?\nnpm audit           # bekannte Sicherheitslücken\nnpm update          # verträgliche Updates einspielen",
+        falle:
+          "Nach jedem Update Tests und Build laufen lassen. Ein Sprung auf eine neue Hauptversion (z. B. Next 16 → 17) ändert oft Verhalten — solche Updates einzeln machen und die Änderungshinweise lesen, nicht blind aktualisieren.",
+      },
+      {
+        titel: "Refactoring: aufräumen, bevor es weh tut",
+        text: "Wenn dieselbe Logik an drei Stellen steht oder eine Datei nur noch schwer zu verstehen ist, lohnt das Umbauen — mit Tests als Netz, damit sich das Verhalten dabei nicht ändert. In diesem Projekt wurde etwa das Rollenmodell von einer starren Aufzählung auf eine flexible Tabelle umgestellt, als absehbar war, dass mehr Rollen kommen.",
+        falle:
+          "Refactoring heißt: Struktur verbessern, Verhalten gleich lassen. Umbau und neue Funktion NICHT im selben Schritt — sonst weiß man bei einem Fehler nicht, woran es lag.",
+      },
+      {
+        titel: "Einen Rhythmus daraus machen",
+        text: "Als grobe Richtschnur: Reviews bei jeder Änderung, Tests bei jeder Änderung, ein Abhängigkeits- und Sicherheits-Check monatlich, ein ehrlicher Blick auf Aufräumbedarf quartalsweise. Feste Termine schlagen guten Vorsatz.",
+      },
+    ],
+  },
+  {
+    titel: "15 · Was uns wirklich Zeit gekostet hat",
     icon: <AlertTriangle size={18} className={ICON} />,
     einleitung:
       "Die Sammlung der Fallen, die man in keiner Anleitung findet — aber jede zweite davon trifft auch ein anderes Projekt.",
