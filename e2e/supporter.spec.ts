@@ -45,14 +45,47 @@ test.describe("Supporter (globale Nur-Lese-Rolle)", () => {
     await sql`DELETE FROM clubs WHERE id = ${clubId}`;
   });
 
-  test("sieht alle Clubs, aber nur zur Einsicht (kein „Neuer Club\")", async ({
+  test("sieht fremde Clubs zur Einsicht — behält aber „Neuer Club\"", async ({
     page,
   }) => {
     await loginAs(page, USERS.supporter);
     await page.goto("/clubs");
+    // Fremder Club, in dem der Supporter kein Mitglied ist → nur Einsicht.
     await expect(page.getByText("E2E Supporterclub")).toBeVisible();
-    await expect(page.getByText("nur Einsicht")).toBeVisible();
-    await expect(page.getByRole("link", { name: "Neuer Club" })).toHaveCount(0);
+    await expect(page.getByText("Einsicht")).toBeVisible();
+    // Supporter ist zugleich normaler Nutzer: Clubs anlegen bleibt möglich.
+    await expect(page.getByRole("link", { name: "Neuer Club" })).toBeVisible();
+  });
+
+  test("Rollen kombinieren sich: Supporter + Owner eines eigenen Clubs", async ({
+    page,
+  }) => {
+    // Der Supporter wird zusätzlich Owner eines eigenen Clubs.
+    const supporterId = await userIdByEmail(USERS.supporter);
+    const eigenerClub = await createClub("E2E Supporter-eigener", supporterId);
+    try {
+      await loginAs(page, USERS.supporter);
+      await page.goto("/clubs");
+
+      // Eigener Club: Owner-Rolle sichtbar (nicht „Einsicht").
+      const eigen = page
+        .getByRole("link")
+        .filter({ hasText: "E2E Supporter-eigener" });
+      await expect(eigen.getByText("Owner")).toBeVisible();
+
+      // Fremder Club: nur Einsicht.
+      const fremd = page
+        .getByRole("link")
+        .filter({ hasText: "E2E Supporterclub" });
+      await expect(fremd.getByText("Einsicht")).toBeVisible();
+
+      // Im eigenen Club darf er als Owner verwalten (Schreibrecht bleibt trotz
+      // globaler Nur-Lese-Rolle erhalten).
+      await page.goto(`/clubs/${eigenerClub}`);
+      await expect(page.getByRole("button", { name: "Club löschen" })).toBeVisible();
+    } finally {
+      await sql`DELETE FROM clubs WHERE id = ${eigenerClub}`;
+    }
   });
 
   test("darf eine Club-Maschine lesen, aber nicht bearbeiten/löschen", async ({
