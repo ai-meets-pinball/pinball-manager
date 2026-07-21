@@ -10,10 +10,12 @@ const tone: Record<string, string> = {
   behoben: "var(--color-success)",
   // Reparatur-Status
   erledigt: "var(--color-success)",
-  // Priorität
+  // Priorität (Fehler: niedrig/mittel/hoch; Wartung zusätzlich sehr hoch/kritisch)
   niedrig: "var(--color-faint)",
   mittel: "var(--color-warn)",
   hoch: "var(--color-danger)",
+  "sehr hoch": "var(--color-danger)",
+  kritisch: "var(--color-danger)",
   // Rollen (Clubs)
   owner: "var(--color-primary)",
   admin: "var(--color-accent)",

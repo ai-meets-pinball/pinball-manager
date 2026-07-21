@@ -2,7 +2,10 @@ import Link from "next/link";
 import { Plus, Search } from "lucide-react";
 import { MachineCard } from "@/components/machine-card";
 import { Input } from "@/components/ui/input";
-import { getVisibleMachines } from "@/db/queries";
+import {
+  getDueMaintenanceCountByMachine,
+  getVisibleMachines,
+} from "@/db/queries";
 import { requireUser } from "@/lib/session";
 
 export default async function MachinesPage({
@@ -13,6 +16,10 @@ export default async function MachinesPage({
   const user = await requireUser();
   const { q } = await searchParams;
   const machines = await getVisibleMachines(user.id, q);
+  // Fällige Wartungen je Maschine — für die „N fällig"-Badge auf den Karten.
+  const wartungFaellig = await getDueMaintenanceCountByMachine(
+    machines.map((m) => m.id),
+  );
 
   return (
     <div className="space-y-6">
@@ -49,7 +56,11 @@ export default async function MachinesPage({
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           {machines.map((machine) => (
-            <MachineCard key={machine.id} machine={machine} />
+            <MachineCard
+              key={machine.id}
+              machine={machine}
+              wartungFaellig={wartungFaellig.get(machine.id) ?? 0}
+            />
           ))}
         </div>
       )}

@@ -139,3 +139,182 @@ export const extractSchema = z.object({
   parts: factTableSchema,
   rules: factTableSchema,
 });
+
+/*
+  Phase-3-Troubleshooting-Guide (lib/troubleshooting.ts). Wie bei den Fakten
+  bewusst eine strukturierte Form statt Freitext/Markdown: ein Guide besteht aus
+  Abschnitten, jeder Abschnitt aus Blöcken. Ein Block ist Fließtext, ein
+  Warnhinweis oder eine Symptom-Diagnose-Tabelle. So lässt sich der Guide mit
+  eigenen Komponenten (themebar, ohne Markdown-Abhängigkeit) rendern.
+*/
+
+/** Ein Baustein eines Guide-Abschnitts (discriminated union über `typ`). Zellen/
+    Texte werden tolerant zu Strings gecoerct, damit eine Zahl nicht scheitert. */
+export const guideBlockSchema = z.discriminatedUnion("typ", [
+  z.object({ typ: z.literal("text"), text: z.coerce.string() }),
+  z.object({ typ: z.literal("warnung"), text: z.coerce.string() }),
+  z.object({
+    typ: z.literal("tabelle"),
+    titel: z.coerce.string(),
+    spalten: z.array(z.coerce.string()),
+    zeilen: z.array(z.array(z.coerce.string())),
+  }),
+]);
+export type GuideBlock = z.infer<typeof guideBlockSchema>;
+
+export const guideSectionSchema = z.object({
+  titel: z.coerce.string(),
+  bloecke: z.array(guideBlockSchema),
+});
+export type GuideSection = z.infer<typeof guideSectionSchema>;
+
+/** Vollständiger Guide: identifizierte Plattform + Abschnitte + Quellen. */
+export const troubleshootingGuideSchema = z.object({
+  plattform: z.coerce.string(),
+  abschnitte: z.array(guideSectionSchema),
+  quellen: z.array(z.coerce.string()),
+});
+export type TroubleshootingGuide = z.infer<typeof troubleshootingGuideSchema>;
+
+/* JSON-Schema für Claudes Structured Output — spiegelt die zod-Schemas oben.
+   Structured Outputs verlangen additionalProperties:false und dass jede
+   Eigenschaft in `required` steht; darum ist `titel` bei Tabellen Pflicht
+   (leerer String, wenn ohne Titel). */
+const guideBlockJsonSchema = {
+  anyOf: [
+    {
+      type: "object",
+      properties: { typ: { const: "text" }, text: { type: "string" } },
+      required: ["typ", "text"],
+      additionalProperties: false,
+    },
+    {
+      type: "object",
+      properties: { typ: { const: "warnung" }, text: { type: "string" } },
+      required: ["typ", "text"],
+      additionalProperties: false,
+    },
+    {
+      type: "object",
+      properties: {
+        typ: { const: "tabelle" },
+        titel: { type: "string" },
+        spalten: { type: "array", items: { type: "string" } },
+        zeilen: {
+          type: "array",
+          items: { type: "array", items: { type: "string" } },
+        },
+      },
+      required: ["typ", "titel", "spalten", "zeilen"],
+      additionalProperties: false,
+    },
+  ],
+} as const;
+
+export const troubleshootingGuideJsonSchema = {
+  type: "object",
+  properties: {
+    plattform: { type: "string" },
+    abschnitte: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          titel: { type: "string" },
+          bloecke: { type: "array", items: guideBlockJsonSchema },
+        },
+        required: ["titel", "bloecke"],
+        additionalProperties: false,
+      },
+    },
+    quellen: { type: "array", items: { type: "string" } },
+  },
+  required: ["plattform", "abschnitte", "quellen"],
+  additionalProperties: false,
+} as const;
+
+/* ── Wartungsplan (Phase „interaktiver Wartungsplan") ──────────────────────── */
+
+export const MAINTENANCE_PRIORITAETEN = [
+  "niedrig",
+  "mittel",
+  "hoch",
+  "sehr hoch",
+  "kritisch",
+] as const;
+export const MAINTENANCE_INTERVALL_TYPEN = ["zeit", "spiele", "bedarf"] as const;
+
+/** Ein Wartungspunkt (Anlegen/Bearbeiten). `intervallTage` ist nur bei
+    `intervallTyp = "zeit"` sinnvoll (die Action berechnet daraus die Fälligkeit). */
+export const maintenanceTaskSchema = z.object({
+  titel: z.string().trim().min(1, "Titel ist erforderlich"),
+  kategorie: optionalString,
+  bauteil: optionalString,
+  taetigkeit: optionalString,
+  beschreibung: optionalString,
+  prioritaet: z.enum(MAINTENANCE_PRIORITAETEN),
+  intervallTyp: z.enum(MAINTENANCE_INTERVALL_TYPEN),
+  intervallTage: optionalInt,
+  intervallText: optionalString,
+});
+
+/** Eine Erledigung (Historien-Eintrag). `datum` als yyyy-mm-dd aus dem
+    Date-Input; die Action wandelt es in ein Date (leer = heute). */
+export const maintenanceLogSchema = z.object({
+  datum: optionalString,
+  notiz: optionalString,
+});
+
+/* JSON-Schema für den KI-Import aus dem Troubleshooting-Guide (Structured
+   Output erzwingt gültige Enum-Werte; `intervallTage` 0 = kein Zeitintervall,
+   weil nullable-Typen im Schema unnötig Komplexität brächten). */
+export const maintenanceImportJsonSchema = {
+  type: "object",
+  properties: {
+    punkte: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: {
+          titel: { type: "string" },
+          kategorie: { type: "string" },
+          bauteil: { type: "string" },
+          taetigkeit: { type: "string" },
+          intervallTyp: { enum: [...MAINTENANCE_INTERVALL_TYPEN] },
+          intervallTage: { type: "integer" },
+          prioritaet: { enum: [...MAINTENANCE_PRIORITAETEN] },
+          beschreibung: { type: "string" },
+        },
+        required: [
+          "titel",
+          "kategorie",
+          "bauteil",
+          "taetigkeit",
+          "intervallTyp",
+          "intervallTage",
+          "prioritaet",
+          "beschreibung",
+        ],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["punkte"],
+  additionalProperties: false,
+} as const;
+
+/** zod-Gegenstück zum Import-Schema (tolerant zu Strings gecoerct). */
+export const maintenanceImportSchema = z.object({
+  punkte: z.array(
+    z.object({
+      titel: z.coerce.string(),
+      kategorie: z.coerce.string(),
+      bauteil: z.coerce.string(),
+      taetigkeit: z.coerce.string(),
+      intervallTyp: z.enum(MAINTENANCE_INTERVALL_TYPEN),
+      intervallTage: z.coerce.number().int(),
+      prioritaet: z.enum(MAINTENANCE_PRIORITAETEN),
+      beschreibung: z.coerce.string(),
+    }),
+  ),
+});

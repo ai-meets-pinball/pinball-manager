@@ -1,7 +1,9 @@
 import {
+  CalendarClock,
   FileText,
   Hammer,
   KeyRound,
+  LifeBuoy,
   Lightbulb,
   Share2,
   ShieldCheck,
@@ -118,6 +120,34 @@ const sections: GuideSection[] = [
     ],
   },
   {
+    titel: "Wartungsplan",
+    icon: <CalendarClock size={18} className="text-[var(--color-primary)]" />,
+    einleitung:
+      "Wiederkehrende Wartungen je Gerät planen, abhaken und im Blick behalten — mit Fälligkeit, Historie und Erinnerung.",
+    steps: [
+      {
+        titel: "Punkte anlegen",
+        text: "Auf der Maschinen-Detailseite im Bereich »Wartungsplan«: »Standard-Wartungsplan übernehmen« legt eine bewährte Grundausstattung an, »Aus Guide übernehmen« zieht Punkte aus dem Troubleshooting-Guide, oder »Neuer Wartungspunkt« für eigene Einträge.",
+      },
+      {
+        titel: "Intervall & Fälligkeit",
+        text: "Nur zeitbasierte Punkte (z. B. »alle 30 Tage«) bekommen einen Termin und eine Fälligkeits-Anzeige (überfällig / bald fällig). Spielzahl- und Bedarf-Punkte sind reine Checkliste ohne Termin.",
+      },
+      {
+        titel: "Erledigt eintragen",
+        text: "»Erledigt eintragen« schreibt einen Eintrag in die Historie (Datum, optionale Notiz) und verschiebt die nächste Fälligkeit automatisch um das Intervall.",
+      },
+      {
+        titel: "Historie",
+        text: "Je Wartungspunkt lässt sich die Historie aller Erledigungen auf- und zuklappen; einzelne Einträge können gelöscht werden.",
+      },
+      {
+        titel: "Erinnerungen",
+        text: "Fällige Wartungen erscheinen als Badge auf der Maschinenkachel und im Wartungsplan. Zusätzlich verschickt die App eine E-Mail-Erinnerung an den Eigentümer, sobald zeitbasierte Punkte fällig sind.",
+      },
+    ],
+  },
+  {
     titel: "Clubs & Rollen",
     icon: <Users size={18} className="text-[var(--color-primary)]" />,
     einleitung:
@@ -185,6 +215,34 @@ const sections: GuideSection[] = [
       {
         titel: "Ansehen",
         text: "Switch- und Lampen-Matrix erscheinen als farbcodiertes Raster (WPC-Draht-Farbcodes, Opto-Schalter markiert). Über die Kennzahl-Karten springst du zu den Abschnitten; Tabellen mit einer Typ-Spalte lassen sich filtern.",
+      },
+    ],
+  },
+  {
+    titel: "Troubleshooting-Guide",
+    icon: <LifeBuoy size={18} className="text-[var(--color-primary)]" />,
+    einleitung:
+      "Ein KI-erzeugter FAQ- und Reparatur-Leitfaden für genau dein Modell — verfügbar, sobald Handbuch-Daten vorliegen.",
+    steps: [
+      {
+        titel: "Voraussetzung",
+        text: "Der Guide erscheint auf der Maschinen-Detailseite, sobald für die Maschine Handbuch-Daten (z. B. Lampen-/Schalter-Matrix) ausgewertet wurden.",
+      },
+      {
+        titel: "Erstellen",
+        text: "Im Bereich »Troubleshooting-Guide« auf »Troubleshooting-Guide erstellen« (nur mit Schreibrecht). Claude bestimmt zunächst die Plattform bzw. Geräte-Generation und prüft sie samt bekannter Serienfehler per Websuche gegen Community-Quellen (IPDB, PinWiki, Pinside). Das dauert ein bis zwei Minuten.",
+      },
+      {
+        titel: "Was drinsteht",
+        text: "Plattformspezifische Sicherheitshinweise, systematische Fehlersuche nach Subsystemen (als Symptom-/Diagnose-Tabellen), bekannte Modellprobleme, Wege ins Diagnose-/Testmenü, ein FAQ, ein Wartungsplan und eine Werkzeug-/Ersatzteilliste — dazu Quellen zum Gegenprüfen.",
+      },
+      {
+        titel: "Neu erstellen",
+        text: "Über »Guide neu erstellen« lässt sich der Leitfaden jederzeit neu erzeugen; er ersetzt den bisherigen.",
+      },
+      {
+        titel: "Wichtig",
+        text: "Der Guide ist KI-generiert. Vor sicherheitsrelevanten Arbeiten immer mit dem Original-Manual und dem Schaltplan gegenprüfen.",
       },
     ],
   },
@@ -297,6 +355,10 @@ const sections: GuideSection[] = [
     einleitung: "Kleinigkeiten, die den Alltag leichter machen.",
     steps: [
       {
+        titel: "Bereiche ein- und ausklappen",
+        text: "Auf der Maschinen-Detailseite sind Fehler, Reparaturen, Handbuch-Daten und Troubleshooting-Guide ein-/ausklappbare Bereiche — standardmäßig eingeklappt. Die Titelzeile zeigt jeweils die Anzahl (z. B. offene Fehler), sodass du auf einen Blick siehst, was drinsteckt.",
+      },
+      {
         titel: "Mobil nutzen",
         text: "Die App ist für unterwegs gedacht — erfasse Fehler und Reparaturen direkt an der Maschine.",
       },
@@ -323,8 +385,8 @@ export default async function HelpPage() {
         <h1 className="text-2xl font-bold">Anleitung &amp; How-To</h1>
         <p className="text-[var(--color-muted)]">
           Schritt für Schritt durch alle Funktionen — von der Anmeldung über
-          Maschinen, Fehler und Reparaturen bis zu Clubs, Einladungen,
-          Handbuch-Daten und Konto.
+          Maschinen, Fehler, Reparaturen und Wartungsplan bis zu Clubs,
+          Einladungen, Handbuch-Daten, Troubleshooting-Guide und Konto.
         </p>
       </div>
 

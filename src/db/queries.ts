@@ -1,9 +1,11 @@
 import {
   and,
+  count,
   desc,
   eq,
   ilike,
   inArray,
+  lte,
   ne,
   or,
   sql,
@@ -17,6 +19,8 @@ import {
   faults,
   machineData,
   machines,
+  maintenanceLog,
+  maintenanceTasks,
   repairs,
   roleAssignments,
   roles,
@@ -368,4 +372,80 @@ export async function getVisibleMachines(userId: string, suche?: string) {
     with: { club: { columns: { name: true } } },
     orderBy: [desc(machines.createdAt)],
   });
+}
+
+/* ── Wartungsplan ─────────────────────────────────────────────────────────── */
+
+export type MaintenanceStatus = "ueberfaellig" | "bald" | "ok" | "kein-termin";
+
+/** Innerhalb dieses Fensters (Tage) gilt ein Termin als „bald fällig". */
+const BALD_TAGE = 14;
+const TAG_MS = 86_400_000;
+
+const PRIO_RANG: Record<string, number> = {
+  kritisch: 5,
+  "sehr hoch": 4,
+  hoch: 3,
+  mittel: 2,
+  niedrig: 1,
+};
+const STATUS_RANG: Record<MaintenanceStatus, number> = {
+  ueberfaellig: 0,
+  bald: 1,
+  ok: 2,
+  "kein-termin": 3,
+};
+
+/** Fälligkeit ableiten — nur zeitbasierte Punkte mit Termin haben einen Status. */
+function faelligkeit(
+  task: { intervallTyp: string; naechsteFaelligkeit: Date | null },
+  now: number,
+): { status: MaintenanceStatus; tageBisFaellig: number | null } {
+  if (task.intervallTyp !== "zeit" || !task.naechsteFaelligkeit) {
+    return { status: "kein-termin", tageBisFaellig: null };
+  }
+  const diff = task.naechsteFaelligkeit.getTime() - now;
+  const tageBisFaellig = Math.ceil(diff / TAG_MS);
+  if (diff < 0) return { status: "ueberfaellig", tageBisFaellig };
+  if (diff <= BALD_TAGE * TAG_MS) return { status: "bald", tageBisFaellig };
+  return { status: "ok", tageBisFaellig };
+}
+
+/** Wartungspunkte einer Maschine samt Historie und berechnetem Fälligkeits-
+    Status, sortiert nach Dringlichkeit → Priorität → Titel. */
+export async function getMaintenanceTasks(machineId: string) {
+  const tasks = await db.query.maintenanceTasks.findMany({
+    where: eq(maintenanceTasks.machineId, machineId),
+    with: { logs: { orderBy: [desc(maintenanceLog.datum)] } },
+  });
+  const now = Date.now();
+  return tasks
+    .map((t) => ({ ...t, ...faelligkeit(t, now) }))
+    .sort((a, b) => {
+      const s = STATUS_RANG[a.status] - STATUS_RANG[b.status];
+      if (s !== 0) return s;
+      const p = (PRIO_RANG[b.prioritaet] ?? 0) - (PRIO_RANG[a.prioritaet] ?? 0);
+      if (p !== 0) return p;
+      return a.titel.localeCompare(b.titel, "de");
+    });
+}
+
+/** Anzahl fälliger (überfällig oder heute) Wartungen je Maschine — für die
+    Badges in der Maschinenliste. Nur aktive, zeitbasierte Punkte mit Termin. */
+export async function getDueMaintenanceCountByMachine(machineIds: string[]) {
+  const map = new Map<string, number>();
+  if (machineIds.length === 0) return map;
+  const rows = await db
+    .select({ machineId: maintenanceTasks.machineId, n: count() })
+    .from(maintenanceTasks)
+    .where(
+      and(
+        inArray(maintenanceTasks.machineId, machineIds),
+        eq(maintenanceTasks.aktiv, true),
+        lte(maintenanceTasks.naechsteFaelligkeit, new Date()),
+      ),
+    )
+    .groupBy(maintenanceTasks.machineId);
+  for (const r of rows) map.set(r.machineId, Number(r.n));
+  return map;
 }

@@ -1,6 +1,6 @@
 import { Resend } from "resend";
 import { getTemplate } from "@/db/queries";
-import { renderPlaceholders, textToHtml } from "@/lib/email-templates";
+import { escapeHtml, renderPlaceholders, textToHtml } from "@/lib/email-templates";
 
 /*
   E-Mail-Versand über Resend. Bislang nur für „Passwort vergessen".
@@ -157,6 +157,56 @@ function invitationHtml({
         <p style="color:#71717a;font-size:13px;">${hinweis}</p>
       </div>
     `;
+}
+
+/** Wartungs-Erinnerung: Digest der fälligen Wartungen je Gerät an den Eigentümer.
+    Wird vom täglichen Cron (app/api/cron/maintenance-reminders) verschickt. */
+export async function sendMaintenanceReminderEmail(
+  to: string,
+  geraete: { geraet: string; id: string; punkte: string[] }[],
+  baseUrl: string,
+) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error("RESEND_API_KEY ist nicht gesetzt");
+
+  const gesamt = geraete.reduce((n, g) => n + g.punkte.length, 0);
+  const bloecke = geraete
+    .map(
+      (g) => `
+        <p style="margin:14px 0 4px;font-weight:600;">
+          ${escapeHtml(g.geraet)}${
+            baseUrl
+              ? ` — <a href="${baseUrl}/machines/${g.id}">Wartungsplan öffnen</a>`
+              : ""
+          }
+        </p>
+        <ul style="margin:0 0 0 18px;padding:0;color:#333;">
+          ${g.punkte.map((p) => `<li>${escapeHtml(p)}</li>`).join("")}
+        </ul>`,
+    )
+    .join("");
+
+  const resend = new Resend(apiKey);
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `${gesamt} fällige Wartung${gesamt === 1 ? "" : "en"} — Pinball Manager`,
+    html: `
+      <div style="font-family: sans-serif; line-height: 1.5;">
+        <h2>Fällige Wartungen</h2>
+        <p>Für diese Geräte stehen Wartungen an:</p>
+        ${bloecke}
+        <p style="color:#71717a;font-size:13px;margin-top:16px;">
+          Trag die erledigten Punkte im Wartungsplan des jeweiligen Geräts ein —
+          dann verschiebt sich die nächste Fälligkeit automatisch.
+        </p>
+      </div>
+    `,
+  });
+
+  if (error) {
+    throw new Error(`E-Mail-Versand fehlgeschlagen: ${error.message}`);
+  }
 }
 
 /** Plattform-Einladung (ohne Club): berechtigt zur Registrierung. */

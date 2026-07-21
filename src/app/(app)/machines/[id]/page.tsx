@@ -1,18 +1,23 @@
-import { and, desc, eq } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { Pencil, Plus, Trash2, Users } from "lucide-react";
+import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { FaultList } from "@/components/fault-list";
 import { MachineDataTables } from "@/components/machine-data-tables";
+import { MaintenancePlan } from "@/components/maintenance-plan";
 import { ManualUpload } from "@/components/manual-upload";
 import { RepairList } from "@/components/repair-list";
 import { ShareFactsForm } from "@/components/share-facts-form";
 import { SharedFacts } from "@/components/shared-facts";
 import { SharedRepairs } from "@/components/shared-repairs";
+import { TroubleshootingGenerate } from "@/components/troubleshooting-generate";
+import { TroubleshootingGuideView } from "@/components/troubleshooting-guide";
 import { Card } from "@/components/ui/card";
 import { deleteMachine } from "@/db/actions/machines";
 import { db } from "@/db";
 import {
   getFactsShare,
+  getMaintenanceTasks,
   getRepairShares,
   getShareDefaults,
   getSharedFactsForModel,
@@ -23,6 +28,7 @@ import {
   faults as faultsTable,
   machineData as machineDataTable,
   repairs as repairsTable,
+  troubleshootingGuides as troubleshootingGuidesTable,
 } from "@/db/schema";
 import { requireMachineAccess } from "@/lib/session";
 
@@ -56,18 +62,17 @@ export default async function MachineDetailPage({
   // Optionaler Statusfilter für Fehler (PRD §4.2: „offene Fehler je Maschine").
   const aktiverFilter =
     faultStatus && faultStatus !== "alle" ? faultStatus : undefined;
-  const machineFaults = await db.query.faults.findMany({
-    where: aktiverFilter
-      ? and(
-          eq(faultsTable.machineId, id),
-          eq(
-            faultsTable.status,
-            aktiverFilter as "offen" | "in Arbeit" | "behoben",
-          ),
-        )
-      : eq(faultsTable.machineId, id),
+  // Alle Fehler laden (für die Badge-Zähler); die angezeigte Liste bei aktivem
+  // Statusfilter in-memory filtern, damit die Zähler unabhängig vom Filter stimmen.
+  const alleFehler = await db.query.faults.findMany({
+    where: eq(faultsTable.machineId, id),
     orderBy: [desc(faultsTable.datum)],
   });
+  const machineFaults = aktiverFilter
+    ? alleFehler.filter((f) => f.status === aktiverFilter)
+    : alleFehler;
+  const fehlerGesamt = alleFehler.length;
+  const fehlerOffen = alleFehler.filter((f) => f.status !== "behoben").length;
 
   const machineRepairs = await db.query.repairs.findMany({
     where: eq(repairsTable.machineId, id),
@@ -79,6 +84,18 @@ export default async function MachineDetailPage({
   const machineFacts = await db.query.machineData.findMany({
     where: eq(machineDataTable.machineId, id),
   });
+
+  // Phase-3-Troubleshooting-Guide (genau einer je Maschine, falls erzeugt).
+  const troubleshootingGuide = await db.query.troubleshootingGuides.findFirst({
+    where: eq(troubleshootingGuidesTable.machineId, id),
+  });
+
+  // Wartungsplan: Wartungspunkte samt Historie und berechneter Fälligkeit.
+  const wartungsTasks = await getMaintenanceTasks(id);
+  const wartungFaellig = wartungsTasks.filter(
+    (t) => t.status === "ueberfaellig",
+  ).length;
+  const wartungBald = wartungsTasks.filter((t) => t.status === "bald").length;
 
   // Geteiltes Wissen zum selben Gerätetyp: eigene Freigabe + fremde Fakten,
   // die dieser Nutzer sehen darf. Ohne OPDB-Bezug gibt es keinen Typ.
@@ -163,13 +180,163 @@ export default async function MachineDetailPage({
         ) : null}
       </div>
 
-      {/* Handbuch-Daten / Service-Fakten (Phase 2).
-          Full-Bleed: dieser Abschnitt bricht aus der 5xl-Spalte aus und nutzt bis
-          zu ~1440px, damit die Switch-/Lamp-Matrizen genug Breite haben. Der Rest
-          der Seite (Formulare, Listen) bleibt bewusst schmal. */}
-      <section className="mx-[calc(50%-50vw)] px-4 sm:px-6">
-        <div className="mx-auto max-w-[1440px] space-y-3">
-          <h2 className="text-lg font-semibold">Handbuch-Daten</h2>
+      {/* ── Betrieb: Fehler & Reparaturen (nach oben, prominent) ──────────── */}
+
+      {/* Fehler — öffnet automatisch, wenn ein Statusfilter aktiv ist, damit das
+          Panel nach dem Server-Reload durch einen Filterklick offen bleibt. */}
+      <CollapsibleSection
+        title="Fehler"
+        defaultOpen={aktiverFilter !== undefined}
+        badge={
+          <span className="flex items-center gap-1.5 text-xs">
+            <span className="rounded-full border border-[var(--color-border)] px-2 py-0.5 text-[var(--color-muted)]">
+              {fehlerGesamt} gesamt
+            </span>
+            {fehlerOffen > 0 ? (
+              <span className="rounded-full border border-[var(--color-warn)]/40 bg-[var(--color-warn)]/10 px-2 py-0.5 text-[var(--color-warn)]">
+                {fehlerOffen} offen
+              </span>
+            ) : null}
+          </span>
+        }
+      >
+        <div className="space-y-3">
+          {darf.bearbeiten ? (
+            <Link
+              href={`/machines/${machine.id}/faults/new`}
+              className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 text-sm hover:bg-[var(--color-border)]/40"
+            >
+              <Plus size={15} /> Neuer Fehler
+            </Link>
+          ) : null}
+
+          {/* Statusfilter — setzt nur den ?faultStatus=-Suchparameter (server-seitige Filterung). */}
+          <div className="flex flex-wrap gap-2 text-sm">
+            {FAULT_FILTER.map((f) => {
+              const aktiv = (faultStatus ?? "alle") === f;
+              return (
+                <Link
+                  key={f}
+                  href={
+                    f === "alle"
+                      ? `/machines/${machine.id}`
+                      : `/machines/${machine.id}?faultStatus=${encodeURIComponent(f)}`
+                  }
+                  className={`rounded-full border px-3 py-0.5 ${
+                    aktiv
+                      ? "border-[var(--color-primary)] text-[var(--color-primary)]"
+                      : "border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+                  }`}
+                >
+                  {f}
+                </Link>
+              );
+            })}
+          </div>
+
+          <FaultList
+            faults={machineFaults}
+            machineId={machine.id}
+            schreibbar={darf.bearbeiten}
+          />
+        </div>
+      </CollapsibleSection>
+
+      {/* Reparaturen */}
+      <CollapsibleSection
+        title="Reparaturen"
+        badge={
+          <span className="rounded-full border border-[var(--color-border)] px-2 py-0.5 text-xs text-[var(--color-muted)]">
+            {machineRepairs.length}
+          </span>
+        }
+      >
+        <div className="space-y-3">
+          {darf.bearbeiten ? (
+            <Link
+              href={`/machines/${machine.id}/repairs/new`}
+              className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 text-sm hover:bg-[var(--color-border)]/40"
+            >
+              <Plus size={15} /> Neue Reparatur
+            </Link>
+          ) : null}
+          <RepairList
+            repairs={machineRepairs}
+            machineId={machine.id}
+            schreibbar={darf.bearbeiten}
+            teilen={
+              darf.teilen && machine.modelId
+                ? {
+                    clubs: meineClubs.map((c) => ({ id: c.id, name: c.name })),
+                    defaults: shareDefaults,
+                    shares: Object.fromEntries(repairShares),
+                  }
+                : undefined
+            }
+          />
+        </div>
+      </CollapsibleSection>
+
+      {/* Wartungsplan: interaktiv, mit Fälligkeit & Historie. Öffnet automatisch,
+          wenn etwas überfällig ist. */}
+      <CollapsibleSection
+        title="Wartungsplan"
+        defaultOpen={wartungFaellig > 0}
+        badge={
+          wartungFaellig > 0 || wartungBald > 0 ? (
+            <span className="flex items-center gap-1.5 text-xs">
+              {wartungFaellig > 0 ? (
+                <span className="rounded-full border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-2 py-0.5 text-[var(--color-danger)]">
+                  {wartungFaellig} fällig
+                </span>
+              ) : null}
+              {wartungBald > 0 ? (
+                <span className="rounded-full border border-[var(--color-warn)]/40 bg-[var(--color-warn)]/10 px-2 py-0.5 text-[var(--color-warn)]">
+                  {wartungBald} bald
+                </span>
+              ) : null}
+            </span>
+          ) : undefined
+        }
+      >
+        <MaintenancePlan
+          tasks={wartungsTasks}
+          machineId={machine.id}
+          schreibbar={darf.bearbeiten}
+          hatGuide={troubleshootingGuide !== undefined}
+        />
+      </CollapsibleSection>
+
+      {/* Reparaturdatenbank: geteiltes Wissen zum selben Gerätetyp (nur wenn vorhanden). */}
+      {geteilteReparaturen.length > 0 ? (
+        <CollapsibleSection
+          title="Geteilte Reparaturen"
+          badge={
+            <span className="rounded-full border border-[var(--color-border)] px-2 py-0.5 text-xs text-[var(--color-muted)]">
+              {geteilteReparaturen.length}
+            </span>
+          }
+        >
+          <SharedRepairs eintraege={geteilteReparaturen} />
+        </CollapsibleSection>
+      ) : null}
+
+      {/* ── Referenz: Handbuch-Daten & Troubleshooting-Guide ──────────────── */}
+
+      {/* Handbuch-Daten / Service-Fakten (Phase 2). fullBleed: nutzt bis ~1440px,
+          damit die Switch-/Lamp-Matrizen genug Breite haben. */}
+      <CollapsibleSection
+        title="Handbuch-Daten"
+        fullBleed
+        badge={
+          machineFacts.length > 0 ? (
+            <span className="rounded-full border border-[var(--color-border)] px-2 py-0.5 text-xs text-[var(--color-muted)]">
+              {machineFacts.length} Tabellen
+            </span>
+          ) : undefined
+        }
+      >
+        <div className="space-y-3">
           <MachineDataTables facts={machineFacts} />
 
           {/* Eigene Fakten teilen — nur wenn es welche gibt und ein Gerätetyp
@@ -181,10 +348,7 @@ export default async function MachineDetailPage({
                 hatModell={machine.modelId !== null}
                 aktuell={
                   eigeneFreigabe
-                    ? {
-                        scope: eigeneFreigabe.scope,
-                        anonym: eigeneFreigabe.anonym,
-                      }
+                    ? { scope: eigeneFreigabe.scope, anonym: eigeneFreigabe.anonym }
                     : null
                 }
                 clubs={meineClubs.map((c) => ({ id: c.id, name: c.name }))}
@@ -210,84 +374,38 @@ export default async function MachineDetailPage({
             </Card>
           ) : null}
         </div>
-      </section>
+      </CollapsibleSection>
 
-      {/* Fehler */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="text-lg font-semibold">Fehler</h2>
-          {darf.bearbeiten ? (
-            <Link
-              href={`/machines/${machine.id}/faults/new`}
-              className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 text-sm hover:bg-[var(--color-border)]/40"
-            >
-              <Plus size={15} /> Neuer Fehler
-            </Link>
-          ) : null}
-        </div>
+      {/* Troubleshooting-Guide (Phase 3): angeboten, sobald Handbuch-Fakten
+          vorliegen (Lampenmatrix o. ä.) — oder wenn schon ein Guide existiert.
+          Erzeugen darf, wer schreiben darf; ansehen jeder mit Lesezugriff. */}
+      {machineFacts.length > 0 || troubleshootingGuide ? (
+        <CollapsibleSection title="Troubleshooting-Guide">
+          <div className="space-y-3">
+            {troubleshootingGuide ? (
+              <TroubleshootingGuideView
+                daten={troubleshootingGuide.daten}
+                model={troubleshootingGuide.model}
+                createdAt={troubleshootingGuide.createdAt}
+              />
+            ) : (
+              <p className="text-sm text-[var(--color-muted)]">
+                Erzeuge aus Hersteller, Modell und Baujahr einen umfassenden FAQ-
+                und Troubleshooting-Guide (Plattform-Erkennung, Fehlersuche nach
+                Subsystemen, bekannte Serienfehler, Wartung). Claude prüft dabei
+                Plattform und Serienprobleme per Websuche gegen Community-Quellen.
+              </p>
+            )}
 
-        {/* Statusfilter — setzt nur den ?faultStatus=-Suchparameter (server-seitige Filterung). */}
-        <div className="flex flex-wrap gap-2 text-sm">
-          {FAULT_FILTER.map((f) => {
-            const aktiv = (faultStatus ?? "alle") === f;
-            return (
-              <Link
-                key={f}
-                href={
-                  f === "alle"
-                    ? `/machines/${machine.id}`
-                    : `/machines/${machine.id}?faultStatus=${encodeURIComponent(f)}`
-                }
-                className={`rounded-full border px-3 py-0.5 ${
-                  aktiv
-                    ? "border-[var(--color-primary)] text-[var(--color-primary)]"
-                    : "border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-                }`}
-              >
-                {f}
-              </Link>
-            );
-          })}
-        </div>
-
-        <FaultList
-          faults={machineFaults}
-          machineId={machine.id}
-          schreibbar={darf.bearbeiten}
-        />
-      </section>
-
-      {/* Reparaturen */}
-      <section className="space-y-3">
-        <div className="flex items-center justify-between gap-4">
-          <h2 className="text-lg font-semibold">Reparaturen</h2>
-          {darf.bearbeiten ? (
-            <Link
-              href={`/machines/${machine.id}/repairs/new`}
-              className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 text-sm hover:bg-[var(--color-border)]/40"
-            >
-              <Plus size={15} /> Neue Reparatur
-            </Link>
-          ) : null}
-        </div>
-        <RepairList
-          repairs={machineRepairs}
-          machineId={machine.id}
-          schreibbar={darf.bearbeiten}
-          teilen={
-            darf.teilen && machine.modelId
-              ? {
-                  clubs: meineClubs.map((c) => ({ id: c.id, name: c.name })),
-                  defaults: shareDefaults,
-                  shares: Object.fromEntries(repairShares),
-                }
-              : undefined
-          }
-        />
-      </section>
-
-      {/* Reparaturdatenbank: geteiltes Wissen zum selben Gerätetyp. */}
-      <SharedRepairs eintraege={geteilteReparaturen} />
+            {darf.bearbeiten ? (
+              <TroubleshootingGenerate
+                machineId={machine.id}
+                vorhanden={troubleshootingGuide !== undefined}
+              />
+            ) : null}
+          </div>
+        </CollapsibleSection>
+      ) : null}
     </div>
   );
 }
