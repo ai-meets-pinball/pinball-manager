@@ -22,6 +22,7 @@ type Item = {
   modell: string;
   baujahr: number | null;
   fotoUrl: string | null;
+  clubId: string | null;
   club: { name: string } | null;
   wartungFaellig: number;
 };
@@ -35,10 +36,18 @@ const selectStyles =
 function BulkAssignBar({
   clubs,
   ids,
+  zielClub,
+  onZielClub,
+  alleAusgewaehlt,
+  onAlleUmschalten,
   onDone,
 }: {
   clubs: { id: string; name: string }[];
   ids: string[];
+  zielClub: string;
+  onZielClub: (v: string) => void;
+  alleAusgewaehlt: boolean;
+  onAlleUmschalten: () => void;
   onDone: () => void;
 }) {
   const [state, formAction, pending] = useActionState<BulkAssignState, FormData>(
@@ -54,8 +63,21 @@ function BulkAssignBar({
       {ids.map((id) => (
         <input key={id} type="hidden" name="machineIds" value={id} />
       ))}
+      <button
+        type="button"
+        onClick={onAlleUmschalten}
+        className="text-sm text-[var(--color-primary)] hover:underline"
+      >
+        {alleAusgewaehlt ? "Alle abwählen" : "Alle auswählen"}
+      </button>
       <span className="text-sm font-medium">{ids.length} ausgewählt</span>
-      <select name="clubId" required defaultValue="" className={selectStyles}>
+      <select
+        name="clubId"
+        required
+        value={zielClub}
+        onChange={(e) => onZielClub(e.target.value)}
+        className={selectStyles}
+      >
         <option value="" disabled>
           Club wählen…
         </option>
@@ -101,6 +123,7 @@ export function MachinesBoard({
 }) {
   const [auswahlModus, setAuswahlModus] = useState(false);
   const [auswahl, setAuswahl] = useState<Set<string>>(new Set());
+  const [zielClub, setZielClub] = useState("");
   // Wird bei jedem Start eines Auswahldurchgangs erhöht → frischer Action-State.
   const [sitzung, setSitzung] = useState(0);
 
@@ -115,6 +138,7 @@ export function MachinesBoard({
 
   function starten() {
     setAuswahl(new Set());
+    setZielClub("");
     setSitzung((k) => k + 1);
     setAuswahlModus(true);
   }
@@ -122,6 +146,13 @@ export function MachinesBoard({
   function beenden() {
     setAuswahlModus(false);
     setAuswahl(new Set());
+  }
+
+  // „Alle" bezieht sich auf die aktuell angezeigten (ggf. gefilterten) Maschinen.
+  const alleAusgewaehlt =
+    machines.length > 0 && auswahl.size === machines.length;
+  function alleUmschalten() {
+    setAuswahl(alleAusgewaehlt ? new Set() : new Set(machines.map((m) => m.id)));
   }
 
   return (
@@ -133,6 +164,10 @@ export function MachinesBoard({
             key={sitzung}
             clubs={clubs}
             ids={[...auswahl]}
+            zielClub={zielClub}
+            onZielClub={setZielClub}
+            alleAusgewaehlt={alleAusgewaehlt}
+            onAlleUmschalten={alleUmschalten}
             onDone={beenden}
           />
         ) : (
@@ -155,6 +190,15 @@ export function MachinesBoard({
             selection={
               auswahlModus
                 ? { selected: auswahl.has(m.id), onToggle: () => toggle(m.id) }
+                : undefined
+            }
+            hinweis={
+              // Im Zuweisungsmodus markieren, was schon im gewählten Ziel-Club ist.
+              auswahlModus &&
+              zielClub !== "" &&
+              zielClub !== "none" &&
+              m.clubId === zielClub
+                ? "bereits zugewiesen"
                 : undefined
             }
           />
