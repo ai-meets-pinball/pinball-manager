@@ -204,6 +204,59 @@ export async function updateMachine(
   redirect(`/machines/${id}`);
 }
 
+export type BulkAssignState = {
+  error?: string;
+  anzahl?: number;
+  uebersprungen?: number;
+};
+
+/*
+  Mehrere Maschinen auf einmal einem Club zuweisen (oder aus dem Club lösen,
+  clubId = null). Spiegelt die Einzel-Regeln aus updateMachine:
+  - Ziel-Club: nur ein Club, in dem der Nutzer Mitglied ist (isClubMember).
+  - Je Maschine: die Zuordnung darf nur ändern, wer die Maschine auch löschen
+    dürfte (Eigentümer, Club-Manager des bisherigen Clubs, Super-Admin). Nicht
+    erlaubte Maschinen werden übersprungen und in `uebersprungen` gezählt.
+*/
+export async function assignMachinesToClub(
+  _prev: BulkAssignState,
+  formData: FormData,
+): Promise<BulkAssignState> {
+  const user = await requireUser();
+
+  const raw = String(formData.get("clubId") ?? "");
+  // "none" = aus dem Club entfernen; leerer Wert wird vom required-Select verhindert.
+  const clubId = raw === "" || raw === "none" ? null : raw;
+
+  const ids = formData.getAll("machineIds").map(String).filter(Boolean);
+  if (ids.length === 0) return { error: "Keine Maschinen ausgewählt." };
+
+  if (clubId && !(await isClubMember(user.id, clubId))) {
+    return { error: "Du bist kein Mitglied des gewählten Clubs." };
+  }
+
+  const selected = await db.query.machines.findMany({
+    where: inArray(machines.id, ids),
+    columns: { id: true, ownerId: true, clubId: true },
+  });
+
+  const erlaubt: string[] = [];
+  for (const m of selected) {
+    const darfLoeschen =
+      isSuperAdmin(user) ||
+      m.ownerId === user.id ||
+      (m.clubId !== null && (await isClubManager(user.id, m.clubId)));
+    if (darfLoeschen) erlaubt.push(m.id);
+  }
+
+  if (erlaubt.length > 0) {
+    await db.update(machines).set({ clubId }).where(inArray(machines.id, erlaubt));
+    revalidatePath("/machines");
+  }
+
+  return { anzahl: erlaubt.length, uebersprungen: selected.length - erlaubt.length };
+}
+
 export async function deleteMachine(formData: FormData): Promise<void> {
   const id = String(formData.get("id"));
   const { user, machine } = await requireMachineAccess(id);
