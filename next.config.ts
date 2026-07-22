@@ -9,6 +9,25 @@ const nextConfig: NextConfig = {
       bodySizeLimit: "16mb",
     },
   },
+  // Ergänzende Sicherheits-Header (statisch, für alle Routen). Die
+  // Content-Security-Policy selbst wird pro Request in src/proxy.ts gesetzt
+  // (braucht eine Nonce). Hier nur, was ohne Nonce global gilt.
+  async headers() {
+    return [
+      {
+        source: "/(.*)",
+        headers: [
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          { key: "X-Frame-Options", value: "DENY" },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
+          },
+        ],
+      },
+    ];
+  },
 };
 
 export default nextConfig;
