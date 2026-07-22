@@ -97,6 +97,11 @@ export default async function MachineDetailPage({
   ).length;
   const wartungBald = wartungsTasks.filter((t) => t.status === "bald").length;
 
+  // KI-Funktionen: ist ein zentraler Schlüssel gesetzt? Falls nicht, blenden die
+  // KI-Aktionen ein ephemeres Feld für einen eigenen Anthropic-Key ein (BYO,
+  // wird nur für den Request genutzt und nicht gespeichert).
+  const kiKonfiguriert = Boolean(process.env.ANTHROPIC_API_KEY);
+
   // Geteiltes Wissen zum selben Gerätetyp: eigene Freigabe + fremde Fakten,
   // die dieser Nutzer sehen darf. Ohne OPDB-Bezug gibt es keinen Typ.
   const eigeneFreigabe = machine.modelId ? await getFactsShare(id) : null;
@@ -304,6 +309,7 @@ export default async function MachineDetailPage({
           machineId={machine.id}
           schreibbar={darf.bearbeiten}
           hatGuide={troubleshootingGuide !== undefined}
+          kiKonfiguriert={kiKonfiguriert}
         />
       </CollapsibleSection>
 
@@ -370,7 +376,10 @@ export default async function MachineDetailPage({
                 extrahieren. Das PDF wird dabei nicht gespeichert — nur die
                 extrahierten Fakten.
               </p>
-              <ManualUpload machineId={machine.id} />
+              <ManualUpload
+                machineId={machine.id}
+                kiKonfiguriert={kiKonfiguriert}
+              />
             </Card>
           ) : null}
         </div>
@@ -401,6 +410,7 @@ export default async function MachineDetailPage({
               <TroubleshootingGenerate
                 machineId={machine.id}
                 vorhanden={troubleshootingGuide !== undefined}
+                kiKonfiguriert={kiKonfiguriert}
               />
             ) : null}
           </div>

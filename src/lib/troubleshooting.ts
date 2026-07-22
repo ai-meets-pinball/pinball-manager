@@ -217,10 +217,14 @@ export async function generateTroubleshootingGuide(
   });
   if (!machine) return { error: "Maschine nicht gefunden." };
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  // Ephemerer BYO-Schlüssel: nur für diesen Request, wird nie gespeichert oder
+  // geloggt. Fällt auf den zentralen Env-Key zurück, falls einer gesetzt ist.
+  const apiKey =
+    String(formData.get("apiKey") ?? "").trim() || process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    console.error("[troubleshooting] ANTHROPIC_API_KEY ist nicht gesetzt");
-    return { error: "Guide-Erstellung ist nicht konfiguriert (ANTHROPIC_API_KEY fehlt)." };
+    return {
+      error: "Kein Claude-API-Schlüssel vorhanden. Bitte deinen eigenen eingeben.",
+    };
   }
 
   let response: Anthropic.Message;

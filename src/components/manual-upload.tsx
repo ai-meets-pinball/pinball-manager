@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { FileText, Loader2 } from "lucide-react";
+import { ApiKeyField } from "@/components/ui/api-key-field";
 import { Button } from "@/components/ui/button";
 import { extractManualFacts, type ExtractState } from "@/lib/manual-extract";
 
@@ -29,7 +30,14 @@ function summary(counts: Record<string, number>): string {
     : "Keine Tabellen im Handbuch gefunden.";
 }
 
-export function ManualUpload({ machineId }: { machineId: string }) {
+export function ManualUpload({
+  machineId,
+  kiKonfiguriert,
+}: {
+  machineId: string;
+  /** false = kein zentraler API-Key → ephemeres Key-Feld einblenden. */
+  kiKonfiguriert: boolean;
+}) {
   const [state, formAction, pending] = useActionState<ExtractState, FormData>(
     extractManualFacts,
     {},
@@ -63,6 +71,8 @@ export function ManualUpload({ machineId }: { machineId: string }) {
           Faktentabellen (Spulen, Lampen, Schalter, Sicherungen, Teile, Regeln).
         </span>
       </label>
+
+      {!kiKonfiguriert ? <ApiKeyField /> : null}
 
       {state.error ? (
         <p className="text-sm text-[var(--color-danger)]">{state.error}</p>

@@ -142,10 +142,14 @@ export async function extractManualFacts(
     return { error: "Datei zu groß (maximal 15 MB)." };
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  // Ephemerer BYO-Schlüssel: nur für diesen Request, wird nie gespeichert oder
+  // geloggt. Fällt auf den zentralen Env-Key zurück, falls einer gesetzt ist.
+  const apiKey =
+    String(formData.get("apiKey") ?? "").trim() || process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    console.error("[manual-extract] ANTHROPIC_API_KEY ist nicht gesetzt");
-    return { error: "Extraktion ist nicht konfiguriert (ANTHROPIC_API_KEY fehlt)." };
+    return {
+      error: "Kein Claude-API-Schlüssel vorhanden. Bitte deinen eigenen eingeben.",
+    };
   }
 
   // PDF nur im Speicher: base64 → Claude. Danach wird `base64`/`file` verworfen (GC).
