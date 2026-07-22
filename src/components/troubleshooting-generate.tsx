@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { LifeBuoy, Loader2, RefreshCw } from "lucide-react";
+import { ApiKeyField } from "@/components/ui/api-key-field";
 import { Button } from "@/components/ui/button";
 import {
   generateTroubleshootingGuide,
@@ -16,9 +17,12 @@ import {
 export function TroubleshootingGenerate({
   machineId,
   vorhanden,
+  kiKonfiguriert,
 }: {
   machineId: string;
   vorhanden: boolean;
+  /** false = kein zentraler API-Key → ephemeres Key-Feld einblenden. */
+  kiKonfiguriert: boolean;
 }) {
   const [state, formAction, pending] = useActionState<GuideState, FormData>(
     generateTroubleshootingGuide,
@@ -28,6 +32,8 @@ export function TroubleshootingGenerate({
   return (
     <form action={formAction} className="flex flex-col gap-2">
       <input type="hidden" name="machineId" value={machineId} />
+
+      {!kiKonfiguriert ? <ApiKeyField /> : null}
 
       {state.error ? (
         <p className="text-sm text-[var(--color-danger)]">{state.error}</p>

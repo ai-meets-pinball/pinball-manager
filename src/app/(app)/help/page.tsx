@@ -213,6 +213,10 @@ const sections: GuideSection[] = [
         text: "Auf der Maschinen-Detailseite im Abschnitt »Handbuch-Daten« bestätigst du, dass du das Handbuch besitzt bzw. die Rechte hast, wählst das PDF und startest die Auswertung.",
       },
       {
+        titel: "KI-Schlüssel (falls nötig)",
+        text: "Die KI-Funktionen (Handbuch auswerten, Troubleshooting-Guide, Wartungspunkte aus dem Guide) laufen über Claude (Anthropic). Ist zentral kein Schlüssel hinterlegt, erscheint ein Feld für deinen eigenen Anthropic-API-Schlüssel: Er wird nur für die jeweilige Aktion genutzt und NICHT gespeichert. Einen Schlüssel legst du unter console.anthropic.com an; lade dort etwas Guthaben auf und setze ein monatliches Ausgabenlimit, damit keine unerwarteten Kosten entstehen.",
+      },
+      {
         titel: "Was passiert",
         text: "Claude liest das PDF und extrahiert ausschließlich Faktentabellen (Spulen, Schalter-/Lampen-Matrix, Sicherungen, Teile, Regeln). Das PDF wird dabei NIE gespeichert — nur die Fakten landen in der Datenbank.",
       },

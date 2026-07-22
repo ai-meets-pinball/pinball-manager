@@ -317,9 +317,14 @@ export async function importMaintenanceFromGuide(
     return { error: "Der Guide enthält keinen Wartungsplan-Abschnitt." };
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  // Ephemerer BYO-Schlüssel: nur für diesen Request, wird nie gespeichert oder
+  // geloggt. Fällt auf den zentralen Env-Key zurück, falls einer gesetzt ist.
+  const apiKey =
+    String(formData.get("apiKey") ?? "").trim() || process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
-    return { error: "Import ist nicht konfiguriert (ANTHROPIC_API_KEY fehlt)." };
+    return {
+      error: "Kein Claude-API-Schlüssel vorhanden. Bitte deinen eigenen eingeben.",
+    };
   }
 
   let text: string;

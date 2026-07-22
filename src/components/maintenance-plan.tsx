@@ -88,11 +88,14 @@ export function MaintenancePlan({
   machineId,
   schreibbar,
   hatGuide,
+  kiKonfiguriert,
 }: {
   tasks: Task[];
   machineId: string;
   schreibbar: boolean;
   hatGuide: boolean;
+  /** false = kein zentraler API-Key → „Aus Guide übernehmen" blendet ein Key-Feld ein. */
+  kiKonfiguriert: boolean;
 }) {
   return (
     <div className="space-y-3">
@@ -108,7 +111,12 @@ export function MaintenancePlan({
             </button>
           </form>
 
-          {hatGuide ? <MaintenanceGuideImport machineId={machineId} /> : null}
+          {hatGuide ? (
+            <MaintenanceGuideImport
+              machineId={machineId}
+              kiKonfiguriert={kiKonfiguriert}
+            />
+          ) : null}
 
           <Link
             href={`/machines/${machineId}/maintenance/new`}
