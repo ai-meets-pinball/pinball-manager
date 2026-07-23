@@ -1,0 +1,1 @@
+ALTER TABLE "troubleshooting_guides" ADD COLUMN "websuche" boolean DEFAULT true NOT NULL;

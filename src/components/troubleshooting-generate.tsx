@@ -2,8 +2,9 @@
 
 import { useActionState } from "react";
 import { LifeBuoy, Loader2, RefreshCw } from "lucide-react";
-import { ApiKeyField } from "@/components/ui/api-key-field";
+import { AiProviderField } from "@/components/ui/ai-provider-field";
 import { Button } from "@/components/ui/button";
+import type { AiProvider } from "@/lib/ai/provider";
 import {
   generateTroubleshootingGuide,
   type GuideState,
@@ -17,12 +18,15 @@ import {
 export function TroubleshootingGenerate({
   machineId,
   vorhanden,
-  kiKonfiguriert,
+  providers,
+  centralKey,
 }: {
   machineId: string;
   vorhanden: boolean;
-  /** false = kein zentraler API-Key → ephemeres Key-Feld einblenden. */
-  kiKonfiguriert: boolean;
+  /** Verfügbare KI-Anbieter (Auswahl, wenn mehrere). */
+  providers: AiProvider[];
+  /** Zentraler Anthropic-Key vorhanden? Sonst BYO-Feld beim Claude-Weg. */
+  centralKey: boolean;
 }) {
   const [state, formAction, pending] = useActionState<GuideState, FormData>(
     generateTroubleshootingGuide,
@@ -33,7 +37,7 @@ export function TroubleshootingGenerate({
     <form action={formAction} className="flex flex-col gap-2">
       <input type="hidden" name="machineId" value={machineId} />
 
-      {!kiKonfiguriert ? <ApiKeyField /> : null}
+      <AiProviderField providers={providers} centralKey={centralKey} />
 
       {state.error ? (
         <p className="text-sm text-[var(--color-danger)]">{state.error}</p>

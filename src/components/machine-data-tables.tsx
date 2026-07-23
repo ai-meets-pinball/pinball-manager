@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import { FactTableView } from "@/components/fact-table-view";
 import { factTableSchema, type FactType } from "@/lib/validators";
 
@@ -8,7 +11,7 @@ import { factTableSchema, type FactType } from "@/lib/validators";
 */
 
 const LABELS: Record<FactType, string> = {
-  coils: "Spulen",
+  coils: "Spulen & Flasher",
   switches: "Schalter-Matrix",
   lamps: "Lampen-Matrix",
   fuses: "Sicherungen",
@@ -30,21 +33,40 @@ export function MachineDataTables({ facts }: { facts: Row[] }) {
     .filter((x): x is { typ: FactType; table: ReturnType<typeof factTableSchema.parse> } => x !== null)
     .sort((a, b) => ORDER.indexOf(a.typ) - ORDER.indexOf(b.typ));
 
+  // Welche Bereiche sind aufgeklappt (kontrolliert, damit KPI-Karten aufklappen).
+  const [open, setOpen] = useState<Set<FactType>>(new Set());
+  const setTyp = (typ: FactType, isOpen: boolean) =>
+    setOpen((prev) => {
+      const next = new Set(prev);
+      if (isOpen) next.add(typ);
+      else next.delete(typ);
+      return next;
+    });
+
   if (parsed.length === 0) return null;
+
+  // Klick auf eine KPI-Karte: Bereich aufklappen UND dorthin scrollen.
+  const openAndScroll = (typ: FactType) => {
+    setTyp(typ, true);
+    document
+      .getElementById(`fact-${typ}`)
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
 
   return (
     <div className="space-y-4">
-      {/* Dashboard + Subnavigation: je Faktentyp eine Kennzahl-Karte, die zugleich
-          als Sprungmarke zum Abschnitt dient. */}
+      {/* Dashboard + Subnavigation: je Faktentyp eine Kennzahl-Karte, die den
+          Abschnitt aufklappt und dorthin scrollt. */}
       <nav
         aria-label="Handbuch-Abschnitte"
         className="grid grid-cols-3 gap-2 sm:grid-cols-6"
       >
         {parsed.map(({ typ, table }) => (
-          <a
+          <button
             key={typ}
-            href={`#fact-${typ}`}
-            className="group flex flex-col gap-0.5 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2.5 transition-colors hover:border-[var(--color-primary)]"
+            type="button"
+            onClick={() => openAndScroll(typ)}
+            className="group flex flex-col gap-0.5 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2.5 text-left transition-colors hover:border-[var(--color-primary)]"
           >
             <span className="font-mono text-xl font-bold leading-none text-[var(--color-primary)]">
               {table.rows.length}
@@ -52,13 +74,19 @@ export function MachineDataTables({ facts }: { facts: Row[] }) {
             <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--color-muted)] group-hover:text-[var(--color-fg)]">
               {LABELS[typ] ?? typ}
             </span>
-          </a>
+          </button>
         ))}
       </nav>
 
       {parsed.map(({ typ, table }) => (
         <div key={typ} id={`fact-${typ}`} className="scroll-mt-24">
-          <FactTableView typ={typ} label={LABELS[typ] ?? typ} table={table} />
+          <FactTableView
+            typ={typ}
+            label={LABELS[typ] ?? typ}
+            table={table}
+            open={open.has(typ)}
+            onToggle={(o) => setTyp(typ, o)}
+          />
         </div>
       ))}
     </div>

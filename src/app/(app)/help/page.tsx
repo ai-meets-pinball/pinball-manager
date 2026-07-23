@@ -88,7 +88,7 @@ const sections: GuideSection[] = [
     steps: [
       {
         titel: "Melden",
-        text: "Auf der Maschinen-Detailseite »Neuer Fehler«. Beschreibe das Symptom und wähle optional eine Kategorie (z. B. Spule, Schalter), eine Priorität (niedrig/mittel/hoch) und den Status.",
+        text: "Auf der Maschinen-Detailseite im Reiter »Fehler« auf »Neuer Fehler«. Beschreibe das Symptom und wähle optional eine Kategorie (z. B. Spule, Schalter), eine Priorität (niedrig/mittel/hoch) und den Status.",
       },
       {
         titel: "Status & Filter",
@@ -107,7 +107,7 @@ const sections: GuideSection[] = [
     steps: [
       {
         titel: "Erfassen",
-        text: "Auf der Maschinen-Detailseite »Neue Reparatur«. Trage Diagnose, Maßnahme, verbaute Teile, Kosten und Zeitaufwand ein.",
+        text: "Auf der Maschinen-Detailseite im Reiter »Reparaturen« auf »Neue Reparatur«. Trage Diagnose, Maßnahme, verbaute Teile, Kosten und Zeitaufwand ein.",
       },
       {
         titel: "Mit einem Fehler verknüpfen",
@@ -127,7 +127,7 @@ const sections: GuideSection[] = [
     steps: [
       {
         titel: "Punkte anlegen",
-        text: "Auf der Maschinen-Detailseite im Bereich »Wartungsplan«: »Standard-Wartungsplan übernehmen« legt eine bewährte Grundausstattung an, »Aus Guide übernehmen« zieht Punkte aus dem Troubleshooting-Guide, oder »Neuer Wartungspunkt« für eigene Einträge.",
+        text: "Auf der Maschinen-Detailseite im Reiter »Wartung«: »Standard-Wartungsplan übernehmen« legt eine bewährte Grundausstattung an, »Aus Guide übernehmen« zieht Punkte aus dem Troubleshooting-Guide, oder »Neuer Wartungspunkt« für eigene Einträge.",
       },
       {
         titel: "Intervall & Fälligkeit",
@@ -210,7 +210,7 @@ const sections: GuideSection[] = [
     steps: [
       {
         titel: "Hochladen",
-        text: "Auf der Maschinen-Detailseite im Abschnitt »Handbuch-Daten« bestätigst du, dass du das Handbuch besitzt bzw. die Rechte hast, wählst das PDF und startest die Auswertung.",
+        text: "Auf der Maschinen-Detailseite im Reiter »Handbuch« bestätigst du, dass du das Handbuch besitzt bzw. die Rechte hast, wählst das PDF und startest die Auswertung.",
       },
       {
         titel: "KI-Schlüssel (falls nötig)",
@@ -234,11 +234,11 @@ const sections: GuideSection[] = [
     steps: [
       {
         titel: "Voraussetzung",
-        text: "Der Guide erscheint auf der Maschinen-Detailseite, sobald für die Maschine Handbuch-Daten (z. B. Lampen-/Schalter-Matrix) ausgewertet wurden.",
+        text: "Der Guide-Reiter erscheint auf der Maschinen-Detailseite, sobald für die Maschine Handbuch-Daten (z. B. Lampen-/Schalter-Matrix) ausgewertet wurden.",
       },
       {
         titel: "Erstellen",
-        text: "Im Bereich »Troubleshooting-Guide« auf »Troubleshooting-Guide erstellen« (nur mit Schreibrecht). Claude bestimmt zunächst die Plattform bzw. Geräte-Generation und prüft sie samt bekannter Serienfehler per Websuche gegen Community-Quellen (IPDB, PinWiki, Pinside). Das dauert ein bis zwei Minuten.",
+        text: "Im Reiter »Guide« auf »Troubleshooting-Guide erstellen« (nur mit Schreibrecht). Claude bestimmt zunächst die Plattform bzw. Geräte-Generation und prüft sie samt bekannter Serienfehler per Websuche gegen Community-Quellen (IPDB, PinWiki, Pinside). Das dauert ein bis zwei Minuten.",
       },
       {
         titel: "Was drinsteht",
@@ -266,7 +266,7 @@ const sections: GuideSection[] = [
       },
       {
         titel: "Handbuch-Daten teilen",
-        text: "Hast du ein Handbuch ausgewertet, erscheint im Abschnitt »Handbuch-Daten« der Teilen-Bereich. Reichweite wählen, fertig.",
+        text: "Hast du ein Handbuch ausgewertet, erscheint im Reiter »Handbuch« der Teilen-Bereich. Reichweite wählen, fertig.",
       },
       {
         titel: "Reparaturen teilen",
@@ -278,7 +278,7 @@ const sections: GuideSection[] = [
       },
       {
         titel: "Was du siehst",
-        text: "Geteilte Handbuch-Daten anderer erscheinen auf deiner Maschinenseite; hast du selbst noch keine, ist der Bereich aufgeklappt — du sparst dir dann die eigene Auswertung. Geteilte Reparaturen stehen unter »Geteiltes Wissen«. Alles nur lesend: ändern kann nur, wer es geteilt hat.",
+        text: "Geteilte Handbuch-Daten anderer erscheinen im Reiter »Handbuch«; hast du selbst noch keine, sind sie dort gleich aufgeklappt — du sparst dir dann die eigene Auswertung. Geteilte Reparaturen stehen im Reiter »Reparaturen« unter »Geteiltes Wissen«. Alles nur lesend: ändern kann nur, wer es geteilt hat.",
       },
       {
         titel: "Voreinstellungen",
@@ -363,8 +363,8 @@ const sections: GuideSection[] = [
     einleitung: "Kleinigkeiten, die den Alltag leichter machen.",
     steps: [
       {
-        titel: "Bereiche ein- und ausklappen",
-        text: "Auf der Maschinen-Detailseite sind Fehler, Reparaturen, Handbuch-Daten und Troubleshooting-Guide ein-/ausklappbare Bereiche — standardmäßig eingeklappt. Die Titelzeile zeigt jeweils die Anzahl (z. B. offene Fehler), sodass du auf einen Blick siehst, was drinsteckt.",
+        titel: "Übersicht & Reiter",
+        text: "Die Maschinen-Detailseite öffnet mit einer Übersicht (Foto, OPDB/IPDB und Status-Karten). Darüber liegen drei Reiter: »Übersicht«, »Betrieb« (Fehler, Wartung) und »Wissensbasis« (Reparaturen, Handbuch, Guide). Wählst du eine Gruppe, erscheint darunter eine schmale Unterreihe für ihre Bereiche. Reiter und Status-Karten tragen Zähler (z. B. offene Fehler, fällige Wartung); die Leiste bleibt beim Scrollen sichtbar.",
       },
       {
         titel: "Mobil nutzen",

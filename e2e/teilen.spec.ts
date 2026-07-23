@@ -46,7 +46,8 @@ test.describe("Teilen", () => {
 
   test("ohne Freigabe sieht ein anderer Besitzer nichts", async ({ page }) => {
     await loginAs(page, USERS.outsider);
-    await page.goto(`/machines/${fremdMachine}`);
+    // Geteilte Handbuch-Daten leben im Reiter „Handbuch".
+    await page.goto(`/machines/${fremdMachine}?bereich=handbuch`);
     await expect(page.getByText("Geteilte Handbuch-Daten")).toHaveCount(0);
   });
 
@@ -57,7 +58,7 @@ test.describe("Teilen", () => {
       VALUES ('machine_facts', ${ownerMachine}, ${modelId}, ${ownerId}, 'platform', true)`;
 
     await loginAs(page, USERS.outsider);
-    await page.goto(`/machines/${fremdMachine}`);
+    await page.goto(`/machines/${fremdMachine}?bereich=handbuch`);
     await expect(page.getByText("Geteilte Handbuch-Daten")).toBeVisible();
     await expect(page.getByText("anonym geteilt")).toBeVisible();
   });
@@ -71,7 +72,8 @@ test.describe("Teilen", () => {
         SET anonym = true, zeige_kosten = false`;
 
     await loginAs(page, USERS.outsider);
-    await page.goto(`/machines/${fremdMachine}`);
+    // Geteilte Reparaturen leben im Reiter „Reparaturen".
+    await page.goto(`/machines/${fremdMachine}?bereich=reparaturen`);
 
     // Fachinhalt ist da …
     await expect(page.getByText("E2E Diagnose")).toBeVisible();
@@ -87,7 +89,7 @@ test.describe("Teilen", () => {
       WHERE artefakt_typ='repair' AND artefakt_id = ${repairId}`;
 
     await loginAs(page, USERS.outsider);
-    await page.goto(`/machines/${fremdMachine}`);
+    await page.goto(`/machines/${fremdMachine}?bereich=reparaturen`);
     await expect(page.getByText("99.99")).toBeVisible();
   });
 
@@ -101,7 +103,7 @@ test.describe("Teilen", () => {
     await sql`INSERT INTO share_targets (share_id, club_id) VALUES (${share.id}, ${club.id})`;
 
     await loginAs(page, USERS.outsider);
-    await page.goto(`/machines/${fremdMachine}`);
+    await page.goto(`/machines/${fremdMachine}?bereich=handbuch`);
     await expect(page.getByText("Geteilte Handbuch-Daten")).toHaveCount(0);
 
     await sql`DELETE FROM share_targets WHERE share_id=${share.id}`;
