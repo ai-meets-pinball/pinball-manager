@@ -229,6 +229,13 @@ const sections: StackSection[] = [
           "Eigenes Handbuch-PDF hochladen → Claude (claude-sonnet-5, @anthropic-ai/sdk) extrahiert nur Faktentabellen → in machine_data gespeichert. Der Schutz ist die Pipeline: Attestation Pflicht, das PDF bleibt nur im Speicher und wird NIE gespeichert, nur die Fakten landen in der DB.",
         imCode: "src/lib/manual-extract.ts, src/components/machine-data-tables.tsx",
       },
+      {
+        name: "KI-Anbieter umschaltbar (Claude ⇆ Ollama)",
+        version: "Muster · optional",
+        beschreibung:
+          "AI_PROVIDER schaltet die drei KI-Funktionen zwischen Claude (Standard) und einem lokalen Ollama-Modell um. Bewusst ein sichtbarer Zweig je Aktion statt einer Abstraktion. Lokal wird das PDF via unpdf zu Text/Seitenbildern vorverarbeitet (in-memory); der Guide entsteht ohne Websuche (Flag websuche). Nur lokal/self-hosted — nicht auf Vercel.",
+        imCode: "src/lib/ai/provider.ts, src/lib/ai/ollama.ts, src/lib/ai/prepare-pdf.ts",
+      },
     ],
   },
 ];

@@ -11,6 +11,8 @@ import {
   troubleshootingGuides,
 } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
+import { anthropicModelFor, resolveProvider } from "@/lib/ai/provider";
+import { ollamaErrorMessage, ollamaJson } from "@/lib/ai/ollama";
 import { MAINTENANCE_STANDARD } from "@/lib/maintenance-catalog";
 import {
   maintenanceImportJsonSchema,
@@ -21,8 +23,6 @@ import {
 } from "@/lib/validators";
 
 export type FormState = { error?: string; ok?: boolean };
-
-const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
 
 /* ── Fälligkeits-Helfer ────────────────────────────────────────────────────
    Nur zeitbasierte Intervalle ergeben einen Termin (naechsteFaelligkeit). */
@@ -317,45 +317,58 @@ export async function importMaintenanceFromGuide(
     return { error: "Der Guide enthält keinen Wartungsplan-Abschnitt." };
   }
 
-  // Ephemerer BYO-Schlüssel: nur für diesen Request, wird nie gespeichert oder
-  // geloggt. Fällt auf den zentralen Env-Key zurück, falls einer gesetzt ist.
-  const apiKey =
-    String(formData.get("apiKey") ?? "").trim() || process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return {
-      error: "Kein Claude-API-Schlüssel vorhanden. Bitte deinen eigenen eingeben.",
-    };
-  }
-
+  // Zwei Wege (siehe lib/ai/provider.ts): Claude (Standard) oder lokal via Ollama —
+  // der Nutzer wählt je Aktion (Feld „provider"), sonst der Standard.
+  const provider = resolveProvider(formData);
+  const userPrompt = `Wandle diesen Wartungsplan-Abschnitt in strukturierte Wartungspunkte (JSON) um:\n\n${abschnittText}`;
   let text: string;
-  try {
-    const client = new Anthropic({ apiKey, maxRetries: 4 });
-    const res = await client.messages
-      .stream({
-        model: MODEL,
-        max_tokens: 8000,
-        system: IMPORT_SYSTEM,
-        output_config: {
-          format: { type: "json_schema", schema: maintenanceImportJsonSchema },
-        },
-        messages: [
-          {
-            role: "user",
-            content: `Wandle diesen Wartungsplan-Abschnitt in strukturierte Wartungspunkte (JSON) um:\n\n${abschnittText}`,
-          },
-        ],
-      })
-      .finalMessage();
 
-    if (res.stop_reason === "refusal") return { error: "Die Verarbeitung wurde abgelehnt." };
-    const block = res.content.find((b) => b.type === "text");
-    if (!block || block.type !== "text") {
-      return { error: "Es konnten keine Wartungspunkte extrahiert werden." };
+  if (provider === "ollama") {
+    // Lokaler Pfad: kein API-Key nötig.
+    try {
+      text = await ollamaJson({
+        system: IMPORT_SYSTEM,
+        prompt: userPrompt,
+        schema: maintenanceImportJsonSchema,
+      });
+    } catch (e) {
+      console.error("[maintenance-import] ollama:", (e as Error).message);
+      return { error: ollamaErrorMessage(e) };
     }
-    text = block.text;
-  } catch (e) {
-    console.error("[maintenance-import] API:", (e as Error).message);
-    return { error: "Import fehlgeschlagen. Bitte später erneut versuchen." };
+  } else {
+    // Claude-Pfad (Standard). Ephemerer BYO-Schlüssel: nur für diesen Request,
+    // nie gespeichert/geloggt; fällt auf den zentralen Env-Key zurück.
+    const apiKey =
+      String(formData.get("apiKey") ?? "").trim() || process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      return {
+        error: "Kein Claude-API-Schlüssel vorhanden. Bitte deinen eigenen eingeben.",
+      };
+    }
+    try {
+      const client = new Anthropic({ apiKey, maxRetries: 4 });
+      const res = await client.messages
+        .stream({
+          model: anthropicModelFor(provider),
+          max_tokens: 8000,
+          system: IMPORT_SYSTEM,
+          output_config: {
+            format: { type: "json_schema", schema: maintenanceImportJsonSchema },
+          },
+          messages: [{ role: "user", content: userPrompt }],
+        })
+        .finalMessage();
+
+      if (res.stop_reason === "refusal") return { error: "Die Verarbeitung wurde abgelehnt." };
+      const block = res.content.find((b) => b.type === "text");
+      if (!block || block.type !== "text") {
+        return { error: "Es konnten keine Wartungspunkte extrahiert werden." };
+      }
+      text = block.text;
+    } catch (e) {
+      console.error("[maintenance-import] API:", (e as Error).message);
+      return { error: "Import fehlgeschlagen. Bitte später erneut versuchen." };
+    }
   }
 
   let punkte: ReturnType<typeof maintenanceImportSchema.parse>["punkte"];

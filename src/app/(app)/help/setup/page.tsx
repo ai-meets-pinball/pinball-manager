@@ -347,6 +347,12 @@ const abschnitte: Abschnitt[] = [
         text: "Auf console.anthropic.com einen Schlüssel erzeugen (`ANTHROPIC_API_KEY`). Modell über `ANTHROPIC_MODEL` überschreibbar.",
       },
       {
+        titel: "Optional: lokales Modell (Ollama) statt Claude",
+        text: "Mit `AI_PROVIDER=ollama` laufen die drei KI-Funktionen (Handbuch, Guide, Wartungs-Import) über ein lokales Modell: `ollama serve` starten, `ollama pull gemma3:12b` ziehen, `OLLAMA_MODEL`/`OLLAMA_VISION_MODEL` setzen. Vorteil: das Handbuch verlässt die Maschine nie. Für präzise Tabellen ≥12B nehmen; kleinere Modelle sind unzuverlässig.",
+        falle:
+          "Ein lokales Ollama unter localhost:11434 ist von Vercel aus NICHT erreichbar — der Ollama-Pfad ist nur für lokale/self-hosted Läufe. Und: der Troubleshooting-Guide entsteht dann OHNE Websuche (in der Anzeige gekennzeichnet).",
+      },
+      {
         titel: "Urheberrecht: die Pipeline ist der Schutz",
         text: "Das hochgeladene Handbuch-PDF wird NIE gespeichert. Es lebt nur im Arbeitsspeicher, geht an das Modell, und nur die extrahierten Faktentabellen landen in der Datenbank. Dazu die Bestätigung des Nutzers, dass er das Handbuch besitzen darf.",
         falle:

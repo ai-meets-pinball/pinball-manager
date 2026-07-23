@@ -354,8 +354,12 @@ export const troubleshootingGuides = pgTable("troubleshooting_guides", {
     .unique()
     .references(() => machines.id, { onDelete: "cascade" }),
   daten: jsonb("daten").notNull(),
-  // Welches Claude-Modell den Guide erzeugt hat — für Transparenz (Lehrbeispiel).
+  // Welches Modell den Guide erzeugt hat — für Transparenz (Lehrbeispiel).
   model: text("model").notNull(),
+  // Wurde der Guide mit Websuche (Community-Quellen) erstellt? Der lokale
+  // Ollama-Pfad kann NICHT websuchen → false; so lässt sich die geringere
+  // Verlässlichkeit in der Anzeige kennzeichnen. Bestehende Claude-Zeilen: true.
+  websuche: boolean("websuche").notNull().default(true),
   erstelltVon: text("erstellt_von").references(() => user.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

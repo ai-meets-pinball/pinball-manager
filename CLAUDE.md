@@ -49,6 +49,7 @@ App runs on http://localhost:3000.
 - **Better Auth** for authentication — TS config is intentionally visible/readable
 - **Tailwind CSS v4** (CSS-first config) + Lucide React icons
 - **Supabase used as Postgres + Storage only** — not as an auth or API layer
+- **AI provider is switchable** (`AI_PROVIDER`): **Anthropic Claude is the default**; an optional **local Ollama** path (code in [src/lib/ai/](src/lib/ai/)) covers the three AI features for local/self-hosted runs (never on Vercel — `localhost` is unreachable there). Ollama is an *addition*, not a substitution of the stack.
 - **Vercel** deployment; **light "editorial" theme** with a burgundy accent (from a Claude Design handoff v2; light default + dark variant, toggle in nav; tokens/fonts in [src/app/globals.css](src/app/globals.css); logo/favicons from the handoff's brand assets); mobile-friendly (repairs happen at the machine)
 
 ## Architectural constraints (the important "why")
@@ -75,7 +76,7 @@ These are deliberate decisions, not omissions — preserve them:
 ## Roadmap phasing
 
 - **Phase 1 (MVP):** Auth, machine CRUD, fault tracking, repair history, search/filter.
-- **Phase 2:** Manual upload + fact extraction + service-console-style display. **Partially implemented:** per-machine manual (PDF) upload → **Claude (`claude-sonnet-5`) extracts fact tables** (coils/switches/lamps/fuses/parts/rules) → stored in `machine_data`, rendered as tables. The extraction engine is Claude via `@anthropic-ai/sdk` (`src/lib/manual-extract.ts`), **not** a local OCR lib. **Copyright pipeline is load-bearing:** attestation required, the PDF is held **in memory only and never persisted** (no Storage bucket, `serverActions.bodySizeLimit` raised for the upload), only extracted facts are stored. Needs `ANTHROPIC_API_KEY`.
+- **Phase 2:** Manual upload + fact extraction + service-console-style display. **Partially implemented:** per-machine manual (PDF) upload → **Claude (`claude-sonnet-5`) extracts fact tables** (coils/switches/lamps/fuses/parts/rules) → stored in `machine_data`, rendered as tables. The extraction engine is Claude via `@anthropic-ai/sdk` (`src/lib/manual-extract.ts`), **not** a local OCR lib. **Copyright pipeline is load-bearing:** attestation required, the PDF is held **in memory only and never persisted** (no Storage bucket, `serverActions.bodySizeLimit` raised for the upload), only extracted facts are stored. Needs `ANTHROPIC_API_KEY`. **Optional local path:** with `AI_PROVIDER=ollama`, all three AI features (extraction, guide, maintenance import) run on a local Ollama model instead ([src/lib/ai/](src/lib/ai/); the PDF is preprocessed to text/page-images in-memory via `unpdf`). Claude stays the default and the copyright pipeline holds for both providers; on Ollama the guide is generated **without web search** (flagged via `troubleshooting_guides.websuche`).
 - **Phase 3:** AI fault diagnosis (text), image-based component recognition (vision), club features. (Claude is now the chosen model family — see Phase 2.)
 
 Build Phase 1 features only unless explicitly directed to later phases.

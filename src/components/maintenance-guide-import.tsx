@@ -2,7 +2,8 @@
 
 import { useActionState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
-import { ApiKeyField } from "@/components/ui/api-key-field";
+import { AiProviderField } from "@/components/ui/ai-provider-field";
+import type { AiProvider } from "@/lib/ai/provider";
 import {
   importMaintenanceFromGuide,
   type FormState,
@@ -15,26 +16,34 @@ import {
 */
 export function MaintenanceGuideImport({
   machineId,
-  kiKonfiguriert,
+  providers,
+  centralKey,
 }: {
   machineId: string;
-  /** false = kein zentraler API-Key → ephemeres Key-Feld einblenden. */
-  kiKonfiguriert: boolean;
+  /** Verfügbare KI-Anbieter (Auswahl, wenn mehrere). */
+  providers: AiProvider[];
+  /** Zentraler Anthropic-Key vorhanden? Sonst BYO-Feld beim Claude-Weg. */
+  centralKey: boolean;
 }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     importMaintenanceFromGuide,
     {},
   );
 
-  // Ohne Key-Feld bleibt es ein kompakter Inline-Button; mit Feld ein Block.
+  // Nur ein Anbieter ohne Key-Feld → kompakter Inline-Button; sonst (Auswahl
+  // oder BYO-Feld) ein Block.
+  const einzeln = providers.length === 1 ? providers[0] : null;
+  const brauchtKey = (einzeln === "anthropic" || einzeln === "auto") && !centralKey;
+  const kompakt = einzeln !== null && !brauchtKey;
+
   return (
     <form
       action={formAction}
-      className={kiKonfiguriert ? "inline-flex flex-col gap-1" : "flex w-full max-w-md flex-col gap-2"}
+      className={kompakt ? "inline-flex flex-col gap-1" : "flex w-full max-w-md flex-col gap-2"}
     >
       <input type="hidden" name="machineId" value={machineId} />
 
-      {!kiKonfiguriert ? <ApiKeyField /> : null}
+      <AiProviderField providers={providers} centralKey={centralKey} />
 
       <button
         type="submit"

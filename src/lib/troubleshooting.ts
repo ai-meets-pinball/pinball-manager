@@ -6,6 +6,12 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { machines, troubleshootingGuides } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
+import { anthropicModelFor, resolveProvider } from "@/lib/ai/provider";
+import {
+  OLLAMA_TEXT_MODEL,
+  ollamaErrorMessage,
+  ollamaJson,
+} from "@/lib/ai/ollama";
 import {
   troubleshootingGuideJsonSchema,
   troubleshootingGuideSchema,
@@ -30,10 +36,6 @@ import {
 */
 
 export type GuideState = { error?: string; ok?: boolean };
-
-// Gleiches Modell wie die Handbuch-Extraktion (Phase 2). Über ANTHROPIC_MODEL
-// übersteuerbar — z. B. "claude-opus-4-8" für einen noch gründlicheren Guide.
-const MODEL = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
 
 /*
   Der Systemprompt (Persona + Guide-Spezifikation). Die Flipperdaten werden direkt
@@ -155,18 +157,19 @@ function extractJson(text: string): string {
 
 /** API-/Netzwerkfehler in eine sichere, spezifische Meldung übersetzen. */
 function apiErrorMessage(e: unknown): string {
+  const msg = e instanceof Error ? e.message : String(e);
   if (e instanceof Anthropic.AuthenticationError) return "Claude-API-Key ist ungültig.";
   if (e instanceof Anthropic.PermissionDeniedError)
     return "Kein Zugriff auf Claude (Rechte oder Guthaben prüfen).";
   if (e instanceof Anthropic.NotFoundError)
     return "Modell nicht verfügbar — ANTHROPIC_MODEL prüfen.";
-  if (e instanceof Anthropic.RateLimitError)
-    return "Zu viele Anfragen an Claude. Bitte später erneut versuchen.";
-  if (e instanceof Anthropic.InternalServerError)
+  if (e instanceof Anthropic.InternalServerError || /overloaded|\b529\b/i.test(msg))
     return "Claude ist gerade überlastet. Bitte in ein paar Minuten erneut versuchen.";
-  if (e instanceof Anthropic.APIConnectionError)
+  if (e instanceof Anthropic.RateLimitError || /rate[_ -]?limit|\b429\b/i.test(msg))
+    return "Zu viele Anfragen an Claude. Bitte kurz warten und erneut versuchen.";
+  if (e instanceof Anthropic.APIConnectionError || /connection|fetch failed|network|ECONN/i.test(msg))
     return "Verbindung zu Claude fehlgeschlagen. Bitte später erneut versuchen.";
-  return "Guide konnte nicht erstellt werden. Bitte später erneut versuchen.";
+  return `Guide konnte nicht erstellt werden: ${msg.slice(0, 200)}`;
 }
 
 /*
@@ -176,23 +179,34 @@ function apiErrorMessage(e: unknown): string {
   output_config als unser JSON. Erreicht die serverseitige Tool-Schleife ihr Limit
   (stop_reason "pause_turn"), setzen wir den Turn fort (begrenzt).
 */
-async function anthropicCall(apiKey: string, system: string) {
+async function anthropicCall(
+  apiKey: string,
+  system: string,
+  model: string,
+  useBasicWebSearch: boolean,
+) {
   const client = new Anthropic({ apiKey, maxRetries: 4 });
   const messages: Anthropic.MessageParam[] = [
     { role: "user", content: OUTPUT_INSTRUCTION },
   ];
 
+  // Haiku (200k-Kontext) unterstützt nur die einfache Websuche-Variante; die
+  // neuere web_search_20260209 gibt es nur auf Opus/Sonnet.
+  const webSearch = useBasicWebSearch
+    ? { type: "web_search_20250305" as const, name: "web_search" as const, max_uses: 6 }
+    : { type: "web_search_20260209" as const, name: "web_search" as const, max_uses: 6 };
+
   let response: Anthropic.Message | undefined;
   for (let i = 0; i < 4; i++) {
     response = await client.messages
       .stream({
-        model: MODEL,
+        model,
         max_tokens: 32000,
         system,
         output_config: {
           format: { type: "json_schema", schema: troubleshootingGuideJsonSchema },
         },
-        tools: [{ type: "web_search_20260209", name: "web_search", max_uses: 6 }],
+        tools: [webSearch],
         messages,
       })
       .finalMessage();
@@ -217,49 +231,77 @@ export async function generateTroubleshootingGuide(
   });
   if (!machine) return { error: "Maschine nicht gefunden." };
 
-  // Ephemerer BYO-Schlüssel: nur für diesen Request, wird nie gespeichert oder
-  // geloggt. Fällt auf den zentralen Env-Key zurück, falls einer gesetzt ist.
-  const apiKey =
-    String(formData.get("apiKey") ?? "").trim() || process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return {
-      error: "Kein Claude-API-Schlüssel vorhanden. Bitte deinen eigenen eingeben.",
-    };
-  }
+  // Zwei Wege (siehe lib/ai/provider.ts): Claude (Standard, MIT Websuche) oder
+  // lokal via Ollama (OHNE Websuche — Server-Tool ohne lokales Äquivalent). Der
+  // Guide-Systemprompt hedged bereits („Falls Websuche verfügbar …") und
+  // degradiert damit sauber. `websuche` wird gespeichert und in der Anzeige
+  // kenntlich gemacht, damit die geringere Verlässlichkeit sichtbar ist.
+  const provider = resolveProvider(formData);
+  const system = buildSystemPrompt(machine);
+  // Claude (Sonnet ODER Haiku) sucht im Web; nur der lokale Ollama-Pfad nicht.
+  const websuche = provider !== "ollama";
+  const usedModel =
+    provider === "ollama" ? OLLAMA_TEXT_MODEL : anthropicModelFor(provider);
 
-  let response: Anthropic.Message;
-  try {
-    response = await anthropicCall(apiKey, buildSystemPrompt(machine));
-  } catch (e) {
-    console.error("[troubleshooting] API:", (e as Error).message);
-    return { error: apiErrorMessage(e) };
-  }
+  let jsonText: string;
+  if (provider === "ollama") {
+    // Lokaler Pfad: kein API-Key, keine Websuche/Tool-Schleife — ein Call.
+    try {
+      jsonText = await ollamaJson({
+        system,
+        prompt: OUTPUT_INSTRUCTION,
+        schema: troubleshootingGuideJsonSchema,
+      });
+    } catch (e) {
+      console.error("[troubleshooting] ollama:", (e as Error).message);
+      return { error: ollamaErrorMessage(e) };
+    }
+  } else {
+    // Claude-Pfad (Standard). Ephemerer BYO-Schlüssel: nur für diesen Request,
+    // nie gespeichert/geloggt; fällt auf den zentralen Env-Key zurück.
+    const apiKey =
+      String(formData.get("apiKey") ?? "").trim() || process.env.ANTHROPIC_API_KEY;
+    if (!apiKey) {
+      return {
+        error: "Kein Claude-API-Schlüssel vorhanden. Bitte deinen eigenen eingeben.",
+      };
+    }
 
-  console.error(
-    `[troubleshooting] ${machine.hersteller} ${machine.modell}: in=${response.usage.input_tokens} out=${response.usage.output_tokens} tokens, stop=${response.stop_reason}`,
-  );
+    let response: Anthropic.Message;
+    try {
+      response = await anthropicCall(apiKey, system, usedModel, provider === "auto");
+    } catch (e) {
+      console.error("[troubleshooting] API:", (e as Error).message);
+      return { error: apiErrorMessage(e) };
+    }
 
-  if (response.stop_reason === "refusal") {
-    return { error: "Die Erstellung wurde abgelehnt." };
-  }
-  if (response.stop_reason === "max_tokens") {
-    return {
-      error:
-        "Der Guide wurde zu lang und abgeschnitten. Bitte erneut versuchen.",
-    };
-  }
-  if (response.stop_reason === "pause_turn") {
-    return { error: "Die Websuche dauerte zu lange. Bitte erneut versuchen." };
-  }
+    console.error(
+      `[troubleshooting] ${machine.hersteller} ${machine.modell}: in=${response.usage.input_tokens} out=${response.usage.output_tokens} tokens, stop=${response.stop_reason}`,
+    );
 
-  const textBlock = response.content.find((b) => b.type === "text");
-  if (!textBlock || textBlock.type !== "text") {
-    return { error: "Es konnte kein Guide erzeugt werden. Bitte erneut versuchen." };
+    if (response.stop_reason === "refusal") {
+      return { error: "Die Erstellung wurde abgelehnt." };
+    }
+    if (response.stop_reason === "max_tokens") {
+      return {
+        error:
+          "Der Guide wurde zu lang und abgeschnitten. Bitte erneut versuchen.",
+      };
+    }
+    if (response.stop_reason === "pause_turn") {
+      return { error: "Die Websuche dauerte zu lange. Bitte erneut versuchen." };
+    }
+
+    const textBlock = response.content.find((b) => b.type === "text");
+    if (!textBlock || textBlock.type !== "text") {
+      return { error: "Es konnte kein Guide erzeugt werden. Bitte erneut versuchen." };
+    }
+    jsonText = textBlock.text;
   }
 
   let parsed: ReturnType<typeof troubleshootingGuideSchema.parse>;
   try {
-    parsed = troubleshootingGuideSchema.parse(JSON.parse(extractJson(textBlock.text)));
+    parsed = troubleshootingGuideSchema.parse(JSON.parse(extractJson(jsonText)));
   } catch (e) {
     console.error("[troubleshooting] parse:", (e as Error).message);
     return { error: "Antwort konnte nicht ausgewertet werden. Bitte erneut versuchen." };
@@ -271,12 +313,19 @@ export async function generateTroubleshootingGuide(
     .values({
       machineId,
       daten: parsed,
-      model: MODEL,
+      model: usedModel,
+      websuche,
       erstelltVon: user.id,
     })
     .onConflictDoUpdate({
       target: troubleshootingGuides.machineId,
-      set: { daten: parsed, model: MODEL, erstelltVon: user.id, createdAt: new Date() },
+      set: {
+        daten: parsed,
+        model: usedModel,
+        websuche,
+        erstelltVon: user.id,
+        createdAt: new Date(),
+      },
     });
 
   revalidatePath(`/machines/${machineId}`);

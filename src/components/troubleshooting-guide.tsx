@@ -132,10 +132,14 @@ function Section({ section, index }: { section: GuideSection; index: number }) {
 export function TroubleshootingGuideView({
   daten,
   model,
+  websuche = true,
   createdAt,
 }: {
   daten: unknown;
   model: string;
+  // Wurde der Guide mit Websuche (Community-Quellen) erstellt? Der lokale
+  // Ollama-Pfad kann das nicht — dann ist der Guide weniger verlässlich.
+  websuche?: boolean;
   createdAt: Date;
 }) {
   // Defensiv parsen: eine gespeicherte, aber ungültige Struktur soll die Seite
@@ -153,6 +157,12 @@ export function TroubleshootingGuideView({
           {guide.plattform}
         </span>
       </div>
+
+      {/* Ohne Websuche (lokales Modell) prominent kennzeichnen: der Guide stammt
+          nur aus dem Modellwissen und ist nicht gegen Community-Quellen geprüft. */}
+      {!websuche ? (
+        <WarnBlock text="Ohne Websuche erstellt — nur aus dem Modellwissen (lokales Modell). Plattform und bekannte Serienfehler wurden NICHT gegen Community-Quellen (IPDB, PinWiki, Pinside) verifiziert. Vor Arbeiten unbedingt mit Original-Manual und Schaltplan gegenprüfen." />
+      ) : null}
 
       {/* Sprungmarken zu den Abschnitten. */}
       {guide.abschnitte.length > 1 ? (
@@ -190,7 +200,8 @@ export function TroubleshootingGuideView({
       ) : null}
 
       <p className="text-xs text-[var(--color-muted)]">
-        Von Claude ({model}) erzeugt am{" "}
+        KI-generiert ({model}
+        {websuche ? ", mit Websuche" : ", ohne Websuche"}) am{" "}
         {createdAt.toLocaleDateString("de-DE")}. Ein KI-generierter Leitfaden —
         vor sicherheitsrelevanten Arbeiten mit Original-Manual und Schaltplan
         gegenprüfen.

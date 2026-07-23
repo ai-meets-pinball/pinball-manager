@@ -31,10 +31,12 @@ import {
   troubleshootingGuides as troubleshootingGuidesTable,
 } from "@/db/schema";
 import { requireMachineAccess } from "@/lib/session";
+import { availableProviders } from "@/lib/ai/provider";
 
-// Die Handbuch-Extraktion (Server Action extractManualFacts) läuft in der
-// Function dieser Route und kann bei großen PDFs Minuten dauern → auf Vercel
-// das Default-Timeout anheben (max. 300s auf Pro; lokal ohne Wirkung).
+// KI-Server-Actions dieser Route (z. B. Troubleshooting-Guide) können Minuten
+// dauern → auf Vercel das Default-Timeout anheben (max. 300s auf Pro; lokal ohne
+// Wirkung). Die Handbuch-Extraktion selbst läuft separat in der streamenden
+// API-Route /api/machines/[id]/extract-manual.
 export const maxDuration = 300;
 
 const FAULT_FILTER = ["alle", "offen", "in Arbeit", "behoben"] as const;
@@ -97,10 +99,13 @@ export default async function MachineDetailPage({
   ).length;
   const wartungBald = wartungsTasks.filter((t) => t.status === "bald").length;
 
-  // KI-Funktionen: ist ein zentraler Schlüssel gesetzt? Falls nicht, blenden die
-  // KI-Aktionen ein ephemeres Feld für einen eigenen Anthropic-Key ein (BYO,
-  // wird nur für den Request genutzt und nicht gespeichert).
-  const kiKonfiguriert = Boolean(process.env.ANTHROPIC_API_KEY);
+  // KI-Funktionen: welche Anbieter stehen zur Wahl? Sind beide verfügbar (lokales
+  // Ollama UND Claude), darf der Nutzer je Aktion bewusst wählen. Ohne zentralen
+  // Anthropic-Key blendet der Claude-Weg ein ephemeres BYO-Feld ein (nur für den
+  // Request, nicht gespeichert).
+  const kiProviders = availableProviders();
+  const kiCentralKey = Boolean(process.env.ANTHROPIC_API_KEY);
+  const ollamaVerfuegbar = kiProviders.includes("ollama");
 
   // Geteiltes Wissen zum selben Gerätetyp: eigene Freigabe + fremde Fakten,
   // die dieser Nutzer sehen darf. Ohne OPDB-Bezug gibt es keinen Typ.
@@ -309,7 +314,8 @@ export default async function MachineDetailPage({
           machineId={machine.id}
           schreibbar={darf.bearbeiten}
           hatGuide={troubleshootingGuide !== undefined}
-          kiKonfiguriert={kiKonfiguriert}
+          providers={kiProviders}
+          centralKey={kiCentralKey}
         />
       </CollapsibleSection>
 
@@ -378,7 +384,8 @@ export default async function MachineDetailPage({
               </p>
               <ManualUpload
                 machineId={machine.id}
-                kiKonfiguriert={kiKonfiguriert}
+                providers={kiProviders}
+                centralKey={kiCentralKey}
               />
             </Card>
           ) : null}
@@ -395,14 +402,19 @@ export default async function MachineDetailPage({
               <TroubleshootingGuideView
                 daten={troubleshootingGuide.daten}
                 model={troubleshootingGuide.model}
+                websuche={troubleshootingGuide.websuche}
                 createdAt={troubleshootingGuide.createdAt}
               />
             ) : (
               <p className="text-sm text-[var(--color-muted)]">
                 Erzeuge aus Hersteller, Modell und Baujahr einen umfassenden FAQ-
                 und Troubleshooting-Guide (Plattform-Erkennung, Fehlersuche nach
-                Subsystemen, bekannte Serienfehler, Wartung). Claude prüft dabei
-                Plattform und Serienprobleme per Websuche gegen Community-Quellen.
+                Subsystemen, bekannte Serienfehler, Wartung).{" "}
+                Claude prüft dabei Plattform und Serienprobleme per Websuche gegen
+                Community-Quellen.
+                {ollamaVerfuegbar
+                  ? " Das lokale Modell (Ollama) arbeitet ohne Websuche — der Guide wird dann entsprechend gekennzeichnet."
+                  : ""}
               </p>
             )}
 
@@ -410,7 +422,8 @@ export default async function MachineDetailPage({
               <TroubleshootingGenerate
                 machineId={machine.id}
                 vorhanden={troubleshootingGuide !== undefined}
-                kiKonfiguriert={kiKonfiguriert}
+                providers={kiProviders}
+                centralKey={kiCentralKey}
               />
             ) : null}
           </div>

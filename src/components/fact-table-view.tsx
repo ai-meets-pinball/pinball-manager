@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 import type { FactTable, FactType } from "@/lib/validators";
 
 /*
@@ -379,10 +380,16 @@ export function FactTableView({
   label,
   typ,
   table,
+  open,
+  onToggle,
 }: {
   label: string;
   typ: FactType;
   table: FactTable;
+  /** Kontrolliert vom Elternteil (MachineDataTables), damit KPI-Karten Bereiche
+      aufklappen können. onToggle synchronisiert Klicks auf den Kopf zurück. */
+  open: boolean;
+  onToggle: (open: boolean) => void;
 }) {
   const matrix = isMatrixType(typ) ? buildMatrix(table) : null;
   const [view, setView] = useState<"table" | "matrix">(matrix ? "matrix" : "table");
@@ -405,35 +412,48 @@ export function FactTableView({
       : table.rows;
 
   return (
-    <div className="overflow-hidden rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)]">
-      <div className="flex items-center justify-between gap-2 border-b border-[var(--color-border)] px-3 py-2">
+    <details
+      open={open}
+      onToggle={(e) => onToggle(e.currentTarget.open)}
+      className="group overflow-hidden rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)]"
+    >
+      {/* Kopf = Umschalter: Label + Zeilenzahl + Chevron. Nur nicht-interaktiver
+          Inhalt, sonst würde ein Klick das Panel togglen (Matrix/Filter → Body). */}
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 hover:bg-[var(--color-inset)] group-open:border-b group-open:border-[var(--color-border)] [&::-webkit-details-marker]:hidden">
         <span className="font-mono text-[11px] uppercase tracking-[1px] text-[var(--color-faint)]">
           {label}
         </span>
-        <div className="flex items-center gap-2">
-          {matrix ? (
-            <div className="flex overflow-hidden rounded border border-[var(--color-border)] text-[10px]">
-              {(["matrix", "table"] as const).map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  onClick={() => setView(v)}
-                  className={`px-2 py-0.5 font-mono uppercase ${
-                    view === v
-                      ? "bg-[var(--color-primary)] text-[var(--color-primary-fg)]"
-                      : "text-[var(--color-muted)] hover:bg-[var(--color-inset)]"
-                  }`}
-                >
-                  {v === "table" ? "Tabelle" : "Matrix"}
-                </button>
-              ))}
-            </div>
-          ) : null}
+        <span className="flex items-center gap-2">
           <span className="font-mono text-[11px] text-[var(--color-faint)]">
-            {rows.length}
+            {table.rows.length}
           </span>
+          <ChevronDown
+            size={16}
+            className="flex-none text-[var(--color-muted)] transition-transform group-open:rotate-180"
+          />
+        </span>
+      </summary>
+
+      {matrix ? (
+        <div className="flex items-center justify-end gap-2 border-b border-[var(--color-border)] px-3 py-2">
+          <div className="flex overflow-hidden rounded border border-[var(--color-border)] text-[10px]">
+            {(["matrix", "table"] as const).map((v) => (
+              <button
+                key={v}
+                type="button"
+                onClick={() => setView(v)}
+                className={`px-2 py-0.5 font-mono uppercase ${
+                  view === v
+                    ? "bg-[var(--color-primary)] text-[var(--color-primary-fg)]"
+                    : "text-[var(--color-muted)] hover:bg-[var(--color-inset)]"
+                }`}
+              >
+                {v === "table" ? "Tabelle" : "Matrix"}
+              </button>
+            ))}
+          </div>
         </div>
-      </div>
+      ) : null}
 
       {canFilter ? (
         <div className="flex flex-wrap gap-1.5 border-b border-[var(--color-border)] px-3 py-2">
@@ -453,6 +473,6 @@ export function FactTableView({
       ) : (
         <TableGrid columns={table.columns} rows={rows} typ={typ} />
       )}
-    </div>
+    </details>
   );
 }

@@ -81,6 +81,13 @@ OPDB (`OPDB_API_KEY`), E-Mail-Versand (`RESEND_API_KEY`, `EMAIL_FROM`), KI
 (`ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`) und der Wartungs-Reminder-Cron
 (`CRON_SECRET`, siehe [`vercel.json`](vercel.json)).
 
+Der KI-Anbieter ist umschaltbar (`AI_PROVIDER`): Claude bleibt Standard, optional
+laufen die drei KI-Funktionen (Handbuch-Extraktion, Troubleshooting-Guide,
+Wartungs-Import) über ein **lokales** Ollama-Modell (`OLLAMA_BASE_URL`,
+`OLLAMA_MODEL`, `OLLAMA_VISION_MODEL`). Das ist nur lokal/self-hosted sinnvoll —
+`localhost` ist von Vercel aus nicht erreichbar — und der Guide entsteht dann
+ohne Websuche. Details siehe [`.env.example`](.env.example).
+
 ### Datenbank einrichten
 
 ```bash

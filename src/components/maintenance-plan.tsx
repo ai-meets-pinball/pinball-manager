@@ -4,6 +4,7 @@ import { MaintenanceCompleteButton } from "@/components/maintenance-complete-but
 import { MaintenanceGuideImport } from "@/components/maintenance-guide-import";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
+import type { AiProvider } from "@/lib/ai/provider";
 import {
   applyStandardMaintenance,
   deleteTask,
@@ -88,14 +89,17 @@ export function MaintenancePlan({
   machineId,
   schreibbar,
   hatGuide,
-  kiKonfiguriert,
+  providers,
+  centralKey,
 }: {
   tasks: Task[];
   machineId: string;
   schreibbar: boolean;
   hatGuide: boolean;
-  /** false = kein zentraler API-Key → „Aus Guide übernehmen" blendet ein Key-Feld ein. */
-  kiKonfiguriert: boolean;
+  /** Verfügbare KI-Anbieter für „Aus Guide übernehmen" (Auswahl, wenn mehrere). */
+  providers: AiProvider[];
+  /** Zentraler Anthropic-Key vorhanden? Sonst BYO-Feld beim Claude-Weg. */
+  centralKey: boolean;
 }) {
   return (
     <div className="space-y-3">
@@ -114,7 +118,8 @@ export function MaintenancePlan({
           {hatGuide ? (
             <MaintenanceGuideImport
               machineId={machineId}
-              kiKonfiguriert={kiKonfiguriert}
+              providers={providers}
+              centralKey={centralKey}
             />
           ) : null}
 
