@@ -7,6 +7,7 @@ import { MachineDataTables } from "@/components/machine-data-tables";
 import { MachineOverview, type MachineKpi } from "@/components/machine-overview";
 import { MachineTabs, type MachineTab } from "@/components/machine-tabs";
 import { MaintenancePlan } from "@/components/maintenance-plan";
+import { ManualJsonImport } from "@/components/manual-json-import";
 import { ManualUpload } from "@/components/manual-upload";
 import { RepairList } from "@/components/repair-list";
 import { ShareFactsForm } from "@/components/share-facts-form";
@@ -497,6 +498,13 @@ export default async function MachineDetailPage({
                   providers={kiProviders}
                   centralKey={kiCentralKey}
                 />
+              </Card>
+            ) : null}
+
+            {/* Alternative ohne KI-Verarbeitung: fertiges Fakten-JSON importieren. */}
+            {darf.bearbeiten ? (
+              <Card className="space-y-3">
+                <ManualJsonImport machineId={machine.id} />
               </Card>
             ) : null}
           </div>

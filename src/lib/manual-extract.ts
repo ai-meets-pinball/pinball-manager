@@ -1,8 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { eq } from "drizzle-orm";
-import { db } from "@/db";
-import { machineData } from "@/db/schema";
 import { extractSchema, FACT_TYPES } from "@/lib/validators";
+import { replaceMachineFacts } from "@/lib/facts-store";
 import {
   anthropicModelFor,
   claudePdfMaxPages,
@@ -528,14 +526,7 @@ export async function* extractManualFactsStream(opts: {
   }
 
   yield { type: "info", message: "Fakten werden gespeichert …" };
-  const counts: Record<string, number> = {};
-  await db.transaction(async (tx) => {
-    await tx.delete(machineData).where(eq(machineData.machineId, machineId));
-    for (const typ of present) {
-      await tx.insert(machineData).values({ machineId, typ, daten: parsed[typ] });
-      counts[typ] = parsed[typ].rows.length;
-    }
-  });
-
+  // Gemeinsame Schreibstelle (Replace-Semantik) — auch vom JSON-Import genutzt.
+  const counts = await replaceMachineFacts(machineId, parsed);
   yield { type: "done", counts };
 }
