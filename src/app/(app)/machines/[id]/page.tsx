@@ -1,7 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Pencil, Plus, Trash2, Users } from "lucide-react";
+import { Boxes, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { FaultList } from "@/components/fault-list";
 import { MachineDataTables } from "@/components/machine-data-tables";
 import { MachineOverview, type MachineKpi } from "@/components/machine-overview";
@@ -457,6 +457,16 @@ export default async function MachineDetailPage({
       {active === "handbuch" ? (
         <section className="mx-[calc(50%-50vw)] px-4 sm:px-6">
           <div className="mx-auto max-w-[1440px] space-y-3">
+            {/* Instanz → Klasse: zum Gerätetyp mit allem geteilten Wissen. */}
+            {machine.modelId ? (
+              <Link
+                href={`/typen/${machine.modelId}`}
+                className="inline-flex items-center gap-1.5 text-sm text-[var(--color-primary)] hover:underline"
+              >
+                <Boxes size={15} /> Gerätetyp: geteiltes Wissen zu {machine.hersteller}{" "}
+                {machine.modell}
+              </Link>
+            ) : null}
             <MachineDataTables facts={machineFacts} />
 
             {/* Eigene Fakten teilen — nur wenn es welche gibt und ein Gerätetyp
