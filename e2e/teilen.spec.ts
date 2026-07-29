@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import {
-  addFacts,
+  addKnowledge,
   addRepair,
   createMachine,
   sql,
@@ -9,10 +9,11 @@ import {
 import { loginAs, USERS } from "./helpers/auth";
 
 /*
-  Geteiltes Wissen. Prüft die Reichweiten, die serverseitige Feldprojektion
-  und zwei Review-Funde:
+  Geteiltes Wissen. Prüft die Sichtbarkeit von Modell-Wissen (Handbuch-Fakten in
+  `knowledge`, Achse privat|club|oeffentlich, Autor immer sichtbar), die
+  serverseitige Feldprojektion der Reparaturen und zwei Review-Funde:
   - unshareRepair löschte fremde Freigaben (IDOR).
-  - Ein Wechsel des Gerätetyps ließ Freigaben am alten Typ hängen.
+  - Ein Wechsel des Gerätetyps ließ Reparatur-Freigaben am alten Typ hängen.
 */
 
 test.describe("Teilen", () => {
@@ -35,32 +36,36 @@ test.describe("Teilen", () => {
       opdbRef: "E2E9-MSHARE",
     }));
 
-    await addFacts(ownerMachine);
+    // Handbuch-Fakten als Modell-Wissen, zunächst privat (nur der Autor sieht sie).
+    const ownerId = await userIdByEmail(USERS.owner);
+    await addKnowledge({ modelId, createdBy: ownerId, visibility: "privat" });
     repairId = await addRepair(ownerMachine);
   });
 
   test.afterAll(async () => {
+    await sql`DELETE FROM knowledge WHERE model_id = ${modelId}`;
     await sql`DELETE FROM shares WHERE artefakt_id IN (${ownerMachine}, ${repairId})`;
     await sql`DELETE FROM machines WHERE id IN (${ownerMachine}, ${fremdMachine})`;
   });
 
-  test("ohne Freigabe sieht ein anderer Besitzer nichts", async ({ page }) => {
+  test("privates Modell-Wissen sieht ein anderer Besitzer nicht", async ({ page }) => {
     await loginAs(page, USERS.outsider);
-    // Geteilte Handbuch-Daten leben im Reiter „Handbuch".
+    // Modell-Wissen lebt im Reiter „Handbuch".
     await page.goto(`/machines/${fremdMachine}?bereich=handbuch`);
-    await expect(page.getByText("Geteilte Handbuch-Daten")).toHaveCount(0);
+    await expect(page.getByText("Geteilt von")).toHaveCount(0);
+    await expect(page.getByText("E2E Spule")).toHaveCount(0);
   });
 
-  test("platform-Freigabe wird für andere sichtbar", async ({ page }) => {
-    const ownerId = await userIdByEmail(USERS.owner);
+  test("öffentliches Modell-Wissen wird für andere sichtbar", async ({ page }) => {
     await sql`
-      INSERT INTO shares (artefakt_typ, artefakt_id, model_id, owner_id, scope, anonym)
-      VALUES ('machine_facts', ${ownerMachine}, ${modelId}, ${ownerId}, 'platform', true)`;
+      UPDATE knowledge SET visibility='oeffentlich'
+      WHERE typ='handbuch_fakten' AND model_id=${modelId}`;
 
     await loginAs(page, USERS.outsider);
     await page.goto(`/machines/${fremdMachine}?bereich=handbuch`);
-    await expect(page.getByText("Geteilte Handbuch-Daten")).toBeVisible();
-    await expect(page.getByText("anonym geteilt")).toBeVisible();
+    // Autor ist immer sichtbar (keine Anonymität) und die Fakten erscheinen.
+    await expect(page.getByText("Geteilt von")).toBeVisible();
+    await expect(page.getByText("E2E Spule")).toBeVisible();
   });
 
   test("Feldprojektion: Kosten und Name bleiben verborgen", async ({ page }) => {
@@ -93,28 +98,31 @@ test.describe("Teilen", () => {
     await expect(page.getByText("99.99")).toBeVisible();
   });
 
-  test("club-Freigabe bleibt für Nichtmitglieder unsichtbar", async ({ page }) => {
+  test("club-sichtbares Modell-Wissen bleibt für Nichtmitglieder unsichtbar", async ({ page }) => {
     const ownerId = await userIdByEmail(USERS.owner);
     const [club] = await sql`
       INSERT INTO clubs (name, created_by) VALUES ('E2E Geheimclub', ${ownerId}) RETURNING id`;
-    const [share] = await sql`
-      UPDATE shares SET scope='club'
-      WHERE artefakt_typ='machine_facts' AND artefakt_id=${ownerMachine} RETURNING id`;
-    await sql`INSERT INTO share_targets (share_id, club_id) VALUES (${share.id}, ${club.id})`;
+    await sql`
+      UPDATE knowledge SET visibility='club', club_id=${club.id}
+      WHERE typ='handbuch_fakten' AND model_id=${modelId}`;
 
     await loginAs(page, USERS.outsider);
     await page.goto(`/machines/${fremdMachine}?bereich=handbuch`);
-    await expect(page.getByText("Geteilte Handbuch-Daten")).toHaveCount(0);
+    await expect(page.getByText("Geteilt von")).toHaveCount(0);
+    await expect(page.getByText("E2E Spule")).toHaveCount(0);
 
-    await sql`DELETE FROM share_targets WHERE share_id=${share.id}`;
+    // Sichtbarkeit zurücksetzen und den Testclub entfernen.
+    await sql`
+      UPDATE knowledge SET visibility='oeffentlich', club_id=NULL
+      WHERE typ='handbuch_fakten' AND model_id=${modelId}`;
     await sql`DELETE FROM clubs WHERE id=${club.id}`;
   });
 
-  test("Wechsel des Gerätetyps widerruft die Freigaben", async ({ page }) => {
+  test("Wechsel des Gerätetyps widerruft die Reparatur-Freigaben", async ({ page }) => {
     const ownerId = await userIdByEmail(USERS.owner);
     await sql`
       INSERT INTO shares (artefakt_typ, artefakt_id, model_id, owner_id, scope, anonym)
-      VALUES ('machine_facts', ${ownerMachine}, ${modelId}, ${ownerId}, 'platform', true)
+      VALUES ('repair', ${repairId}, ${modelId}, ${ownerId}, 'platform', true)
       ON CONFLICT (artefakt_typ, artefakt_id) DO UPDATE SET scope='platform'`;
 
     await loginAs(page, USERS.owner);
@@ -124,7 +132,7 @@ test.describe("Teilen", () => {
     await page.waitForURL(`**/machines/${ownerMachine}`);
 
     const rest = await sql`
-      SELECT id FROM shares WHERE artefakt_typ='machine_facts' AND artefakt_id=${ownerMachine}`;
+      SELECT id FROM shares WHERE artefakt_typ='repair' AND artefakt_id=${repairId}`;
     expect(rest.length, "Freigabe muss widerrufen sein").toBe(0);
   });
 });

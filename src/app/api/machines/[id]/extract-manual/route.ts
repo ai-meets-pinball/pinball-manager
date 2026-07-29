@@ -1,4 +1,4 @@
-import { requireMachineWrite } from "@/lib/session";
+import { requireMachineAccess } from "@/lib/session";
 import { resolveProvider } from "@/lib/ai/provider";
 import {
   extractManualFactsStream,
@@ -26,11 +26,14 @@ export async function POST(
   const { id: machineId } = await params;
 
   // Autorisierung: Eigentümer, echtes Club-Mitglied oder Super-Admin (kein RLS).
-  try {
-    await requireMachineWrite(machineId);
-  } catch {
+  const zugriff = await requireMachineAccess(machineId).catch(() => null);
+  if (!zugriff) {
+    return Response.json({ error: "Maschine nicht gefunden." }, { status: 404 });
+  }
+  if (!zugriff.darf.bearbeiten) {
     return Response.json({ error: "Kein Schreibzugriff auf diese Maschine." }, { status: 403 });
   }
+  const { user, machine } = zugriff;
 
   const formData = await request.formData();
   const file = formData.get("manual");
@@ -38,6 +41,9 @@ export async function POST(
   const provider = resolveProvider(formData);
   const apiKey = String(formData.get("apiKey") ?? "").trim() || undefined;
   const highDetail = formData.get("highDetail") === "on";
+  const rohSicht = String(formData.get("visibility") ?? "");
+  const visibility: "privat" | "club" | "oeffentlich" =
+    rohSicht === "club" || rohSicht === "oeffentlich" ? rohSicht : "privat";
 
   const encoder = new TextEncoder();
   const stream = new ReadableStream({
@@ -46,7 +52,14 @@ export async function POST(
         controller.enqueue(encoder.encode(JSON.stringify(ev) + "\n"));
       try {
         for await (const ev of extractManualFactsStream({
-          machineId,
+          userId: user.id,
+          machine: {
+            id: machine.id,
+            modelId: machine.modelId,
+            hersteller: machine.hersteller,
+            modell: machine.modell,
+          },
+          visibility,
           file: file as File,
           attest,
           provider,

@@ -1,7 +1,7 @@
 import { and, count, desc, eq, gte, isNotNull, isNull, sql } from "drizzle-orm";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { FlaskConical, Trash2 } from "lucide-react";
+import { Boxes, FlaskConical, Trash2 } from "lucide-react";
 import { EmailTemplateForm } from "@/components/email-template-form";
 import { InviteUserForm } from "@/components/invite-user-form";
 import { RoleInfo } from "@/components/role-info";
@@ -106,7 +106,15 @@ export default async function AdminPage() {
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-bold">Administration</h1>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold">Administration</h1>
+        <Link
+          href="/admin/modelle"
+          className="inline-flex items-center gap-1.5 rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 text-sm hover:bg-[var(--color-border)]/40"
+        >
+          <Boxes size={16} /> Flippermasterliste
+        </Link>
+      </div>
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Nutzer einladen</h2>

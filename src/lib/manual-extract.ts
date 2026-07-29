@@ -1,6 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { extractSchema, FACT_TYPES } from "@/lib/validators";
-import { replaceMachineFacts } from "@/lib/facts-store";
+import { upsertModelKnowledge } from "@/lib/facts-store";
 import {
   anthropicModelFor,
   claudePdfMaxPages,
@@ -330,7 +330,14 @@ async function* extractImagePagesWithClaude(
   Route (requireMachineWrite).
 */
 export async function* extractManualFactsStream(opts: {
-  machineId: string;
+  userId: string;
+  machine: {
+    id: string;
+    modelId: string | null;
+    hersteller: string;
+    modell: string;
+  };
+  visibility: "privat" | "club" | "oeffentlich";
   file: File;
   attest: boolean;
   provider: AiProvider;
@@ -338,7 +345,8 @@ export async function* extractManualFactsStream(opts: {
   /** Hohe Detailstufe: Seiten hochauflösend als Bilder an Sonnet (nur Claude-Pfad). */
   highDetail?: boolean;
 }): AsyncGenerator<ExtractProgress> {
-  const { machineId, file, attest, provider, apiKey, highDetail } = opts;
+  const { userId, machine, visibility, file, attest, provider, apiKey, highDetail } =
+    opts;
 
   if (!attest) {
     yield {
@@ -526,7 +534,9 @@ export async function* extractManualFactsStream(opts: {
   }
 
   yield { type: "info", message: "Fakten werden gespeichert …" };
-  // Gemeinsame Schreibstelle (Replace-Semantik) — auch vom JSON-Import genutzt.
-  const counts = await replaceMachineFacts(machineId, parsed);
+  // Datenmodell-Redesign: Fakten als MODELL-Wissen schreiben (nicht mehr machine_data).
+  await upsertModelKnowledge({ userId, machine, result: parsed, visibility });
+  const counts: Record<string, number> = {};
+  for (const t of present) counts[t] = parsed[t].rows.length;
   yield { type: "done", counts };
 }

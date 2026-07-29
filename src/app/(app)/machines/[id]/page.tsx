@@ -3,15 +3,13 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { Boxes, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { FaultList } from "@/components/fault-list";
-import { MachineDataTables } from "@/components/machine-data-tables";
+import { KnowledgeFacts } from "@/components/knowledge-facts";
 import { MachineOverview, type MachineKpi } from "@/components/machine-overview";
 import { MachineTabs, type MachineTab } from "@/components/machine-tabs";
 import { MaintenancePlan } from "@/components/maintenance-plan";
 import { ManualJsonImport } from "@/components/manual-json-import";
 import { ManualUpload } from "@/components/manual-upload";
 import { RepairList } from "@/components/repair-list";
-import { ShareFactsForm } from "@/components/share-facts-form";
-import { SharedFacts } from "@/components/shared-facts";
 import { SharedRepairs } from "@/components/shared-repairs";
 import { TroubleshootingGenerate } from "@/components/troubleshooting-generate";
 import { TroubleshootingGuideView } from "@/components/troubleshooting-guide";
@@ -19,17 +17,16 @@ import { Card } from "@/components/ui/card";
 import { deleteMachine } from "@/db/actions/machines";
 import { db } from "@/db";
 import {
-  getFactsShare,
+  getMachineKnowledge,
   getMaintenanceTasks,
+  getModelKnowledge,
   getRepairShares,
   getShareDefaults,
-  getSharedFactsForModel,
   getSharedRepairsForModel,
   getUserClubs,
 } from "@/db/queries";
 import {
   faults as faultsTable,
-  machineData as machineDataTable,
   repairs as repairsTable,
   troubleshootingGuides as troubleshootingGuidesTable,
 } from "@/db/schema";
@@ -123,10 +120,11 @@ export default async function MachineDetailPage({
     orderBy: [desc(repairsTable.datum)],
   });
 
-  // Phase-2-Fakten aus dem Handbuch (nur Fakten, kein PDF-Text gespeichert).
-  const machineFacts = await db.query.machineData.findMany({
-    where: eq(machineDataTable.machineId, id),
-  });
+  // Datenmodell-Redesign (Phase 1): Handbuch-Fakten sind MODELL-Wissen (knowledge)
+  // — eigene + sichtbare fremde. Ohne Gerätetyp: Maschinen-Ebene.
+  const knowledgeFacts = machine.modelId
+    ? await getModelKnowledge(currentUser, machine.modelId)
+    : await getMachineKnowledge(currentUser, id);
 
   // Phase-3-Troubleshooting-Guide (genau einer je Maschine, falls erzeugt).
   const troubleshootingGuide = await db.query.troubleshootingGuides.findFirst({
@@ -148,12 +146,7 @@ export default async function MachineDetailPage({
   const kiCentralKey = Boolean(process.env.ANTHROPIC_API_KEY);
   const ollamaVerfuegbar = kiProviders.includes("ollama");
 
-  // Geteiltes Wissen zum selben Gerätetyp: eigene Freigabe + fremde Fakten,
-  // die dieser Nutzer sehen darf. Ohne OPDB-Bezug gibt es keinen Typ.
-  const eigeneFreigabe = machine.modelId ? await getFactsShare(id) : null;
-  const geteilteFakten = machine.modelId
-    ? await getSharedFactsForModel(currentUser, machine.modelId, id)
-    : [];
+  // Geteilte Reparaturen zum selben Gerätetyp (Fakten sind jetzt knowledge, oben geladen).
   const geteilteReparaturen = machine.modelId
     ? await getSharedRepairsForModel(currentUser, machine.modelId, id)
     : [];
@@ -162,7 +155,7 @@ export default async function MachineDetailPage({
   const repairShares = await getRepairShares(id);
 
   // Der Guide erscheint erst, wenn es Handbuch-Fakten oder einen Guide gibt.
-  const guideSichtbar = machineFacts.length > 0 || Boolean(troubleshootingGuide);
+  const guideSichtbar = knowledgeFacts.length > 0 || Boolean(troubleshootingGuide);
 
   // Zwei-Ebenen-Navigation: „Betrieb" = aktueller Zustand (Fehler, Wartung),
   // „Wissensbasis" = angesammeltes Wissen (Reparatur-Historie/DB, Handbuch-Fakten,
@@ -209,8 +202,8 @@ export default async function MachineDetailPage({
         <CountPill n={machineRepairs.length} />
       ) : undefined,
     handbuch:
-      machineFacts.length > 0 ? (
-        <CountPill n={machineFacts.length} />
+      knowledgeFacts.length > 0 ? (
+        <CountPill n={knowledgeFacts.length} />
       ) : undefined,
     guide: undefined,
   };
@@ -280,8 +273,8 @@ export default async function MachineDetailPage({
     },
     {
       key: "handbuch",
-      zahl: machineFacts.length,
-      label: machineFacts.length > 0 ? "Technische Daten" : "Handbuch",
+      zahl: knowledgeFacts.length,
+      label: knowledgeFacts.length > 0 ? "Technische Daten" : "Handbuch",
       tone: "neutral",
     },
     ...(guideSichtbar
@@ -467,32 +460,12 @@ export default async function MachineDetailPage({
                 {machine.modell}
               </Link>
             ) : null}
-            <MachineDataTables facts={machineFacts} />
-
-            {/* Eigene Fakten teilen — nur wenn es welche gibt und ein Gerätetyp
-                bekannt ist (ohne OPDB-Bezug fehlt der Anker zum Wiederfinden). */}
-            {machineFacts.length > 0 && darf.teilen ? (
-              <Card>
-                <ShareFactsForm
-                  machineId={machine.id}
-                  hatModell={machine.modelId !== null}
-                  aktuell={
-                    eigeneFreigabe
-                      ? {
-                          scope: eigeneFreigabe.scope,
-                          anonym: eigeneFreigabe.anonym,
-                        }
-                      : null
-                  }
-                  clubs={meineClubs.map((c) => ({ id: c.id, name: c.name }))}
-                />
-              </Card>
-            ) : null}
-
-            {/* Von anderen Besitzern desselben Gerätetyps geteilte Fakten. */}
-            <SharedFacts
-              eintraege={geteilteFakten}
-              eigeneVorhanden={machineFacts.length > 0}
+            {/* Handbuch-Fakten als Modell-Wissen (eigene + sichtbare fremde),
+                je Eintrag mit Autor + Sichtbarkeit. */}
+            <KnowledgeFacts
+              eintraege={knowledgeFacts}
+              currentUserId={currentUser.id}
+              machineId={machine.id}
             />
 
             {darf.bearbeiten ? (

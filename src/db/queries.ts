@@ -17,7 +17,7 @@ import {
   clubSettings,
   emailTemplates,
   faults,
-  machineData,
+  knowledge,
   machineModels,
   machines,
   maintenanceLog,
@@ -151,55 +151,6 @@ export async function canSeeShare(
 }
 
 /**
- * Geteilte Handbuch-Fakten zu einem Gerätetyp, die dieser Nutzer sehen darf —
- * ohne die eigene Maschine (deren Fakten stehen ohnehin schon auf der Seite).
- *
- * Die Sichtbarkeit kommt aus `shareVisibilityFilter` (lib/sharing.ts), damit es
- * nur EINEN Ort für die Regel gibt.
- */
-export async function getSharedFactsForModel(
-  currentUser: SessionUser,
-  modelId: string,
-  exkludiereMachineId?: string,
-) {
-  const sichtbar = await shareVisibilityFilter(currentUser);
-
-  const zeilen = await db
-    .select({
-      shareId: shares.id,
-      machineId: shares.artefaktId,
-      anonym: shares.anonym,
-      ownerName: user.name,
-      hersteller: machines.hersteller,
-      modell: machines.modell,
-    })
-    .from(shares)
-    .innerJoin(machines, eq(machines.id, shares.artefaktId))
-    .innerJoin(user, eq(user.id, shares.ownerId))
-    .where(
-      and(
-        eq(shares.artefaktTyp, "machine_facts"),
-        eq(shares.modelId, modelId),
-        exkludiereMachineId
-          ? ne(shares.artefaktId, exkludiereMachineId)
-          : undefined,
-        sichtbar,
-      ),
-    );
-
-  // Zu jeder Freigabe die aktuellen Faktentabellen laden (Freigabe zeigt auf die
-  // MASCHINE, nicht auf Faktenzeilen — sie folgt damit automatisch dem Stand).
-  return Promise.all(
-    zeilen.map(async (z) => ({
-      ...z,
-      fakten: await db.query.machineData.findMany({
-        where: eq(machineData.machineId, z.machineId),
-      }),
-    })),
-  );
-}
-
-/**
  * Geteilte Reparaturen zu einem Gerätetyp — die wachsende Reparaturdatenbank.
  *
  * Die Feldprojektion passiert HIER, serverseitig: Kosten/Aufwand und der Name
@@ -272,16 +223,83 @@ export async function getMachineModel(modelId: string) {
   });
 }
 
-/**
- * Gerätetyp-Katalog: alle Typen, für die dieser Nutzer MINDESTENS EINE Freigabe
- * sehen darf (Handbuch-Fakten oder Reparaturen). Dieselbe Berechtigung wie
- * überall (`shareVisibilityFilter`) — die Ansicht macht nur erreichbar, was
- * ohnehin autorisiert ist. Ein Typ erscheint hier auch, wenn nur der Nutzer
- * selbst geteilt hat (kanonische Typ-Ansicht).
- */
-export async function getSharedModels(currentUser: SessionUser) {
-  const sichtbar = await shareVisibilityFilter(currentUser);
+/* ── Wissensbasis (Datenmodell-Redesign, Phase 1) ─────────────────────────── */
 
+/** Die EINE Sichtbarkeitsregel für `knowledge` (analog shareVisibilityFilter).
+    Autor sieht immer eigenes; öffentlich sieht jeder; club nur Clubmitglieder;
+    Super-Admin sieht alles (undefined = keine Einschränkung). */
+async function knowledgeVisibilityFilter(
+  currentUser: SessionUser,
+): Promise<SQL | undefined> {
+  if (isSuperAdmin(currentUser)) return undefined;
+  const clubIds = await getUserClubIds(currentUser.id);
+  const parts: (SQL | undefined)[] = [
+    eq(knowledge.createdBy, currentUser.id),
+    eq(knowledge.visibility, "oeffentlich"),
+  ];
+  if (clubIds.length > 0) {
+    parts.push(
+      and(eq(knowledge.visibility, "club"), inArray(knowledge.clubId, clubIds)),
+    );
+  }
+  return or(...parts);
+}
+
+/** Autor-/Sichtbarkeits-behaftete Auswahl der Fakten-Wissenseinträge. */
+const knowledgeAuswahl = {
+  id: knowledge.id,
+  titel: knowledge.titel,
+  inhalt: knowledge.inhalt,
+  visibility: knowledge.visibility,
+  sourceType: knowledge.sourceType,
+  createdAt: knowledge.createdAt,
+  autorId: knowledge.createdBy,
+  autorName: user.name,
+} as const;
+
+/** Sichtbare Handbuch-Fakten (typ='handbuch_fakten') eines Gerätetyps (Modell). */
+export async function getModelKnowledge(
+  currentUser: SessionUser,
+  modelId: string,
+) {
+  const sichtbar = await knowledgeVisibilityFilter(currentUser);
+  return db
+    .select(knowledgeAuswahl)
+    .from(knowledge)
+    .innerJoin(user, eq(user.id, knowledge.createdBy))
+    .where(
+      and(
+        eq(knowledge.typ, "handbuch_fakten"),
+        eq(knowledge.modelId, modelId),
+        sichtbar,
+      ),
+    )
+    .orderBy(desc(knowledge.updatedAt));
+}
+
+/** Sichtbare Handbuch-Fakten einer Maschine ohne Gerätetyp (Maschinen-Ebene). */
+export async function getMachineKnowledge(
+  currentUser: SessionUser,
+  machineId: string,
+) {
+  const sichtbar = await knowledgeVisibilityFilter(currentUser);
+  return db
+    .select(knowledgeAuswahl)
+    .from(knowledge)
+    .innerJoin(user, eq(user.id, knowledge.createdBy))
+    .where(
+      and(
+        eq(knowledge.typ, "handbuch_fakten"),
+        eq(knowledge.machineId, machineId),
+        sichtbar,
+      ),
+    )
+    .orderBy(desc(knowledge.updatedAt));
+}
+
+/** Gerätetyp-Katalog: Modelle mit für den Nutzer sichtbarem Handbuch-Wissen. */
+export async function getKnowledgeModels(currentUser: SessionUser) {
+  const sichtbar = await knowledgeVisibilityFilter(currentUser);
   return db
     .select({
       modelId: machineModels.id,
@@ -289,12 +307,11 @@ export async function getSharedModels(currentUser: SessionUser) {
       modell: machineModels.modell,
       baujahr: machineModels.baujahr,
       imageUrl: machineModels.imageUrl,
-      faktenAnzahl: sql<number>`count(distinct case when ${shares.artefaktTyp} = 'machine_facts' then ${shares.artefaktId} end)::int`,
-      reparaturAnzahl: sql<number>`count(distinct case when ${shares.artefaktTyp} = 'repair' then ${shares.artefaktId} end)::int`,
+      eintraege: sql<number>`count(*)::int`,
     })
-    .from(shares)
-    .innerJoin(machineModels, eq(machineModels.id, shares.modelId))
-    .where(sichtbar)
+    .from(knowledge)
+    .innerJoin(machineModels, eq(machineModels.id, knowledge.modelId))
+    .where(and(eq(knowledge.typ, "handbuch_fakten"), sichtbar))
     .groupBy(machineModels.id)
     .orderBy(machineModels.hersteller, machineModels.modell);
 }
@@ -367,21 +384,6 @@ export async function getSettingsFor(
     },
     angepasst: true,
   };
-}
-
-/** Die eigene Freigabe einer Maschine (oder null). */
-export async function getFactsShare(machineId: string) {
-  const share = await db.query.shares.findFirst({
-    where: and(
-      eq(shares.artefaktTyp, "machine_facts"),
-      eq(shares.artefaktId, machineId),
-    ),
-  });
-  if (!share) return null;
-  const ziele = await db.query.shareTargets.findMany({
-    where: eq(shareTargets.shareId, share.id),
-  });
-  return { ...share, ziele };
 }
 
 /**

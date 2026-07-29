@@ -1,21 +1,21 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { SharedFacts } from "@/components/shared-facts";
+import { KnowledgeFacts } from "@/components/knowledge-facts";
 import { SharedRepairs } from "@/components/shared-repairs";
 import { Card } from "@/components/ui/card";
 import {
   getMachineModel,
-  getSharedFactsForModel,
+  getModelKnowledge,
   getSharedRepairsForModel,
 } from "@/db/queries";
 import { requireUser } from "@/lib/session";
 
 /*
   Typ-Seite (die Klasse, z. B. „Monster Bash"): zeigt das für diesen Nutzer
-  sichtbare geteilte Wissen dieses Gerätetyps — unabhängig davon, ob er selbst
-  eine Instanz besitzt. Nutzt dieselben Queries wie die Maschinen-Detailseite,
-  nur OHNE Instanz-Ausschluss, also inkl. Berechtigung + Feldprojektion.
+  sichtbare Handbuch-Wissen (knowledge, Modell-Ebene) + geteilte Reparaturen —
+  unabhängig davon, ob er selbst eine Instanz besitzt. Eigene Wissenseinträge
+  lassen sich hier in der Sichtbarkeit ändern.
 */
 export default async function GeraetetypPage({
   params,
@@ -29,13 +29,11 @@ export default async function GeraetetypPage({
   if (!model) notFound();
 
   const [fakten, reparaturen] = await Promise.all([
-    getSharedFactsForModel(currentUser, modelId),
+    getModelKnowledge(currentUser, modelId),
     getSharedRepairsForModel(currentUser, modelId),
   ]);
 
-  // SharedFacts rendert nur Einträge mit Faktenzeilen; leer, wenn keiner welche hat.
-  const hatFakten = fakten.some((e) => e.fakten.length > 0);
-  const hatReparaturen = reparaturen.length > 0;
+  const leer = fakten.length === 0 && reparaturen.length === 0;
 
   return (
     <div className="space-y-6">
@@ -65,17 +63,23 @@ export default async function GeraetetypPage({
         </div>
       </div>
 
-      {!hatFakten && !hatReparaturen ? (
+      {leer ? (
         <Card>
           <p className="text-sm text-[var(--color-muted)]">
-            Für diesen Gerätetyp wurde dir gegenüber noch nichts geteilt. Sobald
-            jemand Handbuch-Daten oder Reparaturen dieses Automaten freigibt,
-            erscheinen sie hier.
+            Für diesen Gerätetyp ist dir gegenüber noch kein Wissen sichtbar.
+            Sobald jemand Handbuch-Daten oder Reparaturen freigibt, erscheinen sie
+            hier.
           </p>
         </Card>
       ) : (
         <div className="space-y-6">
-          <SharedFacts eintraege={fakten} eigeneVorhanden={false} />
+          {fakten.length > 0 ? (
+            <KnowledgeFacts
+              eintraege={fakten}
+              currentUserId={currentUser.id}
+              machineId=""
+            />
+          ) : null}
           <SharedRepairs eintraege={reparaturen} />
         </div>
       )}

@@ -86,18 +86,11 @@ async function ensureMachineModel(
   return model?.id ?? null;
 }
 
-/** Alle Freigaben einer Maschine aufheben: die Fakten-Freigabe (artefaktId =
-    machineId) und die Freigaben ihrer Reparaturen. */
+/** Die Reparatur-Freigaben einer Maschine aufheben, wenn sich ihr Gerätetyp
+    ändert — sonst hingen die Freigaben am alten Typ. Handbuch-Fakten sind seit
+    dem Datenmodell-Redesign kein Share mehr (Modell-Wissen in `knowledge`) und
+    bleiben bewusst am ursprünglichen Modell. */
 async function widerrufeFreigaben(machineId: string) {
-  await db
-    .delete(shares)
-    .where(
-      and(
-        eq(shares.artefaktTyp, "machine_facts"),
-        eq(shares.artefaktId, machineId),
-      ),
-    );
-
   const eigeneReparaturen = db
     .select({ id: repairs.id })
     .from(repairs)
