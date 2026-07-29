@@ -193,6 +193,15 @@ export const machineModels = pgTable("machine_models", {
   baujahr: integer("baujahr"),
   ipdbRef: text("ipdb_ref"),
   imageUrl: text("image_url"),
+  // Generation (Board-/Hardware-System). Befüllt aus dem Katalog-Import
+  // (opdb-Match) oder per Hand im Admin. onDelete: set null — eine gelöschte
+  // Generation lässt die Modelle bestehen, nur die Zuordnung entfällt.
+  generationId: uuid("generation_id").references(() => generations.id, {
+    onDelete: "set null",
+  }),
+  // true = im Admin von Hand zugeordnet → ein erneuter Katalog-Import überschreibt
+  // das NICHT (schützt Overrides). false = aus dem Import (darf überschrieben werden).
+  generationManuell: boolean("generation_manuell").notNull().default(false),
   fetchedAt: timestamp("fetched_at").notNull().defaultNow(),
 });
 
@@ -342,7 +351,9 @@ export const clubSettings = pgTable("club_settings", {
 */
 export const generations = pgTable("generations", {
   id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(), // z. B. "WPC-95"
+  // Board-/Hardware-System, z. B. "WPC-95", "Stern SPIKE2™ System". Eindeutig,
+  // damit der Katalog-Import idempotent per Name upserten kann.
+  name: text("name").notNull().unique(),
   hersteller: text("hersteller"),
   jahrVon: integer("jahr_von"),
   jahrBis: integer("jahr_bis"),
