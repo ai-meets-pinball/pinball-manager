@@ -1,4 +1,4 @@
-import { Globe, Lock, Users } from "lucide-react";
+import { Globe, Layers, Lock, Users } from "lucide-react";
 import { SetVisibility } from "@/components/set-visibility";
 import { TroubleshootingGuideView } from "@/components/troubleshooting-guide";
 
@@ -20,6 +20,9 @@ type Eintrag = {
   createdAt: Date;
   autorId: string;
   autorName: string | null;
+  // Gesetzt, wenn der Guide auf Generation-Ebene liegt (gilt für alle Modelle
+  // dieser Board-/Hardware-Generation).
+  generationName?: string | null;
 };
 
 const SICHT: Record<Sicht, { label: string; Icon: typeof Globe }> = {
@@ -70,6 +73,14 @@ export function KnowledgeGuides({
                 <span className="inline-flex items-center gap-1">
                   <S.Icon size={13} /> {S.label}
                 </span>
+                {e.generationName ? (
+                  <>
+                    {" · "}
+                    <span className="inline-flex items-center gap-1">
+                      <Layers size={13} /> Generation „{e.generationName}“
+                    </span>
+                  </>
+                ) : null}
               </p>
               {eigen ? (
                 <SetVisibility

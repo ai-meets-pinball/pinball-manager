@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { machines } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
+import { getModelGeneration } from "@/db/queries";
 import { upsertTroubleshootingKnowledge } from "@/lib/facts-store";
 import { anthropicModelFor, resolveProvider } from "@/lib/ai/provider";
 import {
@@ -317,6 +318,15 @@ export async function generateTroubleshootingGuide(
   const visibility: "privat" | "club" | "oeffentlich" =
     rohSicht === "club" || rohSicht === "oeffentlich" ? rohSicht : "privat";
 
+  // Ebene: standardmäßig das Modell. „generation" nur, wenn die Maschine einen
+  // Gerätetyp mit bekannter Generation hat — dann gilt der Guide für ALLE
+  // Modelle dieser Board-/Hardware-Generation (Generation-Resolver).
+  const aufGeneration = String(formData.get("ebene") ?? "") === "generation";
+  const generation =
+    aufGeneration && machine.modelId
+      ? await getModelGeneration(machine.modelId)
+      : null;
+
   await upsertTroubleshootingKnowledge({
     userId: user.id,
     machine: {
@@ -329,6 +339,9 @@ export async function generateTroubleshootingGuide(
     websuche,
     model: usedModel,
     visibility,
+    aufGeneration: generation != null,
+    generationId: generation?.id ?? null,
+    generationName: generation?.name ?? null,
   });
 
   revalidatePath(`/machines/${machineId}`);

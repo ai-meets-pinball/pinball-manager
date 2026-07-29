@@ -17,6 +17,7 @@ import {
   clubSettings,
   emailTemplates,
   faults,
+  generations,
   knowledge,
   machineModels,
   machines,
@@ -297,33 +298,65 @@ export async function getMachineKnowledge(
     .orderBy(desc(knowledge.updatedAt));
 }
 
-/** Sichtbare Troubleshooting-Guides (typ='troubleshooting') eines Gerätetyps. */
+/* Wie knowledgeAuswahl, zusätzlich die Generation-Zuordnung eines Eintrags —
+   damit ein auf Generation-Ebene angelegter Guide („gilt für WPC-95") kenntlich
+   gemacht werden kann. generationName ist null für Modell-/Maschinen-Einträge. */
+const guideAuswahl = {
+  ...knowledgeAuswahl,
+  generationId: knowledge.generationId,
+  generationName: generations.name,
+} as const;
+
+/** Die Generation eines Gerätetyps (oder null) — für die Ebene-Wahl beim Guide. */
+export async function getModelGeneration(modelId: string) {
+  const [row] = await db
+    .select({ id: generations.id, name: generations.name })
+    .from(machineModels)
+    .innerJoin(generations, eq(generations.id, machineModels.generationId))
+    .where(eq(machineModels.id, modelId));
+  return row ?? null;
+}
+
+/**
+ * Sichtbare Troubleshooting-Guides eines Gerätetyps — inklusive der Guides, die
+ * auf der GENERATION dieses Modells liegen (Generation-Resolver): Wissen einer
+ * Board-/Hardware-Generation gilt für alle ihre Modelle. Fakten bleiben bewusst
+ * modell-exakt (Editionsunterschiede) und werden hier NICHT aufgelöst.
+ */
 export async function getModelGuides(currentUser: SessionUser, modelId: string) {
   const sichtbar = await knowledgeVisibilityFilter(currentUser);
+  const [model] = await db
+    .select({ generationId: machineModels.generationId })
+    .from(machineModels)
+    .where(eq(machineModels.id, modelId));
+  const ebene = model?.generationId
+    ? or(
+        eq(knowledge.modelId, modelId),
+        eq(knowledge.generationId, model.generationId),
+      )
+    : eq(knowledge.modelId, modelId);
+
   return db
-    .select(knowledgeAuswahl)
+    .select(guideAuswahl)
     .from(knowledge)
     .innerJoin(user, eq(user.id, knowledge.createdBy))
-    .where(
-      and(
-        eq(knowledge.typ, "troubleshooting"),
-        eq(knowledge.modelId, modelId),
-        sichtbar,
-      ),
-    )
+    .leftJoin(generations, eq(generations.id, knowledge.generationId))
+    .where(and(eq(knowledge.typ, "troubleshooting"), ebene, sichtbar))
     .orderBy(desc(knowledge.updatedAt));
 }
 
-/** Sichtbare Troubleshooting-Guides einer Maschine ohne Gerätetyp. */
+/** Sichtbare Troubleshooting-Guides einer Maschine ohne Gerätetyp (kein
+    Generation-Bezug möglich). */
 export async function getMachineGuides(
   currentUser: SessionUser,
   machineId: string,
 ) {
   const sichtbar = await knowledgeVisibilityFilter(currentUser);
   return db
-    .select(knowledgeAuswahl)
+    .select(guideAuswahl)
     .from(knowledge)
     .innerJoin(user, eq(user.id, knowledge.createdBy))
+    .leftJoin(generations, eq(generations.id, knowledge.generationId))
     .where(
       and(
         eq(knowledge.typ, "troubleshooting"),

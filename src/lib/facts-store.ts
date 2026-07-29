@@ -86,28 +86,55 @@ export async function upsertTroubleshootingKnowledge(opts: {
   model: string;
   visibility: "privat" | "club" | "oeffentlich";
   clubId?: string | null;
+  /** Auf Generation-Ebene ablegen (gilt für ALLE Modelle der Generation). Nur
+      wirksam mit generationId; sonst greift die Modell-/Maschinen-Ebene. */
+  aufGeneration?: boolean;
+  generationId?: string | null;
+  generationName?: string | null;
 }): Promise<void> {
-  const { userId, machine, guide, websuche, model, visibility, clubId } = opts;
-  const amModell = machine.modelId != null;
+  const {
+    userId,
+    machine,
+    guide,
+    websuche,
+    model,
+    visibility,
+    clubId,
+    aufGeneration,
+    generationId,
+    generationName,
+  } = opts;
+
+  // Zielebene bestimmen: Generation (bewusst gewählt) > Modell > Maschine.
+  const aufGen = aufGeneration === true && generationId != null;
+  const ziel = aufGen
+    ? { where: eq(knowledge.generationId, generationId!), generationId, modelId: null, machineId: null }
+    : machine.modelId != null
+      ? { where: eq(knowledge.modelId, machine.modelId), generationId: null, modelId: machine.modelId, machineId: null }
+      : { where: eq(knowledge.machineId, machine.id), generationId: null, modelId: null, machineId: machine.id };
+
+  const titel = aufGen
+    ? `Generation ${generationName ?? ""} — Troubleshooting-Guide`.trim()
+    : `${machine.hersteller} ${machine.modell} — Troubleshooting-Guide`;
 
   await db.transaction(async (tx) => {
+    // Replace-Semantik: den EINEN Guide dieses Autors für diese Ebene ersetzen.
     await tx.delete(knowledge).where(
       and(
         eq(knowledge.createdBy, userId),
         eq(knowledge.typ, "troubleshooting"),
-        amModell
-          ? eq(knowledge.modelId, machine.modelId!)
-          : eq(knowledge.machineId, machine.id),
+        ziel.where,
       ),
     );
     await tx.insert(knowledge).values({
       typ: "troubleshooting",
-      titel: `${machine.hersteller} ${machine.modell} — Troubleshooting-Guide`,
+      titel,
       inhalt: { guide, websuche, model },
       sourceType: "eigen",
       visibility,
-      modelId: amModell ? machine.modelId : null,
-      machineId: amModell ? null : machine.id,
+      generationId: ziel.generationId,
+      modelId: ziel.modelId,
+      machineId: ziel.machineId,
       clubId: visibility === "club" ? (clubId ?? null) : null,
       createdBy: userId,
     });

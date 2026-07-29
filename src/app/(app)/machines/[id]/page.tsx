@@ -20,6 +20,7 @@ import {
   getMachineGuides,
   getMachineKnowledge,
   getMaintenanceTasks,
+  getModelGeneration,
   getModelGuides,
   getModelKnowledge,
   getRepairShares,
@@ -134,6 +135,11 @@ export default async function MachineDetailPage({
     ? await getModelGuides(currentUser, machine.modelId)
     : await getMachineGuides(currentUser, id);
   const eigenerGuide = guides.some((g) => g.autorId === currentUser.id);
+  // Generation des Gerätetyps (falls bekannt) — erlaubt einen Guide für die
+  // ganze Board-/Hardware-Generation statt nur für dieses Modell.
+  const guideGeneration = machine.modelId
+    ? await getModelGeneration(machine.modelId)
+    : null;
 
   // Wartungsplan: Wartungspunkte samt Historie und berechneter Fälligkeit.
   const wartungsTasks = await getMaintenanceTasks(id);
@@ -526,6 +532,7 @@ export default async function MachineDetailPage({
               vorhanden={eigenerGuide}
               providers={kiProviders}
               centralKey={kiCentralKey}
+              generation={guideGeneration}
             />
           ) : null}
         </div>
