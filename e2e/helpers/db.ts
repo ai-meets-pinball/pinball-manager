@@ -91,12 +91,21 @@ export async function createMachine(opts: {
   return { machineId: machine.id as string, modelId: model.id as string };
 }
 
-export async function addFacts(machineId: string, typ = "coils") {
+/** Handbuch-Fakten als MODELL-Wissen (`knowledge`) anlegen — Datenmodell-Redesign
+    Phase 1. Sichtbarkeit steuert, wer den Eintrag außer dem Autor sehen darf. */
+export async function addKnowledge(opts: {
+  modelId: string;
+  createdBy: string;
+  visibility?: "privat" | "club" | "oeffentlich";
+  clubId?: string | null;
+}) {
   await sql`
-    INSERT INTO machine_data (machine_id, typ, daten)
-    VALUES (${machineId}, ${typ},
-            ${sql.json({ columns: ["Sol/No", "Funktion"], rows: [["1", "E2E Spule"]] })})
-    ON CONFLICT (machine_id, typ) DO NOTHING`;
+    INSERT INTO knowledge
+      (typ, titel, inhalt, source_type, visibility, model_id, club_id, created_by)
+    VALUES ('handbuch_fakten', 'E2E Handbuch-Daten',
+            ${sql.json({ coils: { columns: ["Sol/No", "Funktion"], rows: [["1", "E2E Spule"]] } })},
+            'extrahiert', ${opts.visibility ?? "privat"}, ${opts.modelId},
+            ${opts.clubId ?? null}, ${opts.createdBy})`;
 }
 
 export async function addRepair(machineId: string) {

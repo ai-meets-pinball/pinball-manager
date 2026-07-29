@@ -1,6 +1,7 @@
 import { relations, sql } from "drizzle-orm";
 import {
   boolean,
+  check,
   integer,
   jsonb,
   numeric,
@@ -53,6 +54,22 @@ export const maintenanceIntervallTyp = pgEnum("maintenance_intervall_typ", [
   "zeit",
   "spiele",
   "bedarf",
+]);
+
+/* Wissensbasis (Datenmodell-Redesign): Sichtbarkeit ist eine eigene Achse,
+   getrennt vom Geltungsbereich (Generation/Modell/Flipper). Autor ist immer
+   sichtbar — daher keine Anonymität. `source_type` erlaubt es, extrahierte
+   Inhalte bei einer Copyright-Anfrage gezielt herauszufiltern. */
+export const knowledgeVisibility = pgEnum("knowledge_visibility", [
+  "privat",
+  "club",
+  "oeffentlich",
+]);
+
+export const knowledgeSource = pgEnum("knowledge_source", [
+  "extrahiert",
+  "eigen",
+  "community",
 ]);
 
 /* ── Clubs ────────────────────────────────────────────────────────────────── */
@@ -313,26 +330,61 @@ export const clubSettings = pgTable("club_settings", {
   ...shareDefaultSpalten,
 });
 
-/* ── Aus dem Handbuch extrahierte Faktentabellen ──────────────────────────── */
-/* Je Maschine und Faktentyp genau EINE Zeile. Befüllt von lib/manual-extract.ts
-   (Replace-Semantik: alle Zeilen der Maschine löschen, dann neu einfügen). */
+/* ── Wissensbasis (Datenmodell-Redesign, Phase 1) ─────────────────────────── */
+/*
+  `knowledge` vereinheitlicht Wissen über drei Ebenen: Generation → Modell →
+  Flipper — GENAU eine davon je Eintrag (Check-Constraint). Phase 1 nutzt nur
+  die Modell-/Maschinen-Ebene und typ='handbuch_fakten' und löst damit
+  `machine_data` ab: ein Handbuch wird einmal am MODELL gepflegt und erscheint
+  an allen Instanzen. Sichtbarkeit (privat|club|oeffentlich) ist eine eigene
+  Achse; der Autor (`created_by`) ist immer sichtbar. `generations` wird jetzt
+  LEER angelegt (Datenquelle offen, Phase 4), damit FK/Check von Anfang an stehen.
+*/
+export const generations = pgTable("generations", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  name: text("name").notNull(), // z. B. "WPC-95"
+  hersteller: text("hersteller"),
+  jahrVon: integer("jahr_von"),
+  jahrBis: integer("jahr_bis"),
+});
 
-export const machineData = pgTable(
-  "machine_data",
+export const knowledge = pgTable(
+  "knowledge",
   {
     id: uuid("id").primaryKey().defaultRandom(),
-    machineId: uuid("machine_id")
+    typ: text("typ").notNull(), // Phase 1: 'handbuch_fakten'
+    titel: text("titel").notNull(),
+    // Phase 1: das extractSchema-Objekt { coils, switches, … } — nur Fakten.
+    inhalt: jsonb("inhalt").notNull(),
+    quelle: text("quelle"),
+    sourceType: knowledgeSource("source_type").notNull(),
+    visibility: knowledgeVisibility("visibility").notNull().default("privat"),
+    // Geltungsbereich: GENAU eine der drei Ebenen (Check-Constraint unten).
+    generationId: uuid("generation_id").references(() => generations.id, {
+      onDelete: "cascade",
+    }),
+    modelId: uuid("model_id").references(() => machineModels.id, {
+      onDelete: "cascade",
+    }),
+    machineId: uuid("machine_id").references(() => machines.id, {
+      onDelete: "cascade",
+    }),
+    // Anker für visibility='club' — welcher Club darf sehen.
+    clubId: uuid("club_id").references(() => clubs.id, { onDelete: "set null" }),
+    // Rückverweis für Forks (Phase 5); Phase 1 ungenutzt, daher (noch) ohne FK.
+    forkedFromId: uuid("forked_from_id"),
+    createdBy: text("created_by")
       .notNull()
-      .references(() => machines.id, { onDelete: "cascade" }),
-    // Werte: siehe FACT_TYPES in lib/validators.ts
-    // (coils | switches | lamps | fuses | parts | rules)
-    typ: text("typ").notNull(),
-    daten: jsonb("daten").notNull(),
+      .references(() => user.id),
     createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
-  // Die Ein-Zeile-je-Typ-Regel lebte bisher nur in der Transaktion in
-  // manual-extract.ts — hier wird sie auch von der DB durchgesetzt.
-  (t) => [unique("machine_data_machine_typ_unique").on(t.machineId, t.typ)],
+  (t) => [
+    check(
+      "knowledge_genau_eine_ebene",
+      sql`num_nonnulls(${t.generationId}, ${t.modelId}, ${t.machineId}) = 1`,
+    ),
+  ],
 );
 
 /* ── Troubleshooting-Guide (Phase 3) ──────────────────────────────────────── */

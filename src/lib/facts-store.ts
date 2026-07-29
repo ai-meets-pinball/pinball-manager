@@ -1,35 +1,65 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
-import { machineData } from "@/db/schema";
+import { knowledge } from "@/db/schema";
 import { extractSchema, FACT_TYPES } from "@/lib/validators";
 
 /*
-  Zentrale Schreibstelle für Handbuch-Fakten (machine_data). Bewusst ein eigenes,
-  reines Modul (kein "use server"), damit BEIDE Wege es teilen: die streamende
-  KI-Extraktion (lib/manual-extract.ts) und der JSON-Import
-  (db/actions/machine-data.ts).
-
-  Replace-Semantik: alle Zeilen der Maschine löschen, dann je vorhandenem Typ
-  (≥ 1 Zeile) neu einfügen — genau EINE Zeile je (machineId, typ), passend zum
-  Unique-Index. Skip-if-empty: ein leeres Ergebnis (kein Typ mit Zeilen) löscht
-  NICHTS (vorhandene Fakten bleiben erhalten).
+  Zentrale Schreibstelle für Handbuch-Fakten. Bewusst ein eigenes, reines Modul
+  (kein "use server"), damit BEIDE Wege es teilen: die streamende KI-Extraktion
+  (lib/manual-extract.ts) und der JSON-Import (db/actions/machine-data.ts).
 */
 export type ExtractResult = ReturnType<typeof extractSchema.parse>;
 
-export async function replaceMachineFacts(
-  machineId: string,
-  result: ExtractResult,
-): Promise<Record<string, number>> {
+/*
+  Datenmodell-Redesign (Phase 1): Handbuch-Fakten als MODELL-Wissen schreiben.
+  Ein `knowledge`-Eintrag (typ='handbuch_fakten') je Autor und Ebene (Modell,
+  wenn die Maschine einen Gerätetyp hat, sonst Maschine) — Replace-Semantik:
+  der eine Eintrag dieses Autors für diese Ebene wird ersetzt. `inhalt` ist das
+  extractSchema-Objekt, aber nur mit den vorhandenen (nicht-leeren) Typen.
+  Skip-if-empty: ein leeres Ergebnis schreibt nichts.
+*/
+export async function upsertModelKnowledge(opts: {
+  userId: string;
+  machine: {
+    id: string;
+    modelId: string | null;
+    hersteller: string;
+    modell: string;
+  };
+  result: ExtractResult;
+  visibility: "privat" | "club" | "oeffentlich";
+  clubId?: string | null;
+}): Promise<number> {
+  const { userId, machine, result, visibility, clubId } = opts;
   const present = FACT_TYPES.filter((t) => result[t].rows.length > 0);
-  const counts: Record<string, number> = {};
-  if (present.length === 0) return counts;
+  if (present.length === 0) return 0;
+
+  const inhalt = Object.fromEntries(present.map((t) => [t, result[t]]));
+  const amModell = machine.modelId != null;
 
   await db.transaction(async (tx) => {
-    await tx.delete(machineData).where(eq(machineData.machineId, machineId));
-    for (const typ of present) {
-      await tx.insert(machineData).values({ machineId, typ, daten: result[typ] });
-      counts[typ] = result[typ].rows.length;
-    }
+    // Replace-Semantik: den EINEN Eintrag dieses Autors für diese Ebene ersetzen.
+    await tx.delete(knowledge).where(
+      and(
+        eq(knowledge.createdBy, userId),
+        eq(knowledge.typ, "handbuch_fakten"),
+        amModell
+          ? eq(knowledge.modelId, machine.modelId!)
+          : eq(knowledge.machineId, machine.id),
+      ),
+    );
+    await tx.insert(knowledge).values({
+      typ: "handbuch_fakten",
+      titel: `${machine.hersteller} ${machine.modell} — Handbuch-Daten`,
+      inhalt,
+      sourceType: "extrahiert",
+      visibility,
+      modelId: amModell ? machine.modelId : null,
+      machineId: amModell ? null : machine.id,
+      clubId: visibility === "club" ? (clubId ?? null) : null,
+      createdBy: userId,
+    });
   });
-  return counts;
+
+  return present.length;
 }

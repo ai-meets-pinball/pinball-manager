@@ -72,68 +72,6 @@ async function zieleAufloesen(
   return { clubIds: [], userIds: [] }; // platform
 }
 
-/** Handbuch-Fakten einer Maschine teilen (oder Reichweite ändern). */
-export async function shareFacts(
-  _prev: FormState,
-  formData: FormData,
-): Promise<FormState> {
-  const parsed = schema.safeParse(Object.fromEntries(formData));
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
-  }
-  const { machineId, scope } = parsed.data;
-
-  // Autorisierung + Berechtigungsstufe aus der einen Regel.
-  const { user: currentUser, machine, darf } =
-    await requireMachineAccess(machineId);
-  if (!darf.teilen) {
-    return { error: "Nur Eigentümer oder Club-Manager dürfen teilen." };
-  }
-  if (!machine.modelId) {
-    return {
-      error:
-        "Diese Maschine hat keinen OPDB-Bezug — ohne Gerätetyp lässt sich nichts teilen.",
-    };
-  }
-
-  const ziele = await zieleAufloesen(currentUser.id, scope, parsed.data);
-  if ("error" in ziele) return ziele;
-
-  await db.transaction(async (tx) => {
-    const [share] = await tx
-      .insert(shares)
-      .values({
-        artefaktTyp: "machine_facts",
-        artefaktId: machineId,
-        modelId: machine.modelId!,
-        ownerId: currentUser.id,
-        scope,
-        anonym: parsed.data.anonym === "on",
-      })
-      .onConflictDoUpdate({
-        target: [shares.artefaktTyp, shares.artefaktId],
-        set: { scope, anonym: parsed.data.anonym === "on" },
-      })
-      .returning({ id: shares.id });
-
-    // Ziele immer neu setzen (Reichweite kann gewechselt haben).
-    await tx.delete(shareTargets).where(eq(shareTargets.shareId, share.id));
-    if (ziele.clubIds.length > 0) {
-      await tx
-        .insert(shareTargets)
-        .values(ziele.clubIds.map((clubId) => ({ shareId: share.id, clubId })));
-    }
-    if (ziele.userIds.length > 0) {
-      await tx
-        .insert(shareTargets)
-        .values(ziele.userIds.map((userId) => ({ shareId: share.id, userId })));
-    }
-  });
-
-  revalidatePath(`/machines/${machineId}`);
-  return { message: "Handbuch-Daten geteilt." };
-}
-
 /** Eine Reparatur teilen (oder Reichweite/Felder ändern). */
 export async function shareRepair(
   _prev: FormState,
@@ -229,24 +167,6 @@ export async function unshareRepair(formData: FormData): Promise<void> {
   await db
     .delete(shares)
     .where(and(eq(shares.artefaktTyp, "repair"), eq(shares.artefaktId, repairId)));
-
-  revalidatePath(`/machines/${machineId}`);
-}
-
-/** Freigabe wieder aufheben. */
-export async function unshareFacts(formData: FormData): Promise<void> {
-  const machineId = String(formData.get("machineId"));
-  const { darf } = await requireMachineAccess(machineId);
-  if (!darf.teilen) throw new Error("Nur Eigentümer oder Club-Manager dürfen das");
-
-  await db
-    .delete(shares)
-    .where(
-      and(
-        eq(shares.artefaktTyp, "machine_facts"),
-        eq(shares.artefaktId, machineId),
-      ),
-    );
 
   revalidatePath(`/machines/${machineId}`);
 }

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { FileText, Loader2 } from "lucide-react";
 import { AiProviderField } from "@/components/ui/ai-provider-field";
 import { Button } from "@/components/ui/button";
+import { VisibilityField } from "@/components/ui/visibility-field";
 import type { AiProvider } from "@/lib/ai/provider";
 
 /*
@@ -185,6 +186,8 @@ export function ManualUpload({
           leer bleibt. Langsamer und teurer.
         </span>
       </label>
+
+      <VisibilityField />
 
       {zuGross ? (
         <p className="text-sm text-[var(--color-danger)]">

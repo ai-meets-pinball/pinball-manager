@@ -4,6 +4,7 @@ import { useActionState, useState } from "react";
 import { Check, ClipboardCopy, FileJson, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Textarea } from "@/components/ui/input";
+import { VisibilityField } from "@/components/ui/visibility-field";
 import { importManualFacts } from "@/db/actions/machine-data";
 import {
   IMPORT_PROMPT,
@@ -115,6 +116,7 @@ export function ManualJsonImport({ machineId }: { machineId: string }) {
       <form action={formAction} className="space-y-2">
         <input type="hidden" name="machineId" value={machineId} />
         <input type="hidden" name="json" value={json} />
+        <VisibilityField />
         {state.error ? (
           <p className="text-sm text-[var(--color-danger)]">{state.error}</p>
         ) : null}
