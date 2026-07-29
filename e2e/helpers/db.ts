@@ -115,3 +115,48 @@ export async function addRepair(machineId: string) {
     RETURNING id`;
   return r.id as string;
 }
+
+/** Eine Generation anlegen (idempotent per Name) und einem Modell zuordnen —
+    damit lässt sich der Generation-Resolver testen. */
+export async function setModelGeneration(modelId: string, name: string) {
+  const [g] = await sql`
+    INSERT INTO generations (name) VALUES (${name})
+    ON CONFLICT (name) DO UPDATE SET name = EXCLUDED.name RETURNING id`;
+  await sql`
+    UPDATE machine_models SET generation_id = ${g.id}, generation_manuell = true
+    WHERE id = ${modelId}`;
+  return g.id as string;
+}
+
+/** Einen Troubleshooting-Guide als Wissenseintrag (`knowledge`,
+    typ='troubleshooting') anlegen. GENAU eine Ebene angeben (generation | model |
+    machine) — der Check-Constraint verlangt es. `inhalt` ist der Umschlag
+    { guide, websuche, model }, den KnowledgeGuides/TroubleshootingGuideView lesen. */
+export async function addGuide(opts: {
+  createdBy: string;
+  generationId?: string | null;
+  modelId?: string | null;
+  machineId?: string | null;
+  visibility?: "privat" | "club" | "oeffentlich";
+  clubId?: string | null;
+}) {
+  const inhalt = {
+    guide: {
+      plattform: "E2E-Plattform",
+      abschnitte: [
+        { titel: "E2E-Abschnitt", bloecke: [{ typ: "text", text: "E2E Hinweis" }] },
+      ],
+      quellen: [],
+    },
+    websuche: true,
+    model: "e2e",
+  };
+  await sql`
+    INSERT INTO knowledge
+      (typ, titel, inhalt, source_type, visibility,
+       generation_id, model_id, machine_id, club_id, created_by)
+    VALUES ('troubleshooting', 'E2E Guide', ${sql.json(inhalt)}, 'eigen',
+            ${opts.visibility ?? "privat"}, ${opts.generationId ?? null},
+            ${opts.modelId ?? null}, ${opts.machineId ?? null},
+            ${opts.clubId ?? null}, ${opts.createdBy})`;
+}
