@@ -18,6 +18,7 @@ import {
   emailTemplates,
   faults,
   machineData,
+  machineModels,
   machines,
   maintenanceLog,
   maintenanceTasks,
@@ -262,6 +263,40 @@ export async function getSharedRepairsForModel(
     zeit: z.zeigeKosten ? z.zeit : null,
     herkunft: z.anonym ? null : z.ownerName,
   }));
+}
+
+/** Ein Gerätetyp (machine_models) per id — für die Typ-Seite. */
+export async function getMachineModel(modelId: string) {
+  return db.query.machineModels.findFirst({
+    where: eq(machineModels.id, modelId),
+  });
+}
+
+/**
+ * Gerätetyp-Katalog: alle Typen, für die dieser Nutzer MINDESTENS EINE Freigabe
+ * sehen darf (Handbuch-Fakten oder Reparaturen). Dieselbe Berechtigung wie
+ * überall (`shareVisibilityFilter`) — die Ansicht macht nur erreichbar, was
+ * ohnehin autorisiert ist. Ein Typ erscheint hier auch, wenn nur der Nutzer
+ * selbst geteilt hat (kanonische Typ-Ansicht).
+ */
+export async function getSharedModels(currentUser: SessionUser) {
+  const sichtbar = await shareVisibilityFilter(currentUser);
+
+  return db
+    .select({
+      modelId: machineModels.id,
+      hersteller: machineModels.hersteller,
+      modell: machineModels.modell,
+      baujahr: machineModels.baujahr,
+      imageUrl: machineModels.imageUrl,
+      faktenAnzahl: sql<number>`count(distinct case when ${shares.artefaktTyp} = 'machine_facts' then ${shares.artefaktId} end)::int`,
+      reparaturAnzahl: sql<number>`count(distinct case when ${shares.artefaktTyp} = 'repair' then ${shares.artefaktId} end)::int`,
+    })
+    .from(shares)
+    .innerJoin(machineModels, eq(machineModels.id, shares.modelId))
+    .where(sichtbar)
+    .groupBy(machineModels.id)
+    .orderBy(machineModels.hersteller, machineModels.modell);
 }
 
 /** Freigaben der Reparaturen EINER Maschine (für die eigenen Teilen-Schalter). */

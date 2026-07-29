@@ -1,12 +1,13 @@
 import { desc, eq } from "drizzle-orm";
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Pencil, Plus, Trash2, Users } from "lucide-react";
+import { Boxes, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { FaultList } from "@/components/fault-list";
 import { MachineDataTables } from "@/components/machine-data-tables";
 import { MachineOverview, type MachineKpi } from "@/components/machine-overview";
 import { MachineTabs, type MachineTab } from "@/components/machine-tabs";
 import { MaintenancePlan } from "@/components/maintenance-plan";
+import { ManualJsonImport } from "@/components/manual-json-import";
 import { ManualUpload } from "@/components/manual-upload";
 import { RepairList } from "@/components/repair-list";
 import { ShareFactsForm } from "@/components/share-facts-form";
@@ -456,6 +457,16 @@ export default async function MachineDetailPage({
       {active === "handbuch" ? (
         <section className="mx-[calc(50%-50vw)] px-4 sm:px-6">
           <div className="mx-auto max-w-[1440px] space-y-3">
+            {/* Instanz → Klasse: zum Gerätetyp mit allem geteilten Wissen. */}
+            {machine.modelId ? (
+              <Link
+                href={`/typen/${machine.modelId}`}
+                className="inline-flex items-center gap-1.5 text-sm text-[var(--color-primary)] hover:underline"
+              >
+                <Boxes size={15} /> Gerätetyp: geteiltes Wissen zu {machine.hersteller}{" "}
+                {machine.modell}
+              </Link>
+            ) : null}
             <MachineDataTables facts={machineFacts} />
 
             {/* Eigene Fakten teilen — nur wenn es welche gibt und ein Gerätetyp
@@ -497,6 +508,13 @@ export default async function MachineDetailPage({
                   providers={kiProviders}
                   centralKey={kiCentralKey}
                 />
+              </Card>
+            ) : null}
+
+            {/* Alternative ohne KI-Verarbeitung: fertiges Fakten-JSON importieren. */}
+            {darf.bearbeiten ? (
+              <Card className="space-y-3">
+                <ManualJsonImport machineId={machine.id} />
               </Card>
             ) : null}
           </div>

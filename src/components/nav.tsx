@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Globe, Wrench } from "lucide-react";
+import { BookOpen, Boxes, Globe, Wrench } from "lucide-react";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
@@ -11,6 +11,7 @@ import { UserMenu } from "@/components/user-menu";
    Abmelden liegen gebündelt im Nutzer-Menü (siehe user-menu.tsx). */
 const links = [
   { href: "/machines", label: "Maschinen", icon: Wrench },
+  { href: "/typen", label: "Gerätetypen", icon: Boxes },
   { href: "/help", label: "Hilfe", icon: BookOpen },
 ];
 

@@ -140,6 +140,19 @@ export const extractSchema = z.object({
   rules: factTableSchema,
 });
 
+/** Kanonische Spaltenüberschriften je Faktentyp — die EINE Quelle für den
+    Extraktions-/Import-Prompt und den Spalten-Abgleich beim JSON-Import.
+    Reihenfolge ist load-bearing: Spalte 0 = Nummer/ID, letzte = Bezeichnung;
+    "Column"/"Row" (bei switches/lamps) steuern die Matrix-Ableitung im UI. */
+export const FACT_COLUMNS: Record<FactType, string[]> = {
+  coils: ["Sol/No", "Funktion", "Typ", "Drive Q", "Wire", "Board"],
+  switches: ["Sw/No", "Column", "Row", "Typ", "Funktion"],
+  lamps: ["Lamp/No", "Column", "Row", "Funktion"],
+  fuses: ["Board", "Fuse", "Rating", "Schützt"],
+  parts: ["Part No", "Beschreibung"],
+  rules: ["Adj/No", "Beschreibung", "Bereich/Standard"],
+};
+
 /*
   Phase-3-Troubleshooting-Guide (lib/troubleshooting.ts). Wie bei den Fakten
   bewusst eine strukturierte Form statt Freitext/Markdown: ein Guide besteht aus
