@@ -9,7 +9,6 @@ type Fault = { id: string; beschreibung: string; status: string };
 
 type RepairValues = {
   id: string;
-  faultId: string | null;
   diagnose: string | null;
   massnahme: string | null;
   teile: string | null;
@@ -23,24 +22,30 @@ export function RepairForm({
   machineId,
   faults,
   repair,
-  defaultFaultId,
+  selectedFaultIds = [],
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   machineId: string;
   faults: Fault[];
   repair?: RepairValues;
-  defaultFaultId?: string;
+  /** Vorausgewählte Fehler (Bearbeiten: die verknüpften; Neu: aus ?faultId). */
+  selectedFaultIds?: string[];
 }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     action,
     {},
   );
-  const [faultId, setFaultId] = useState(
-    repair?.faultId ?? defaultFaultId ?? "",
+  // Mehrere Fehler wählbar; das Symptom lebt am Fehler (hier nur Auswahl).
+  const [checked, setChecked] = useState<Set<string>>(
+    new Set(selectedFaultIds),
   );
-
-  // Symptom wird nur ANGEZEIGT (read-only) — es lebt am Fehler, nie an der Reparatur.
-  const selectedFault = faults.find((f) => f.id === faultId);
+  const toggle = (id: string) =>
+    setChecked((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   return (
     <form action={formAction} className="flex max-w-lg flex-col gap-4">
@@ -48,33 +53,36 @@ export function RepairForm({
       {repair ? <input type="hidden" name="id" value={repair.id} /> : null}
 
       <Field
-        label="Verknüpfter Fehler (optional)"
-        hint="Reparatur mit Status „erledigt“ setzt den verknüpften Fehler auf „behoben“."
+        label="Behobene Fehler (optional)"
+        hint="Eine Reparatur mit Status „erledigt“ setzt alle gewählten Fehler auf „behoben“."
       >
-        <Select
-          name="faultId"
-          value={faultId}
-          onChange={(e) => setFaultId(e.target.value)}
-        >
-          <option value="">— Kein Fehler —</option>
-          {faults.map((f) => (
-            <option key={f.id} value={f.id}>
-              [{f.status}] {f.beschreibung.slice(0, 60)}
-            </option>
-          ))}
-        </Select>
+        {faults.length === 0 ? (
+          <p className="text-sm text-[var(--color-muted)]">
+            Für diese Maschine sind keine Fehler erfasst.
+          </p>
+        ) : (
+          <div className="space-y-1.5">
+            {faults.map((f) => (
+              <label key={f.id} className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  name="faultIds"
+                  value={f.id}
+                  checked={checked.has(f.id)}
+                  onChange={() => toggle(f.id)}
+                  className="mt-1 accent-[var(--color-accent)]"
+                />
+                <span>
+                  <span className="text-xs text-[var(--color-muted)]">
+                    [{f.status}]
+                  </span>{" "}
+                  {f.beschreibung}
+                </span>
+              </label>
+            ))}
+          </div>
+        )}
       </Field>
-
-      {selectedFault ? (
-        <div className="rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-border)]/20 p-3 text-sm">
-          <p className="text-xs font-medium text-[var(--color-muted)]">
-            Symptom (am Fehler)
-          </p>
-          <p className="mt-1 whitespace-pre-wrap">
-            {selectedFault.beschreibung}
-          </p>
-        </div>
-      ) : null}
 
       <Field label="Diagnose">
         <Textarea name="diagnose" defaultValue={repair?.diagnose ?? ""} />
@@ -96,11 +104,7 @@ export function RepairForm({
           />
         </Field>
         <Field label="Zeitaufwand (Minuten)">
-          <Input
-            name="zeit"
-            type="number"
-            defaultValue={repair?.zeit ?? ""}
-          />
+          <Input name="zeit" type="number" defaultValue={repair?.zeit ?? ""} />
         </Field>
       </div>
 

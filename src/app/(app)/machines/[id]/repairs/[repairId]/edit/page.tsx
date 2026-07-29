@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { RepairForm } from "@/components/repair-form";
 import { updateRepair } from "@/db/actions/repairs";
 import { db } from "@/db";
-import { faults, repairs } from "@/db/schema";
+import { faults, repairFaults, repairs } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
 
 export default async function EditRepairPage({
@@ -25,6 +25,12 @@ export default async function EditRepairPage({
     orderBy: [desc(faults.datum)],
   });
 
+  // Bereits verknüpfte Fehler (n:m) für die Vorauswahl.
+  const verknuepft = await db.query.repairFaults.findMany({
+    where: eq(repairFaults.repairId, repairId),
+    columns: { faultId: true },
+  });
+
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Reparatur bearbeiten</h1>
@@ -33,6 +39,7 @@ export default async function EditRepairPage({
         machineId={id}
         faults={machineFaults}
         repair={repair}
+        selectedFaultIds={verknuepft.map((v) => v.faultId)}
       />
     </div>
   );

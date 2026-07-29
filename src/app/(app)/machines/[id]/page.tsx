@@ -116,11 +116,18 @@ export default async function MachineDetailPage({
   const fehlerGesamt = alleFehler.length;
   const fehlerOffen = alleFehler.filter((f) => f.status !== "behoben").length;
 
-  const machineRepairs = await db.query.repairs.findMany({
+  // Reparaturen samt ihrer behobenen Fehler (n:m, Datenmodell-Redesign Phase 3).
+  const machineRepairsRoh = await db.query.repairs.findMany({
     where: eq(repairsTable.machineId, id),
-    with: { fault: { columns: { beschreibung: true } } },
+    with: {
+      repairFaults: { with: { fault: { columns: { beschreibung: true } } } },
+    },
     orderBy: [desc(repairsTable.datum)],
   });
+  const machineRepairs = machineRepairsRoh.map((r) => ({
+    ...r,
+    faults: r.repairFaults.map((rf) => rf.fault),
+  }));
 
   // Datenmodell-Redesign (Phase 1): Handbuch-Fakten sind MODELL-Wissen (knowledge)
   // — eigene + sichtbare fremde. Ohne Gerätetyp: Maschinen-Ebene.

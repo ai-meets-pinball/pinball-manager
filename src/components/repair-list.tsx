@@ -15,7 +15,7 @@ type Repair = {
   kosten: string | null;
   zeit: number | null;
   status: string;
-  fault: { beschreibung: string } | null;
+  faults: { beschreibung: string }[];
 };
 
 /* Optional: Teilen-Schalter je Reparatur. Bewusst als reine Daten übergeben
@@ -54,12 +54,15 @@ export function RepairList({
         <Card key={repair.id} className="space-y-2">
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge value={repair.status} />
-            {repair.fault ? (
-              <span className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)]">
+            {repair.faults.map((f, i) => (
+              <span
+                key={i}
+                className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)]"
+              >
                 <LinkIcon size={12} />
-                {repair.fault.beschreibung.slice(0, 40)}
+                {f.beschreibung.slice(0, 40)}
               </span>
-            ) : null}
+            ))}
             <span className="ml-auto text-xs text-[var(--color-muted)]">
               {repair.datum.toLocaleDateString("de-DE")}
             </span>

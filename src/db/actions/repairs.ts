@@ -1,25 +1,35 @@
 "use server";
 
-import { and, eq } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { faults, repairs } from "@/db/schema";
+import { faults, repairFaults, repairs } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
 import { repairSchema } from "@/lib/validators";
 
 export type FormState = { error?: string };
 
-/* Prüft, dass ein optional verknüpfter Fehler wirklich zu dieser Maschine gehört. */
-async function assertFaultBelongsToMachine(
-  faultId: string | undefined,
+/* Die gewählten Fehler einlesen (Mehrfachauswahl) und prüfen, dass ALLE wirklich
+   zu dieser Maschine gehören — sonst könnte man über eine eigene Maschine fremde
+   Fehler „beheben". Gibt die (deduplizierten) IDs zurück. */
+async function resolveFaultIds(
+  formData: FormData,
   machineId: string,
-) {
-  if (!faultId) return true;
-  const fault = await db.query.faults.findFirst({
-    where: and(eq(faults.id, faultId), eq(faults.machineId, machineId)),
+): Promise<{ ids: string[] } | { error: string }> {
+  const ids = [
+    ...new Set(formData.getAll("faultIds").map(String).filter(Boolean)),
+  ];
+  if (ids.length === 0) return { ids: [] };
+
+  const vorhanden = await db.query.faults.findMany({
+    where: and(eq(faults.machineId, machineId), inArray(faults.id, ids)),
+    columns: { id: true },
   });
-  return Boolean(fault);
+  if (vorhanden.length !== ids.length) {
+    return { error: "Ein gewählter Fehler gehört nicht zu dieser Maschine" };
+  }
+  return { ids };
 }
 
 export async function createRepair(
@@ -35,29 +45,41 @@ export async function createRepair(
   }
   const data = parsed.data;
 
-  if (!(await assertFaultBelongsToMachine(data.faultId, machineId))) {
-    return { error: "Der gewählte Fehler gehört nicht zu dieser Maschine" };
-  }
+  const faultRes = await resolveFaultIds(formData, machineId);
+  if ("error" in faultRes) return faultRes;
+  const faultIds = faultRes.ids;
 
   // Das Symptom wird NICHT kopiert — es lebt am Fehler. Hier nur die Verknüpfung.
-  await db.insert(repairs).values({
-    machineId,
-    faultId: data.faultId ?? null,
-    diagnose: data.diagnose ?? null,
-    massnahme: data.massnahme ?? null,
-    teile: data.teile ?? null,
-    kosten: data.kosten ?? null,
-    zeit: data.zeit ?? null,
-    status: data.status,
-  });
+  // `faultId` bleibt als „primärer" Fehler gesetzt (geteilte Ansicht zeigt eins).
+  await db.transaction(async (tx) => {
+    const [rep] = await tx
+      .insert(repairs)
+      .values({
+        machineId,
+        faultId: faultIds[0] ?? null,
+        diagnose: data.diagnose ?? null,
+        massnahme: data.massnahme ?? null,
+        teile: data.teile ?? null,
+        kosten: data.kosten ?? null,
+        zeit: data.zeit ?? null,
+        status: data.status,
+      })
+      .returning({ id: repairs.id });
 
-  // Schlüsselregel: erledigte Reparatur an einem Fehler → Fehler gilt als behoben.
-  if (data.faultId && data.status === "erledigt") {
-    await db
-      .update(faults)
-      .set({ status: "behoben" })
-      .where(eq(faults.id, data.faultId));
-  }
+    if (faultIds.length > 0) {
+      await tx
+        .insert(repairFaults)
+        .values(faultIds.map((fid) => ({ repairId: rep.id, faultId: fid })));
+    }
+
+    // Schlüsselregel: erledigte Reparatur → ALLE verknüpften Fehler behoben.
+    if (data.status === "erledigt" && faultIds.length > 0) {
+      await tx
+        .update(faults)
+        .set({ status: "behoben" })
+        .where(inArray(faults.id, faultIds));
+    }
+  });
 
   revalidatePath(`/machines/${machineId}`);
   redirect(`/machines/${machineId}`);
@@ -77,29 +99,47 @@ export async function updateRepair(
   }
   const data = parsed.data;
 
-  if (!(await assertFaultBelongsToMachine(data.faultId, machineId))) {
-    return { error: "Der gewählte Fehler gehört nicht zu dieser Maschine" };
-  }
+  // Die Reparatur muss zu DIESER Maschine gehören (sonst über eine eigene
+  // Maschine fremde repairId manipulieren).
+  const bestehend = await db.query.repairs.findFirst({
+    where: and(eq(repairs.id, id), eq(repairs.machineId, machineId)),
+    columns: { id: true },
+  });
+  if (!bestehend) return { error: "Reparatur nicht gefunden." };
 
-  await db
-    .update(repairs)
-    .set({
-      faultId: data.faultId ?? null,
-      diagnose: data.diagnose ?? null,
-      massnahme: data.massnahme ?? null,
-      teile: data.teile ?? null,
-      kosten: data.kosten ?? null,
-      zeit: data.zeit ?? null,
-      status: data.status,
-    })
-    .where(and(eq(repairs.id, id), eq(repairs.machineId, machineId)));
+  const faultRes = await resolveFaultIds(formData, machineId);
+  if ("error" in faultRes) return faultRes;
+  const faultIds = faultRes.ids;
 
-  if (data.faultId && data.status === "erledigt") {
-    await db
-      .update(faults)
-      .set({ status: "behoben" })
-      .where(eq(faults.id, data.faultId));
-  }
+  await db.transaction(async (tx) => {
+    await tx
+      .update(repairs)
+      .set({
+        faultId: faultIds[0] ?? null,
+        diagnose: data.diagnose ?? null,
+        massnahme: data.massnahme ?? null,
+        teile: data.teile ?? null,
+        kosten: data.kosten ?? null,
+        zeit: data.zeit ?? null,
+        status: data.status,
+      })
+      .where(eq(repairs.id, id));
+
+    // Verknüpfungen neu setzen (Auswahl kann sich geändert haben).
+    await tx.delete(repairFaults).where(eq(repairFaults.repairId, id));
+    if (faultIds.length > 0) {
+      await tx
+        .insert(repairFaults)
+        .values(faultIds.map((fid) => ({ repairId: id, faultId: fid })));
+    }
+
+    if (data.status === "erledigt" && faultIds.length > 0) {
+      await tx
+        .update(faults)
+        .set({ status: "behoben" })
+        .where(inArray(faults.id, faultIds));
+    }
+  });
 
   revalidatePath(`/machines/${machineId}`);
   redirect(`/machines/${machineId}`);
@@ -110,6 +150,7 @@ export async function deleteRepair(formData: FormData): Promise<void> {
   const id = String(formData.get("id"));
   await requireMachineWrite(machineId);
 
+  // repair_faults hängt per FK (cascade) an der Reparatur und geht mit weg.
   await db
     .delete(repairs)
     .where(and(eq(repairs.id, id), eq(repairs.machineId, machineId)));
