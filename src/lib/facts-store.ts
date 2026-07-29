@@ -63,3 +63,53 @@ export async function upsertModelKnowledge(opts: {
 
   return present.length;
 }
+
+/*
+  Troubleshooting-Guide als Wissenseintrag (Datenmodell-Redesign Phase 2). Wie
+  die Fakten ein `knowledge`-Eintrag je Autor und Ebene (Modell, wenn die
+  Maschine einen Gerätetyp hat, sonst Maschine) — typ='troubleshooting',
+  sourceType='eigen' (KI-erzeugt, nicht aus einem Handbuch extrahiert). Der
+  Guide selbst plus die Provenienz (websuche, Modell) liegen als kleiner
+  Umschlag in `inhalt`, damit die Anzeige die Websuche-Kennzeichnung behält.
+  Replace-Semantik: der eine Guide dieses Autors für diese Ebene wird ersetzt.
+*/
+export async function upsertTroubleshootingKnowledge(opts: {
+  userId: string;
+  machine: {
+    id: string;
+    modelId: string | null;
+    hersteller: string;
+    modell: string;
+  };
+  guide: unknown; // troubleshootingGuideSchema-Objekt
+  websuche: boolean;
+  model: string;
+  visibility: "privat" | "club" | "oeffentlich";
+  clubId?: string | null;
+}): Promise<void> {
+  const { userId, machine, guide, websuche, model, visibility, clubId } = opts;
+  const amModell = machine.modelId != null;
+
+  await db.transaction(async (tx) => {
+    await tx.delete(knowledge).where(
+      and(
+        eq(knowledge.createdBy, userId),
+        eq(knowledge.typ, "troubleshooting"),
+        amModell
+          ? eq(knowledge.modelId, machine.modelId!)
+          : eq(knowledge.machineId, machine.id),
+      ),
+    );
+    await tx.insert(knowledge).values({
+      typ: "troubleshooting",
+      titel: `${machine.hersteller} ${machine.modell} — Troubleshooting-Guide`,
+      inhalt: { guide, websuche, model },
+      sourceType: "eigen",
+      visibility,
+      modelId: amModell ? machine.modelId : null,
+      machineId: amModell ? null : machine.id,
+      clubId: visibility === "club" ? (clubId ?? null) : null,
+      createdBy: userId,
+    });
+  });
+}

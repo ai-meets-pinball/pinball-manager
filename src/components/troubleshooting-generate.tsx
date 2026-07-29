@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { LifeBuoy, Loader2, RefreshCw } from "lucide-react";
 import { AiProviderField } from "@/components/ui/ai-provider-field";
 import { Button } from "@/components/ui/button";
+import { VisibilityField } from "@/components/ui/visibility-field";
 import type { AiProvider } from "@/lib/ai/provider";
 import {
   generateTroubleshootingGuide,
@@ -38,6 +39,8 @@ export function TroubleshootingGenerate({
       <input type="hidden" name="machineId" value={machineId} />
 
       <AiProviderField providers={providers} centralKey={centralKey} />
+
+      <VisibilityField />
 
       {state.error ? (
         <p className="text-sm text-[var(--color-danger)]">{state.error}</p>

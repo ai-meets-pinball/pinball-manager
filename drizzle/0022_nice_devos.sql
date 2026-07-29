@@ -1,0 +1,1 @@
+DROP TABLE "troubleshooting_guides" CASCADE;

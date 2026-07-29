@@ -2,10 +2,12 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { KnowledgeFacts } from "@/components/knowledge-facts";
+import { KnowledgeGuides } from "@/components/knowledge-guides";
 import { SharedRepairs } from "@/components/shared-repairs";
 import { Card } from "@/components/ui/card";
 import {
   getMachineModel,
+  getModelGuides,
   getModelKnowledge,
   getSharedRepairsForModel,
 } from "@/db/queries";
@@ -28,12 +30,14 @@ export default async function GeraetetypPage({
   const model = await getMachineModel(modelId);
   if (!model) notFound();
 
-  const [fakten, reparaturen] = await Promise.all([
+  const [fakten, guides, reparaturen] = await Promise.all([
     getModelKnowledge(currentUser, modelId),
+    getModelGuides(currentUser, modelId),
     getSharedRepairsForModel(currentUser, modelId),
   ]);
 
-  const leer = fakten.length === 0 && reparaturen.length === 0;
+  const leer =
+    fakten.length === 0 && guides.length === 0 && reparaturen.length === 0;
 
   return (
     <div className="space-y-6">
@@ -76,6 +80,13 @@ export default async function GeraetetypPage({
           {fakten.length > 0 ? (
             <KnowledgeFacts
               eintraege={fakten}
+              currentUserId={currentUser.id}
+              machineId=""
+            />
+          ) : null}
+          {guides.length > 0 ? (
+            <KnowledgeGuides
+              eintraege={guides}
               currentUserId={currentUser.id}
               machineId=""
             />
