@@ -4,8 +4,9 @@ import Anthropic from "@anthropic-ai/sdk";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { machines, troubleshootingGuides } from "@/db/schema";
+import { machines } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
+import { upsertTroubleshootingKnowledge } from "@/lib/facts-store";
 import { anthropicModelFor, resolveProvider } from "@/lib/ai/provider";
 import {
   OLLAMA_TEXT_MODEL,
@@ -18,18 +19,20 @@ import {
 } from "@/lib/validators";
 
 /*
-  Phase-3-Funktion: Troubleshooting-Guide je Flipper.
+  Troubleshooting-Guide je Gerätetyp.
 
-  Ausgangslage: Wenn ein Handbuch hochgeladen wurde (Lampenmatrix o. ä. liegt in
-  machine_data), bieten wir zusätzlich einen umfassenden FAQ- & Troubleshooting-
-  Guide an. Er wird von Claude erzeugt — mit Websuche, damit Plattform und
-  bekannte Serienfehler gegen Community-Quellen (IPDB/PinWiki/Pinside) verifiziert
-  werden können.
+  Ausgangslage: Wenn Handbuch-Fakten vorliegen (Lampenmatrix o. ä. als
+  Modell-Wissen in `knowledge`), bieten wir zusätzlich einen umfassenden FAQ- &
+  Troubleshooting-Guide an. Er wird von Claude erzeugt — mit Websuche, damit
+  Plattform und bekannte Serienfehler gegen Community-Quellen
+  (IPDB/PinWiki/Pinside) verifiziert werden können.
 
   Anders als beim Handbuch-Upload gibt es hier KEIN Copyright-Thema: Der Guide ist
-  von Claude generierter Text, kein Auszug aus dem Handbuch. Er darf gespeichert
-  werden (troubleshooting_guides, genau eine Zeile je Maschine). Autorisierung
-  erbt über die Maschine (kein RLS), erzeugen darf nur, wer schreiben darf.
+  von Claude generierter Text, kein Auszug aus dem Handbuch. Er wird als
+  Modell-Wissen gespeichert (Datenmodell-Redesign Phase 2: `knowledge`,
+  typ='troubleshooting', einmal je Autor und Ebene) — mit wählbarer Sichtbarkeit.
+  Autorisierung erbt über die Maschine (kein RLS), erzeugen darf nur, wer
+  schreiben darf.
 
   Ausgabe ist bewusst strukturiertes JSON (Abschnitte aus Text-/Warn-/Tabellen-
   Blöcken), passend zur bestehenden „Service-Console"-Darstellung — kein Markdown.
@@ -307,26 +310,26 @@ export async function generateTroubleshootingGuide(
     return { error: "Antwort konnte nicht ausgewertet werden. Bitte erneut versuchen." };
   }
 
-  // Genau eine Zeile je Maschine — vorhandenen Guide ersetzen (upsert über machineId).
-  await db
-    .insert(troubleshootingGuides)
-    .values({
-      machineId,
-      daten: parsed,
-      model: usedModel,
-      websuche,
-      erstelltVon: user.id,
-    })
-    .onConflictDoUpdate({
-      target: troubleshootingGuides.machineId,
-      set: {
-        daten: parsed,
-        model: usedModel,
-        websuche,
-        erstelltVon: user.id,
-        createdAt: new Date(),
-      },
-    });
+  // Datenmodell-Redesign (Phase 2): der Guide ist Modell-Wissen (knowledge,
+  // typ='troubleshooting') — einmal je Autor und Ebene, mit wählbarer
+  // Sichtbarkeit. Ohne Gerätetyp fällt er auf die Maschinen-Ebene zurück.
+  const rohSicht = String(formData.get("visibility") ?? "");
+  const visibility: "privat" | "club" | "oeffentlich" =
+    rohSicht === "club" || rohSicht === "oeffentlich" ? rohSicht : "privat";
+
+  await upsertTroubleshootingKnowledge({
+    userId: user.id,
+    machine: {
+      id: machine.id,
+      modelId: machine.modelId,
+      hersteller: machine.hersteller,
+      modell: machine.modell,
+    },
+    guide: parsed,
+    websuche,
+    model: usedModel,
+    visibility,
+  });
 
   revalidatePath(`/machines/${machineId}`);
   return { ok: true };

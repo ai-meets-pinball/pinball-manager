@@ -6,9 +6,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import {
+  knowledge,
   maintenanceLog,
   maintenanceTasks,
-  troubleshootingGuides,
 } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
 import { anthropicModelFor, resolveProvider } from "@/lib/ai/provider";
@@ -300,16 +300,26 @@ export async function importMaintenanceFromGuide(
   formData: FormData,
 ): Promise<FormState> {
   const machineId = String(formData.get("machineId"));
-  await requireMachineWrite(machineId);
+  const { user, machine } = await requireMachineWrite(machineId);
 
-  const guideRow = await db.query.troubleshootingGuides.findFirst({
-    where: eq(troubleshootingGuides.machineId, machineId),
+  // Datenmodell-Redesign (Phase 2): der Guide dieses Nutzers liegt als
+  // Modell-Wissen (knowledge, typ='troubleshooting') vor — je nach Gerätetyp auf
+  // Modell- oder Maschinen-Ebene. `inhalt` ist der Umschlag { guide, … }.
+  const eintrag = await db.query.knowledge.findFirst({
+    where: and(
+      eq(knowledge.typ, "troubleshooting"),
+      eq(knowledge.createdBy, user.id),
+      machine.modelId
+        ? eq(knowledge.modelId, machine.modelId)
+        : eq(knowledge.machineId, machineId),
+    ),
   });
-  if (!guideRow) {
+  if (!eintrag) {
     return { error: "Es gibt noch keinen Troubleshooting-Guide für dieses Gerät." };
   }
 
-  const guide = troubleshootingGuideSchema.safeParse(guideRow.daten);
+  const umschlag = eintrag.inhalt as { guide?: unknown };
+  const guide = troubleshootingGuideSchema.safeParse(umschlag?.guide);
   if (!guide.success) return { error: "Der Guide konnte nicht gelesen werden." };
 
   const abschnittText = serialisiereWartungsabschnitt(guide.data);

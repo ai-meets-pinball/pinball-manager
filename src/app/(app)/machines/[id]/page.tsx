@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Boxes, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { FaultList } from "@/components/fault-list";
 import { KnowledgeFacts } from "@/components/knowledge-facts";
+import { KnowledgeGuides } from "@/components/knowledge-guides";
 import { MachineOverview, type MachineKpi } from "@/components/machine-overview";
 import { MachineTabs, type MachineTab } from "@/components/machine-tabs";
 import { MaintenancePlan } from "@/components/maintenance-plan";
@@ -12,13 +13,14 @@ import { ManualUpload } from "@/components/manual-upload";
 import { RepairList } from "@/components/repair-list";
 import { SharedRepairs } from "@/components/shared-repairs";
 import { TroubleshootingGenerate } from "@/components/troubleshooting-generate";
-import { TroubleshootingGuideView } from "@/components/troubleshooting-guide";
 import { Card } from "@/components/ui/card";
 import { deleteMachine } from "@/db/actions/machines";
 import { db } from "@/db";
 import {
+  getMachineGuides,
   getMachineKnowledge,
   getMaintenanceTasks,
+  getModelGuides,
   getModelKnowledge,
   getRepairShares,
   getShareDefaults,
@@ -28,7 +30,6 @@ import {
 import {
   faults as faultsTable,
   repairs as repairsTable,
-  troubleshootingGuides as troubleshootingGuidesTable,
 } from "@/db/schema";
 import { requireMachineAccess } from "@/lib/session";
 import { availableProviders } from "@/lib/ai/provider";
@@ -126,10 +127,13 @@ export default async function MachineDetailPage({
     ? await getModelKnowledge(currentUser, machine.modelId)
     : await getMachineKnowledge(currentUser, id);
 
-  // Phase-3-Troubleshooting-Guide (genau einer je Maschine, falls erzeugt).
-  const troubleshootingGuide = await db.query.troubleshootingGuides.findFirst({
-    where: eq(troubleshootingGuidesTable.machineId, id),
-  });
+  // Datenmodell-Redesign (Phase 2): Troubleshooting-Guides sind MODELL-Wissen
+  // (knowledge, typ='troubleshooting') — eigene + sichtbare fremde. Ohne
+  // Gerätetyp: Maschinen-Ebene.
+  const guides = machine.modelId
+    ? await getModelGuides(currentUser, machine.modelId)
+    : await getMachineGuides(currentUser, id);
+  const eigenerGuide = guides.some((g) => g.autorId === currentUser.id);
 
   // Wartungsplan: Wartungspunkte samt Historie und berechneter Fälligkeit.
   const wartungsTasks = await getMaintenanceTasks(id);
@@ -155,7 +159,7 @@ export default async function MachineDetailPage({
   const repairShares = await getRepairShares(id);
 
   // Der Guide erscheint erst, wenn es Handbuch-Fakten oder einen Guide gibt.
-  const guideSichtbar = knowledgeFacts.length > 0 || Boolean(troubleshootingGuide);
+  const guideSichtbar = knowledgeFacts.length > 0 || guides.length > 0;
 
   // Zwei-Ebenen-Navigation: „Betrieb" = aktueller Zustand (Fehler, Wartung),
   // „Wissensbasis" = angesammeltes Wissen (Reparatur-Historie/DB, Handbuch-Fakten,
@@ -281,7 +285,7 @@ export default async function MachineDetailPage({
       ? [
           {
             key: "guide",
-            zahl: troubleshootingGuide ? "✓" : "–",
+            zahl: guides.length > 0 ? "✓" : "–",
             label: "Guide",
             tone: "neutral",
           } as MachineKpi,
@@ -438,7 +442,7 @@ export default async function MachineDetailPage({
           tasks={wartungsTasks}
           machineId={machine.id}
           schreibbar={darf.bearbeiten}
-          hatGuide={troubleshootingGuide !== undefined}
+          hatGuide={eigenerGuide}
           providers={kiProviders}
           centralKey={kiCentralKey}
         />
@@ -494,15 +498,14 @@ export default async function MachineDetailPage({
         </section>
       ) : null}
 
-      {/* ── Troubleshooting-Guide (Phase 3) ──────────────────────────────────── */}
+      {/* ── Troubleshooting-Guide (Phase 2: Modell-Wissen) ───────────────────── */}
       {active === "guide" && guideSichtbar ? (
         <div className="space-y-3">
-          {troubleshootingGuide ? (
-            <TroubleshootingGuideView
-              daten={troubleshootingGuide.daten}
-              model={troubleshootingGuide.model}
-              websuche={troubleshootingGuide.websuche}
-              createdAt={troubleshootingGuide.createdAt}
+          {guides.length > 0 ? (
+            <KnowledgeGuides
+              eintraege={guides}
+              currentUserId={currentUser.id}
+              machineId={machine.id}
             />
           ) : (
             <p className="text-sm text-[var(--color-muted)]">
@@ -520,7 +523,7 @@ export default async function MachineDetailPage({
           {darf.bearbeiten ? (
             <TroubleshootingGenerate
               machineId={machine.id}
-              vorhanden={troubleshootingGuide !== undefined}
+              vorhanden={eigenerGuide}
               providers={kiProviders}
               centralKey={kiCentralKey}
             />

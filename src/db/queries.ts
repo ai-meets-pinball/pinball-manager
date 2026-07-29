@@ -297,6 +297,43 @@ export async function getMachineKnowledge(
     .orderBy(desc(knowledge.updatedAt));
 }
 
+/** Sichtbare Troubleshooting-Guides (typ='troubleshooting') eines Gerätetyps. */
+export async function getModelGuides(currentUser: SessionUser, modelId: string) {
+  const sichtbar = await knowledgeVisibilityFilter(currentUser);
+  return db
+    .select(knowledgeAuswahl)
+    .from(knowledge)
+    .innerJoin(user, eq(user.id, knowledge.createdBy))
+    .where(
+      and(
+        eq(knowledge.typ, "troubleshooting"),
+        eq(knowledge.modelId, modelId),
+        sichtbar,
+      ),
+    )
+    .orderBy(desc(knowledge.updatedAt));
+}
+
+/** Sichtbare Troubleshooting-Guides einer Maschine ohne Gerätetyp. */
+export async function getMachineGuides(
+  currentUser: SessionUser,
+  machineId: string,
+) {
+  const sichtbar = await knowledgeVisibilityFilter(currentUser);
+  return db
+    .select(knowledgeAuswahl)
+    .from(knowledge)
+    .innerJoin(user, eq(user.id, knowledge.createdBy))
+    .where(
+      and(
+        eq(knowledge.typ, "troubleshooting"),
+        eq(knowledge.machineId, machineId),
+        sichtbar,
+      ),
+    )
+    .orderBy(desc(knowledge.updatedAt));
+}
+
 /** Gerätetyp-Katalog: Modelle mit für den Nutzer sichtbarem Handbuch-Wissen. */
 export async function getKnowledgeModels(currentUser: SessionUser) {
   const sichtbar = await knowledgeVisibilityFilter(currentUser);
