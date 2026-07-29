@@ -262,6 +262,28 @@ export const repairs = pgTable("repairs", {
   status: repairStatus("status").notNull().default("offen"),
 });
 
+/* ── Reparatur ↔ Fehler (n:m) ─────────────────────────────────────────────── */
+/*
+  Eine Reparatur kann MEHRERE Fehler beheben (PRD §4.2–4.3). Dies ist die
+  Wahrheit der Verknüpfung; `repairs.fault_id` bleibt als „primärer" Fehler
+  bestehen (für die geteilte Reparatur-Ansicht, die genau ein Symptom zeigt).
+  Erledigt eine Reparatur, werden ALLE verknüpften Fehler in der Server Action
+  auf „behoben" gesetzt.
+*/
+export const repairFaults = pgTable(
+  "repair_faults",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    repairId: uuid("repair_id")
+      .notNull()
+      .references(() => repairs.id, { onDelete: "cascade" }),
+    faultId: uuid("fault_id")
+      .notNull()
+      .references(() => faults.id, { onDelete: "cascade" }),
+  },
+  (t) => [unique("repair_faults_unique").on(t.repairId, t.faultId)],
+);
+
 /* ── Freigaben (geteiltes Wissen) ─────────────────────────────────────────── */
 /*
   Was wird wie weit geteilt. Bewusst EINE Tabelle für alle Artefakttypen und
@@ -530,15 +552,30 @@ export const faultsRelations = relations(faults, ({ one, many }) => ({
     references: [machines.id],
   }),
   repairs: many(repairs),
+  repairFaults: many(repairFaults),
 }));
 
-export const repairsRelations = relations(repairs, ({ one }) => ({
+export const repairsRelations = relations(repairs, ({ one, many }) => ({
   machine: one(machines, {
     fields: [repairs.machineId],
     references: [machines.id],
   }),
+  // Primärer Fehler (Rückwärtskompatibilität + geteilte Ansicht).
   fault: one(faults, {
     fields: [repairs.faultId],
+    references: [faults.id],
+  }),
+  // Alle behobenen Fehler (n:m).
+  repairFaults: many(repairFaults),
+}));
+
+export const repairFaultsRelations = relations(repairFaults, ({ one }) => ({
+  repair: one(repairs, {
+    fields: [repairFaults.repairId],
+    references: [repairs.id],
+  }),
+  fault: one(faults, {
+    fields: [repairFaults.faultId],
     references: [faults.id],
   }),
 }));

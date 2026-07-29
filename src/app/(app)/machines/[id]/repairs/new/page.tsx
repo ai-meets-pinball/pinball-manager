@@ -31,7 +31,7 @@ export default async function NewRepairPage({
         action={createRepair}
         machineId={id}
         faults={machineFaults}
-        defaultFaultId={faultId}
+        selectedFaultIds={faultId ? [faultId] : []}
       />
     </div>
   );
