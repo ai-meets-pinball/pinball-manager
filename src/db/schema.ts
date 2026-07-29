@@ -398,34 +398,9 @@ export const knowledge = pgTable(
   ],
 );
 
-/* ── Troubleshooting-Guide (Phase 3) ──────────────────────────────────────── */
-/*
-  Ein von Claude erzeugter FAQ- & Troubleshooting-Guide je Maschine. Er wird nur
-  angeboten, wenn schon Handbuch-Fakten vorliegen (Lampenmatrix o. ä.) — siehe
-  lib/troubleshooting.ts. Anders als machine_data ist das KEIN Handbuch-Text,
-  sondern von Claude generierte Inhalte (kein Copyright-Thema), darum dürfen sie
-  gespeichert werden.
-
-  Genau EINE Zeile je Maschine (Neu-Erzeugen ersetzt sie). `daten` hält den
-  strukturierten Guide (plattform + Abschnitte + Quellen, siehe
-  troubleshootingGuideSchema in lib/validators.ts).
-*/
-export const troubleshootingGuides = pgTable("troubleshooting_guides", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  machineId: uuid("machine_id")
-    .notNull()
-    .unique()
-    .references(() => machines.id, { onDelete: "cascade" }),
-  daten: jsonb("daten").notNull(),
-  // Welches Modell den Guide erzeugt hat — für Transparenz (Lehrbeispiel).
-  model: text("model").notNull(),
-  // Wurde der Guide mit Websuche (Community-Quellen) erstellt? Der lokale
-  // Ollama-Pfad kann NICHT websuchen → false; so lässt sich die geringere
-  // Verlässlichkeit in der Anzeige kennzeichnen. Bestehende Claude-Zeilen: true.
-  websuche: boolean("websuche").notNull().default(true),
-  erstelltVon: text("erstellt_von").references(() => user.id),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+/* Troubleshooting-Guides sind seit dem Datenmodell-Redesign (Phase 2) Modell-
+   Wissen in `knowledge` (typ='troubleshooting') — die eigene Tabelle
+   `troubleshooting_guides` ist entfallen. */
 
 /* ── Wartungsplan (interaktiv, mit Historie & Erinnerung) ─────────────────── */
 /*
@@ -528,10 +503,6 @@ export const machinesRelations = relations(machines, ({ one, many }) => ({
   }),
   faults: many(faults),
   repairs: many(repairs),
-  troubleshootingGuide: one(troubleshootingGuides, {
-    fields: [machines.id],
-    references: [troubleshootingGuides.machineId],
-  }),
   maintenanceTasks: many(maintenanceTasks),
 }));
 
