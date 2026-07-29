@@ -37,7 +37,6 @@ test.describe("Teilen", () => {
     }));
 
     // Handbuch-Fakten als Modell-Wissen, zunächst privat (nur der Autor sieht sie).
-    const ownerId = await userIdByEmail(USERS.owner);
     await addKnowledge({ modelId, createdBy: ownerId, visibility: "privat" });
     repairId = await addRepair(ownerMachine);
   });
@@ -63,9 +62,10 @@ test.describe("Teilen", () => {
 
     await loginAs(page, USERS.outsider);
     await page.goto(`/machines/${fremdMachine}?bereich=handbuch`);
-    // Autor ist immer sichtbar (keine Anonymität) und die Fakten erscheinen.
+    // Autor ist immer sichtbar (keine Anonymität) und die Faktentabelle
+    // (Abschnitt „Spulen & Flasher") erscheint — Inhalt selbst ist eingeklappt.
     await expect(page.getByText("Geteilt von")).toBeVisible();
-    await expect(page.getByText("E2E Spule")).toBeVisible();
+    await expect(page.getByText("Spulen & Flasher").first()).toBeVisible();
   });
 
   test("Feldprojektion: Kosten und Name bleiben verborgen", async ({ page }) => {
