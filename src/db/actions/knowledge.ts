@@ -1,9 +1,10 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { knowledge } from "@/db/schema";
+import { knowledge, knowledgeSignals } from "@/db/schema";
+import { knowledgeSichtbarFuer } from "@/db/queries";
 import { isSuperAdmin, requireUser } from "@/lib/session";
 import type { FormState } from "@/db/actions/clubs";
 
@@ -48,4 +49,46 @@ export async function setKnowledgeVisibility(
 
   if (machineId) revalidatePath(`/machines/${machineId}`);
   return { message: "Sichtbarkeit geändert." };
+}
+
+/*
+  Community-Signal (Phase 5): einen Wissenseintrag als „hilfreich" oder „falsch"
+  markieren. Genau ein Signal je Nutzer und Eintrag; `wert='aus'` entfernt es.
+  Man signalisiert nur, was man sehen darf, und nicht den EIGENEN Eintrag.
+*/
+export async function setKnowledgeSignal(formData: FormData): Promise<void> {
+  const id = String(formData.get("knowledgeId") ?? "");
+  const wert = String(formData.get("wert") ?? "");
+  const machineId = String(formData.get("machineId") ?? "");
+  const currentUser = await requireUser();
+
+  const [k] = await db
+    .select({ createdBy: knowledge.createdBy })
+    .from(knowledge)
+    .where(eq(knowledge.id, id))
+    .limit(1);
+  if (!k) return;
+  if (k.createdBy === currentUser.id) return; // eigenen Eintrag nicht bewerten
+  if (!(await knowledgeSichtbarFuer(currentUser, id))) return;
+
+  if (wert === "hilfreich" || wert === "falsch") {
+    await db
+      .insert(knowledgeSignals)
+      .values({ knowledgeId: id, userId: currentUser.id, wert })
+      .onConflictDoUpdate({
+        target: [knowledgeSignals.knowledgeId, knowledgeSignals.userId],
+        set: { wert },
+      });
+  } else {
+    await db
+      .delete(knowledgeSignals)
+      .where(
+        and(
+          eq(knowledgeSignals.knowledgeId, id),
+          eq(knowledgeSignals.userId, currentUser.id),
+        ),
+      );
+  }
+
+  if (machineId) revalidatePath(`/machines/${machineId}`);
 }

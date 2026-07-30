@@ -19,6 +19,7 @@ import {
   faults,
   generations,
   knowledge,
+  knowledgeSignals,
   machineModels,
   machines,
   maintenanceLog,
@@ -246,17 +247,40 @@ async function knowledgeVisibilityFilter(
   return or(...parts);
 }
 
-/** Autor-/Sichtbarkeits-behaftete Auswahl der Fakten-Wissenseinträge. */
-const knowledgeAuswahl = {
-  id: knowledge.id,
-  titel: knowledge.titel,
-  inhalt: knowledge.inhalt,
-  visibility: knowledge.visibility,
-  sourceType: knowledge.sourceType,
-  createdAt: knowledge.createdAt,
-  autorId: knowledge.createdBy,
-  autorName: user.name,
-} as const;
+/** Autor-/Sichtbarkeits-behaftete Auswahl eines Wissenseintrags — inkl.
+    Community-Signalzähler (Phase 5) und dem eigenen Signal des Nutzers. */
+function knowledgeAuswahl(userId: string) {
+  return {
+    id: knowledge.id,
+    titel: knowledge.titel,
+    inhalt: knowledge.inhalt,
+    visibility: knowledge.visibility,
+    sourceType: knowledge.sourceType,
+    createdAt: knowledge.createdAt,
+    autorId: knowledge.createdBy,
+    autorName: user.name,
+    hilfreich: sql<number>`(select count(*) from ${knowledgeSignals} where ${knowledgeSignals.knowledgeId} = ${knowledge.id} and ${knowledgeSignals.wert} = 'hilfreich')::int`,
+    falsch: sql<number>`(select count(*) from ${knowledgeSignals} where ${knowledgeSignals.knowledgeId} = ${knowledge.id} and ${knowledgeSignals.wert} = 'falsch')::int`,
+    meinSignal: sql<
+      "hilfreich" | "falsch" | null
+    >`(select ${knowledgeSignals.wert} from ${knowledgeSignals} where ${knowledgeSignals.knowledgeId} = ${knowledge.id} and ${knowledgeSignals.userId} = ${userId} limit 1)`,
+  } as const;
+}
+
+/** Darf dieser Nutzer diesen Wissenseintrag sehen? (Dieselbe Regel wie oben.)
+    Server-seitiger Gate für Community-Signale — man signalisiert nur, was man
+    auch sehen darf. */
+export async function knowledgeSichtbarFuer(
+  currentUser: SessionUser,
+  knowledgeId: string,
+): Promise<boolean> {
+  const sichtbar = await knowledgeVisibilityFilter(currentUser);
+  const [row] = await db
+    .select({ id: knowledge.id })
+    .from(knowledge)
+    .where(and(eq(knowledge.id, knowledgeId), sichtbar));
+  return Boolean(row);
+}
 
 /** Sichtbare Handbuch-Fakten (typ='handbuch_fakten') eines Gerätetyps (Modell). */
 export async function getModelKnowledge(
@@ -265,7 +289,7 @@ export async function getModelKnowledge(
 ) {
   const sichtbar = await knowledgeVisibilityFilter(currentUser);
   return db
-    .select(knowledgeAuswahl)
+    .select(knowledgeAuswahl(currentUser.id))
     .from(knowledge)
     .innerJoin(user, eq(user.id, knowledge.createdBy))
     .where(
@@ -285,7 +309,7 @@ export async function getMachineKnowledge(
 ) {
   const sichtbar = await knowledgeVisibilityFilter(currentUser);
   return db
-    .select(knowledgeAuswahl)
+    .select(knowledgeAuswahl(currentUser.id))
     .from(knowledge)
     .innerJoin(user, eq(user.id, knowledge.createdBy))
     .where(
@@ -301,11 +325,13 @@ export async function getMachineKnowledge(
 /* Wie knowledgeAuswahl, zusätzlich die Generation-Zuordnung eines Eintrags —
    damit ein auf Generation-Ebene angelegter Guide („gilt für WPC-95") kenntlich
    gemacht werden kann. generationName ist null für Modell-/Maschinen-Einträge. */
-const guideAuswahl = {
-  ...knowledgeAuswahl,
-  generationId: knowledge.generationId,
-  generationName: generations.name,
-} as const;
+function guideAuswahl(userId: string) {
+  return {
+    ...knowledgeAuswahl(userId),
+    generationId: knowledge.generationId,
+    generationName: generations.name,
+  } as const;
+}
 
 /** Die Generation eines Gerätetyps (oder null) — für die Ebene-Wahl beim Guide. */
 export async function getModelGeneration(modelId: string) {
@@ -337,7 +363,7 @@ export async function getModelGuides(currentUser: SessionUser, modelId: string) 
     : eq(knowledge.modelId, modelId);
 
   return db
-    .select(guideAuswahl)
+    .select(guideAuswahl(currentUser.id))
     .from(knowledge)
     .innerJoin(user, eq(user.id, knowledge.createdBy))
     .leftJoin(generations, eq(generations.id, knowledge.generationId))
@@ -353,7 +379,7 @@ export async function getMachineGuides(
 ) {
   const sichtbar = await knowledgeVisibilityFilter(currentUser);
   return db
-    .select(guideAuswahl)
+    .select(guideAuswahl(currentUser.id))
     .from(knowledge)
     .innerJoin(user, eq(user.id, knowledge.createdBy))
     .leftJoin(generations, eq(generations.id, knowledge.generationId))

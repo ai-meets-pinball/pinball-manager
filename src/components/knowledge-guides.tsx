@@ -1,4 +1,5 @@
 import { Globe, Layers, Lock, Users } from "lucide-react";
+import { KnowledgeSignals } from "@/components/knowledge-signals";
 import { SetVisibility } from "@/components/set-visibility";
 import { TroubleshootingGuideView } from "@/components/troubleshooting-guide";
 
@@ -20,6 +21,9 @@ type Eintrag = {
   createdAt: Date;
   autorId: string;
   autorName: string | null;
+  hilfreich: number;
+  falsch: number;
+  meinSignal: "hilfreich" | "falsch" | null;
   // Gesetzt, wenn der Guide auf Generation-Ebene liegt (gilt für alle Modelle
   // dieser Board-/Hardware-Generation).
   generationName?: string | null;
@@ -82,13 +86,23 @@ export function KnowledgeGuides({
                   </>
                 ) : null}
               </p>
-              {eigen ? (
-                <SetVisibility
+              <div className="flex items-center gap-3">
+                <KnowledgeSignals
                   knowledgeId={e.id}
                   machineId={machineId}
-                  current={e.visibility}
+                  hilfreich={e.hilfreich}
+                  falsch={e.falsch}
+                  meinSignal={e.meinSignal}
+                  eigen={eigen}
                 />
-              ) : null}
+                {eigen ? (
+                  <SetVisibility
+                    knowledgeId={e.id}
+                    machineId={machineId}
+                    current={e.visibility}
+                  />
+                ) : null}
+              </div>
             </div>
             <TroubleshootingGuideView
               daten={g.guide}

@@ -420,6 +420,29 @@ export const knowledge = pgTable(
   ],
 );
 
+/* ── Community-Signale (Datenmodell-Redesign Phase 5) ─────────────────────── */
+/*
+  Rückmeldung der Community zu einem Wissenseintrag: „hilfreich" oder „falsch".
+  Genau EIN Signal je Nutzer und Eintrag (unique) — erneutes Klicken schaltet um
+  oder entfernt es. Vorerst rein anzeigend (keine Auto-Moderation); Kuratoren,
+  Overrides und Revisionen folgen als eigene Schritte.
+*/
+export const knowledgeSignals = pgTable(
+  "knowledge_signals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    knowledgeId: uuid("knowledge_id")
+      .notNull()
+      .references(() => knowledge.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    wert: text("wert").notNull(), // 'hilfreich' | 'falsch'
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [unique("knowledge_signals_unique").on(t.knowledgeId, t.userId)],
+);
+
 /* Troubleshooting-Guides sind seit dem Datenmodell-Redesign (Phase 2) Modell-
    Wissen in `knowledge` (typ='troubleshooting') — die eigene Tabelle
    `troubleshooting_guides` ist entfallen. */
