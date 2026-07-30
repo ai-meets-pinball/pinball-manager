@@ -1,5 +1,6 @@
 import { Globe, Lock, Users } from "lucide-react";
 import { MachineDataTables } from "@/components/machine-data-tables";
+import { KnowledgeHide } from "@/components/knowledge-hide";
 import { KnowledgeSignals } from "@/components/knowledge-signals";
 import { SetVisibility } from "@/components/set-visibility";
 
@@ -24,6 +25,7 @@ type Eintrag = {
   hilfreich: number;
   falsch: number;
   meinSignal: "hilfreich" | "falsch" | null;
+  ausgeblendet: boolean;
 };
 
 const SICHT: Record<Sicht, { label: string; Icon: typeof Globe }> = {
@@ -61,6 +63,18 @@ export function KnowledgeFacts({
     <div className="space-y-6">
       {eintraege.map((e) => {
         const eigen = e.autorId === currentUserId;
+        // Für dich ausgeblendet (nur fremde Einträge): nur der Wiederherstellen-Stub.
+        if (!eigen && e.ausgeblendet) {
+          return (
+            <KnowledgeHide
+              key={e.id}
+              knowledgeId={e.id}
+              machineId={machineId}
+              ausgeblendet
+              titel={e.titel}
+            />
+          );
+        }
         const S = SICHT[e.visibility];
         return (
           <div key={e.id} className="space-y-2">
@@ -89,7 +103,14 @@ export function KnowledgeFacts({
                     machineId={machineId}
                     current={e.visibility}
                   />
-                ) : null}
+                ) : (
+                  <KnowledgeHide
+                    knowledgeId={e.id}
+                    machineId={machineId}
+                    ausgeblendet={false}
+                    titel={e.titel}
+                  />
+                )}
               </div>
             </div>
             <MachineDataTables facts={inhaltToFacts(e.inhalt)} />

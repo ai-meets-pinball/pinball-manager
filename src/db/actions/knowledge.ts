@@ -3,7 +3,7 @@
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { knowledge, knowledgeSignals } from "@/db/schema";
+import { knowledge, knowledgeOverrides, knowledgeSignals } from "@/db/schema";
 import { knowledgeSichtbarFuer } from "@/db/queries";
 import { isSuperAdmin, requireUser } from "@/lib/session";
 import type { FormState } from "@/db/actions/clubs";
@@ -49,6 +49,45 @@ export async function setKnowledgeVisibility(
 
   if (machineId) revalidatePath(`/machines/${machineId}`);
   return { message: "Sichtbarkeit geändert." };
+}
+
+/*
+  Persönliches Ausblenden (Phase 5): einen fremden, sichtbaren Wissenseintrag
+  für sich ausblenden bzw. wieder einblenden. Rein persönlich — ändert nichts für
+  andere. Den eigenen Eintrag blendet man nicht aus (Verwaltung via Sichtbarkeit).
+*/
+export async function setKnowledgeOverride(formData: FormData): Promise<void> {
+  const id = String(formData.get("knowledgeId") ?? "");
+  const machineId = String(formData.get("machineId") ?? "");
+  const hide = String(formData.get("hide") ?? "") === "true";
+  const currentUser = await requireUser();
+
+  const [k] = await db
+    .select({ createdBy: knowledge.createdBy })
+    .from(knowledge)
+    .where(eq(knowledge.id, id))
+    .limit(1);
+  if (!k) return;
+  if (k.createdBy === currentUser.id) return; // eigenen Eintrag nicht ausblenden
+  if (!(await knowledgeSichtbarFuer(currentUser, id))) return;
+
+  if (hide) {
+    await db
+      .insert(knowledgeOverrides)
+      .values({ knowledgeId: id, userId: currentUser.id })
+      .onConflictDoNothing();
+  } else {
+    await db
+      .delete(knowledgeOverrides)
+      .where(
+        and(
+          eq(knowledgeOverrides.knowledgeId, id),
+          eq(knowledgeOverrides.userId, currentUser.id),
+        ),
+      );
+  }
+
+  if (machineId) revalidatePath(`/machines/${machineId}`);
 }
 
 /*
