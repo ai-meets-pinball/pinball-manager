@@ -169,6 +169,13 @@
       "when": 1785359072477,
       "tag": "0023_foamy_sandman",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1785390260500,
+      "tag": "0024_flat_typhoid_mary",
+      "breakpoints": true
     }
   ]
 }

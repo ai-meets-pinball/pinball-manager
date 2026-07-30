@@ -1,5 +1,6 @@
 import { Globe, Lock, Users } from "lucide-react";
 import { MachineDataTables } from "@/components/machine-data-tables";
+import { KnowledgeSignals } from "@/components/knowledge-signals";
 import { SetVisibility } from "@/components/set-visibility";
 
 /*
@@ -20,6 +21,9 @@ type Eintrag = {
   createdAt: Date;
   autorId: string;
   autorName: string | null;
+  hilfreich: number;
+  falsch: number;
+  meinSignal: "hilfreich" | "falsch" | null;
 };
 
 const SICHT: Record<Sicht, { label: string; Icon: typeof Globe }> = {
@@ -70,13 +74,23 @@ export function KnowledgeFacts({
                   <S.Icon size={13} /> {S.label}
                 </span>
               </p>
-              {eigen ? (
-                <SetVisibility
+              <div className="flex items-center gap-3">
+                <KnowledgeSignals
                   knowledgeId={e.id}
                   machineId={machineId}
-                  current={e.visibility}
+                  hilfreich={e.hilfreich}
+                  falsch={e.falsch}
+                  meinSignal={e.meinSignal}
+                  eigen={eigen}
                 />
-              ) : null}
+                {eigen ? (
+                  <SetVisibility
+                    knowledgeId={e.id}
+                    machineId={machineId}
+                    current={e.visibility}
+                  />
+                ) : null}
+              </div>
             </div>
             <MachineDataTables facts={inhaltToFacts(e.inhalt)} />
           </div>
