@@ -13,6 +13,7 @@ import {
 import { requireMachineWrite } from "@/lib/session";
 import { anthropicModelFor, resolveProvider } from "@/lib/ai/provider";
 import { ollamaErrorMessage, ollamaJson } from "@/lib/ai/ollama";
+import { mlxErrorMessage, mlxText } from "@/lib/ai/mlx";
 import { MAINTENANCE_STANDARD } from "@/lib/maintenance-catalog";
 import {
   maintenanceImportJsonSchema,
@@ -333,7 +334,19 @@ export async function importMaintenanceFromGuide(
   const userPrompt = `Wandle diesen Wartungsplan-Abschnitt in strukturierte Wartungspunkte (JSON) um:\n\n${abschnittText}`;
   let text: string;
 
-  if (provider === "ollama") {
+  if (provider === "mlx") {
+    // Lokaler MLX-Pfad: kein API-Key nötig.
+    try {
+      text = await mlxText({
+        system: IMPORT_SYSTEM,
+        prompt: userPrompt,
+        schema: maintenanceImportJsonSchema,
+      });
+    } catch (e) {
+      console.error("[maintenance-import] mlx:", (e as Error).message);
+      return { error: mlxErrorMessage(e) };
+    }
+  } else if (provider === "ollama") {
     // Lokaler Pfad: kein API-Key nötig.
     try {
       text = await ollamaJson({

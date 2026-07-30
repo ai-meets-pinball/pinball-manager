@@ -14,16 +14,20 @@
 // "anthropic" = Claude Sonnet (höchste Qualität, via ANTHROPIC_MODEL);
 // "auto"      = günstig zuerst (Haiku) und nur bei leerem Ergebnis auf Sonnet
 //               hochschalten — spart, wo Haiku reicht, bleibt aber zuverlässig;
-// "ollama"    = lokales Modell. Alle Claude-Wege teilen sich Key & Code.
-export type AiProvider = "anthropic" | "auto" | "ollama";
+// "ollama"    = lokales Modell über Ollama (wird von MLX abgelöst);
+// "mlx"       = lokales Modell über selbst gehostetes MLX (Text-Long-Context +
+//               separater OCR-Server für Scans). Alle Claude-Wege teilen Key & Code.
+export type AiProvider = "anthropic" | "auto" | "ollama" | "mlx";
 
 // Modell für die günstige Auto-Stufe bzw. den Sonnet-Fallback.
 export const HAIKU_MODEL = () => process.env.ANTHROPIC_HAIKU_MODEL || "claude-haiku-4-5";
 export const SONNET_MODEL = () => process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
 
-/** Standard-Anbieter (Vorauswahl). Claude‑Sonnet, außer AI_PROVIDER=ollama. */
+/** Standard-Anbieter (Vorauswahl). Claude‑Sonnet, außer AI_PROVIDER=ollama|mlx. */
 export function getAiProvider(): AiProvider {
-  return process.env.AI_PROVIDER === "ollama" ? "ollama" : "anthropic";
+  if (process.env.AI_PROVIDER === "mlx") return "mlx";
+  if (process.env.AI_PROVIDER === "ollama") return "ollama";
+  return "anthropic";
 }
 
 /** Claude-Modell-ID je Anbieter. "auto" startet mit dem günstigen Haiku (der
@@ -51,14 +55,19 @@ export function claudePdfMaxPages(provider: AiProvider): number {
 export function availableProviders(): AiProvider[] {
   const ollamaConfigured =
     process.env.AI_PROVIDER === "ollama" || Boolean(process.env.OLLAMA_BASE_URL);
+  // MLX „konfiguriert" = AI_PROVIDER=mlx oder eine MLX_TEXT_URL gesetzt.
+  const mlxConfigured =
+    process.env.AI_PROVIDER === "mlx" || Boolean(process.env.MLX_TEXT_URL);
+  const lokalConfigured = ollamaConfigured || mlxConfigured;
   const anthropicConfigured =
-    Boolean(process.env.ANTHROPIC_API_KEY) || !ollamaConfigured;
+    Boolean(process.env.ANTHROPIC_API_KEY) || !lokalConfigured;
 
   // Claude bietet zwei Stufen zur Wahl: "auto" (günstig, mit Sonnet-Fallback) und
   // "anthropic" (immer Sonnet). Beide über denselben Key/Weg.
   const list: AiProvider[] = [];
   if (anthropicConfigured) list.push("anthropic", "auto");
   if (ollamaConfigured) list.push("ollama");
+  if (mlxConfigured) list.push("mlx");
 
   const def = getAiProvider();
   return list.sort((a, b) => (a === def ? -1 : b === def ? 1 : 0));
@@ -74,7 +83,10 @@ export function resolveProvider(formData: FormData): AiProvider {
   const raw = String(formData.get("provider") ?? "");
   const avail = availableProviders();
   if (
-    (raw === "anthropic" || raw === "auto" || raw === "ollama") &&
+    (raw === "anthropic" ||
+      raw === "auto" ||
+      raw === "ollama" ||
+      raw === "mlx") &&
     avail.includes(raw)
   ) {
     return raw;

@@ -9,6 +9,12 @@ import {
 } from "@/lib/ai/provider";
 import { ollamaErrorMessage, ollamaJson } from "@/lib/ai/ollama";
 import {
+  mlxErrorMessage,
+  mlxOcr,
+  mlxOcrConfigured,
+  mlxText,
+} from "@/lib/ai/mlx";
+import {
   pdfPageCount,
   preparePdfForLocalModel,
   renderPdfPagesToPng,
@@ -433,6 +439,69 @@ export async function* extractManualFactsStream(opts: {
     } catch (e) {
       console.error("[manual-extract] ollama:", (e as Error).message);
       yield { type: "error", error: ollamaErrorMessage(e) };
+      return;
+    }
+  } else if (provider === "mlx") {
+    // Lokaler MLX-Pfad. Text: das GANZE Handbuch in einen Long-Context-Call.
+    // Scan: Seiten erst per OCR-Server zu Text, dann derselbe Struktur-Call
+    // (2-stufig OCR → Text → JSON, vereint mit dem digitalen Pfad).
+    let prepared: LocalPdfInput;
+    try {
+      yield { type: "info", message: "PDF wird vorbereitet …" };
+      prepared = await preparePdfForLocalModel(Buffer.from(await file.arrayBuffer()));
+    } catch (e) {
+      console.error("[manual-extract] pdf:", (e as Error).message);
+      yield {
+        type: "error",
+        error: (e as Error).message || "Das PDF konnte nicht vorbereitet werden.",
+      };
+      return;
+    }
+
+    try {
+      let handbuchtext: string;
+      if (prepared.mode === "text") {
+        yield { type: "start", mode: "text", totalPages: 0, totalBatches: 1 };
+        yield { type: "info", message: "Fakten werden aus dem Handbuchtext extrahiert …" };
+        handbuchtext = prepared.text;
+      } else {
+        // Gescannt: erst OCR (Seiten → Text) über den MLX-OCR-Server.
+        if (!mlxOcrConfigured()) {
+          yield {
+            type: "error",
+            error:
+              "Gescanntes Handbuch: für MLX ist kein OCR-Server konfiguriert (MLX_OCR_URL). Bitte Ollama/Claude nutzen oder den OCR-Server starten (docs/MLX_SETUP.md).",
+          };
+          return;
+        }
+        const totalBatches = Math.ceil(prepared.totalPages / VISION_BATCH);
+        yield {
+          type: "start",
+          mode: "vision",
+          totalPages: prepared.totalPages,
+          totalBatches,
+        };
+        const teile: string[] = [];
+        let batch = 0;
+        for (let from = 1; from <= prepared.totalPages; from += VISION_BATCH) {
+          batch++;
+          const bis = Math.min(from + VISION_BATCH - 1, prepared.totalPages);
+          yield { type: "batch", batch, totalBatches, fromPage: from, toPage: bis };
+          const images = await prepared.renderRange(from, VISION_BATCH);
+          teile.push(await mlxOcr(images));
+        }
+        yield { type: "info", message: "Fakten werden aus dem erkannten Text extrahiert …" };
+        handbuchtext = teile.join("\n\n");
+      }
+
+      const jsonText = await mlxText({
+        prompt: `${EXTRACT_PROMPT}\n\nHandbuchtext:\n${handbuchtext}`,
+        schema: outputJsonSchema,
+      });
+      parsed = extractSchema.parse(JSON.parse(extractJson(jsonText)));
+    } catch (e) {
+      console.error("[manual-extract] mlx:", (e as Error).message);
+      yield { type: "error", error: mlxErrorMessage(e) };
       return;
     }
   } else {

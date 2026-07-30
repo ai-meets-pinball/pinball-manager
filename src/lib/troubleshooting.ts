@@ -14,6 +14,7 @@ import {
   ollamaErrorMessage,
   ollamaJson,
 } from "@/lib/ai/ollama";
+import { MLX_TEXT_MODEL, mlxErrorMessage, mlxText } from "@/lib/ai/mlx";
 import {
   troubleshootingGuideJsonSchema,
   troubleshootingGuideSchema,
@@ -242,13 +243,29 @@ export async function generateTroubleshootingGuide(
   // kenntlich gemacht, damit die geringere Verlässlichkeit sichtbar ist.
   const provider = resolveProvider(formData);
   const system = buildSystemPrompt(machine);
-  // Claude (Sonnet ODER Haiku) sucht im Web; nur der lokale Ollama-Pfad nicht.
-  const websuche = provider !== "ollama";
+  // Claude (Sonnet ODER Haiku) sucht im Web; die lokalen Pfade (Ollama/MLX) nicht.
+  const websuche = provider !== "ollama" && provider !== "mlx";
   const usedModel =
-    provider === "ollama" ? OLLAMA_TEXT_MODEL : anthropicModelFor(provider);
+    provider === "ollama"
+      ? OLLAMA_TEXT_MODEL
+      : provider === "mlx"
+        ? MLX_TEXT_MODEL
+        : anthropicModelFor(provider);
 
   let jsonText: string;
-  if (provider === "ollama") {
+  if (provider === "mlx") {
+    // Lokaler MLX-Pfad: kein Key, keine Websuche — ein Text-Call.
+    try {
+      jsonText = await mlxText({
+        system,
+        prompt: OUTPUT_INSTRUCTION,
+        schema: troubleshootingGuideJsonSchema,
+      });
+    } catch (e) {
+      console.error("[troubleshooting] mlx:", (e as Error).message);
+      return { error: mlxErrorMessage(e) };
+    }
+  } else if (provider === "ollama") {
     // Lokaler Pfad: kein API-Key, keine Websuche/Tool-Schleife — ein Call.
     try {
       jsonText = await ollamaJson({
