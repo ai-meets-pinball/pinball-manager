@@ -99,13 +99,27 @@ export async function addKnowledge(opts: {
   visibility?: "privat" | "club" | "oeffentlich";
   clubId?: string | null;
 }) {
-  await sql`
+  const [row] = await sql`
     INSERT INTO knowledge
       (typ, titel, inhalt, source_type, visibility, model_id, club_id, created_by)
     VALUES ('handbuch_fakten', 'E2E Handbuch-Daten',
             ${sql.json({ coils: { columns: ["Sol/No", "Funktion"], rows: [["1", "E2E Spule"]] } })},
             'extrahiert', ${opts.visibility ?? "privat"}, ${opts.modelId},
-            ${opts.clubId ?? null}, ${opts.createdBy})`;
+            ${opts.clubId ?? null}, ${opts.createdBy})
+    RETURNING id`;
+  return row.id as string;
+}
+
+/** Ein Community-Signal direkt setzen (für Schwellwert-Tests). */
+export async function addSignal(
+  knowledgeId: string,
+  userId: string,
+  wert: "hilfreich" | "falsch",
+) {
+  await sql`
+    INSERT INTO knowledge_signals (knowledge_id, user_id, wert)
+    VALUES (${knowledgeId}, ${userId}, ${wert})
+    ON CONFLICT (knowledge_id, user_id) DO UPDATE SET wert = EXCLUDED.wert`;
 }
 
 export async function addRepair(machineId: string) {

@@ -1,4 +1,5 @@
 import { Globe, Layers, Lock, Users } from "lucide-react";
+import { KnowledgeGemeldet } from "@/components/knowledge-gemeldet";
 import { KnowledgeHide } from "@/components/knowledge-hide";
 import { KnowledgeSignals } from "@/components/knowledge-signals";
 import { SetVisibility } from "@/components/set-visibility";
@@ -124,6 +125,7 @@ export function KnowledgeGuides({
                 )}
               </div>
             </div>
+            <KnowledgeGemeldet hilfreich={e.hilfreich} falsch={e.falsch} />
             <TroubleshootingGuideView
               daten={g.guide}
               model={g.model}
