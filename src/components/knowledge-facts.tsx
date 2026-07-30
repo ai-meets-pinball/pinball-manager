@@ -1,5 +1,6 @@
 import { Globe, Lock, Users } from "lucide-react";
 import { MachineDataTables } from "@/components/machine-data-tables";
+import { KnowledgeGemeldet } from "@/components/knowledge-gemeldet";
 import { KnowledgeHide } from "@/components/knowledge-hide";
 import { KnowledgeSignals } from "@/components/knowledge-signals";
 import { SetVisibility } from "@/components/set-visibility";
@@ -113,6 +114,7 @@ export function KnowledgeFacts({
                 )}
               </div>
             </div>
+            <KnowledgeGemeldet hilfreich={e.hilfreich} falsch={e.falsch} />
             <MachineDataTables facts={inhaltToFacts(e.inhalt)} />
           </div>
         );
