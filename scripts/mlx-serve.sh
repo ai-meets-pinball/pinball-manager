@@ -11,8 +11,9 @@ set -euo pipefail
 VENV="${MLX_VENV:-$HOME/.mlx-venv}"
 TEXT_MODEL="${MLX_TEXT_MODEL:-mlx-community/Qwen2.5-7B-Instruct-1M-4bit}"
 TEXT_PORT="${MLX_TEXT_PORT:-8082}"
-OCR_MODEL="${MLX_OCR_MODEL:-mlx-community/Qwen2.5-VL-7B-Instruct-4bit}"
+OCR_MODEL="${MLX_OCR_MODEL:-mlx-community/Qwen2.5-VL-3B-Instruct-4bit}"
 OCR_PORT="${MLX_OCR_PORT:-8083}"
+HERE="$(cd "$(dirname "$0")" && pwd)"
 
 # shellcheck disable=SC1091
 source "$VENV/bin/activate"
@@ -23,8 +24,9 @@ TEXT_PID=$!
 
 OCR_PID=""
 if [ -n "${MLX_START_OCR:-}" ]; then
-  echo "→ MLX OCR-Server:  $OCR_MODEL auf :$OCR_PORT"
-  python -m mlx_vlm.server --model "$OCR_MODEL" --port "$OCR_PORT" &
+  echo "→ MLX OCR-Server:  $OCR_MODEL auf :$OCR_PORT (eigener Dienst)"
+  MLX_OCR_MODEL="$OCR_MODEL" MLX_OCR_PORT="$OCR_PORT" \
+    python "$HERE/mlx-ocr/server.py" &
   OCR_PID=$!
 else
   echo "  (OCR-Server übersprungen — MLX_START_OCR setzen, um ihn zu starten)"

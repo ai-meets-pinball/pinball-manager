@@ -22,10 +22,18 @@ zufällige API-Form der Server, kein Ziel.
 ## 1. Installation (einmalig)
 
 ```bash
-python3 -m venv ~/.mlx-venv
+python3 -m venv ~/.mlx-venv           # System-Python 3.9 reicht
 source ~/.mlx-venv/bin/activate
-pip install --upgrade mlx-lm mlx-vlm
+pip install --upgrade pip
+pip install mlx-lm                     # Text-Server
+# Für OCR zusätzlich (siehe §3): mlx-vlm + torch (nur Processor-Backend) und
+# eine transformers-Version < 4.57 (die neueren brechen mlx-vlm 0.1.15):
+pip install mlx-vlm torch torchvision "transformers==4.53.3"
 ```
+
+> Getestet: Python 3.9.6, `mlx-lm 0.29.1`, `mlx-vlm 0.1.15`, `transformers 4.53.3`.
+> **Wichtig:** `transformers>=4.57` bricht die OCR (fast Image-Processor liefert
+> nur PyTorch-Tensoren; slow Tokenizer hat kein `.vocab`). Deshalb 4.53.3 pinnen.
 
 ## 2. Text-Server (digitale Handbücher, Guide, Wartungs-Import)
 
@@ -42,45 +50,28 @@ mlx_lm.server \
   Handbuch kalibrieren.
 - Health: `curl http://localhost:8082/health`.
 
-## 3. OCR-Server (gescannte Handbücher) — zwei Wege
+## 3. OCR-Server (gescannte Handbücher)
 
-### 3a. Empfohlen: Qwen2.5-VL über `mlx-vlm` (kein Custom-Code)
+`mlx-vlm 0.1.15` bringt **keinen** eigenen HTTP-Server mit — daher kapseln wir es
+in einem kleinen eigenen Dienst **[`scripts/mlx-ocr/server.py`](../scripts/mlx-ocr/server.py)**
+(FastAPI), der genau die `POST /v1/chat/completions`-Form spricht, die die App
+sendet (Bild als `data:`-URL → erkannter Text).
 
 ```bash
 source ~/.mlx-venv/bin/activate
-python -m mlx_vlm.server \
-  --model mlx-community/Qwen2.5-VL-7B-Instruct-4bit \
-  --port 8083
+MLX_OCR_MODEL="mlx-community/Qwen2.5-VL-3B-Instruct-4bit" \
+MLX_OCR_PORT=8083 \
+python scripts/mlx-ocr/server.py
 ```
 
-Nimmt Bild-Eingaben (OpenAI-Vision-Form) und liefert den Seitentext. Health:
-`curl http://localhost:8083/health`.
+- **3B statt 7B:** leichter, passt neben dem residenten Text-Modell in den RAM,
+  gute OCR-Qualität. (7B via `MLX_OCR_MODEL=…-VL-7B-Instruct-4bit`, wenn RAM reicht.)
+- Health: `curl http://localhost:8083/health`. Getestet: Bild einer Spulentabelle
+  → korrekter Text in ~3 s.
 
-### 3b. Alternative: PaddleOCR-VL (dedizierte OCR, eigener Dienst)
-
-[`gamhtoi/PaddleOCR-VL-MLX`](https://huggingface.co/gamhtoi/PaddleOCR-VL-MLX) hat
-**keinen** fertigen Server (custom `trust_remote_code`). Nötig ist ein kleiner
-eigener HTTP-Dienst, der `POST /v1/chat/completions` (Bild → Text) nachbildet,
-damit `MLX_OCR_URL` darauf zeigen kann. Skelett:
-
-```python
-# scripts/mlx-ocr/server.py  (FastAPI + uvicorn)
-from fastapi import FastAPI
-from PIL import Image
-import base64, io
-from modeling_paddleocr_vl import PaddleOCRVLForConditionalGeneration
-# model = PaddleOCRVLForConditionalGeneration.from_pretrained(
-#     "gamhtoi/PaddleOCR-VL-MLX", trust_remote_code=True)
-app = FastAPI()
-
-@app.post("/v1/chat/completions")
-def ocr(body: dict):
-    # Bild aus der data:-URL im letzten user-content ziehen, OCR ausführen,
-    # Antwort in { "choices": [ { "message": { "content": <text> } } ] } packen.
-    ...
-```
-
-Erst bauen, wenn 3a qualitativ nicht reicht — 3a genügt in aller Regel.
+**Alternative (dediziertes OCR-Modell):** [`gamhtoi/PaddleOCR-VL-MLX`](https://huggingface.co/gamhtoi/PaddleOCR-VL-MLX)
+— müsste analog in `scripts/mlx-ocr/` gekapselt werden (custom `trust_remote_code`).
+Erst nötig, wenn Qwen2.5-VL qualitativ nicht reicht.
 
 ## 4. App konfigurieren (`.env.local`)
 
