@@ -19,6 +19,7 @@ import {
   faults,
   generations,
   knowledge,
+  knowledgeOverrides,
   knowledgeSignals,
   machineModels,
   machines,
@@ -264,6 +265,7 @@ function knowledgeAuswahl(userId: string) {
     meinSignal: sql<
       "hilfreich" | "falsch" | null
     >`(select ${knowledgeSignals.wert} from ${knowledgeSignals} where ${knowledgeSignals.knowledgeId} = ${knowledge.id} and ${knowledgeSignals.userId} = ${userId} limit 1)`,
+    ausgeblendet: sql<boolean>`exists(select 1 from ${knowledgeOverrides} where ${knowledgeOverrides.knowledgeId} = ${knowledge.id} and ${knowledgeOverrides.userId} = ${userId})`,
   } as const;
 }
 

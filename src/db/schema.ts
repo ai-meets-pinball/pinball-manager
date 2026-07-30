@@ -443,6 +443,27 @@ export const knowledgeSignals = pgTable(
   (t) => [unique("knowledge_signals_unique").on(t.knowledgeId, t.userId)],
 );
 
+/*
+  Persönliche Overrides (Datenmodell-Redesign Phase 5): ein Nutzer blendet einen
+  Wissenseintrag für SICH aus (typ='ausblenden'). Rein persönlich — ändert nichts
+  für andere. Genau EIN Override je Nutzer und Eintrag. (Fork/Kuratoren folgen.)
+*/
+export const knowledgeOverrides = pgTable(
+  "knowledge_overrides",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    knowledgeId: uuid("knowledge_id")
+      .notNull()
+      .references(() => knowledge.id, { onDelete: "cascade" }),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    typ: text("typ").notNull().default("ausblenden"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [unique("knowledge_overrides_unique").on(t.knowledgeId, t.userId)],
+);
+
 /* Troubleshooting-Guides sind seit dem Datenmodell-Redesign (Phase 2) Modell-
    Wissen in `knowledge` (typ='troubleshooting') — die eigene Tabelle
    `troubleshooting_guides` ist entfallen. */

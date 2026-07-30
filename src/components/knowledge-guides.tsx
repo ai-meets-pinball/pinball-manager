@@ -1,4 +1,5 @@
 import { Globe, Layers, Lock, Users } from "lucide-react";
+import { KnowledgeHide } from "@/components/knowledge-hide";
 import { KnowledgeSignals } from "@/components/knowledge-signals";
 import { SetVisibility } from "@/components/set-visibility";
 import { TroubleshootingGuideView } from "@/components/troubleshooting-guide";
@@ -24,6 +25,7 @@ type Eintrag = {
   hilfreich: number;
   falsch: number;
   meinSignal: "hilfreich" | "falsch" | null;
+  ausgeblendet: boolean;
   // Gesetzt, wenn der Guide auf Generation-Ebene liegt (gilt für alle Modelle
   // dieser Board-/Hardware-Generation).
   generationName?: string | null;
@@ -63,6 +65,17 @@ export function KnowledgeGuides({
     <div className="space-y-6">
       {eintraege.map((e) => {
         const eigen = e.autorId === currentUserId;
+        if (!eigen && e.ausgeblendet) {
+          return (
+            <KnowledgeHide
+              key={e.id}
+              knowledgeId={e.id}
+              machineId={machineId}
+              ausgeblendet
+              titel={e.titel}
+            />
+          );
+        }
         const S = SICHT[e.visibility];
         const g = guideAus(e.inhalt);
         if (!g) return null;
@@ -101,7 +114,14 @@ export function KnowledgeGuides({
                     machineId={machineId}
                     current={e.visibility}
                   />
-                ) : null}
+                ) : (
+                  <KnowledgeHide
+                    knowledgeId={e.id}
+                    machineId={machineId}
+                    ausgeblendet={false}
+                    titel={e.titel}
+                  />
+                )}
               </div>
             </div>
             <TroubleshootingGuideView
