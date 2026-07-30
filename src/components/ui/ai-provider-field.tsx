@@ -23,6 +23,11 @@ const META: Record<
     hint: "Läuft auf diesem Rechner — kein Schlüssel, Daten bleiben lokal. Langsamer, bei kleinen Modellen ungenauer.",
     icon: Cpu,
   },
+  mlx: {
+    label: "Lokal (MLX)",
+    hint: "Läuft lokal über MLX — Daten bleiben auf dem Rechner. Text-Modell mit langem Kontext (ganzes Handbuch); gescannte Handbücher brauchen den OCR-Server.",
+    icon: Cpu,
+  },
   auto: {
     label: "Claude günstig (Auto)",
     hint: "Cloud, kostenoptimiert: erst das günstige Haiku, nur bei leerem Ergebnis automatisch Sonnet. Liest PDFs nativ; große Handbücher werden geteilt. Nutzt API-Schlüssel/Guthaben.",
