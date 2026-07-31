@@ -12,6 +12,7 @@ import {
   getSharedRepairsForModel,
 } from "@/db/queries";
 import { requireUser } from "@/lib/session";
+import { modellName } from "@/lib/format";
 
 /*
   Typ-Seite (die Klasse, z. B. „Monster Bash"): zeigt das für diesen Nutzer
@@ -53,13 +54,13 @@ export default async function GeraetetypPage({
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={model.imageUrl}
-            alt={`${model.hersteller} ${model.modell}`}
+            alt={modellName(model)}
             className="h-20 w-32 flex-none rounded-[var(--radius)] object-cover"
           />
         ) : null}
         <div>
           <h1 className="text-2xl font-bold">
-            {model.hersteller} {model.modell}
+            {modellName(model)}
           </h1>
           <p className="text-[var(--color-muted)]">
             {model.baujahr ?? "Baujahr unbekannt"} · Gerätetyp

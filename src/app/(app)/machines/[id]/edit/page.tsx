@@ -2,6 +2,7 @@ import { MachineForm } from "@/components/machine-form";
 import { updateMachine } from "@/db/actions/machines";
 import { getUserClubs } from "@/db/queries";
 import { requireMachineWrite } from "@/lib/session";
+import { modellName } from "@/lib/format";
 
 export default async function EditMachinePage({
   params,
@@ -15,7 +16,7 @@ export default async function EditMachinePage({
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">
-        {machine.hersteller} {machine.modell} bearbeiten
+        {modellName(machine)} bearbeiten
       </h1>
       <MachineForm action={updateMachine} clubs={clubs} machine={machine} />
     </div>

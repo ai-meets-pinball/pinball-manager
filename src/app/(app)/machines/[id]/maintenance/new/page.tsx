@@ -1,6 +1,7 @@
 import { MaintenanceTaskForm } from "@/components/maintenance-task-form";
 import { createTask } from "@/db/actions/maintenance";
 import { requireMachineWrite } from "@/lib/session";
+import { modellName } from "@/lib/format";
 
 export default async function NewMaintenanceTaskPage({
   params,
@@ -13,7 +14,7 @@ export default async function NewMaintenanceTaskPage({
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">
-        Neuer Wartungspunkt · {machine.hersteller} {machine.modell}
+        Neuer Wartungspunkt · {modellName(machine)}
       </h1>
       <MaintenanceTaskForm action={createTask} machineId={id} />
     </div>

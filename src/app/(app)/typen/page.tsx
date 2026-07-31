@@ -3,6 +3,7 @@ import { FileText } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { getKnowledgeModels } from "@/db/queries";
 import { requireUser } from "@/lib/session";
+import { modellName } from "@/lib/format";
 
 /*
   Gerätetyp-Katalog. Ein Gerätetyp (machine_models, z. B. „Monster Bash") ist die
@@ -50,7 +51,7 @@ export default async function GeraetetypenPage() {
                 ) : null}
                 <div className="min-w-0 flex-1 p-3">
                   <p className="truncate font-semibold">
-                    {m.hersteller} {m.modell}
+                    {modellName(m)}
                   </p>
                   <p className="text-sm text-[var(--color-muted)]">
                     {m.baujahr ?? "—"}

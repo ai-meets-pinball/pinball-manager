@@ -32,6 +32,7 @@ import {
   faults as faultsTable,
   repairs as repairsTable,
 } from "@/db/schema";
+import { modellName } from "@/lib/format";
 import { requireMachineAccess } from "@/lib/session";
 import { availableProviders } from "@/lib/ai/provider";
 
@@ -311,9 +312,7 @@ export default async function MachineDetailPage({
       {/* Kopf: Identität der Maschine + schreibende Aktionen — immer sichtbar. */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">
-            {machine.hersteller} {machine.modell}
-          </h1>
+          <h1 className="text-2xl font-bold">{modellName(machine)}</h1>
           <p className="text-[var(--color-muted)]">
             {machine.baujahr ?? "Baujahr unbekannt"}
           </p>
@@ -359,7 +358,7 @@ export default async function MachineDetailPage({
         <MachineOverview
           machineId={machine.id}
           fotoUrl={machine.fotoUrl}
-          fotoAlt={`${machine.hersteller} ${machine.modell}`}
+          fotoAlt={modellName(machine)}
           opdbRef={machine.opdbRef}
           ipdbRef={machine.ipdbRef}
           kpis={kpis}
@@ -473,8 +472,8 @@ export default async function MachineDetailPage({
                 href={`/typen/${machine.modelId}`}
                 className="inline-flex items-center gap-1.5 text-sm text-[var(--color-primary)] hover:underline"
               >
-                <Boxes size={15} /> Gerätetyp: geteiltes Wissen zu {machine.hersteller}{" "}
-                {machine.modell}
+                <Boxes size={15} /> Gerätetyp: geteiltes Wissen zu{" "}
+                {modellName(machine)}
               </Link>
             ) : null}
             {/* Handbuch-Fakten als Modell-Wissen (eigene + sichtbare fremde),

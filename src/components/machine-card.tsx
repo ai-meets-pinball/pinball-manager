@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Check, Users, Wrench } from "lucide-react";
+import { modellName } from "@/lib/format";
 
 type Machine = {
   id: string;
@@ -33,14 +34,14 @@ export function MachineCard({
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={machine.fotoUrl}
-            alt={`${machine.hersteller} ${machine.modell}`}
+            alt={modellName(machine)}
             className="h-full w-full object-cover"
           />
         ) : null}
       </div>
       <div className="min-w-0">
         <p className="truncate font-medium">
-          {machine.hersteller} {machine.modell}
+          {modellName(machine)}
         </p>
         <p className="text-sm text-[var(--color-muted)]">
           {machine.baujahr ?? "Baujahr unbekannt"}

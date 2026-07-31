@@ -1,6 +1,7 @@
 import { FaultForm } from "@/components/fault-form";
 import { createFault } from "@/db/actions/faults";
 import { requireMachineWrite } from "@/lib/session";
+import { modellName } from "@/lib/format";
 
 export default async function NewFaultPage({
   params,
@@ -13,7 +14,7 @@ export default async function NewFaultPage({
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">
-        Neuer Fehler · {machine.hersteller} {machine.modell}
+        Neuer Fehler · {modellName(machine)}
       </h1>
       <FaultForm action={createFault} machineId={id} />
     </div>

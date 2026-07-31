@@ -36,7 +36,7 @@ export default async function AdminGenerationenPage() {
     })
     .from(machineModels)
     .where(isNotNull(machineModels.generationId))
-    .orderBy(machineModels.hersteller, machineModels.modell);
+    .orderBy(machineModels.modell, machineModels.hersteller);
   const proGeneration = new Map<
     string,
     { hersteller: string; modell: string; baujahr: number | null }[]

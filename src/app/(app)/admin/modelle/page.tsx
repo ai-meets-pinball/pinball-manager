@@ -1,12 +1,14 @@
 import { and, asc, count, desc, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import Link from "next/link";
+import { LayoutGrid, Table2 } from "lucide-react";
 import { ModelGenerationSelect } from "@/components/model-generation-select";
-import { Select } from "@/components/ui/input";
+import { AutoSubmitSelect } from "@/components/ui/auto-submit-select";
 import { List, ListRow } from "@/components/ui/list";
 import { Pagination } from "@/components/ui/pagination";
 import { SearchToolbar } from "@/components/ui/search-toolbar";
 import { db } from "@/db";
 import { generations, machineModels } from "@/db/schema";
+import { modellName } from "@/lib/format";
 
 /*
   Modelle (Super-Admin): der Gerätetyp-Katalog — durchsuchbar (Text), filterbar
@@ -16,7 +18,7 @@ import { generations, machineModels } from "@/db/schema";
   Bestand. Der Super-Admin-Guard sitzt im admin/layout.tsx.
 
   Query-Parameter (deutsche Konvention): q (Suche), gen (Generation-id | "ohne"),
-  sort (name | jahr), dir (auf | ab), seite.
+  sort (name | jahr), dir (auf | ab), ansicht (karten | tabelle), seite.
 */
 const PRO_SEITE = 30;
 
@@ -28,6 +30,7 @@ export default async function AdminModellePage({
     gen?: string;
     sort?: string;
     dir?: string;
+    ansicht?: string;
     seite?: string;
   }>;
 }) {
@@ -36,6 +39,7 @@ export default async function AdminModellePage({
   const gen = sp.gen ?? "";
   const sort = sp.sort === "jahr" ? "jahr" : "name";
   const dir = sp.dir === "ab" ? "ab" : "auf";
+  const ansicht = sp.ansicht === "tabelle" ? "tabelle" : "karten";
   const seite = Math.max(1, Number(sp.seite) || 1);
 
   // Generationen für Filter + Zuordnungs-Select.
@@ -67,16 +71,16 @@ export default async function AdminModellePage({
         : undefined,
   );
 
-  // Sortierung: Name (Hersteller, Modell) oder Baujahr — NULLS LAST, damit
-  // Modelle ohne Jahr in beiden Richtungen ans Ende fallen.
+  // Sortierung: Name (Modell zuerst — passend zur Anzeige „Modell | Hersteller")
+  // oder Baujahr — NULLS LAST, damit Modelle ohne Jahr ans Ende fallen.
   const sortierung =
     sort === "jahr"
       ? dir === "ab"
         ? [sql`${machineModels.baujahr} DESC NULLS LAST`]
         : [sql`${machineModels.baujahr} ASC NULLS LAST`]
       : dir === "ab"
-        ? [desc(machineModels.hersteller), desc(machineModels.modell)]
-        : [asc(machineModels.hersteller), asc(machineModels.modell)];
+        ? [desc(machineModels.modell), desc(machineModels.hersteller)]
+        : [asc(machineModels.modell), asc(machineModels.hersteller)];
 
   const [{ treffer }] = await db
     .select({ treffer: count() })
@@ -107,6 +111,7 @@ export default async function AdminModellePage({
     ...(gen ? { gen } : {}),
     ...(sort !== "name" ? { sort } : {}),
     ...(dir !== "auf" ? { dir } : {}),
+    ...(ansicht === "tabelle" ? { ansicht } : {}),
   };
 
   /* Sortier-Link: Klick auf die aktive Spalte dreht die Richtung um; sonst
@@ -115,12 +120,30 @@ export default async function AdminModellePage({
     const p = new URLSearchParams({
       ...(q ? { q } : {}),
       ...(gen ? { gen } : {}),
+      ...(ansicht === "tabelle" ? { ansicht } : {}),
     });
     if (key !== "name") p.set("sort", key);
     if (sort === key && dir === "auf") p.set("dir", "ab");
     const qs = p.toString();
     return `/admin/modelle${qs ? `?${qs}` : ""}`;
   };
+
+  /* Ansicht-Umschalter (Karten mit Bild / kompakte Tabelle) — Zustand lebt in
+     der URL wie alles andere; Seite und Filter bleiben erhalten. */
+  const ansichtHref = (a: "karten" | "tabelle") => {
+    const p = new URLSearchParams(params);
+    p.delete("ansicht");
+    if (a === "tabelle") p.set("ansicht", "tabelle");
+    if (aktuelleSeite > 1) p.set("seite", String(aktuelleSeite));
+    const qs = p.toString();
+    return `/admin/modelle${qs ? `?${qs}` : ""}`;
+  };
+  const ansichtStil = (aktiv: boolean) =>
+    `rounded-[var(--radius)] border p-1.5 ${
+      aktiv
+        ? "border-[var(--color-primary)] text-[var(--color-primary)]"
+        : "border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+    }`;
   const sortLabel = (key: "name" | "jahr", label: string) => (
     <Link
       href={sortHref(key)}
@@ -148,32 +171,53 @@ export default async function AdminModellePage({
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="text-lg font-semibold">Modelle ({treffer})</h2>
-          <SearchToolbar
-            placeholder="Hersteller, Modell oder OPDB-Ref …"
-            defaultValue={q}
-            label="Modelle suchen"
-            keep={{
-              ...(sort !== "name" ? { sort } : {}),
-              ...(dir !== "auf" ? { dir } : {}),
-            }}
-            resetHref="/admin/modelle"
-            aktiv={Boolean(q || gen)}
-          >
-            <Select
-              name="gen"
-              defaultValue={gen}
-              aria-label="Nach Generation filtern"
-              className="max-w-56"
+          <div className="flex flex-wrap items-center gap-3">
+            <SearchToolbar
+              placeholder="Hersteller, Modell oder OPDB-Ref …"
+              defaultValue={q}
+              label="Modelle suchen"
+              keep={{
+                ...(sort !== "name" ? { sort } : {}),
+                ...(dir !== "auf" ? { dir } : {}),
+                ...(ansicht === "tabelle" ? { ansicht } : {}),
+              }}
+              resetHref="/admin/modelle"
+              aktiv={Boolean(q || gen)}
             >
-              <option value="">Alle Generationen</option>
-              <option value="ohne">— ohne Generation —</option>
-              {genOptionen.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name}
-                </option>
-              ))}
-            </Select>
-          </SearchToolbar>
+              <AutoSubmitSelect
+                name="gen"
+                defaultValue={gen}
+                aria-label="Nach Generation filtern"
+                className="max-w-56"
+              >
+                <option value="">Alle Generationen</option>
+                <option value="ohne">— ohne Generation —</option>
+                {genOptionen.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </AutoSubmitSelect>
+            </SearchToolbar>
+            <div className="flex items-center gap-1" aria-label="Ansicht">
+              <Link
+                href={ansichtHref("karten")}
+                aria-label="Kartenansicht"
+                title="Kartenansicht"
+                className={ansichtStil(ansicht === "karten")}
+              >
+                <LayoutGrid size={16} />
+              </Link>
+              <Link
+                href={ansichtHref("tabelle")}
+                aria-label="Tabellenansicht"
+                title="Tabellenansicht"
+                className={ansichtStil(ansicht === "tabelle")}
+              >
+                <Table2 size={16} />
+              </Link>
+            </div>
+          </div>
         </div>
 
         <p className="text-sm">
@@ -183,46 +227,95 @@ export default async function AdminModellePage({
           {sortLabel("jahr", "Baujahr")}
         </p>
 
-        <List empty="Keine Modelle gefunden.">
-          {modelle.map((m) => (
-            <ListRow
-              key={m.id}
-              leading={
-                m.imageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={m.imageUrl}
-                    alt=""
-                    className="h-12 w-16 rounded-[var(--radius)] object-cover"
+        {ansicht === "tabelle" ? (
+          /* Kompakte Tabellen-Ansicht (ohne Bilder) — für schnelles Scannen
+             vieler Zeilen. Die Karten-Ansicht bleibt der Standard. */
+          modelle.length === 0 ? (
+            <p className="text-sm text-[var(--color-muted)]">
+              Keine Modelle gefunden.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="border-b border-[var(--color-border)] text-left text-xs uppercase tracking-[0.06em] text-[var(--color-muted)]">
+                    <th className="py-2 pr-4 font-medium">Modell</th>
+                    <th className="py-2 pr-4 font-medium">Hersteller</th>
+                    <th className="py-2 pr-4 font-medium">Baujahr</th>
+                    <th className="py-2 pr-4 font-medium">OPDB-Ref</th>
+                    <th className="py-2 font-medium">Generation</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {modelle.map((m) => (
+                    <tr
+                      key={m.id}
+                      className="border-b border-[var(--color-border)] align-middle hover:bg-[var(--color-surface-2)]"
+                    >
+                      <td className="py-2 pr-4 font-medium">{m.modell}</td>
+                      <td className="py-2 pr-4 text-[var(--color-muted)]">
+                        {m.hersteller}
+                      </td>
+                      <td className="py-2 pr-4">{m.baujahr ?? "—"}</td>
+                      <td className="py-2 pr-4 font-mono text-xs text-[var(--color-faint)]">
+                        {m.opdbRef}
+                      </td>
+                      <td className="py-2">
+                        <ModelGenerationSelect
+                          modelId={m.id}
+                          generationen={genOptionen}
+                          aktuell={m.generationId}
+                          aktuellName={
+                            genOptionen.find((g) => g.id === m.generationId)
+                              ?.name ?? null
+                          }
+                        />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        ) : (
+          <List empty="Keine Modelle gefunden.">
+            {modelle.map((m) => (
+              <ListRow
+                key={m.id}
+                leading={
+                  m.imageUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={m.imageUrl}
+                      alt=""
+                      className="h-12 w-16 rounded-[var(--radius)] object-cover"
+                    />
+                  ) : (
+                    <div className="h-12 w-16 rounded-[var(--radius)] bg-[var(--color-inset)]" />
+                  )
+                }
+                title={modellName(m)}
+                subtitle={
+                  <>
+                    {m.baujahr ?? "Baujahr unbekannt"}
+                    <span className="font-mono text-xs"> · {m.opdbRef}</span>
+                  </>
+                }
+                actions={
+                  <ModelGenerationSelect
+                    modelId={m.id}
+                    generationen={genOptionen}
+                    aktuell={m.generationId}
+                    aktuellName={
+                      genOptionen.find((g) => g.id === m.generationId)?.name ??
+                      null
+                    }
                   />
-                ) : (
-                  <div className="h-12 w-16 rounded-[var(--radius)] bg-[var(--color-inset)]" />
-                )
-              }
-              title={`${m.hersteller} ${m.modell}`}
-              subtitle={
-                <>
-                  {m.baujahr ?? "Baujahr unbekannt"}
-                  <span className="font-mono text-xs">
-                    {" "}
-                    · {m.opdbRef}
-                  </span>
-                </>
-              }
-              actions={
-                <ModelGenerationSelect
-                  modelId={m.id}
-                  generationen={genOptionen}
-                  aktuell={m.generationId}
-                  aktuellName={
-                    genOptionen.find((g) => g.id === m.generationId)?.name ??
-                    null
-                  }
-                />
-              }
-            />
-          ))}
-        </List>
+                }
+              />
+            ))}
+          </List>
+        )}
 
         <Pagination
           page={aktuelleSeite}

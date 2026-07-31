@@ -7,6 +7,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { db } from "@/db";
 import { getVisibleMachines } from "@/db/queries";
 import { clubs, roleAssignments, roles, user } from "@/db/schema";
+import { modellName } from "@/lib/format";
 
 /*
   ⚠️ TEMPORÄRES DEBUG-FEATURE — bitte später wieder entfernen. ⚠️
@@ -130,7 +131,7 @@ export default async function VisibilityDebugPage({
               <ListRow
                 key={m.id}
                 href={`/machines/${m.id}`}
-                title={`${m.hersteller} ${m.modell}`}
+                title={modellName(m)}
                 subtitle={
                   istEigene
                     ? `Eigentümer${m.club?.name ? ` · geteilt mit „${m.club.name}"` : ""}`

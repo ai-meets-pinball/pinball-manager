@@ -4,6 +4,7 @@ import { createRepair } from "@/db/actions/repairs";
 import { db } from "@/db";
 import { faults } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
+import { modellName } from "@/lib/format";
 
 export default async function NewRepairPage({
   params,
@@ -25,7 +26,7 @@ export default async function NewRepairPage({
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">
-        Neue Reparatur · {machine.hersteller} {machine.modell}
+        Neue Reparatur · {modellName(machine)}
       </h1>
       <RepairForm
         action={createRepair}

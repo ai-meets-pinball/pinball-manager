@@ -411,7 +411,7 @@ export async function getKnowledgeModels(currentUser: SessionUser) {
     .innerJoin(machineModels, eq(machineModels.id, knowledge.modelId))
     .where(and(eq(knowledge.typ, "handbuch_fakten"), sichtbar))
     .groupBy(machineModels.id)
-    .orderBy(machineModels.hersteller, machineModels.modell);
+    .orderBy(machineModels.modell, machineModels.hersteller);
 }
 
 /** Freigaben der Reparaturen EINER Maschine (für die eigenen Teilen-Schalter). */

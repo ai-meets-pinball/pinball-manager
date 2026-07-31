@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { ListRow } from "@/components/ui/list";
 import { deleteGeneration, renameGeneration } from "@/db/actions/generations";
 import type { FormState } from "@/db/actions/clubs";
+import { modellName } from "@/lib/format";
 
 /*
   Eine Generation als Listenzeile: ANZEIGEN zuerst, Bearbeiten auf Verlangen.
@@ -121,7 +122,7 @@ export function GenerationRow({
             <ul className="mt-2 grid gap-x-6 gap-y-1 border-t border-[var(--color-border)] pt-2 text-sm text-[var(--color-muted)] sm:grid-cols-2">
               {modelle.map((m, i) => (
                 <li key={i} className="truncate">
-                  {m.hersteller} {m.modell}
+                  {modellName(m)}
                   {m.baujahr ? (
                     <span className="text-[var(--color-faint)]">
                       {" "}

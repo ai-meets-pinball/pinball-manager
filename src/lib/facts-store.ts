@@ -1,6 +1,7 @@
 import { and, eq } from "drizzle-orm";
 import { db } from "@/db";
 import { knowledge } from "@/db/schema";
+import { modellName } from "@/lib/format";
 import { extractSchema, FACT_TYPES } from "@/lib/validators";
 
 /*
@@ -50,7 +51,7 @@ export async function upsertModelKnowledge(opts: {
     );
     await tx.insert(knowledge).values({
       typ: "handbuch_fakten",
-      titel: `${machine.hersteller} ${machine.modell} — Handbuch-Daten`,
+      titel: `${modellName(machine)} — Handbuch-Daten`,
       inhalt,
       sourceType: "extrahiert",
       visibility,
@@ -115,7 +116,7 @@ export async function upsertTroubleshootingKnowledge(opts: {
 
   const titel = aufGen
     ? `Generation ${generationName ?? ""} — Troubleshooting-Guide`.trim()
-    : `${machine.hersteller} ${machine.modell} — Troubleshooting-Guide`;
+    : `${modellName(machine)} — Troubleshooting-Guide`;
 
   await db.transaction(async (tx) => {
     // Replace-Semantik: den EINEN Guide dieses Autors für diese Ebene ersetzen.
