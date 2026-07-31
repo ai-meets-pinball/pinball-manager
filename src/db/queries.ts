@@ -395,7 +395,9 @@ export async function getMachineGuides(
     .orderBy(desc(knowledge.updatedAt));
 }
 
-/** Modell-Katalog: Modelle mit für den Nutzer sichtbarem Handbuch-Wissen. */
+/** Wissensbasis-Katalog: Modelle mit für den Nutzer sichtbarem Wissen —
+    gezählt werden ALLE Wissenseinträge (Handbuch-Infos, Guides, …), nicht nur
+    Handbuch-Extrakte. */
 export async function getKnowledgeModels(currentUser: SessionUser) {
   const sichtbar = await knowledgeVisibilityFilter(currentUser);
   return db
@@ -409,7 +411,7 @@ export async function getKnowledgeModels(currentUser: SessionUser) {
     })
     .from(knowledge)
     .innerJoin(machineModels, eq(machineModels.id, knowledge.modelId))
-    .where(and(eq(knowledge.typ, "handbuch_fakten"), sichtbar))
+    .where(sichtbar)
     .groupBy(machineModels.id)
     .orderBy(machineModels.modell, machineModels.hersteller);
 }

@@ -1,45 +1,50 @@
 import Link from "next/link";
-import { FileText } from "lucide-react";
+import { BookOpen } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { getKnowledgeModels } from "@/db/queries";
 import { requireUser } from "@/lib/session";
 import { modellName } from "@/lib/format";
 
 /*
-  Modell-Katalog. Ein Modell (machine_models, z. B. „Monster Bash") ist die
-  Klasse; einzelne Maschinen sind Instanzen. Handbuch-Wissen (`knowledge`) gehört
-  zum TYP — hier sichtbar, ohne dass man den Automaten selbst besitzen muss. Es
-  erscheinen nur Typen mit für den Nutzer sichtbarem Wissen (dieselbe
-  Sichtbarkeitsregel wie auf der Detailseite). Reparaturen-Freigaben ziehen erst
-  in Phase 3 nach; solange erscheinen reine „nur-Reparatur"-Typen hier noch nicht.
+  Wissensbasis: alle Modelle, zu denen für diesen Nutzer Wissen sichtbar ist
+  (Handbuch-Infos, Guides — dieselbe Sichtbarkeitsregel wie auf der
+  Detailseite). Ein Modell (machine_models, z. B. „Monster Bash") ist die
+  Klasse; einzelne Maschinen sind Instanzen — man muss den Automaten nicht
+  selbst besitzen. Der Zähler meint WISSENSEINTRÄGE (nicht nur
+  Handbuch-Extrakte); Reparatur-Freigaben ziehen in Phase 3 nach.
 */
-export default async function GeraetetypenPage() {
+export default async function WissensbasisPage() {
   const currentUser = await requireUser();
   const modelle = await getKnowledgeModels(currentUser);
 
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold">Modelle</h1>
+        <h1 className="text-2xl font-bold">Wissensbasis</h1>
         <p className="text-[var(--color-muted)]">
-          Handbuch-Wissen je Automaten-Typ — einmal am Modell gepflegt, für alle
-          Instanzen sichtbar. Du musst den Automaten nicht selbst besitzen; es
-          erscheinen nur Typen mit für dich sichtbarem Wissen.
+          Geteiltes Wissen je Modell — Infos aus dem Handbuch, Guides und mehr.
+          Einmal am Modell gepflegt, für alle Instanzen sichtbar; du musst den
+          Automaten nicht selbst besitzen. Es erscheinen nur Modelle mit für
+          dich sichtbarem Wissen.
         </p>
       </div>
 
       {modelle.length === 0 ? (
         <Card>
           <p className="text-sm text-[var(--color-muted)]">
-            Aktuell ist dir gegenüber kein Handbuch-Wissen sichtbar. Sobald jemand
-            Handbuch-Daten öffentlich (oder für deinen Club) freigibt, erscheint
-            der passende Modell hier.
+            Aktuell ist dir gegenüber kein Wissen sichtbar. Sobald jemand etwas
+            öffentlich (oder für deinen Club) freigibt, erscheint das passende
+            Modell hier.
           </p>
         </Card>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
           {modelle.map((m) => (
-            <Link key={m.modelId} href={`/typen/${m.modelId}`} className="group">
+            <Link
+              key={m.modelId}
+              href={`/modelle/${m.modelId}`}
+              className="group"
+            >
               <Card className="flex gap-3 overflow-hidden p-0 transition-colors group-hover:border-[var(--color-primary)]">
                 {m.imageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
@@ -50,16 +55,14 @@ export default async function GeraetetypenPage() {
                   />
                 ) : null}
                 <div className="min-w-0 flex-1 p-3">
-                  <p className="truncate font-semibold">
-                    {modellName(m)}
-                  </p>
+                  <p className="truncate font-semibold">{modellName(m)}</p>
                   <p className="text-sm text-[var(--color-muted)]">
                     {m.baujahr ?? "—"}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-3 text-xs text-[var(--color-muted)]">
                     <span className="inline-flex items-center gap-1">
-                      <FileText size={13} /> {m.eintraege} Handbuch-Eintrag
-                      {m.eintraege === 1 ? "" : "e"}
+                      <BookOpen size={13} /> {m.eintraege} Wissenseintr
+                      {m.eintraege === 1 ? "ag" : "äge"}
                     </span>
                   </div>
                 </div>

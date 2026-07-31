@@ -16,7 +16,7 @@ import { modellName } from "@/lib/format";
 
 /*
   Typ-Seite (die Klasse, z. B. „Monster Bash"): zeigt das für diesen Nutzer
-  sichtbare Handbuch-Wissen (knowledge, Modell-Ebene) + geteilte Reparaturen —
+  sichtbare Wissen (knowledge, Modell-Ebene) + geteilte Reparaturen —
   unabhängig davon, ob er selbst eine Instanz besitzt. Eigene Wissenseinträge
   lassen sich hier in der Sichtbarkeit ändern.
 */
@@ -46,7 +46,7 @@ export default async function GeraetetypPage({
         href="/modelle"
         className="inline-flex items-center gap-1 text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]"
       >
-        <ArrowLeft size={14} /> Modelle
+        <ArrowLeft size={14} /> Wissensbasis
       </Link>
 
       <div className="flex flex-wrap items-center gap-4">
