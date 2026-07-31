@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState, useState } from "react";
 import { CheckSquare } from "lucide-react";
 import { MachineCard } from "@/components/machine-card";
@@ -8,6 +9,7 @@ import {
   assignMachinesToClub,
   type BulkAssignState,
 } from "@/db/actions/machines";
+import { modellName } from "@/lib/format";
 
 /*
   Maschinen-Raster mit optionalem Auswahlmodus, um mehrere Maschinen auf einmal
@@ -117,9 +119,12 @@ function BulkAssignBar({
 export function MachinesBoard({
   machines,
   clubs,
+  ansicht = "karten",
 }: {
   machines: Item[];
   clubs: { id: string; name: string }[];
+  /** Karten (mit Foto) oder kompakte Tabelle (ohne Bilder). */
+  ansicht?: "karten" | "tabelle";
 }) {
   const [auswahlModus, setAuswahlModus] = useState(false);
   const [auswahl, setAuswahl] = useState<Set<string>>(new Set());
@@ -181,29 +186,94 @@ export function MachinesBoard({
         )
       ) : null}
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {machines.map((m) => (
-          <MachineCard
-            key={m.id}
-            machine={m}
-            wartungFaellig={m.wartungFaellig}
-            selection={
-              auswahlModus
-                ? { selected: auswahl.has(m.id), onToggle: () => toggle(m.id) }
-                : undefined
-            }
-            hinweis={
-              // Im Zuweisungsmodus markieren, was schon im gewählten Ziel-Club ist.
-              auswahlModus &&
-              zielClub !== "" &&
-              zielClub !== "none" &&
-              m.clubId === zielClub
-                ? "bereits zugewiesen"
-                : undefined
-            }
-          />
-        ))}
-      </div>
+      {ansicht === "tabelle" ? (
+        /* Kompakte Tabellen-Ansicht (ohne Bilder) — schnelles Scannen; die
+           Mehrfach-Auswahl funktioniert auch hier (Checkbox-Spalte). */
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-[var(--color-border)] text-left text-xs uppercase tracking-[0.06em] text-[var(--color-muted)]">
+                {auswahlModus ? <th className="w-8 py-2" /> : null}
+                <th className="py-2 pr-4 font-medium">Modell</th>
+                <th className="py-2 pr-4 font-medium">Baujahr</th>
+                <th className="py-2 pr-4 font-medium">Club</th>
+                <th className="py-2 font-medium">Wartung</th>
+              </tr>
+            </thead>
+            <tbody>
+              {machines.map((m) => (
+                <tr
+                  key={m.id}
+                  className="border-b border-[var(--color-border)] align-middle hover:bg-[var(--color-surface-2)]"
+                >
+                  {auswahlModus ? (
+                    <td className="py-2">
+                      <input
+                        type="checkbox"
+                        checked={auswahl.has(m.id)}
+                        onChange={() => toggle(m.id)}
+                        aria-label={`${modellName(m)} auswählen`}
+                        className="accent-[var(--color-accent)]"
+                      />
+                    </td>
+                  ) : null}
+                  <td className="py-2 pr-4">
+                    <Link
+                      href={`/machines/${m.id}`}
+                      className="font-medium hover:underline"
+                    >
+                      {modellName(m)}
+                    </Link>
+                  </td>
+                  <td className="py-2 pr-4">{m.baujahr ?? "—"}</td>
+                  <td className="py-2 pr-4 text-[var(--color-muted)]">
+                    {m.club?.name ?? "privat"}
+                    {auswahlModus &&
+                    zielClub !== "" &&
+                    zielClub !== "none" &&
+                    m.clubId === zielClub
+                      ? " · bereits zugewiesen"
+                      : ""}
+                  </td>
+                  <td className="py-2">
+                    {m.wartungFaellig > 0 ? (
+                      <span className="rounded-full border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-danger)]">
+                        {m.wartungFaellig} fällig
+                      </span>
+                    ) : (
+                      <span className="text-[var(--color-faint)]">—</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          {machines.map((m) => (
+            <MachineCard
+              key={m.id}
+              machine={m}
+              wartungFaellig={m.wartungFaellig}
+              selection={
+                auswahlModus
+                  ? { selected: auswahl.has(m.id), onToggle: () => toggle(m.id) }
+                  : undefined
+              }
+              hinweis={
+                // Im Zuweisungsmodus markieren, was schon im gewählten Ziel-Club ist.
+                auswahlModus &&
+                zielClub !== "" &&
+                zielClub !== "none" &&
+                m.clubId === zielClub
+                  ? "bereits zugewiesen"
+                  : undefined
+              }
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
