@@ -1,9 +1,7 @@
-import { and, count, eq, ilike, isNotNull, isNull, or } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import Link from "next/link";
-import { GenerationCreateForm } from "@/components/generation-create-form";
-import { GenerationRow } from "@/components/generation-row";
 import { ModelGenerationSelect } from "@/components/model-generation-select";
-import { Card } from "@/components/ui/card";
+import { Select } from "@/components/ui/input";
 import { List, ListRow } from "@/components/ui/list";
 import { Pagination } from "@/components/ui/pagination";
 import { SearchToolbar } from "@/components/ui/search-toolbar";
@@ -11,59 +9,40 @@ import { db } from "@/db";
 import { generations, machineModels } from "@/db/schema";
 
 /*
-  Gerätetypen (Super-Admin): Generationen (Board-/Hardware-Systeme) verwalten und
-  jedem Gerätetyp eine Generation zuordnen. Die Erstbefüllung (Katalog-Import) ist
-  erledigt — gepflegt wird ab jetzt manuell. Bei hunderten Modellen mit Suche +
-  Pagination; die Kennzahlen zählen serverseitig über den GANZEN Bestand.
-  Der Super-Admin-Guard sitzt im admin/layout.tsx.
+  Modelle (Super-Admin): der Gerätetyp-Katalog — durchsuchbar (Text), filterbar
+  (Generation) und sortierbar (Name/Baujahr). Die Zuordnung Modell → Generation
+  passiert hier per Stift; die Generationen selbst werden auf
+  /admin/generationen gepflegt. Kennzahlen zählen serverseitig über den GANZEN
+  Bestand. Der Super-Admin-Guard sitzt im admin/layout.tsx.
+
+  Query-Parameter (deutsche Konvention): q (Suche), gen (Generation-id | "ohne"),
+  sort (name | jahr), dir (auf | ab), seite.
 */
 const PRO_SEITE = 30;
 
 export default async function AdminModellePage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; seite?: string; ohne?: string }>;
+  searchParams: Promise<{
+    q?: string;
+    gen?: string;
+    sort?: string;
+    dir?: string;
+    seite?: string;
+  }>;
 }) {
   const sp = await searchParams;
   const q = (sp.q ?? "").trim();
-  const nurOhne = sp.ohne === "1";
+  const gen = sp.gen ?? "";
+  const sort = sp.sort === "jahr" ? "jahr" : "name";
+  const dir = sp.dir === "ab" ? "ab" : "auf";
   const seite = Math.max(1, Number(sp.seite) || 1);
 
-  // Generationen (für Dropdown + Verwaltung) — überschaubar, komplett laden.
-  const genList = await db
-    .select({
-      id: generations.id,
-      name: generations.name,
-      jahrVon: generations.jahrVon,
-      jahrBis: generations.jahrBis,
-      anzahl: count(machineModels.id),
-    })
+  // Generationen für Filter + Zuordnungs-Select.
+  const genOptionen = await db
+    .select({ id: generations.id, name: generations.name })
     .from(generations)
-    .leftJoin(machineModels, eq(machineModels.generationId, generations.id))
-    .groupBy(generations.id)
     .orderBy(generations.name);
-  const genOptionen = genList.map((g) => ({ id: g.id, name: g.name }));
-
-  // Modelle je Generation (für die Aufklapp-Liste der Generationen-Zeilen).
-  const zugeordnet = await db
-    .select({
-      hersteller: machineModels.hersteller,
-      modell: machineModels.modell,
-      baujahr: machineModels.baujahr,
-      generationId: machineModels.generationId,
-    })
-    .from(machineModels)
-    .where(isNotNull(machineModels.generationId))
-    .orderBy(machineModels.hersteller, machineModels.modell);
-  const proGeneration = new Map<
-    string,
-    { hersteller: string; modell: string; baujahr: number | null }[]
-  >();
-  for (const m of zugeordnet) {
-    const liste = proGeneration.get(m.generationId!) ?? [];
-    liste.push({ hersteller: m.hersteller, modell: m.modell, baujahr: m.baujahr });
-    proGeneration.set(m.generationId!, liste);
-  }
 
   // Kennzahlen über den GANZEN Bestand (unabhängig von Suche/Seite).
   const [{ gesamt }] = await db.select({ gesamt: count() }).from(machineModels);
@@ -72,7 +51,7 @@ export default async function AdminModellePage({
     .from(machineModels)
     .where(isNull(machineModels.generationId));
 
-  // Filter der Modell-Liste: Suche (Hersteller/Modell/OPDB) + „nur ohne Generation".
+  // Filter: Textsuche (Hersteller/Modell/OPDB) + Generation ("ohne" = keine).
   const filter = and(
     q
       ? or(
@@ -81,8 +60,23 @@ export default async function AdminModellePage({
           ilike(machineModels.opdbRef, `%${q}%`),
         )
       : undefined,
-    nurOhne ? isNull(machineModels.generationId) : undefined,
+    gen === "ohne"
+      ? isNull(machineModels.generationId)
+      : gen
+        ? eq(machineModels.generationId, gen)
+        : undefined,
   );
+
+  // Sortierung: Name (Hersteller, Modell) oder Baujahr — NULLS LAST, damit
+  // Modelle ohne Jahr in beiden Richtungen ans Ende fallen.
+  const sortierung =
+    sort === "jahr"
+      ? dir === "ab"
+        ? [sql`${machineModels.baujahr} DESC NULLS LAST`]
+        : [sql`${machineModels.baujahr} ASC NULLS LAST`]
+      : dir === "ab"
+        ? [desc(machineModels.hersteller), desc(machineModels.modell)]
+        : [asc(machineModels.hersteller), asc(machineModels.modell)];
 
   const [{ treffer }] = await db
     .select({ treffer: count() })
@@ -96,54 +90,60 @@ export default async function AdminModellePage({
       id: machineModels.id,
       hersteller: machineModels.hersteller,
       modell: machineModels.modell,
+      baujahr: machineModels.baujahr,
       opdbRef: machineModels.opdbRef,
       imageUrl: machineModels.imageUrl,
       generationId: machineModels.generationId,
     })
     .from(machineModels)
     .where(filter)
-    .orderBy(machineModels.hersteller, machineModels.modell)
+    .orderBy(...sortierung)
     .limit(PRO_SEITE)
     .offset((aktuelleSeite - 1) * PRO_SEITE);
 
-  // Beim Blättern zu erhaltende Query-Werte (Suche + Filter).
-  const params = {
+  // Nicht-Default-Parameter — von Pagination/Sortier-Links zu erhalten.
+  const params: Record<string, string> = {
     ...(q ? { q } : {}),
-    ...(nurOhne ? { ohne: "1" } : {}),
+    ...(gen ? { gen } : {}),
+    ...(sort !== "name" ? { sort } : {}),
+    ...(dir !== "auf" ? { dir } : {}),
   };
 
+  /* Sortier-Link: Klick auf die aktive Spalte dreht die Richtung um; sonst
+     Spalte wechseln (aufsteigend). Seite fällt dabei bewusst auf 1 zurück. */
+  const sortHref = (key: "name" | "jahr") => {
+    const p = new URLSearchParams({
+      ...(q ? { q } : {}),
+      ...(gen ? { gen } : {}),
+    });
+    if (key !== "name") p.set("sort", key);
+    if (sort === key && dir === "auf") p.set("dir", "ab");
+    const qs = p.toString();
+    return `/admin/modelle${qs ? `?${qs}` : ""}`;
+  };
+  const sortLabel = (key: "name" | "jahr", label: string) => (
+    <Link
+      href={sortHref(key)}
+      className={
+        sort === key
+          ? "font-medium text-[var(--color-primary)]"
+          : "text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+      }
+    >
+      {label}
+      {sort === key ? (dir === "auf" ? " ↑" : " ↓") : ""}
+    </Link>
+  );
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <p className="text-sm text-[var(--color-muted)]">
-        Generationen (Board-/Hardware-Systeme) und ihre Zuordnung zu den
-        Gerätetypen. {gesamt} Modelle ·{" "}
-        <Link href="/admin/modelle?ohne=1" className="hover:underline">
+        Der Gerätetyp-Katalog. {gesamt} Modelle ·{" "}
+        <Link href="/admin/modelle?gen=ohne" className="hover:underline">
           {ohneGen} ohne Generation
         </Link>
         .
       </p>
-
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Generationen ({genList.length})</h2>
-        <Card>
-          <GenerationCreateForm />
-        </Card>
-        <List empty="Noch keine Generationen — lege oben eine an.">
-          {genList.map((g) => (
-            <GenerationRow
-              key={g.id}
-              id={g.id}
-              name={g.name}
-              untertitel={`${g.anzahl} Modell(e)${
-                g.jahrVon
-                  ? ` · ${g.jahrVon}${g.jahrBis && g.jahrBis !== g.jahrVon ? `–${g.jahrBis}` : ""}`
-                  : ""
-              }`}
-              modelle={proGeneration.get(g.id) ?? []}
-            />
-          ))}
-        </List>
-      </section>
 
       <section className="space-y-3">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -152,10 +152,36 @@ export default async function AdminModellePage({
             placeholder="Hersteller, Modell oder OPDB-Ref …"
             defaultValue={q}
             label="Modelle suchen"
-            keep={nurOhne ? { ohne: "1" } : {}}
+            keep={{
+              ...(sort !== "name" ? { sort } : {}),
+              ...(dir !== "auf" ? { dir } : {}),
+            }}
             resetHref="/admin/modelle"
-          />
+            aktiv={Boolean(q || gen)}
+          >
+            <Select
+              name="gen"
+              defaultValue={gen}
+              aria-label="Nach Generation filtern"
+              className="max-w-56"
+            >
+              <option value="">Alle Generationen</option>
+              <option value="ohne">— ohne Generation —</option>
+              {genOptionen.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.name}
+                </option>
+              ))}
+            </Select>
+          </SearchToolbar>
         </div>
+
+        <p className="text-sm">
+          <span className="text-[var(--color-muted)]">Sortieren: </span>
+          {sortLabel("name", "Name")}
+          <span className="text-[var(--color-faint)]"> · </span>
+          {sortLabel("jahr", "Baujahr")}
+        </p>
 
         <List empty="Keine Modelle gefunden.">
           {modelle.map((m) => (
@@ -174,7 +200,15 @@ export default async function AdminModellePage({
                 )
               }
               title={`${m.hersteller} ${m.modell}`}
-              subtitle={<span className="font-mono text-xs">{m.opdbRef}</span>}
+              subtitle={
+                <>
+                  {m.baujahr ?? "Baujahr unbekannt"}
+                  <span className="font-mono text-xs">
+                    {" "}
+                    · {m.opdbRef}
+                  </span>
+                </>
+              }
               actions={
                 <ModelGenerationSelect
                   modelId={m.id}

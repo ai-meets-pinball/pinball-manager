@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Boxes, Building2, Mail, Users } from "lucide-react";
+import { Boxes, Building2, Layers, Mail, Users } from "lucide-react";
 
 /*
   Unter-Navigation des Admin-Bereichs (gerendert vom admin/layout.tsx). Trennt die
@@ -12,7 +12,13 @@ const TABS = [
   { href: "/admin", label: "Nutzer & Rollen", icon: Users, exact: true },
   { href: "/admin/clubs", label: "Clubs", icon: Building2, exact: false },
   { href: "/admin/vorlagen", label: "E-Mail-Vorlagen", icon: Mail, exact: false },
-  { href: "/admin/modelle", label: "Gerätetypen", icon: Boxes, exact: false },
+  { href: "/admin/modelle", label: "Modelle", icon: Boxes, exact: false },
+  {
+    href: "/admin/generationen",
+    label: "Generationen",
+    icon: Layers,
+    exact: false,
+  },
 ] as const;
 
 export function AdminNav() {

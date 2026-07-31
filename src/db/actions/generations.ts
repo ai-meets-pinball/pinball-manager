@@ -17,7 +17,10 @@ import type { FormState } from "@/db/actions/clubs";
   als Dokumentation); ab jetzt wird ausschließlich manuell gepflegt.
 */
 
-const PFAD = "/admin/modelle";
+/* Generationen-Änderungen betreffen BEIDE Seiten: die Generationen-Liste und
+   die Modell-Zeilen (zeigen den Generation-Namen). */
+const PFADE = ["/admin/modelle", "/admin/generationen"];
+const revalidiere = () => PFADE.forEach((p) => revalidatePath(p));
 
 const nameSchema = z.string().trim().min(1, "Name darf nicht leer sein.").max(120);
 
@@ -36,7 +39,7 @@ export async function createGeneration(
     .onConflictDoNothing({ target: generations.name })
     .returning({ id: generations.id });
 
-  revalidatePath(PFAD);
+  revalidiere();
   return eingefuegt.length > 0
     ? { message: `Generation „${parsed.data}" angelegt.` }
     : { error: `„${parsed.data}" gibt es bereits.` };
@@ -64,7 +67,7 @@ export async function renameGeneration(
     console.error("[generations] rename:", (e as Error).message);
     return { error: `„${name.data}" gibt es bereits.` };
   }
-  revalidatePath(PFAD);
+  revalidiere();
   return { message: "Umbenannt." };
 }
 
@@ -74,7 +77,7 @@ export async function deleteGeneration(formData: FormData): Promise<void> {
   const id = z.string().uuid().safeParse(formData.get("id"));
   if (!id.success) return;
   await db.delete(generations).where(eq(generations.id, id.data));
-  revalidatePath(PFAD);
+  revalidiere();
 }
 
 /** Generation eines Modells von Hand setzen. „auto" gibt es zurück an den Import
@@ -109,6 +112,6 @@ export async function assignModelGeneration(
     console.error("[generations] assign:", (e as Error).message);
     return { error: "Speichern fehlgeschlagen. Bitte erneut versuchen." };
   }
-  revalidatePath(PFAD);
+  revalidiere();
   return {};
 }
