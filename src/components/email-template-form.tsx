@@ -3,6 +3,9 @@
 import { RotateCcw, Save } from "lucide-react";
 import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { ConfirmButton } from "@/components/ui/confirm-button";
+import { FormFeedback } from "@/components/ui/form-feedback";
 import { Field, Input, Textarea } from "@/components/ui/input";
 import type { FormState } from "@/db/actions/clubs";
 import {
@@ -52,7 +55,7 @@ export function EmailTemplateForm({
   const [text, setText] = useState(body);
 
   return (
-    <div className="space-y-3 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
+    <Card className="space-y-3 bg-[var(--color-surface-2)]">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
           <p className="font-medium">
@@ -115,12 +118,7 @@ export function EmailTemplateForm({
           </div>
         </div>
 
-        {state.error ? (
-          <p className="text-sm text-[var(--color-danger)]">{state.error}</p>
-        ) : null}
-        {state.message ? (
-          <p className="text-sm text-[var(--color-success)]">{state.message}</p>
-        ) : null}
+        <FormFeedback state={state} />
 
         <div className="flex flex-wrap items-center gap-2">
           <Button type="submit" disabled={pending}>
@@ -132,14 +130,14 @@ export function EmailTemplateForm({
       {angepasst ? (
         <form action={resetEmailTemplate}>
           <input type="hidden" name="key" value={templateKey} />
-          <button
-            type="submit"
-            className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+          <ConfirmButton
+            question="Anpassungen verwerfen?"
+            confirmLabel="Ja, zurücksetzen"
           >
             <RotateCcw size={13} /> Auf Standardtext zurücksetzen
-          </button>
+          </ConfirmButton>
         </form>
       ) : null}
-    </div>
+    </Card>
   );
 }

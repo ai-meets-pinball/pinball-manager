@@ -23,6 +23,9 @@ const tone: Record<string, string> = {
   // Globale Rolle
   superadmin: "var(--color-primary)",
   supporter: "var(--color-accent)",
+  // Maschinen-Herkunft (Admin-Sichtbarkeitsansicht)
+  eigene: "var(--color-primary)",
+  Club: "var(--color-accent)",
 };
 
 /** Anzeigenamen für Club-Rollen (Enum-Werte → deutsche Labels). */

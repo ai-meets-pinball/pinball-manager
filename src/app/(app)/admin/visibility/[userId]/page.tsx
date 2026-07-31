@@ -1,13 +1,12 @@
 import { eq } from "drizzle-orm";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { FlaskConical } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { List, ListRow } from "@/components/ui/list";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { db } from "@/db";
 import { getVisibleMachines } from "@/db/queries";
 import { clubs, roleAssignments, roles, user } from "@/db/schema";
-import { isSuperAdmin, requireUser } from "@/lib/session";
 
 /*
   ⚠️ TEMPORÄRES DEBUG-FEATURE — bitte später wieder entfernen. ⚠️
@@ -20,6 +19,9 @@ import { isSuperAdmin, requireUser } from "@/lib/session";
   Query wie in der echten Maschinenliste. Eine nachgebaute Logik würde beim
   Debuggen genau die Abweichungen verstecken, die man finden will.
 
+  Kein eigener Guard: der Super-Admin-Check sitzt im admin/layout.tsx und deckt
+  alle /admin/*-Seiten ab.
+
   Zum Entfernen: dieses Verzeichnis löschen und den Link in
   src/app/(app)/admin/page.tsx entfernen.
 */
@@ -29,9 +31,6 @@ export default async function VisibilityDebugPage({
 }: {
   params: Promise<{ userId: string }>;
 }) {
-  const me = await requireUser();
-  if (!isSuperAdmin(me)) redirect("/machines");
-
   const { userId } = await params;
 
   const ziel = await db.query.user.findFirst({ where: eq(user.id, userId) });
@@ -59,7 +58,8 @@ export default async function VisibilityDebugPage({
 
   return (
     <div className="space-y-6">
-      {/* Der Hinweis steht bewusst ganz oben und ist nicht zu übersehen. */}
+      {/* Der Hinweis steht bewusst ganz oben und ist nicht zu übersehen.
+          (Bleibt handgerollt — Debug-Einmaling, fliegt mit der Seite wieder raus.) */}
       <div
         className="flex gap-3 rounded-[var(--radius)] border border-[var(--color-warn)] p-3"
         style={{
@@ -85,7 +85,7 @@ export default async function VisibilityDebugPage({
       </div>
 
       <div className="space-y-1">
-        <h1 className="text-2xl font-bold">Sichtbarkeit: {ziel.name}</h1>
+        <h2 className="text-xl font-bold">Sichtbarkeit: {ziel.name}</h2>
         <p className="text-[var(--color-muted)]">{ziel.email}</p>
         <div className="flex flex-wrap items-center gap-2 pt-1">
           {globaleRollen.length > 0 ? (
@@ -104,23 +104,15 @@ export default async function VisibilityDebugPage({
         <h2 className="text-lg font-semibold">
           Club-Mitgliedschaften ({clubRollen.length})
         </h2>
-        {clubRollen.length === 0 ? (
-          <p className="text-sm text-[var(--color-muted)]">
-            In keinem Club — sieht daher nur eigene Maschinen.
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {clubRollen.map((c) => (
-              <Card
-                key={`${c.clubName}-${c.rolle}`}
-                className="flex items-center justify-between gap-3 py-2"
-              >
-                <span className="font-medium">{c.clubName}</span>
-                <StatusBadge value={c.rolle} />
-              </Card>
-            ))}
-          </div>
-        )}
+        <List empty="In keinem Club — sieht daher nur eigene Maschinen.">
+          {clubRollen.map((c) => (
+            <ListRow
+              key={`${c.clubName}-${c.rolle}`}
+              title={c.clubName}
+              meta={<StatusBadge value={c.rolle} />}
+            />
+          ))}
+        </List>
       </section>
 
       <section className="space-y-2">
@@ -131,55 +123,24 @@ export default async function VisibilityDebugPage({
           {eigene.length} eigene · {ueberClub.length} über Club-Mitgliedschaft
         </p>
 
-        {sichtbar.length === 0 ? (
-          <p className="text-sm text-[var(--color-muted)]">
-            Dieser Nutzer sieht aktuell keine Maschinen.
-          </p>
-        ) : (
-          <div className="space-y-2">
-            {sichtbar.map((m) => {
-              const istEigene = m.ownerId === userId;
-              return (
-                <Card
-                  key={m.id}
-                  className="flex flex-wrap items-center justify-between gap-3"
-                >
-                  <div className="min-w-0">
-                    <Link
-                      href={`/machines/${m.id}`}
-                      className="font-medium hover:underline"
-                    >
-                      {m.hersteller} {m.modell}
-                    </Link>
-                    <p className="text-sm text-[var(--color-muted)]">
-                      {istEigene
-                        ? "Eigentümer"
-                        : `über Club „${m.club?.name ?? "?"}"`}
-                      {istEigene && m.club?.name
-                        ? ` · geteilt mit „${m.club.name}"`
-                        : ""}
-                    </p>
-                  </div>
-                  <span
-                    className="rounded-[4px] px-2 py-0.5 text-[11px] font-semibold"
-                    style={{
-                      color: istEigene
-                        ? "var(--color-primary)"
-                        : "var(--color-accent)",
-                      background: `color-mix(in srgb, ${
-                        istEigene
-                          ? "var(--color-primary)"
-                          : "var(--color-accent)"
-                      } 14%, transparent)`,
-                    }}
-                  >
-                    {istEigene ? "eigene" : "Club"}
-                  </span>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+        <List empty="Dieser Nutzer sieht aktuell keine Maschinen.">
+          {sichtbar.map((m) => {
+            const istEigene = m.ownerId === userId;
+            return (
+              <ListRow
+                key={m.id}
+                href={`/machines/${m.id}`}
+                title={`${m.hersteller} ${m.modell}`}
+                subtitle={
+                  istEigene
+                    ? `Eigentümer${m.club?.name ? ` · geteilt mit „${m.club.name}"` : ""}`
+                    : `über Club „${m.club?.name ?? "?"}"`
+                }
+                meta={<StatusBadge value={istEigene ? "eigene" : "Club"} />}
+              />
+            );
+          })}
+        </List>
       </section>
 
       <Link

@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FormFeedback } from "@/components/ui/form-feedback";
 import { Input } from "@/components/ui/input";
 import { createGeneration } from "@/db/actions/generations";
 import type { FormState } from "@/db/actions/clubs";
@@ -31,12 +32,7 @@ export function GenerationCreateForm() {
           <Plus size={16} /> Anlegen
         </Button>
       </div>
-      {state.error ? (
-        <p className="text-sm text-[var(--color-danger)]">{state.error}</p>
-      ) : null}
-      {state.message ? (
-        <p className="text-sm text-[var(--color-success)]">{state.message}</p>
-      ) : null}
+      <FormFeedback state={state} />
     </form>
   );
 }

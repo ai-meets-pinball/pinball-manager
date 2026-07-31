@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { count, eq } from "drizzle-orm";
 import { Trash2 } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { ConfirmButton } from "@/components/ui/confirm-button";
+import { List, ListRow } from "@/components/ui/list";
 import { deleteClub } from "@/db/actions/clubs";
 import { db } from "@/db";
 import { clubs, roleAssignments } from "@/db/schema";
@@ -22,37 +22,28 @@ export default async function AdminClubsPage() {
   return (
     <section className="space-y-3">
       <h2 className="text-lg font-semibold">Clubs ({clubList.length})</h2>
-      {clubList.length === 0 ? (
-        <p className="text-sm text-[var(--color-muted)]">Noch keine Clubs.</p>
-      ) : (
-        <div className="space-y-2">
-          {clubList.map((c) => (
-            <Card key={c.id} className="flex items-center justify-between gap-3">
-              <div>
-                <Link
-                  href={`/clubs/${c.id}`}
-                  className="font-medium hover:underline"
-                >
-                  {c.name}
-                </Link>
-                <p className="text-sm text-[var(--color-muted)]">
-                  {c.members} Mitglied(er)
-                </p>
-              </div>
+      <List empty="Noch keine Clubs.">
+        {clubList.map((c) => (
+          <ListRow
+            key={c.id}
+            href={`/clubs/${c.id}`}
+            title={c.name}
+            subtitle={`${c.members} Mitglied(er)`}
+            actions={
               <form action={deleteClub}>
                 <input type="hidden" name="clubId" value={c.id} />
-                <button
-                  type="submit"
+                <ConfirmButton
+                  question="Club wirklich löschen?"
+                  confirmLabel="Ja, löschen"
                   aria-label="Club löschen"
-                  className="text-[var(--color-muted)] hover:text-[var(--color-danger)]"
                 >
                   <Trash2 size={16} />
-                </button>
+                </ConfirmButton>
               </form>
-            </Card>
-          ))}
-        </div>
-      )}
+            }
+          />
+        ))}
+      </List>
     </section>
   );
 }

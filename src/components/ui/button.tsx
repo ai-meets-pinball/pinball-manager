@@ -1,9 +1,10 @@
-import type { ButtonHTMLAttributes } from "react";
+import type { ComponentProps } from "react";
 
 type Variant = "primary" | "secondary" | "danger";
+type Size = "md" | "sm";
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-[var(--radius)] px-4 py-2 text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2 rounded-[var(--radius)] text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50";
 
 const variants: Record<Variant, string> = {
   primary:
@@ -14,12 +15,29 @@ const variants: Record<Variant, string> = {
     "bg-[var(--color-danger)] text-[var(--color-primary-fg)] hover:opacity-90",
 };
 
+/* "sm" ist das Zeilen-Format (Listen-Aktionen, Inline-Formulare) — ersetzt die
+   früher handgerollten `px-3 py-1.5`-Buttons. "md" bleibt der Standard. */
+const sizes: Record<Size, string> = {
+  md: "px-4 py-2",
+  sm: "px-3 py-1.5",
+};
+
+/* ComponentProps<"button"> schließt in React 19 auch `ref` ein — Refs werden
+   ohne forwardRef einfach durchgereicht (nutzt z. B. ConfirmButton für den
+   Fokus-Sprung auf „Ja …"). */
 export function Button({
   variant = "primary",
+  size = "md",
   className = "",
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant }) {
+}: ComponentProps<"button"> & {
+  variant?: Variant;
+  size?: Size;
+}) {
   return (
-    <button className={`${base} ${variants[variant]} ${className}`} {...props} />
+    <button
+      className={`${base} ${variants[variant]} ${sizes[size]} ${className}`}
+      {...props}
+    />
   );
 }
