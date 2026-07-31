@@ -6,48 +6,18 @@ import { z } from "zod";
 import { db } from "@/db";
 import { generations, machineModels } from "@/db/schema";
 import { requireSuperAdmin } from "@/lib/session";
-import {
-  applyGenerationCatalog,
-  parseCatalog,
-} from "@/lib/generation-catalog";
 import type { FormState } from "@/db/actions/clubs";
 
 /*
   Verwaltung der Generationen (Board-/Hardware-Systeme) und der Zuordnung
-  Modell → Generation. Alles nur für Super-Admins (Flippermasterliste).
+  Modell → Generation. Alles nur für Super-Admins (Gerätetypen-Bereich).
+
+  Der frühere Katalog-Import (Export-JSON-Upload) ist entfernt — die Erstbefüllung
+  ist erledigt (Skripte scripts/import-models.mjs + seed-generations.mjs bleiben
+  als Dokumentation); ab jetzt wird ausschließlich manuell gepflegt.
 */
 
 const PFAD = "/admin/modelle";
-
-/** Katalog-Upload: eine Export-JSON einspielen (Generationen + Zuordnung). */
-export async function importGenerationCatalog(
-  _prev: FormState,
-  formData: FormData,
-): Promise<FormState> {
-  await requireSuperAdmin();
-
-  const datei = formData.get("katalog");
-  if (!(datei instanceof File) || datei.size === 0) {
-    return { error: "Bitte eine Katalog-JSON auswählen." };
-  }
-
-  let records;
-  try {
-    const json = JSON.parse(await datei.text());
-    records = parseCatalog(json);
-  } catch (e) {
-    return { error: e instanceof Error ? e.message : "JSON konnte nicht gelesen werden." };
-  }
-
-  const r = await applyGenerationCatalog(records);
-  revalidatePath(PFAD);
-  return {
-    message:
-      `Import fertig: ${r.generationenGesamt} Generationen ` +
-      `(${r.generationenNeu} neu), ${r.zugeordnet} Modelle zugeordnet, ` +
-      `${r.uebersprungenManuell} manuelle übersprungen, ${r.ohneTreffer} ohne Treffer.`,
-  };
-}
 
 const nameSchema = z.string().trim().min(1, "Name darf nicht leer sein.").max(120);
 
@@ -72,14 +42,30 @@ export async function createGeneration(
     : { error: `„${parsed.data}" gibt es bereits.` };
 }
 
-/** Generation umbenennen. */
-export async function renameGeneration(formData: FormData): Promise<void> {
+/** Generation umbenennen. Gibt FormState zurück, damit die Zeile Fehler
+    (leerer Name, Namenskonflikt) anzeigen und sich bei Erfolg schließen kann. */
+export async function renameGeneration(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
   await requireSuperAdmin();
   const id = z.string().uuid().safeParse(formData.get("id"));
+  if (!id.success) return { error: "Ungültige Generation." };
   const name = nameSchema.safeParse(formData.get("name"));
-  if (!id.success || !name.success) return;
-  await db.update(generations).set({ name: name.data }).where(eq(generations.id, id.data));
+  if (!name.success) return { error: name.error.issues[0]?.message };
+
+  try {
+    await db
+      .update(generations)
+      .set({ name: name.data })
+      .where(eq(generations.id, id.data));
+  } catch (e) {
+    // Häufigster Fall: Unique-Konflikt (generations.name).
+    console.error("[generations] rename:", (e as Error).message);
+    return { error: `„${name.data}" gibt es bereits.` };
+  }
   revalidatePath(PFAD);
+  return { message: "Umbenannt." };
 }
 
 /** Generation löschen — die Zuordnung der Modelle entfällt (FK set null). */
