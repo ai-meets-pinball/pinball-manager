@@ -1,4 +1,4 @@
-import { and, count, eq, ilike, isNull, or } from "drizzle-orm";
+import { and, count, eq, ilike, isNotNull, isNull, or } from "drizzle-orm";
 import Link from "next/link";
 import { GenerationCreateForm } from "@/components/generation-create-form";
 import { GenerationRow } from "@/components/generation-row";
@@ -43,6 +43,27 @@ export default async function AdminModellePage({
     .groupBy(generations.id)
     .orderBy(generations.name);
   const genOptionen = genList.map((g) => ({ id: g.id, name: g.name }));
+
+  // Modelle je Generation (für die Aufklapp-Liste der Generationen-Zeilen).
+  const zugeordnet = await db
+    .select({
+      hersteller: machineModels.hersteller,
+      modell: machineModels.modell,
+      baujahr: machineModels.baujahr,
+      generationId: machineModels.generationId,
+    })
+    .from(machineModels)
+    .where(isNotNull(machineModels.generationId))
+    .orderBy(machineModels.hersteller, machineModels.modell);
+  const proGeneration = new Map<
+    string,
+    { hersteller: string; modell: string; baujahr: number | null }[]
+  >();
+  for (const m of zugeordnet) {
+    const liste = proGeneration.get(m.generationId!) ?? [];
+    liste.push({ hersteller: m.hersteller, modell: m.modell, baujahr: m.baujahr });
+    proGeneration.set(m.generationId!, liste);
+  }
 
   // Kennzahlen über den GANZEN Bestand (unabhängig von Suche/Seite).
   const [{ gesamt }] = await db.select({ gesamt: count() }).from(machineModels);
@@ -119,6 +140,7 @@ export default async function AdminModellePage({
                   ? ` · ${g.jahrVon}${g.jahrBis && g.jahrBis !== g.jahrVon ? `–${g.jahrBis}` : ""}`
                   : ""
               }`}
+              modelle={proGeneration.get(g.id) ?? []}
             />
           ))}
         </List>
