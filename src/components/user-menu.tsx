@@ -1,6 +1,6 @@
 "use client";
 
-import { LogOut, ShieldCheck, User, Users } from "lucide-react";
+import { ListChecks, LogOut, ShieldCheck, User, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -110,6 +110,16 @@ export function UserMenu({
           >
             <User size={15} className="text-[var(--color-muted)]" />
             Konto
+          </Link>
+
+          <Link
+            href="/wartungsplaene"
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className={itemClass}
+          >
+            <ListChecks size={15} className="text-[var(--color-muted)]" />
+            Wartungspläne
           </Link>
 
           {isSuperAdmin ? (

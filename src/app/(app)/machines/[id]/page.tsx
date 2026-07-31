@@ -30,6 +30,7 @@ import {
 } from "@/db/queries";
 import {
   faults as faultsTable,
+  maintenancePlans as maintenancePlansTable,
   repairs as repairsTable,
 } from "@/db/schema";
 import { modellName } from "@/lib/format";
@@ -151,6 +152,13 @@ export default async function MachineDetailPage({
 
   // Wartungsplan: Wartungspunkte samt Historie und berechneter Fälligkeit.
   const wartungsTasks = await getMaintenanceTasks(id);
+  // Verknüpfter Standard-Wartungsplan (oder null = eigener Plan/Kopie).
+  const wartungsStandard = machine.maintenancePlanId
+    ? ((await db.query.maintenancePlans.findFirst({
+        where: eq(maintenancePlansTable.id, machine.maintenancePlanId),
+        columns: { name: true },
+      })) ?? null)
+    : null;
   const wartungFaellig = wartungsTasks.filter(
     (t) => t.status === "ueberfaellig",
   ).length;
@@ -457,6 +465,8 @@ export default async function MachineDetailPage({
           hatGuide={eigenerGuide}
           providers={kiProviders}
           centralKey={kiCentralKey}
+          verknuepfterPlan={wartungsStandard}
+          clubs={meineClubs.map((c) => ({ id: c.id, name: c.name }))}
         />
       ) : null}
 

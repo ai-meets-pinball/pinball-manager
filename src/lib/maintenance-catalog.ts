@@ -10,11 +10,17 @@ import type {
   per-Gerät-Wartungspunkte (maintenance_tasks) kopiert wird. Danach ist jeder
   Punkt frei editierbar.
 
-  Quelle: Timms „Wartungspunkte_Flipper.xlsx". Die Intervall-Spalte ist teils
-  zeit-, teils spielzahl-, teils bedarfsbasiert; nur ein echtes Zeitintervall
-  („…/monatlich") ergibt eine Fälligkeit — die übrigen sind Checkliste
-  (intervallTyp „spiele"/„bedarf", intervallTage null). Das Original-Label
-  bleibt zur Anzeige in `intervallText`.
+  Quellen: Timms „Wartungspunkte_Flipper.xlsx" + Community-Standardwissen
+  (PinWiki/Pinside). Nur ZEIT-Intervalle erzeugen Fälligkeiten (Erinnerungen,
+  Dashboard); da es kein Spielzähler-Tracking gibt, tragen spielzahlbasierte
+  Empfehlungen ein pragmatisches Kalender-Intervall für Heim-/Club-Betrieb —
+  die Original-Empfehlung bleibt sichtbar in `intervallText`. Reine
+  Ersetz-bei-Verschleiß-Punkte bleiben „bedarf" (Checkliste ohne Termin).
+
+  WICHTIG: applyStandardMaintenance (db/actions/maintenance.ts) überspringt
+  Duplikate NACH TITEL. Maschinen mit dem alten Standard bekommen beim erneuten
+  Übernehmen nur NEUE Punkte; bereits kopierte behalten ihre (editierbaren)
+  Intervalle — gewollt, die Kopien gehören dem Nutzer.
 */
 export type MaintenanceCatalogEntry = {
   titel: string;
@@ -29,6 +35,7 @@ export type MaintenanceCatalogEntry = {
 };
 
 export const MAINTENANCE_STANDARD: MaintenanceCatalogEntry[] = [
+  /* ── Verschleiß ─────────────────────────────────────────────────────────── */
   {
     titel: "Gummis kontrollieren",
     kategorie: "Verschleiß",
@@ -52,17 +59,6 @@ export const MAINTENANCE_STANDARD: MaintenanceCatalogEntry[] = [
     beschreibung: "Alte Flippergummis gegen neue austauschen",
   },
   {
-    titel: "Flipperfinger prüfen",
-    kategorie: "Mechanik",
-    bauteil: "Flipperfinger",
-    taetigkeit: "Prüfen",
-    intervallText: "1000 Spiele",
-    intervallTyp: "spiele",
-    intervallTage: null,
-    prioritaet: "hoch",
-    beschreibung: "Verschleiß, Spiel und Befestigung kontrollieren",
-  },
-  {
     titel: "Abschussgummi tauschen",
     kategorie: "Verschleiß",
     bauteil: "Shooter Rod",
@@ -72,6 +68,52 @@ export const MAINTENANCE_STANDARD: MaintenanceCatalogEntry[] = [
     intervallTage: null,
     prioritaet: "mittel",
     beschreibung: "Abschussgummi ersetzen",
+  },
+  {
+    titel: "Kugeln tauschen",
+    kategorie: "Verschleiß",
+    bauteil: "Kugeln",
+    taetigkeit: "Ersetzen",
+    intervallText: "300–500 Spiele / halbjährlich",
+    intervallTyp: "zeit",
+    intervallTage: 180,
+    prioritaet: "hoch",
+    beschreibung:
+      "Alte Kugeln austauschen — zerkratzte Kugeln ruinieren das Spielfeld",
+  },
+  /* ── Mechanik ──────────────────────────────────────────────────────────── */
+  {
+    titel: "Flipperfinger prüfen",
+    kategorie: "Mechanik",
+    bauteil: "Flipperfinger",
+    taetigkeit: "Prüfen",
+    intervallText: "1000 Spiele / vierteljährlich",
+    intervallTyp: "zeit",
+    intervallTage: 90,
+    prioritaet: "hoch",
+    beschreibung: "Verschleiß, Spiel und Befestigung kontrollieren",
+  },
+  {
+    titel: "Flippermechaniken inkl. EOS prüfen",
+    kategorie: "Mechanik",
+    bauteil: "Flipperbaugruppe",
+    taetigkeit: "Prüfen",
+    intervallText: "Jährlich",
+    intervallTyp: "zeit",
+    intervallTage: 365,
+    prioritaet: "sehr hoch",
+    beschreibung: "Mechanik, End-of-Stroke-Schalter und Spiel kontrollieren",
+  },
+  {
+    titel: "Pop-Bumper & Slingshots prüfen",
+    kategorie: "Mechanik",
+    bauteil: "Pop-Bumper / Slingshots",
+    taetigkeit: "Prüfen",
+    intervallText: "Halbjährlich",
+    intervallTyp: "zeit",
+    intervallTage: 180,
+    prioritaet: "mittel",
+    beschreibung: "Gummis, Schalterabstände und Kicker-Mechanik kontrollieren",
   },
   {
     titel: "Abschuss prüfen",
@@ -85,80 +127,143 @@ export const MAINTENANCE_STANDARD: MaintenanceCatalogEntry[] = [
     beschreibung: "Funktion und Kraft des Abschusses kontrollieren",
   },
   {
+    titel: "Coil Stops & Spulenhülsen prüfen",
+    kategorie: "Mechanik",
+    bauteil: "Spulen",
+    taetigkeit: "Prüfen",
+    intervallText: "Bei trägen/schwachen Flippern",
+    intervallTyp: "bedarf",
+    intervallTage: null,
+    prioritaet: "mittel",
+    beschreibung:
+      "Coil Stops auf Ausbröseln, Hülsen auf Verschleiß prüfen (träge Flipper)",
+  },
+  {
+    titel: "Neigung/Pitch kontrollieren",
+    kategorie: "Mechanik",
+    bauteil: "Aufstellung",
+    taetigkeit: "Prüfen",
+    intervallText: "Nach jedem Transport / bei Bedarf",
+    intervallTyp: "bedarf",
+    intervallTage: null,
+    prioritaet: "niedrig",
+    beschreibung:
+      "Neigung (ca. 6,5°) und seitliche Waage mit Wasserwaage kontrollieren",
+  },
+  {
+    titel: "Cabinet-/Beinschrauben nachziehen",
+    kategorie: "Mechanik",
+    bauteil: "Cabinet",
+    taetigkeit: "Prüfen",
+    intervallText: "Jährlich",
+    intervallTyp: "zeit",
+    intervallTage: 365,
+    prioritaet: "niedrig",
+    beschreibung: "Bein-, Kopf- und Cabinetschrauben auf festen Sitz prüfen",
+  },
+  /* ── Elektrik / Elektronik ─────────────────────────────────────────────── */
+  {
     titel: "Schalter testen",
     kategorie: "Elektrik",
     bauteil: "Schalter",
     taetigkeit: "Testen",
-    intervallText: "Wartung",
-    intervallTyp: "bedarf",
-    intervallTage: null,
+    intervallText: "Halbjährlich (Testmodus)",
+    intervallTyp: "zeit",
+    intervallTage: 180,
     prioritaet: "hoch",
-    beschreibung: "Alle relevanten Schalter auf Funktion prüfen",
-  },
-  {
-    titel: "Spielfeld reinigen",
-    kategorie: "Reinigung",
-    bauteil: "Spielfeld",
-    taetigkeit: "Reinigen",
-    intervallText: "300–500 Spiele",
-    intervallTyp: "spiele",
-    intervallTage: null,
-    prioritaet: "hoch",
-    beschreibung: "Spielfeld gründlich reinigen",
-  },
-  {
-    titel: "Kugeln tauschen",
-    kategorie: "Verschleiß",
-    bauteil: "Kugeln",
-    taetigkeit: "Ersetzen",
-    intervallText: "300–500 Spiele",
-    intervallTyp: "spiele",
-    intervallTage: null,
-    prioritaet: "hoch",
-    beschreibung: "Alte Kugeln gegen neue austauschen",
-  },
-  {
-    titel: "Flippermechaniken inkl. EOS prüfen",
-    kategorie: "Mechanik",
-    bauteil: "Flipperbaugruppe",
-    taetigkeit: "Prüfen",
-    intervallText: "Wartung",
-    intervallTyp: "bedarf",
-    intervallTage: null,
-    prioritaet: "sehr hoch",
-    beschreibung: "Mechanik, End-of-Stroke-Schalter und Spiel kontrollieren",
+    beschreibung: "Alle relevanten Schalter im Testmodus auf Funktion prüfen",
   },
   {
     titel: "Flipperknopf-Schalter prüfen",
     kategorie: "Elektrik",
     bauteil: "Cabinet",
     taetigkeit: "Prüfen",
-    intervallText: "Wartung",
-    intervallTyp: "bedarf",
-    intervallTage: null,
+    intervallText: "Jährlich",
+    intervallTyp: "zeit",
+    intervallTage: 365,
     prioritaet: "hoch",
     beschreibung: "Flipperbutton und Mikroschalter testen",
+  },
+  {
+    titel: "Sicherungen sichten + Ersatz vorrätig",
+    kategorie: "Elektrik",
+    bauteil: "Sicherungen",
+    taetigkeit: "Prüfen",
+    intervallText: "Jährlich",
+    intervallTyp: "zeit",
+    intervallTage: 365,
+    prioritaet: "mittel",
+    beschreibung:
+      "Sicherungen sichten (nur korrekte Werte!) und Ersatz-Sortiment auffüllen",
   },
   {
     titel: "Batterien tauschen",
     kategorie: "Elektronik",
     bauteil: "CPU-Board",
     taetigkeit: "Ersetzen",
-    intervallText: "Nach Bedarf",
-    intervallTyp: "bedarf",
-    intervallTage: null,
+    intervallText: "Jährlich — Auslaufschäden vermeiden",
+    intervallTyp: "zeit",
+    intervallTage: 365,
     prioritaet: "kritisch",
-    beschreibung: "Batterieschäden vermeiden",
+    beschreibung:
+      "Batterien jährlich tauschen — ausgelaufene Zellen zerstören das CPU-Board",
+  },
+  {
+    titel: "Steckverbinder/Kabelbaum prüfen",
+    kategorie: "Elektronik",
+    bauteil: "Kabelbaum",
+    taetigkeit: "Prüfen",
+    intervallText: "Jährlich",
+    intervallTyp: "zeit",
+    intervallTage: 365,
+    prioritaet: "hoch",
+    beschreibung:
+      "GI- und Netzteil-Stecker auf Hitzeschäden/Verfärbung prüfen (Brandgefahr)",
+  },
+  /* ── Reinigung / Beleuchtung ───────────────────────────────────────────── */
+  {
+    titel: "Spielfeld reinigen",
+    kategorie: "Reinigung",
+    bauteil: "Spielfeld",
+    taetigkeit: "Reinigen",
+    intervallText: "300–500 Spiele / vierteljährlich",
+    intervallTyp: "zeit",
+    intervallTage: 90,
+    prioritaet: "hoch",
+    beschreibung: "Spielfeld gründlich reinigen",
+  },
+  {
+    titel: "Spielfeld wachsen/polieren",
+    kategorie: "Reinigung",
+    bauteil: "Spielfeld",
+    taetigkeit: "Reinigen",
+    intervallText: "Halbjährlich (nach der Reinigung)",
+    intervallTyp: "zeit",
+    intervallTage: 180,
+    prioritaet: "mittel",
+    beschreibung:
+      "Mit Carnauba-Wachs (kein Silikon) wachsen — schützt Spielfeld und Kugeln",
+  },
+  {
+    titel: "Glas reinigen",
+    kategorie: "Reinigung",
+    bauteil: "Spielfeldglas / Backglass",
+    taetigkeit: "Reinigen",
+    intervallText: "Monatlich",
+    intervallTyp: "zeit",
+    intervallTage: 30,
+    prioritaet: "niedrig",
+    beschreibung: "Spielfeldglas und Backglass innen/außen reinigen",
   },
   {
     titel: "Beleuchtung testen",
     kategorie: "Beleuchtung",
     bauteil: "Lampen/LEDs",
     taetigkeit: "Testen",
-    intervallText: "Wartung",
-    intervallTyp: "bedarf",
-    intervallTage: null,
+    intervallText: "Halbjährlich (Lamp-Test)",
+    intervallTyp: "zeit",
+    intervallTage: 180,
     prioritaet: "niedrig",
-    beschreibung: "Defekte Leuchtmittel identifizieren",
+    beschreibung: "Defekte Leuchtmittel im Lamp-Test identifizieren",
   },
 ];

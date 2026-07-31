@@ -53,7 +53,7 @@ const sections: GuideSection[] = [
       },
       {
         titel: "Wo finde ich was?",
-        text: "Oben links liegen Maschinen und Hilfe. Hinter dem Nutzer-Icon oben rechts findest du Clubs, Konto, Administration (nur Super-Admins) und Abmelden. Daneben schaltest du zwischen hellem und dunklem Design um.",
+        text: "Oben links liegen Maschinen und Hilfe. Hinter dem Nutzer-Icon oben rechts findest du Clubs, Konto, Wartungspläne, Administration (nur Super-Admins) und Abmelden. Daneben schaltest du zwischen hellem und dunklem Design um.",
       },
     ],
   },
@@ -127,7 +127,15 @@ const sections: GuideSection[] = [
     steps: [
       {
         titel: "Punkte anlegen",
-        text: "Auf der Maschinen-Detailseite im Reiter »Wartung«: »Standard-Wartungsplan übernehmen« legt eine bewährte Grundausstattung an, »Aus Guide übernehmen« zieht Punkte aus dem Troubleshooting-Guide, oder »Neuer Wartungspunkt« für eigene Einträge.",
+        text: "Auf der Maschinen-Detailseite im Reiter »Wartung«: die Maschine mit einem Standard-Wartungsplan verknüpfen, »Standard als Kopie übernehmen«, »Aus Guide übernehmen« (zieht Punkte aus dem Troubleshooting-Guide) oder »Neuer Wartungspunkt« für eigene Einträge.",
+      },
+      {
+        titel: "Standard-Wartungspläne",
+        text: "Unter Nutzer-Icon → »Wartungspläne« pflegst du deinen eigenen Standard; jeder Club kann zusätzlich einen Club-Standard haben (bearbeiten dürfen Owner/Admin, Mitglieder nutzen ihn). Beim ersten Anlegen wird eine bewährte Vorlage (20 Punkte) eingespielt, danach passt du Punkte frei an.",
+      },
+      {
+        titel: "Verknüpfen oder kopieren?",
+        text: "Verknüpfst du eine Maschine mit einem Standard, folgen ihre Punkte dem Standard: Änderungen dort wirken sofort auf allen verknüpften Maschinen; solche Punkte tragen den Badge »Standard« und werden im Standard bearbeitet (Erledigt-Einträge und Historie bleiben natürlich an der Maschine). »Standard als Kopie übernehmen« legt stattdessen freie, editierbare Kopien an. Über »Verknüpfung lösen« werden alle Punkte einer verknüpften Maschine zu eigenen Kopien. Vorhandene gleichnamige Punkte behalten beim Verknüpfen ihre Historie.",
       },
       {
         titel: "Intervall & Fälligkeit",

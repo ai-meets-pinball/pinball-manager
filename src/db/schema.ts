@@ -224,6 +224,13 @@ export const machines = pgTable("machines", {
   opdbRef: text("opdb_ref"),
   ipdbRef: text("ipdb_ref"),
   fotoUrl: text("foto_url"),
+  // Verknüpfter Standard-Wartungsplan (maintenance_plans): gesetzt = die
+  // Maschine FOLGT dem Standard (Änderungen propagieren); null = eigener Plan
+  // (Kopie oder eigenständig). Standard gelöscht → Maschine wird eigenständig.
+  maintenancePlanId: uuid("maintenance_plan_id").references(
+    () => maintenancePlans.id,
+    { onDelete: "set null" },
+  ),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -468,6 +475,57 @@ export const knowledgeOverrides = pgTable(
    Wissen in `knowledge` (typ='troubleshooting') — die eigene Tabelle
    `troubleshooting_guides` ist entfallen. */
 
+/* ── Standard-Wartungspläne (Vorlagen je Nutzer / je Club) ────────────────── */
+/*
+  Der Code-Katalog (lib/maintenance-catalog.ts) ist nur das TEMPLATE. Darüber
+  liegen editierbare Standards: genau EINER je Nutzer (userId) bzw. je Club
+  (clubId) — beim Anlegen aus dem Template geseedet. Maschinen können einen
+  Standard VERKNÜPFEN (machines.maintenance_plan_id): Änderungen am Standard
+  propagieren auf die verknüpften Maschinen-Tasks (siehe
+  db/actions/maintenance-plans.ts) — der per-Maschine-ZUSTAND (Fälligkeit,
+  Historie) bleibt dabei erhalten, weil die Task-Zeilen bestehen bleiben und
+  nur ihre Felder aktualisiert werden.
+*/
+export const maintenancePlans = pgTable(
+  "maintenance_plans",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    // Genau EIN Besitzer: Nutzer ODER Club (Check unten), je Besitzer EIN Plan.
+    userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
+    clubId: uuid("club_id").references(() => clubs.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    check(
+      "maintenance_plans_genau_ein_besitzer",
+      sql`num_nonnulls(${t.userId}, ${t.clubId}) = 1`,
+    ),
+    unique("maintenance_plans_user_unique").on(t.userId),
+    unique("maintenance_plans_club_unique").on(t.clubId),
+  ],
+);
+
+export const maintenancePlanItems = pgTable("maintenance_plan_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  planId: uuid("plan_id")
+    .notNull()
+    .references(() => maintenancePlans.id, { onDelete: "cascade" }),
+  titel: text("titel").notNull(),
+  kategorie: text("kategorie"),
+  bauteil: text("bauteil"),
+  taetigkeit: text("taetigkeit"),
+  beschreibung: text("beschreibung"),
+  prioritaet: maintenancePrioritaet("prioritaet").notNull().default("mittel"),
+  intervallTyp: maintenanceIntervallTyp("intervall_typ")
+    .notNull()
+    .default("bedarf"),
+  intervallTage: integer("intervall_tage"),
+  intervallText: text("intervall_text"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 /* ── Wartungsplan (interaktiv, mit Historie & Erinnerung) ─────────────────── */
 /*
   Je Gerät eine Liste von Wartungspunkten (`maintenance_tasks`) plus eine
@@ -485,6 +543,13 @@ export const maintenanceTasks = pgTable("maintenance_tasks", {
   machineId: uuid("machine_id")
     .notNull()
     .references(() => machines.id, { onDelete: "cascade" }),
+  // Gesetzt = dieser Punkt wird vom verknüpften Standard VERWALTET (Felder
+  // kommen aus maintenance_plan_items, per-Maschine editieren ist gesperrt);
+  // null = eigener Punkt. SET NULL: gelöschte Plan-Punkte koppeln ab, statt
+  // Maschinen-Historie zu vernichten (Feinregel in maintenance-plans.ts).
+  planItemId: uuid("plan_item_id").references(() => maintenancePlanItems.id, {
+    onDelete: "set null",
+  }),
   titel: text("titel").notNull(),
   kategorie: text("kategorie"), // Freitext (wie faults.kategorie)
   bauteil: text("bauteil"),

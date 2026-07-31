@@ -190,6 +190,13 @@
       "when": 1785499932337,
       "tag": "0026_stale_lockjaw",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1785502655962,
+      "tag": "0027_hot_miss_america",
+      "breakpoints": true
     }
   ]
 }

@@ -1,8 +1,10 @@
 import Link from "next/link";
-import { ListChecks, Pencil, Plus, Trash2, X } from "lucide-react";
+import { Link2Off, ListChecks, Pencil, Plus, Trash2, X } from "lucide-react";
+import { LinkStandardForm } from "@/components/link-standard-form";
 import { MaintenanceCompleteButton } from "@/components/maintenance-complete-button";
 import { MaintenanceGuideImport } from "@/components/maintenance-guide-import";
 import { Card } from "@/components/ui/card";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { StatusBadge } from "@/components/ui/status-badge";
 import type { AiProvider } from "@/lib/ai/provider";
 import {
@@ -10,6 +12,7 @@ import {
   deleteTask,
   deleteTaskLog,
 } from "@/db/actions/maintenance";
+import { unlinkMachineFromStandard } from "@/db/actions/maintenance-plans";
 import type { MaintenanceStatus } from "@/db/queries";
 
 /*
@@ -21,6 +24,8 @@ import type { MaintenanceStatus } from "@/db/queries";
 type LogEntry = { id: string; datum: Date; notiz: string | null };
 type Task = {
   id: string;
+  /** Gesetzt = vom verknüpften Standard verwaltet (nicht einzeln editierbar). */
+  planItemId: string | null;
   titel: string;
   kategorie: string | null;
   bauteil: string | null;
@@ -91,6 +96,8 @@ export function MaintenancePlan({
   hatGuide,
   providers,
   centralKey,
+  verknuepfterPlan,
+  clubs,
 }: {
   tasks: Task[];
   machineId: string;
@@ -100,21 +107,57 @@ export function MaintenancePlan({
   providers: AiProvider[];
   /** Zentraler Anthropic-Key vorhanden? Sonst BYO-Feld beim Claude-Weg. */
   centralKey: boolean;
+  /** Verknüpfter Standard (oder null = eigener Plan / Kopie). */
+  verknuepfterPlan: { name: string } | null;
+  /** Clubs des Nutzers — Ziele fürs Verknüpfen. */
+  clubs: { id: string; name: string }[];
 }) {
   return (
     <div className="space-y-3">
       {schreibbar ? (
-        <div className="flex flex-wrap items-start gap-3">
-          <form action={applyStandardMaintenance}>
-            <input type="hidden" name="machineId" value={machineId} />
-            <button
-              type="submit"
-              className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 text-sm hover:bg-[var(--color-border)]/40"
+        verknuepfterPlan ? (
+          /* Verknüpft: der Standard verwaltet die Punkte — hier nur lösen,
+             Standard bearbeiten oder ZUSÄTZLICHE eigene Punkte anlegen. */
+          <div className="flex flex-wrap items-center gap-3 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2 text-sm">
+            <span className="inline-flex items-center gap-1.5">
+              <ListChecks size={15} className="text-[var(--color-primary)]" />
+              Verknüpft mit <strong>„{verknuepfterPlan.name}“</strong> — Änderungen
+              am Standard wirken hier.
+            </span>
+            <Link
+              href="/wartungsplaene"
+              className="text-[var(--color-primary)] hover:underline"
             >
-              <ListChecks size={15} /> Standard-Wartungsplan übernehmen
-            </button>
-          </form>
+              Standard bearbeiten
+            </Link>
+            <form action={unlinkMachineFromStandard} className="ml-auto">
+              <input type="hidden" name="machineId" value={machineId} />
+              <ConfirmButton
+                question="Verknüpfung lösen? Alle Punkte werden eigene, frei editierbare Kopien."
+                confirmLabel="Ja, lösen"
+              >
+                <Link2Off size={13} /> Verknüpfung lösen
+              </ConfirmButton>
+            </form>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center gap-3">
+            <LinkStandardForm machineId={machineId} clubs={clubs} />
+            <form action={applyStandardMaintenance}>
+              <input type="hidden" name="machineId" value={machineId} />
+              <button
+                type="submit"
+                className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 text-sm hover:bg-[var(--color-border)]/40"
+              >
+                <ListChecks size={15} /> Standard als Kopie übernehmen
+              </button>
+            </form>
+          </div>
+        )
+      ) : null}
 
+      {schreibbar ? (
+        <div className="flex flex-wrap items-start gap-3">
           {hatGuide ? (
             <MaintenanceGuideImport
               machineId={machineId}
@@ -146,6 +189,9 @@ export function MaintenancePlan({
               <div className="flex flex-wrap items-center gap-2">
                 <StatusBadge value={t.prioritaet} />
                 <span className="font-medium">{t.titel}</span>
+                {t.planItemId ? (
+                  <Chip color="var(--color-primary)">Standard</Chip>
+                ) : null}
                 <span className="ml-auto">
                   <DueChip status={t.status} tage={t.tageBisFaellig} />
                 </span>
@@ -173,25 +219,40 @@ export function MaintenancePlan({
 
               {schreibbar ? (
                 <div className="space-y-2">
+                  {/* Erledigt-Melden geht IMMER (auch bei Standard-Punkten —
+                      der Zustand gehört der Maschine). */}
                   <MaintenanceCompleteButton machineId={machineId} taskId={t.id} />
-                  <div className="flex gap-4 text-sm">
-                    <Link
-                      href={`/machines/${machineId}/maintenance/${t.id}/edit`}
-                      className="inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-                    >
-                      <Pencil size={14} /> Bearbeiten
-                    </Link>
-                    <form action={deleteTask}>
-                      <input type="hidden" name="machineId" value={machineId} />
-                      <input type="hidden" name="id" value={t.id} />
-                      <button
-                        type="submit"
-                        className="inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-danger)]"
+                  {t.planItemId ? (
+                    <p className="text-xs text-[var(--color-muted)]">
+                      Vom Standard verwaltet —{" "}
+                      <Link
+                        href="/wartungsplaene"
+                        className="text-[var(--color-primary)] hover:underline"
                       >
-                        <Trash2 size={14} /> Löschen
-                      </button>
-                    </form>
-                  </div>
+                        im Standard bearbeiten
+                      </Link>
+                      .
+                    </p>
+                  ) : (
+                    <div className="flex gap-4 text-sm">
+                      <Link
+                        href={`/machines/${machineId}/maintenance/${t.id}/edit`}
+                        className="inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+                      >
+                        <Pencil size={14} /> Bearbeiten
+                      </Link>
+                      <form action={deleteTask}>
+                        <input type="hidden" name="machineId" value={machineId} />
+                        <input type="hidden" name="id" value={t.id} />
+                        <ConfirmButton
+                          question="Wartungspunkt löschen (samt Historie)?"
+                          confirmLabel="Ja, löschen"
+                        >
+                          <Trash2 size={14} /> Löschen
+                        </ConfirmButton>
+                      </form>
+                    </div>
+                  )}
                 </div>
               ) : null}
 

@@ -1,16 +1,19 @@
 "use server";
 
 import Anthropic from "@anthropic-ai/sdk";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import {
   knowledge,
   maintenanceLog,
+  maintenancePlanItems,
+  maintenancePlans,
   maintenanceTasks,
 } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
+import { computeDue } from "@/lib/maintenance-due";
 import { anthropicModelFor, resolveProvider } from "@/lib/ai/provider";
 import { ollamaErrorMessage, ollamaJson } from "@/lib/ai/ollama";
 import { mlxErrorMessage, mlxText } from "@/lib/ai/mlx";
@@ -25,22 +28,8 @@ import {
 
 export type FormState = { error?: string; ok?: boolean };
 
-/* ── Fälligkeits-Helfer ────────────────────────────────────────────────────
-   Nur zeitbasierte Intervalle ergeben einen Termin (naechsteFaelligkeit). */
-function addDays(base: Date, tage: number): Date {
-  const d = new Date(base);
-  d.setDate(d.getDate() + tage);
-  return d;
-}
-function computeDue(
-  intervallTyp: string,
-  intervallTage: number | null,
-  ab: Date,
-): Date | null {
-  return intervallTyp === "zeit" && intervallTage && intervallTage > 0
-    ? addDays(ab, intervallTage)
-    : null;
-}
+/* Fälligkeits-Helfer liegt in lib/maintenance-due.ts (rein) — auch von
+   db/actions/maintenance-plans.ts (Standard-Propagation) genutzt. */
 
 /* ── Wartungspunkte: Anlegen / Bearbeiten / Löschen ───────────────────────── */
 
@@ -101,6 +90,14 @@ export async function updateTask(
     ),
   });
   if (!task) return { error: "Wartungspunkt nicht gefunden." };
+  // Vom Standard verwaltete Punkte werden IM Standard bearbeitet
+  // (db/actions/maintenance-plans.ts) — oder die Maschine löst die Verknüpfung.
+  if (task.planItemId) {
+    return {
+      error:
+        "Dieser Punkt wird vom Standard verwaltet — im Standard bearbeiten oder die Verknüpfung lösen.",
+    };
+  }
 
   // Fälligkeit ab letzter Erledigung (oder Anlagedatum), damit ein geändertes
   // Intervall sofort den nächsten Termin setzt.
@@ -136,12 +133,15 @@ export async function deleteTask(formData: FormData): Promise<void> {
   const id = String(formData.get("id"));
   await requireMachineWrite(machineId);
 
+  // Vom Standard verwaltete Punkte nicht einzeln löschen (nur via Standard
+  // oder durch Lösen der Verknüpfung) — planItemId muss NULL sein.
   await db
     .delete(maintenanceTasks)
     .where(
       and(
         eq(maintenanceTasks.id, id),
         eq(maintenanceTasks.machineId, machineId),
+        isNull(maintenanceTasks.planItemId),
       ),
     );
 
@@ -238,11 +238,14 @@ export async function deleteTaskLog(formData: FormData): Promise<void> {
   revalidatePath(`/machines/${machineId}`);
 }
 
-/* ── Standard-Wartungsplan (Timms Liste) übernehmen ───────────────────────── */
+/* ── Standard-Wartungsplan als KOPIE übernehmen ───────────────────────────── */
+/* Quelle: der EIGENE Standard des Nutzers (maintenance_plans), falls vorhanden —
+   sonst das Code-Template. Die Kopie ist danach frei editierbar (keine
+   Verknüpfung; dafür gibt es linkMachineToStandard in maintenance-plans.ts). */
 
 export async function applyStandardMaintenance(formData: FormData): Promise<void> {
   const machineId = String(formData.get("machineId"));
-  await requireMachineWrite(machineId);
+  const { user } = await requireMachineWrite(machineId);
 
   const vorhanden = await db.query.maintenanceTasks.findMany({
     where: eq(maintenanceTasks.machineId, machineId),
@@ -250,22 +253,32 @@ export async function applyStandardMaintenance(formData: FormData): Promise<void
   });
   const haben = new Set(vorhanden.map((t) => t.titel.trim().toLowerCase()));
 
+  // Eigener Standard als Quelle, sonst das Code-Template.
+  const eigenerPlan = await db.query.maintenancePlans.findFirst({
+    where: eq(maintenancePlans.userId, user.id),
+  });
+  const quelle = eigenerPlan
+    ? await db.query.maintenancePlanItems.findMany({
+        where: eq(maintenancePlanItems.planId, eigenerPlan.id),
+      })
+    : MAINTENANCE_STANDARD;
+
   const now = new Date();
-  const neu = MAINTENANCE_STANDARD.filter(
-    (e) => !haben.has(e.titel.trim().toLowerCase()),
-  ).map((e) => ({
-    machineId,
-    titel: e.titel,
-    kategorie: e.kategorie,
-    bauteil: e.bauteil,
-    taetigkeit: e.taetigkeit,
-    beschreibung: e.beschreibung,
-    prioritaet: e.prioritaet,
-    intervallTyp: e.intervallTyp,
-    intervallTage: e.intervallTage,
-    intervallText: e.intervallText,
-    naechsteFaelligkeit: computeDue(e.intervallTyp, e.intervallTage, now),
-  }));
+  const neu = quelle
+    .filter((e) => !haben.has(e.titel.trim().toLowerCase()))
+    .map((e) => ({
+      machineId,
+      titel: e.titel,
+      kategorie: e.kategorie,
+      bauteil: e.bauteil,
+      taetigkeit: e.taetigkeit,
+      beschreibung: e.beschreibung,
+      prioritaet: e.prioritaet,
+      intervallTyp: e.intervallTyp,
+      intervallTage: e.intervallTage,
+      intervallText: e.intervallText,
+      naechsteFaelligkeit: computeDue(e.intervallTyp, e.intervallTage, now),
+    }));
 
   if (neu.length > 0) await db.insert(maintenanceTasks).values(neu);
   revalidatePath(`/machines/${machineId}`);
