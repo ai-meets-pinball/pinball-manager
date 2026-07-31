@@ -176,12 +176,14 @@ export function MachinesBoard({
             onDone={beenden}
           />
         ) : (
+          /* Bewusst leise (Text-Link): eine seltene Verwaltungsaktion soll die
+             Liste nicht dominieren. */
           <button
             type="button"
             onClick={starten}
-            className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 text-sm hover:bg-[var(--color-border)]/40"
+            className="inline-flex items-center gap-1.5 text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)]"
           >
-            <CheckSquare size={15} /> Mehrere einem Club zuweisen
+            <CheckSquare size={13} /> Mehrere einem Club zuweisen
           </button>
         )
       ) : null}

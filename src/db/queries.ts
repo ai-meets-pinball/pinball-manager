@@ -567,6 +567,61 @@ export async function getMaintenanceTasks(machineId: string) {
     });
 }
 
+/** Dashboard: anstehende Wartungen (überfällig oder bald fällig) über die
+    sichtbaren Maschinen — samt Maschine, nach Termin sortiert. */
+export async function getDueMaintenanceForMachines(machineIds: string[]) {
+  if (machineIds.length === 0) return [];
+  const rows = await db
+    .select({
+      id: maintenanceTasks.id,
+      machineId: maintenanceTasks.machineId,
+      titel: maintenanceTasks.titel,
+      prioritaet: maintenanceTasks.prioritaet,
+      intervallTyp: maintenanceTasks.intervallTyp,
+      naechsteFaelligkeit: maintenanceTasks.naechsteFaelligkeit,
+      hersteller: machines.hersteller,
+      modell: machines.modell,
+    })
+    .from(maintenanceTasks)
+    .innerJoin(machines, eq(machines.id, maintenanceTasks.machineId))
+    .where(
+      and(
+        inArray(maintenanceTasks.machineId, machineIds),
+        eq(maintenanceTasks.aktiv, true),
+        // Fenster: überfällig + „bald" (dieselbe Grenze wie faelligkeit()).
+        lte(
+          maintenanceTasks.naechsteFaelligkeit,
+          new Date(Date.now() + BALD_TAGE * TAG_MS),
+        ),
+      ),
+    )
+    .orderBy(maintenanceTasks.naechsteFaelligkeit);
+  const now = Date.now();
+  return rows.map((r) => ({ ...r, ...faelligkeit(r, now) }));
+}
+
+/** Dashboard: offene Fehler (Status ≠ behoben) über die sichtbaren Maschinen. */
+export async function getOpenFaultsForMachines(machineIds: string[]) {
+  if (machineIds.length === 0) return [];
+  return db
+    .select({
+      id: faults.id,
+      machineId: faults.machineId,
+      beschreibung: faults.beschreibung,
+      prioritaet: faults.prioritaet,
+      status: faults.status,
+      datum: faults.datum,
+      hersteller: machines.hersteller,
+      modell: machines.modell,
+    })
+    .from(faults)
+    .innerJoin(machines, eq(machines.id, faults.machineId))
+    .where(
+      and(inArray(faults.machineId, machineIds), ne(faults.status, "behoben")),
+    )
+    .orderBy(desc(faults.datum));
+}
+
 /** Anzahl fälliger (überfällig oder heute) Wartungen je Maschine — für die
     Badges in der Maschinenliste. Nur aktive, zeitbasierte Punkte mit Termin. */
 export async function getDueMaintenanceCountByMachine(machineIds: string[]) {
