@@ -172,7 +172,7 @@ export const emailTemplates = pgTable("email_templates", {
   updatedBy: text("updated_by").references(() => user.id),
 });
 
-/* ── Gerätetyp-Katalog ────────────────────────────────────────────────────── */
+/* ── Modell-Katalog ────────────────────────────────────────────────────── */
 /*
   Ein Eintrag je OPDB-MASCHINE (Edition), nicht je Gruppe/Titel — „Godzilla
   Premium" und „Godzilla Pro" sind getrennte Typen, weil sich Spulen- und
@@ -215,7 +215,7 @@ export const machines = pgTable("machines", {
     .references(() => user.id),
   // Optional: Maschine einem Club zugeordnet (geteilt mit den Mitgliedern).
   clubId: uuid("club_id").references(() => clubs.id),
-  // Verweis auf den geteilten Gerätetyp. Nullable: Handeingaben ohne OPDB
+  // Verweis auf das geteilte Modell. Nullable: Handeingaben ohne OPDB
   // bleiben erlaubt (können später zugeordnet werden).
   modelId: uuid("model_id").references(() => machineModels.id),
   hersteller: text("hersteller").notNull(),
@@ -302,7 +302,7 @@ export const shares = pgTable(
     id: uuid("id").primaryKey().defaultRandom(),
     artefaktTyp: text("artefakt_typ").notNull(), // machine_facts | repair
     artefaktId: uuid("artefakt_id").notNull(),
-    // Gerätetyp, auf den sich das Wissen bezieht — der Anker zum Wiederfinden.
+    // Modell, auf das sich das Wissen bezieht — der Anker zum Wiederfinden.
     modelId: uuid("model_id")
       .notNull()
       .references(() => machineModels.id, { onDelete: "cascade" }),

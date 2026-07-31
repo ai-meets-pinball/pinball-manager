@@ -42,11 +42,11 @@ async function parseMachine(userId: string, formData: FormData) {
 }
 
 /*
-  Sorgt dafür, dass es zum OPDB-Bezug einen Eintrag im geteilten Gerätetyp-Katalog
+  Sorgt dafür, dass es zum OPDB-Bezug einen Eintrag im geteilten Modell-Katalog
   gibt, und liefert dessen id (oder null).
 
   Zwei bewusste Regeln:
-  - Nur EDITIONS-Referenzen taugen als Gerätetyp. Eine reine Gruppen-Referenz
+  - Nur EDITIONS-Referenzen taugen als Modell. Eine reine Gruppen-Referenz
     (nur Titel) wird verworfen, weil sich Spulen-/Schaltermatrizen je Edition
     unterscheiden. Aliasse werden auf ihre Edition normalisiert.
   - `onConflictDoNothing`: der Katalog gehört niemandem. Wer eine Maschine später
@@ -86,7 +86,7 @@ async function ensureMachineModel(
   return model?.id ?? null;
 }
 
-/** Die Reparatur-Freigaben einer Maschine aufheben, wenn sich ihr Gerätetyp
+/** Die Reparatur-Freigaben einer Maschine aufheben, wenn sich ihr Modell
     ändert — sonst hingen die Freigaben am alten Typ. Handbuch-Fakten sind seit
     dem Datenmodell-Redesign kein Share mehr (Modell-Wissen in `knowledge`) und
     bleiben bewusst am ursprünglichen Modell. */
@@ -167,7 +167,7 @@ export async function updateMachine(
     opdbImageUrl(formData);
 
   /*
-    Wechselt der Gerätetyp, werden bestehende Freigaben dieser Maschine
+    Wechselt das Modell, werden bestehende Freigaben dieser Maschine
     WIDERRUFEN. Sonst blieben sie am alten Typ hängen und andere Besitzer
     bekämen die Daten eines ganz anderen Automaten als passende Referenz
     angezeigt — bei Spulen- und Schaltermatrizen ist das kein Schönheitsfehler.

@@ -154,7 +154,7 @@ export async function canSeeShare(
 }
 
 /**
- * Geteilte Reparaturen zu einem Gerätetyp — die wachsende Reparaturdatenbank.
+ * Geteilte Reparaturen zu einem Modell — die wachsende Reparaturdatenbank.
  *
  * Die Feldprojektion passiert HIER, serverseitig: Kosten/Aufwand und der Name
  * des Urhebers werden gar nicht erst geladen bzw. auf null gesetzt, wenn die
@@ -219,7 +219,7 @@ export async function getSharedRepairsForModel(
   }));
 }
 
-/** Ein Gerätetyp (machine_models) per id — für die Typ-Seite. */
+/** Ein Modell (machine_models) per id — für die Typ-Seite. */
 export async function getMachineModel(modelId: string) {
   return db.query.machineModels.findFirst({
     where: eq(machineModels.id, modelId),
@@ -284,7 +284,7 @@ export async function knowledgeSichtbarFuer(
   return Boolean(row);
 }
 
-/** Sichtbare Handbuch-Fakten (typ='handbuch_fakten') eines Gerätetyps (Modell). */
+/** Sichtbare Handbuch-Fakten (typ='handbuch_fakten') eines Modells (Modell). */
 export async function getModelKnowledge(
   currentUser: SessionUser,
   modelId: string,
@@ -304,7 +304,7 @@ export async function getModelKnowledge(
     .orderBy(desc(knowledge.updatedAt));
 }
 
-/** Sichtbare Handbuch-Fakten einer Maschine ohne Gerätetyp (Maschinen-Ebene). */
+/** Sichtbare Handbuch-Fakten einer Maschine ohne Modell (Maschinen-Ebene). */
 export async function getMachineKnowledge(
   currentUser: SessionUser,
   machineId: string,
@@ -335,7 +335,7 @@ function guideAuswahl(userId: string) {
   } as const;
 }
 
-/** Die Generation eines Gerätetyps (oder null) — für die Ebene-Wahl beim Guide. */
+/** Die Generation eines Modells (oder null) — für die Ebene-Wahl beim Guide. */
 export async function getModelGeneration(modelId: string) {
   const [row] = await db
     .select({ id: generations.id, name: generations.name })
@@ -346,7 +346,7 @@ export async function getModelGeneration(modelId: string) {
 }
 
 /**
- * Sichtbare Troubleshooting-Guides eines Gerätetyps — inklusive der Guides, die
+ * Sichtbare Troubleshooting-Guides eines Modells — inklusive der Guides, die
  * auf der GENERATION dieses Modells liegen (Generation-Resolver): Wissen einer
  * Board-/Hardware-Generation gilt für alle ihre Modelle. Fakten bleiben bewusst
  * modell-exakt (Editionsunterschiede) und werden hier NICHT aufgelöst.
@@ -373,7 +373,7 @@ export async function getModelGuides(currentUser: SessionUser, modelId: string) 
     .orderBy(desc(knowledge.updatedAt));
 }
 
-/** Sichtbare Troubleshooting-Guides einer Maschine ohne Gerätetyp (kein
+/** Sichtbare Troubleshooting-Guides einer Maschine ohne Modell (kein
     Generation-Bezug möglich). */
 export async function getMachineGuides(
   currentUser: SessionUser,
@@ -395,7 +395,7 @@ export async function getMachineGuides(
     .orderBy(desc(knowledge.updatedAt));
 }
 
-/** Gerätetyp-Katalog: Modelle mit für den Nutzer sichtbarem Handbuch-Wissen. */
+/** Modell-Katalog: Modelle mit für den Nutzer sichtbarem Handbuch-Wissen. */
 export async function getKnowledgeModels(currentUser: SessionUser) {
   const sichtbar = await knowledgeVisibilityFilter(currentUser);
   return db

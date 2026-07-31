@@ -7,7 +7,7 @@ import { SetVisibility } from "@/components/set-visibility";
 
 /*
   Zeigt Handbuch-Fakten als MODELL-Wissen (Datenmodell-Redesign, Phase 1). Jeder
-  `knowledge`-Eintrag (typ='handbuch_fakten') gehört zum Gerätetyp und trägt Autor
+  `knowledge`-Eintrag (typ='handbuch_fakten') gehört zum Modell und trägt Autor
   + Sichtbarkeit; eigene Einträge lassen sich in der Sichtbarkeit ändern. Der
   `inhalt` (extractSchema-Objekt) wird zur bekannten {typ, daten}[]-Form für
   `MachineDataTables` transformiert.
@@ -55,7 +55,7 @@ export function KnowledgeFacts({
   if (eintraege.length === 0) {
     return (
       <p className="text-sm text-[var(--color-muted)]">
-        Für diesen Gerätetyp liegen dir gegenüber noch keine Handbuch-Daten vor.
+        Für dieses Modell liegen dir gegenüber noch keine Handbuch-Daten vor.
       </p>
     );
   }

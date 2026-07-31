@@ -10,7 +10,7 @@ import type { FormState } from "@/db/actions/clubs";
 
 /*
   Verwaltung der Generationen (Board-/Hardware-Systeme) und der Zuordnung
-  Modell → Generation. Alles nur für Super-Admins (Gerätetypen-Bereich).
+  Modell → Generation. Alles nur für Super-Admins (Modelle-Bereich).
 
   Der frühere Katalog-Import (Export-JSON-Upload) ist entfernt — die Erstbefüllung
   ist erledigt (Skripte scripts/import-models.mjs + seed-generations.mjs bleiben

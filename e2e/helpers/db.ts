@@ -69,7 +69,7 @@ export async function addMember(clubId: string, userId: string, roleKey: string)
             ON CONFLICT DO NOTHING`;
 }
 
-/** Maschine samt Gerätetyp anlegen (OPDB wird nicht angefragt). */
+/** Maschine samt Modell anlegen (OPDB wird nicht angefragt). */
 export async function createMachine(opts: {
   ownerId: string;
   clubId?: string | null;

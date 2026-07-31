@@ -64,7 +64,7 @@ const sections: GuideSection[] = [
     steps: [
       {
         titel: "Anlegen",
-        text: "Maschinen → »Neue Maschine«. Über die OPDB-Suche lassen sich Hersteller, Modell, Baujahr und ein Foto automatisch übernehmen — oder du füllst alles von Hand aus. Ein eigenes Foto kannst du zusätzlich hochladen. Tipp: Die OPDB-Auswahl verknüpft die Maschine mit dem Gerätetyp — nur damit lassen sich später Handbuch-Daten und Reparaturen teilen.",
+        text: "Maschinen → »Neue Maschine«. Über die OPDB-Suche lassen sich Hersteller, Modell, Baujahr und ein Foto automatisch übernehmen — oder du füllst alles von Hand aus. Ein eigenes Foto kannst du zusätzlich hochladen. Tipp: Die OPDB-Auswahl verknüpft die Maschine mit dem Modell — nur damit lassen sich später Handbuch-Daten und Reparaturen teilen.",
       },
       {
         titel: "Ansehen & bearbeiten",
@@ -262,7 +262,7 @@ const sections: GuideSection[] = [
     steps: [
       {
         titel: "Voraussetzung: OPDB-Bezug",
-        text: "Geteilt wird immer über den Gerätetyp. Den erkennt die App am OPDB-Eintrag (edition-genau, also Pro und Premium getrennt, weil sich die Matrizen unterscheiden). Maschinen ohne OPDB-Bezug lassen sich nicht teilen — beim Bearbeiten einen OPDB-Eintrag auswählen.",
+        text: "Geteilt wird immer über das Modell. Den erkennt die App am OPDB-Eintrag (edition-genau, also Pro und Premium getrennt, weil sich die Matrizen unterscheiden). Maschinen ohne OPDB-Bezug lassen sich nicht teilen — beim Bearbeiten einen OPDB-Eintrag auswählen.",
       },
       {
         titel: "Handbuch-Daten teilen",

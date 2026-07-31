@@ -92,7 +92,7 @@ export async function shareRepair(
   if (!machine.modelId) {
     return {
       error:
-        "Diese Maschine hat keinen OPDB-Bezug — ohne Gerätetyp lässt sich nichts teilen.",
+        "Diese Maschine hat keinen OPDB-Bezug — ohne Modell lässt sich nichts teilen.",
     };
   }
 

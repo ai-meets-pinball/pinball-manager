@@ -20,7 +20,7 @@ type MachineValues = {
   clubId: string | null;
 };
 
-/* Der gewählte Gerätetyp (Katalog oder OPDB) — fürs Anzeige-Panel. */
+/* Der gewählte Modell (Katalog oder OPDB) — fürs Anzeige-Panel. */
 type Auswahl = {
   name: string;
   baujahr: number | null;
@@ -62,7 +62,7 @@ export function MachineForm({
   const set = (key: keyof typeof vals) => (value: string) =>
     setVals((v) => ({ ...v, [key]: value }));
 
-  // Gewählter Gerätetyp (Anzeige-Panel + Hidden-Inputs).
+  // Gewählter Modell (Anzeige-Panel + Hidden-Inputs).
   const [auswahl, setAuswahl] = useState<Auswahl | null>(null);
   // Manueller Modus: editierbare Felder. Beim Bearbeiten von Anfang an an.
   const [manuell, setManuell] = useState(Boolean(machine));
@@ -73,7 +73,7 @@ export function MachineForm({
     <form action={formAction} className="flex max-w-lg flex-col gap-4">
       {machine ? <input type="hidden" name="id" value={machine.id} /> : null}
 
-      {/* Primär: der EIGENE Katalog (inkl. Generation + Bild). Der Gerätetyp
+      {/* Primär: der EIGENE Katalog (inkl. Generation + Bild). Das Modell
           wird serverseitig über die OPDB-Referenz aufgelöst (ensureMachineModel). */}
       <ModelSearch
         onSelect={(m) => {
@@ -98,7 +98,7 @@ export function MachineForm({
       />
 
       {/* Fallback für Modelle, die (noch) nicht im Katalog sind — legt den
-          Gerätetyp beim Speichern neu an; Generation folgt im Admin. */}
+          Modell beim Speichern neu an; Generation folgt im Admin. */}
       <details className="text-sm">
         <summary className="cursor-pointer text-[var(--color-muted)] hover:text-[var(--color-fg)]">
           Nicht im Katalog? Aus OPDB übernehmen …
@@ -129,7 +129,7 @@ export function MachineForm({
       </details>
 
       {auswahl && !manuell ? (
-        /* ── Anzeige-Panel: der gewählte Gerätetyp (KEIN Eingabeformular). ── */
+        /* ── Anzeige-Panel: das gewählte Modell (KEIN Eingabeformular). ── */
         <div className="flex items-start gap-3 rounded-[var(--radius)] border border-[var(--color-border)] p-3">
           {/* Die Daten des Typs gehen als Hidden-Inputs mit; die Allowlist für
               das Bild sitzt in machines.ts (img.opdb.org — auch Katalog-Bilder). */}
@@ -241,7 +241,7 @@ export function MachineForm({
       ) : (
         /* ── Noch nichts gewählt: Hinweis + Weg in den manuellen Modus. ── */
         <p className="text-sm text-[var(--color-muted)]">
-          Wähle oben einen Gerätetyp aus dem Katalog —{" "}
+          Wähle oben ein Modell aus dem Katalog —{" "}
           <button
             type="button"
             onClick={() => setManuell(true)}

@@ -11,7 +11,7 @@ import { generations, machineModels } from "@/db/schema";
 import { modellName } from "@/lib/format";
 
 /*
-  Modelle (Super-Admin): der Gerätetyp-Katalog — durchsuchbar (Text), filterbar
+  Modelle (Super-Admin): der Modell-Katalog — durchsuchbar (Text), filterbar
   (Generation) und sortierbar (Name/Baujahr). Die Zuordnung Modell → Generation
   passiert hier per Stift; die Generationen selbst werden auf
   /admin/generationen gepflegt. Kennzahlen zählen serverseitig über den GANZEN
@@ -161,7 +161,7 @@ export default async function AdminModellePage({
   return (
     <div className="space-y-6">
       <p className="text-sm text-[var(--color-muted)]">
-        Der Gerätetyp-Katalog. {gesamt} Modelle ·{" "}
+        Der Modell-Katalog. {gesamt} Modelle ·{" "}
         <Link href="/admin/modelle?gen=ohne" className="hover:underline">
           {ohneGen} ohne Generation
         </Link>

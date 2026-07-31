@@ -21,7 +21,7 @@ import {
 } from "@/lib/validators";
 
 /*
-  Troubleshooting-Guide je Gerätetyp.
+  Troubleshooting-Guide je Modell.
 
   Ausgangslage: Wenn Handbuch-Fakten vorliegen (Lampenmatrix o. ä. als
   Modell-Wissen in `knowledge`), bieten wir zusätzlich einen umfassenden FAQ- &
@@ -330,13 +330,13 @@ export async function generateTroubleshootingGuide(
 
   // Datenmodell-Redesign (Phase 2): der Guide ist Modell-Wissen (knowledge,
   // typ='troubleshooting') — einmal je Autor und Ebene, mit wählbarer
-  // Sichtbarkeit. Ohne Gerätetyp fällt er auf die Maschinen-Ebene zurück.
+  // Sichtbarkeit. Ohne Modell fällt er auf die Maschinen-Ebene zurück.
   const rohSicht = String(formData.get("visibility") ?? "");
   const visibility: "privat" | "club" | "oeffentlich" =
     rohSicht === "club" || rohSicht === "oeffentlich" ? rohSicht : "privat";
 
   // Ebene: standardmäßig das Modell. „generation" nur, wenn die Maschine einen
-  // Gerätetyp mit bekannter Generation hat — dann gilt der Guide für ALLE
+  // Modell mit bekannter Generation hat — dann gilt der Guide für ALLE
   // Modelle dieser Board-/Hardware-Generation (Generation-Resolver).
   const aufGeneration = String(formData.get("ebene") ?? "") === "generation";
   const generation =

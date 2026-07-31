@@ -29,7 +29,7 @@ export function TroubleshootingGenerate({
   providers: AiProvider[];
   /** Zentraler Anthropic-Key vorhanden? Sonst BYO-Feld beim Claude-Weg. */
   centralKey: boolean;
-  /** Generation des Gerätetyps (falls bekannt) — erlaubt einen Guide, der für
+  /** Generation des Modells (falls bekannt) — erlaubt einen Guide, der für
       ALLE Modelle dieser Board-/Hardware-Generation gilt. */
   generation?: { name: string } | null;
 }) {

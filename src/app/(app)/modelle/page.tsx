@@ -6,7 +6,7 @@ import { requireUser } from "@/lib/session";
 import { modellName } from "@/lib/format";
 
 /*
-  Gerätetyp-Katalog. Ein Gerätetyp (machine_models, z. B. „Monster Bash") ist die
+  Modell-Katalog. Ein Modell (machine_models, z. B. „Monster Bash") ist die
   Klasse; einzelne Maschinen sind Instanzen. Handbuch-Wissen (`knowledge`) gehört
   zum TYP — hier sichtbar, ohne dass man den Automaten selbst besitzen muss. Es
   erscheinen nur Typen mit für den Nutzer sichtbarem Wissen (dieselbe
@@ -20,7 +20,7 @@ export default async function GeraetetypenPage() {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h1 className="text-2xl font-bold">Gerätetypen</h1>
+        <h1 className="text-2xl font-bold">Modelle</h1>
         <p className="text-[var(--color-muted)]">
           Handbuch-Wissen je Automaten-Typ — einmal am Modell gepflegt, für alle
           Instanzen sichtbar. Du musst den Automaten nicht selbst besitzen; es
@@ -33,7 +33,7 @@ export default async function GeraetetypenPage() {
           <p className="text-sm text-[var(--color-muted)]">
             Aktuell ist dir gegenüber kein Handbuch-Wissen sichtbar. Sobald jemand
             Handbuch-Daten öffentlich (oder für deinen Club) freigibt, erscheint
-            der passende Gerätetyp hier.
+            der passende Modell hier.
           </p>
         </Card>
       ) : (

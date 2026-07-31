@@ -3,7 +3,7 @@
 
   OPDB kennt drei Ebenen (Beispiel Godzilla):
     Gruppe / Titel   G50Wr              — alle Editionen zusammen
-    Maschine/Edition G50Wr-MLeZP        — z. B. Premium (das ist unser Gerätetyp)
+    Maschine/Edition G50Wr-MLeZP        — z. B. Premium (das ist unser Modell)
     Alias            G50Wr-MLeZP-A1B2C  — Variante derselben Edition
 
   Bewusst eine eigene, REINE Datei: lib/opdb.ts trägt "use server" und darf
@@ -14,7 +14,7 @@
 export type OpdbRefTeile = {
   /** Erster Abschnitt = Gruppe/Titel (z. B. "G50Wr"). */
   groupRef: string;
-  /** Gruppe + Edition (z. B. "G50Wr-MLeZP") — unser Gerätetyp-Schlüssel. */
+  /** Gruppe + Edition (z. B. "G50Wr-MLeZP") — unser Modell-Schlüssel. */
   machineRef: string | null;
   /** true, wenn die Referenz NUR eine Gruppe ist (keine Edition). */
   istGruppe: boolean;
@@ -36,8 +36,8 @@ export function parseOpdbRef(ref: string | null | undefined): OpdbRefTeile | nul
   };
 }
 
-/** Der Gerätetyp-Schlüssel zu einer Referenz: Edition, sonst null.
-    Eine reine Gruppen-Referenz taugt NICHT als Gerätetyp (Editionen haben
+/** Der Modell-Schlüssel zu einer Referenz: Edition, sonst null.
+    Eine reine Gruppen-Referenz taugt NICHT als Modell (Editionen haben
     unterschiedliche Spulen-/Schalter-Matrizen). */
 export function modelKeyFromOpdbRef(ref: string | null | undefined): string | null {
   return parseOpdbRef(ref)?.machineRef ?? null;

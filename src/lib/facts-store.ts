@@ -14,7 +14,7 @@ export type ExtractResult = ReturnType<typeof extractSchema.parse>;
 /*
   Datenmodell-Redesign (Phase 1): Handbuch-Fakten als MODELL-Wissen schreiben.
   Ein `knowledge`-Eintrag (typ='handbuch_fakten') je Autor und Ebene (Modell,
-  wenn die Maschine einen Gerätetyp hat, sonst Maschine) — Replace-Semantik:
+  wenn die Maschine ein Modell hat, sonst Maschine) — Replace-Semantik:
   der eine Eintrag dieses Autors für diese Ebene wird ersetzt. `inhalt` ist das
   extractSchema-Objekt, aber nur mit den vorhandenen (nicht-leeren) Typen.
   Skip-if-empty: ein leeres Ergebnis schreibt nichts.
@@ -68,7 +68,7 @@ export async function upsertModelKnowledge(opts: {
 /*
   Troubleshooting-Guide als Wissenseintrag (Datenmodell-Redesign Phase 2). Wie
   die Fakten ein `knowledge`-Eintrag je Autor und Ebene (Modell, wenn die
-  Maschine einen Gerätetyp hat, sonst Maschine) — typ='troubleshooting',
+  Maschine ein Modell hat, sonst Maschine) — typ='troubleshooting',
   sourceType='eigen' (KI-erzeugt, nicht aus einem Handbuch extrahiert). Der
   Guide selbst plus die Provenienz (websuche, Modell) liegen als kleiner
   Umschlag in `inhalt`, damit die Anzeige die Websuche-Kennzeichnung behält.

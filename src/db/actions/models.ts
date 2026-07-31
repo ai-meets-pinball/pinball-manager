@@ -6,7 +6,7 @@ import { generations, machineModels } from "@/db/schema";
 import { requireUser } from "@/lib/session";
 
 /*
-  Typeahead-Suche im EIGENEN Gerätetyp-Katalog (machine_models) — die primäre
+  Typeahead-Suche im EIGENEN Modell-Katalog (machine_models) — die primäre
   Quelle beim Anlegen einer Maschine. Anders als die OPDB-Suche liefert sie den
   vollen Datensatz (inkl. Bild + Generation) in EINEM Roundtrip.
 */

@@ -3,7 +3,7 @@ import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 
 /*
-  Reparaturdatenbank je Gerätetyp: von anderen Besitzern geteilte Reparaturen,
+  Reparaturdatenbank je Modell: von anderen Besitzern geteilte Reparaturen,
   ausschließlich lesend.
 
   Wichtig: Kosten/Aufwand und Herkunft sind hier bereits NICHT MEHR vorhanden,

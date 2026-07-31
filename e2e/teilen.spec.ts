@@ -13,7 +13,7 @@ import { loginAs, USERS } from "./helpers/auth";
   `knowledge`, Achse privat|club|oeffentlich, Autor immer sichtbar), die
   serverseitige Feldprojektion der Reparaturen und zwei Review-Funde:
   - unshareRepair löschte fremde Freigaben (IDOR).
-  - Ein Wechsel des Gerätetyps ließ Reparatur-Freigaben am alten Typ hängen.
+  - Ein Wechsel des Modells ließ Reparatur-Freigaben am alten Typ hängen.
 */
 
 test.describe("Teilen", () => {
@@ -26,7 +26,7 @@ test.describe("Teilen", () => {
     const ownerId = await userIdByEmail(USERS.owner);
     const outsiderId = await userIdByEmail(USERS.outsider);
 
-    // Beide Maschinen sind derselbe Gerätetyp → geteiltes Wissen ist sichtbar.
+    // Beide Maschinen sind dasselbe Modell → geteiltes Wissen ist sichtbar.
     ({ machineId: ownerMachine, modelId } = await createMachine({
       ownerId,
       opdbRef: "E2E9-MSHARE",
@@ -118,7 +118,7 @@ test.describe("Teilen", () => {
     await sql`DELETE FROM clubs WHERE id=${club.id}`;
   });
 
-  test("Wechsel des Gerätetyps widerruft die Reparatur-Freigaben", async ({ page }) => {
+  test("Wechsel des Modells widerruft die Reparatur-Freigaben", async ({ page }) => {
     const ownerId = await userIdByEmail(USERS.owner);
     await sql`
       INSERT INTO shares (artefakt_typ, artefakt_id, model_id, owner_id, scope, anonym)

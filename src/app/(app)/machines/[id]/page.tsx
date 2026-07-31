@@ -131,19 +131,19 @@ export default async function MachineDetailPage({
   }));
 
   // Datenmodell-Redesign (Phase 1): Handbuch-Fakten sind MODELL-Wissen (knowledge)
-  // — eigene + sichtbare fremde. Ohne Gerätetyp: Maschinen-Ebene.
+  // — eigene + sichtbare fremde. Ohne Modell: Maschinen-Ebene.
   const knowledgeFacts = machine.modelId
     ? await getModelKnowledge(currentUser, machine.modelId)
     : await getMachineKnowledge(currentUser, id);
 
   // Datenmodell-Redesign (Phase 2): Troubleshooting-Guides sind MODELL-Wissen
   // (knowledge, typ='troubleshooting') — eigene + sichtbare fremde. Ohne
-  // Gerätetyp: Maschinen-Ebene.
+  // Modell: Maschinen-Ebene.
   const guides = machine.modelId
     ? await getModelGuides(currentUser, machine.modelId)
     : await getMachineGuides(currentUser, id);
   const eigenerGuide = guides.some((g) => g.autorId === currentUser.id);
-  // Generation des Gerätetyps (falls bekannt) — erlaubt einen Guide für die
+  // Generation des Modells (falls bekannt) — erlaubt einen Guide für die
   // ganze Board-/Hardware-Generation statt nur für dieses Modell.
   const guideGeneration = machine.modelId
     ? await getModelGeneration(machine.modelId)
@@ -164,7 +164,7 @@ export default async function MachineDetailPage({
   const kiCentralKey = Boolean(process.env.ANTHROPIC_API_KEY);
   const ollamaVerfuegbar = kiProviders.includes("ollama");
 
-  // Geteilte Reparaturen zum selben Gerätetyp (Fakten sind jetzt knowledge, oben geladen).
+  // Geteilte Reparaturen zum selben Modell (Fakten sind jetzt knowledge, oben geladen).
   const geteilteReparaturen = machine.modelId
     ? await getSharedRepairsForModel(currentUser, machine.modelId, id)
     : [];
@@ -437,7 +437,7 @@ export default async function MachineDetailPage({
             />
           </div>
 
-          {/* Reparaturdatenbank: von anderen Besitzern desselben Gerätetyps
+          {/* Reparaturdatenbank: von anderen Besitzern desselben Modells
               geteilte Reparaturen (nur wenn vorhanden). */}
           {geteilteReparaturen.length > 0 ? (
             <div className="space-y-3">
@@ -466,13 +466,13 @@ export default async function MachineDetailPage({
       {active === "handbuch" ? (
         <section className="mx-[calc(50%-50vw)] px-4 sm:px-6">
           <div className="mx-auto max-w-[1440px] space-y-3">
-            {/* Instanz → Klasse: zum Gerätetyp mit allem geteilten Wissen. */}
+            {/* Instanz → Klasse: zum Modell mit allem geteilten Wissen. */}
             {machine.modelId ? (
               <Link
-                href={`/typen/${machine.modelId}`}
+                href={`/modelle/${machine.modelId}`}
                 className="inline-flex items-center gap-1.5 text-sm text-[var(--color-primary)] hover:underline"
               >
-                <Boxes size={15} /> Gerätetyp: geteiltes Wissen zu{" "}
+                <Boxes size={15} /> Modell: geteiltes Wissen zu{" "}
                 {modellName(machine)}
               </Link>
             ) : null}

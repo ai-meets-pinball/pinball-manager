@@ -21,6 +21,14 @@ const nextConfig: NextConfig = {
   // Bindings lassen sich nicht ins Bundle packen — zur Laufzeit aus node_modules
   // laden. (Cloud/Vercel nutzt Claude und rührt diesen Pfad nie an.)
   serverExternalPackages: ["@napi-rs/canvas", "unpdf"],
+  // Alte Route: die Modell-Seiten hießen früher /typen („Gerätetypen") — alte
+  // Deep-Links sollen weiter funktionieren.
+  async redirects() {
+    return [
+      { source: "/typen", destination: "/modelle", permanent: true },
+      { source: "/typen/:id", destination: "/modelle/:id", permanent: true },
+    ];
+  },
   // Ergänzende Sicherheits-Header (statisch, für alle Routen). Die
   // Content-Security-Policy selbst wird pro Request in src/proxy.ts gesetzt
   // (braucht eine Nonce). Hier nur, was ohne Nonce global gilt.

@@ -10,7 +10,7 @@ import {
 import { modellName } from "@/lib/format";
 
 /*
-  Typeahead über den EIGENEN Gerätetyp-Katalog (machine_models) — die primäre
+  Typeahead über den EIGENEN Modell-Katalog (machine_models) — die primäre
   Auswahl beim Anlegen einer Maschine. Zeigt je Treffer Thumbnail, Name
   („Modell | Hersteller"), Baujahr und Generation; ein Klick liefert den vollen
   Datensatz an onSelect (kein zweiter Roundtrip wie beim OPDB-Weg).
@@ -67,7 +67,7 @@ export function ModelSearch({
 
   return (
     <div className="flex flex-col gap-1.5 text-sm">
-      <span className="font-medium">Gerätetyp aus dem Katalog</span>
+      <span className="font-medium">Modell aus dem Katalog</span>
       <div className="relative">
         <Search
           size={16}

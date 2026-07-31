@@ -371,7 +371,7 @@ const abschnitte: Abschnitt[] = [
         text: "Ein Katalog `roles` plus Zuweisungen `role_assignments`. Ist eine Zuweisung an einen Club gebunden, IST sie die Mitgliedschaft — eine separate Mitglieder-Tabelle gibt es nicht.",
       },
       {
-        titel: "Gerätetyp als gemeinsamer Anker",
+        titel: "Das Modell als gemeinsamer Anker",
         text: "Jede Maschine zeigt auf einen Eintrag im Katalog `machine_models` (eine Zeile je OPDB-Edition). Nur darüber finden sich zwei Besitzer desselben Automaten.",
       },
       {

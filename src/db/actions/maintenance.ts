@@ -304,7 +304,7 @@ export async function importMaintenanceFromGuide(
   const { user, machine } = await requireMachineWrite(machineId);
 
   // Datenmodell-Redesign (Phase 2): der Guide dieses Nutzers liegt als
-  // Modell-Wissen (knowledge, typ='troubleshooting') vor — je nach Gerätetyp auf
+  // Modell-Wissen (knowledge, typ='troubleshooting') vor — je nach Modell auf
   // Modell- oder Maschinen-Ebene. `inhalt` ist der Umschlag { guide, … }.
   const eintrag = await db.query.knowledge.findFirst({
     where: and(

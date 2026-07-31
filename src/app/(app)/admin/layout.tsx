@@ -6,7 +6,7 @@ import { isSuperAdmin, requireUser } from "@/lib/session";
 /*
   Super-Admin-Bereich. Der Cookie-Check in proxy.ts ist nur optimistisch — die
   echte Grenze ist requireUser + isSuperAdmin HIER. Der Guard im Layout deckt ALLE
-  /admin/*-Seiten ab (Nutzer, Clubs, Vorlagen, Gerätetypen, Debug-Sichtbarkeit),
+  /admin/*-Seiten ab (Nutzer, Clubs, Vorlagen, Modelle, Debug-Sichtbarkeit),
   daher brauchen die einzelnen Seiten keine eigene Prüfung mehr.
 */
 export default async function AdminLayout({

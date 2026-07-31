@@ -43,10 +43,10 @@ export default async function GeraetetypPage({
   return (
     <div className="space-y-6">
       <Link
-        href="/typen"
+        href="/modelle"
         className="inline-flex items-center gap-1 text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]"
       >
-        <ArrowLeft size={14} /> Gerätetypen
+        <ArrowLeft size={14} /> Modelle
       </Link>
 
       <div className="flex flex-wrap items-center gap-4">
@@ -63,7 +63,7 @@ export default async function GeraetetypPage({
             {modellName(model)}
           </h1>
           <p className="text-[var(--color-muted)]">
-            {model.baujahr ?? "Baujahr unbekannt"} · Gerätetyp
+            {model.baujahr ?? "Baujahr unbekannt"} · Modell
           </p>
         </div>
       </div>
@@ -71,7 +71,7 @@ export default async function GeraetetypPage({
       {leer ? (
         <Card>
           <p className="text-sm text-[var(--color-muted)]">
-            Für diesen Gerätetyp ist dir gegenüber noch kein Wissen sichtbar.
+            Für dieses Modell ist dir gegenüber noch kein Wissen sichtbar.
             Sobald jemand Handbuch-Daten oder Reparaturen freigibt, erscheinen sie
             hier.
           </p>

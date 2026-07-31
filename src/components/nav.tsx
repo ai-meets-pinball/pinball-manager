@@ -11,7 +11,7 @@ import { UserMenu } from "@/components/user-menu";
    Abmelden liegen gebündelt im Nutzer-Menü (siehe user-menu.tsx). */
 const links = [
   { href: "/machines", label: "Maschinen", icon: Wrench },
-  { href: "/typen", label: "Gerätetypen", icon: Boxes },
+  { href: "/modelle", label: "Modelle", icon: Boxes },
   { href: "/help", label: "Hilfe", icon: BookOpen },
 ];
 
