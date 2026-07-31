@@ -2,35 +2,34 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Loader2 } from "lucide-react";
+import { Loader2, Pencil } from "lucide-react";
 import { FormFeedback } from "@/components/ui/form-feedback";
 import { Select } from "@/components/ui/input";
 import { assignModelGeneration } from "@/db/actions/generations";
 import type { FormState } from "@/db/actions/clubs";
 
 /*
-  Generation eines Modells setzen (Super-Admin, Gerätetypen-Liste). Das Select
-  submittet direkt bei Änderung. „Auto (Import)" gibt das Modell an den Katalog-
-  Import zurück; „— keine —" ist eine bewusste Hand-Zuordnung ohne Generation.
-  Fehler der Action werden angezeigt (FormFeedback), nicht verschluckt.
+  Generation eines Modells: ANZEIGEN zuerst (der Name als Text), Ändern auf
+  Verlangen (Stift → Select). Das Select submittet direkt bei Änderung und
+  schließt bei Erfolg; Fehler werden angezeigt (FormFeedback), nicht verschluckt.
+  „— keine —" ist eine bewusste Zuordnung ohne Generation.
 */
 export function ModelGenerationSelect({
   modelId,
   generationen,
   aktuell,
-  manuell,
+  aktuellName,
 }: {
   modelId: string;
   generationen: { id: string; name: string }[];
   aktuell: string | null;
-  manuell: boolean;
+  /** Name der aktuellen Generation (oder null) — für die Anzeige. */
+  aktuellName: string | null;
 }) {
   const router = useRouter();
+  const [bearbeiten, setBearbeiten] = useState(false);
   const [pending, start] = useTransition();
   const [state, setState] = useState<FormState>({});
-
-  // Bei Import-Zuordnung ist der Wert „auto"; bei Hand-Zuordnung die Generation.
-  const value = manuell ? (aktuell ?? "") : "auto";
 
   function onChange(e: React.ChangeEvent<HTMLSelectElement>) {
     const generationId = e.target.value;
@@ -40,12 +39,39 @@ export function ModelGenerationSelect({
     setState({});
     start(async () => {
       try {
-        setState(await assignModelGeneration(fd));
+        const res = await assignModelGeneration(fd);
+        setState(res);
+        if (!res.error) setBearbeiten(false);
       } catch {
         setState({ error: "Speichern fehlgeschlagen. Bitte erneut versuchen." });
       }
       router.refresh();
     });
+  }
+
+  if (!bearbeiten) {
+    return (
+      <span className="inline-flex items-center gap-2">
+        <span
+          className={
+            aktuellName
+              ? "text-sm"
+              : "text-sm text-[var(--color-faint)]"
+          }
+        >
+          {aktuellName ?? "keine Generation"}
+        </span>
+        <button
+          type="button"
+          onClick={() => setBearbeiten(true)}
+          aria-label="Generation ändern"
+          title="Generation ändern"
+          className="text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+        >
+          <Pencil size={14} />
+        </button>
+      </span>
+    );
   }
 
   return (
@@ -54,13 +80,13 @@ export function ModelGenerationSelect({
         <Loader2 size={14} className="animate-spin text-[var(--color-muted)]" />
       ) : null}
       <Select
-        value={value}
+        defaultValue={aktuell ?? ""}
         onChange={onChange}
         disabled={pending}
+        autoFocus
         aria-label="Generation zuordnen"
         className="max-w-64"
       >
-        <option value="auto">Auto (Import)</option>
         <option value="">— keine —</option>
         {generationen.map((g) => (
           <option key={g.id} value={g.id}>
@@ -68,6 +94,13 @@ export function ModelGenerationSelect({
           </option>
         ))}
       </Select>
+      <button
+        type="button"
+        onClick={() => setBearbeiten(false)}
+        className="text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+      >
+        Abbrechen
+      </button>
       <FormFeedback state={state} />
     </span>
   );

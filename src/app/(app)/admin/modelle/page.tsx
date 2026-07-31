@@ -99,7 +99,6 @@ export default async function AdminModellePage({
       opdbRef: machineModels.opdbRef,
       imageUrl: machineModels.imageUrl,
       generationId: machineModels.generationId,
-      manuell: machineModels.generationManuell,
     })
     .from(machineModels)
     .where(filter)
@@ -175,22 +174,16 @@ export default async function AdminModellePage({
                 )
               }
               title={`${m.hersteller} ${m.modell}`}
-              subtitle={
-                <span className="font-mono text-xs">
-                  {m.opdbRef}
-                  {m.manuell ? (
-                    <span className="ml-2 font-sans text-[var(--color-muted)]">
-                      · von Hand
-                    </span>
-                  ) : null}
-                </span>
-              }
+              subtitle={<span className="font-mono text-xs">{m.opdbRef}</span>}
               actions={
                 <ModelGenerationSelect
                   modelId={m.id}
                   generationen={genOptionen}
                   aktuell={m.generationId}
-                  manuell={m.manuell}
+                  aktuellName={
+                    genOptionen.find((g) => g.id === m.generationId)?.name ??
+                    null
+                  }
                 />
               }
             />
