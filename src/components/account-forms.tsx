@@ -1,53 +1,105 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { Avatar } from "@/components/ui/avatar";
+import { FormFeedback } from "@/components/ui/form-feedback";
 import { Field, Input } from "@/components/ui/input";
 import { PasswordField } from "@/components/ui/password-field";
-import { changeEmail, changePassword, updateUser } from "@/lib/auth-client";
+import { removeAvatar, updateProfile } from "@/db/actions/profile";
+import { changeEmail, changePassword } from "@/lib/auth-client";
+import { initialen } from "@/lib/format";
 import { PASSWORD_HINT, validatePassword } from "@/lib/validators";
+import type { FormState } from "@/db/actions/clubs";
 
-/** Name ändern (Better Auth updateUser). */
-export function ProfileForm({ initialName }: { initialName: string }) {
-  const router = useRouter();
-  const [msg, setMsg] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+/** Profil: Vorname/Nachname/Initialen + Profilbild. Der Anzeigename (`name`)
+    wird serverseitig aus Vor- + Nachname abgeleitet (db/actions/profile.ts). */
+export function ProfileForm({
+  vorname,
+  nachname,
+  initialenWert,
+  avatar,
+  name,
+  email,
+}: {
+  vorname: string | null;
+  nachname: string | null;
+  initialenWert: string | null;
+  avatar: string | null;
+  name: string;
+  email: string;
+}) {
+  const [state, formAction, pending] = useActionState<FormState, FormData>(
+    updateProfile,
+    {},
+  );
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setMsg(null);
-    setError(null);
-    const name = String(new FormData(event.currentTarget).get("name")).trim();
-    if (!name) {
-      setError("Name ist erforderlich.");
-      return;
-    }
-    setLoading(true);
-    const { error } = await updateUser({ name });
-    setLoading(false);
-    if (error) {
-      setError(error.message ?? "Speichern fehlgeschlagen");
-      return;
-    }
-    setMsg("Name gespeichert.");
-    router.refresh();
-  }
+  // Vorbefüllung für Bestandsnutzer: Name in Vor-/Nachname aufteilen.
+  const [erstes, ...rest] = name.trim().split(/\s+/);
+  const kuerzel = initialen({
+    initials: initialenWert,
+    firstName: vorname,
+    lastName: nachname,
+    name,
+    email,
+  });
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-      <Field label="Name">
-        <Input name="name" defaultValue={initialName} required />
-      </Field>
-      {error ? <p className="text-sm text-[var(--color-danger)]">{error}</p> : null}
-      {msg ? <p className="text-sm text-[var(--color-success)]">{msg}</p> : null}
-      <div>
-        <Button type="submit" disabled={loading}>
-          {loading ? "Speichern…" : "Name speichern"}
-        </Button>
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-3">
+        <Avatar image={avatar} kuerzel={kuerzel} size={56} />
+        {avatar ? (
+          <form action={removeAvatar}>
+            <button
+              type="submit"
+              className="text-xs text-[var(--color-muted)] underline hover:text-[var(--color-fg)]"
+            >
+              Bild entfernen
+            </button>
+          </form>
+        ) : (
+          <p className="text-xs text-[var(--color-muted)]">
+            Ohne Bild zeigen wir deine Initialen.
+          </p>
+        )}
       </div>
-    </form>
+
+      <form action={formAction} className="flex flex-col gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Vorname">
+            <Input name="vorname" defaultValue={vorname ?? erstes ?? ""} required />
+          </Field>
+          <Field label="Nachname">
+            <Input
+              name="nachname"
+              defaultValue={nachname ?? rest.join(" ")}
+              required
+            />
+          </Field>
+        </div>
+        <Field
+          label="Initialen (optional)"
+          hint="Standard: erste Buchstaben von Vor- und Nachname."
+        >
+          <Input
+            name="initialen"
+            defaultValue={initialenWert ?? ""}
+            maxLength={3}
+            className="max-w-24 uppercase"
+          />
+        </Field>
+        <Field label="Profilbild (optional)" hint="Wird in der Kopfzeile gezeigt.">
+          <Input name="avatar" type="file" accept="image/*" />
+        </Field>
+        <FormFeedback state={state} />
+        <div>
+          <Button type="submit" disabled={pending}>
+            {pending ? "Speichern…" : "Profil speichern"}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 }
 

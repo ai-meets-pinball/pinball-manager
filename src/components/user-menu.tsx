@@ -4,7 +4,9 @@ import { LogOut, ShieldCheck, User, Users } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { Avatar } from "@/components/ui/avatar";
 import { signOut } from "@/lib/auth-client";
+import { APP_VERSION } from "@/lib/version";
 
 /*
   Nutzer-Menü in der Navigation: bündelt Konto, Administration (nur Super-Admin)
@@ -13,9 +15,15 @@ import { signOut } from "@/lib/auth-client";
 */
 export function UserMenu({
   userName,
+  avatar,
+  kuerzel,
   isSuperAdmin = false,
 }: {
   userName: string;
+  /** Profilbild-URL (oder null → Initialen). */
+  avatar: string | null;
+  /** Initialen für den Avatar-Fallback (lib/format.ts initialen()). */
+  kuerzel: string;
   isSuperAdmin?: boolean;
 }) {
   const router = useRouter();
@@ -57,19 +65,17 @@ export function UserMenu({
         aria-haspopup="menu"
         aria-expanded={open}
         aria-label="Nutzermenü"
-        className={`flex items-center gap-1.5 rounded-[var(--radius)] px-2.5 py-1.5 text-sm font-medium transition-colors ${
+        className={`flex items-center rounded-full transition-opacity ${
           open ||
           pathname.startsWith("/account") ||
           pathname.startsWith("/admin") ||
           pathname.startsWith("/clubs")
-            ? "bg-[var(--color-inset)] text-[var(--color-fg)]"
-            : "text-[var(--color-muted)] hover:bg-[var(--color-inset)] hover:text-[var(--color-fg)]"
+            ? "ring-2 ring-[var(--color-primary)]/40"
+            : "hover:opacity-80"
         }`}
       >
-        <User size={15} />
-        <span className="hidden max-w-[12ch] truncate font-mono text-xs md:inline">
-          {userName}
-        </span>
+        {/* Avatar statt Namens-Text: Bild, sonst Initialen. */}
+        <Avatar image={avatar} kuerzel={kuerzel} size={30} />
       </button>
 
       {open ? (
@@ -127,6 +133,10 @@ export function UserMenu({
             <LogOut size={15} className="text-[var(--color-muted)]" />
             Abmelden
           </button>
+
+          <p className="border-t border-[var(--color-border)] px-3 py-1.5 text-right font-mono text-[10px] text-[var(--color-faint)]">
+            Version {APP_VERSION}
+          </p>
         </div>
       ) : null}
     </div>

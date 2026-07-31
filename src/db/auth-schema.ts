@@ -16,6 +16,13 @@ export const user = pgTable("user", {
     .$defaultFn(() => false)
     .notNull(),
   image: text("image"),
+  // App-Erweiterung (NICHT von Better Auth verwaltet — beim Regenerieren dieser
+  // Datei via auth:generate wieder ergänzen): Profilfelder. `name` bleibt der
+  // abgeleitete Anzeigename (Vorname + Nachname); `initials` überschreibt die
+  // Standard-Initialen (erste Buchstaben von Vor- und Nachname) für den Avatar.
+  firstName: text("first_name"),
+  lastName: text("last_name"),
+  initials: text("initials"),
   // Globale Rollen liegen NICHT hier, sondern in role_assignments (clubId = NULL)
   // gegen den roles-Katalog — siehe db/schema.ts und lib/session.ts.
   createdAt: timestamp("created_at")

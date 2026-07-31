@@ -183,6 +183,13 @@
       "when": 1785397172386,
       "tag": "0025_breezy_the_watchers",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1785499932337,
+      "tag": "0026_stale_lockjaw",
+      "breakpoints": true
     }
   ]
 }

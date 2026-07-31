@@ -16,11 +16,17 @@ import {
   declineInvitation,
 } from "@/db/actions/invitations";
 import { db } from "@/db";
-import { clubs, invitations, roleAssignments, roles } from "@/db/schema";
+import { clubs, invitations, roleAssignments, roles, user as userTable } from "@/db/schema";
 import { isSuperAdmin, requireUser } from "@/lib/session";
 
 export default async function AccountPage() {
   const user = await requireUser();
+  // Profilfelder (Vor-/Nachname, Initialen, Bild) aus der user-Zeile — die
+  // Better-Auth-Session kennt die App-Erweiterungen nicht.
+  const profil = await db.query.user.findFirst({
+    where: eq(userTable.id, user.id),
+    columns: { firstName: true, lastName: true, initials: true, image: true },
+  });
   const shareSettings = await getSettingsFor("user", user.id);
 
   // Clubs des Nutzers inkl. Owner-Anzahl — damit der letzte Owner nicht
@@ -76,7 +82,14 @@ export default async function AccountPage() {
               </span>
             ) : null}
           </p>
-          <ProfileForm initialName={user.name} />
+          <ProfileForm
+            vorname={profil?.firstName ?? null}
+            nachname={profil?.lastName ?? null}
+            initialenWert={profil?.initials ?? null}
+            avatar={profil?.image ?? null}
+            name={user.name}
+            email={user.email}
+          />
         </Card>
       </section>
 

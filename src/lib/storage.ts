@@ -52,16 +52,13 @@ function erkenneBildtyp(b: Uint8Array): keyof typeof ERLAUBTE_BILDTYPEN | null {
   return null;
 }
 
-/**
- * Lädt ein Maschinenfoto hoch und gibt die öffentliche URL zurück.
- * Gibt null zurück, wenn keine Datei übergeben wurde.
- */
-export async function uploadMachinePhoto(
-  file: File | null,
+/** Gemeinsamer Upload-Kern: prüfen (Größe + echte Bytes), hochladen,
+    öffentliche URL zurückgeben. `ordner` trennt die Anwendungsfälle im Bucket. */
+async function uploadBild(
+  file: File,
+  ordner: string,
   userId: string,
-): Promise<string | null> {
-  if (!file || file.size === 0) return null;
-
+): Promise<string> {
   if (file.size > MAX_BYTES) {
     throw new Error("Bild zu groß (maximal 10 MB).");
   }
@@ -76,7 +73,7 @@ export async function uploadMachinePhoto(
 
   const supabase = storageClient();
   // Endung und Content-Type aus dem ERKANNTEN Typ, nicht aus der Datei.
-  const path = `${userId}/${crypto.randomUUID()}.${ERLAUBTE_BILDTYPEN[typ]}`;
+  const path = `${ordner}${userId}/${crypto.randomUUID()}.${ERLAUBTE_BILDTYPEN[typ]}`;
 
   const { error } = await supabase.storage
     .from(bucket)
@@ -88,4 +85,25 @@ export async function uploadMachinePhoto(
 
   const { data } = supabase.storage.from(bucket).getPublicUrl(path);
   return data.publicUrl;
+}
+
+/**
+ * Lädt ein Maschinenfoto hoch und gibt die öffentliche URL zurück.
+ * Gibt null zurück, wenn keine Datei übergeben wurde.
+ */
+export async function uploadMachinePhoto(
+  file: File | null,
+  userId: string,
+): Promise<string | null> {
+  if (!file || file.size === 0) return null;
+  return uploadBild(file, "", userId);
+}
+
+/** Lädt ein Profilbild (Avatar) hoch — eigener Ordner im selben Bucket. */
+export async function uploadAvatar(
+  file: File | null,
+  userId: string,
+): Promise<string | null> {
+  if (!file || file.size === 0) return null;
+  return uploadBild(file, "avatars/", userId);
 }

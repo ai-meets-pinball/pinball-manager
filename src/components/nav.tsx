@@ -19,9 +19,13 @@ const links = [
 /** Kopfzeile der angemeldeten Bereiche. */
 export function Nav({
   userName,
+  avatar,
+  kuerzel,
   isSuperAdmin = false,
 }: {
   userName: string;
+  avatar: string | null;
+  kuerzel: string;
   isSuperAdmin?: boolean;
 }) {
   const pathname = usePathname();
@@ -69,7 +73,7 @@ export function Nav({
             <span className="hidden sm:inline">Website</span>
           </Link>
           <ThemeToggle />
-          <UserMenu userName={userName} isSuperAdmin={isSuperAdmin} />
+          <UserMenu userName={userName} avatar={avatar} kuerzel={kuerzel} isSuperAdmin={isSuperAdmin} />
         </div>
       </nav>
     </header>
