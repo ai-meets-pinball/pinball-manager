@@ -1,43 +1,20 @@
 import { and, count, desc, eq, gte, isNotNull, isNull, sql } from "drizzle-orm";
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { Boxes, FlaskConical, Trash2 } from "lucide-react";
-import { EmailTemplateForm } from "@/components/email-template-form";
+import { FlaskConical } from "lucide-react";
 import { InviteUserForm } from "@/components/invite-user-form";
 import { RoleInfo } from "@/components/role-info";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { setGlobalRole } from "@/db/actions/admin";
-import { deleteClub } from "@/db/actions/clubs";
 import { revokePlatformInvitation } from "@/db/actions/invitations";
 import { db } from "@/db";
-import { clubs, invitations, roleAssignments, roles, user } from "@/db/schema";
-import { getTemplate } from "@/db/queries";
-import { DEFAULT_TEMPLATES, TEMPLATE_KEYS } from "@/lib/email-templates";
-import { isSuperAdmin, requireUser } from "@/lib/session";
+import { invitations, roleAssignments, roles, user } from "@/db/schema";
+import { requireUser } from "@/lib/session";
 import { SUPERADMIN_ROLE, SUPPORTER_ROLE } from "@/lib/validators";
 
-/* Fester Teil der Einladungsmails (nicht editierbar) — nur für die Vorschau. */
-const FESTTEIL: Record<string, { ctaLabel: string; hinweis: string }> = {
-  invite_platform: {
-    ctaLabel: "Konto erstellen",
-    hinweis:
-      "Eine Registrierung ist nur über diesen Link möglich. Er ist begrenzt gültig und gilt ausschließlich für diese E-Mail-Adresse.",
-  },
-  invite_club: {
-    ctaLabel: "Einladung ansehen",
-    hinweis:
-      "Hast du noch kein Konto, kannst du dich über den Link direkt registrieren. Der Link ist nur begrenzt gültig.",
-  },
-};
-
-/*
-  Super-Admin-Bereich. Der Cookie-Check in proxy.ts ist nur optimistisch —
-  die echte Grenze ist requireUser + isSuperAdmin hier.
-*/
+/* Nutzer & Rollen (Super-Admin). Guard + Rahmen/Navigation im admin/layout.tsx. */
 export default async function AdminPage() {
   const me = await requireUser();
-  if (!isSuperAdmin(me)) redirect("/machines");
 
   const users = await db
     .select({ id: user.id, name: user.name, email: user.email })
@@ -55,22 +32,8 @@ export default async function AdminPage() {
     rolesByUser.set(r.userId, [...(rolesByUser.get(r.userId) ?? []), r.key]);
   }
 
-  const clubList = await db
-    .select({
-      id: clubs.id,
-      name: clubs.name,
-      members: count(roleAssignments.id),
-    })
-    .from(clubs)
-    .leftJoin(roleAssignments, eq(roleAssignments.clubId, clubs.id))
-    .groupBy(clubs.id, clubs.name)
-    .orderBy(clubs.name);
-
   // Rollen-Katalog (Daten statt Enum) — zur Orientierung.
-  const katalog = await db
-    .select()
-    .from(roles)
-    .orderBy(roles.scope, roles.rang);
+  const katalog = await db.select().from(roles).orderBy(roles.scope, roles.rang);
 
   // Anzahl Club-Zuweisungen gesamt (nur informativ).
   const [{ value: clubAssignments } = { value: 0 }] = await db
@@ -91,31 +54,8 @@ export default async function AdminPage() {
     )
     .orderBy(desc(invitations.createdAt));
 
-  // E-Mail-Vorlagen: DB-Eintrag falls angepasst, sonst der Standard aus dem Code.
-  const vorlagen = await Promise.all(
-    TEMPLATE_KEYS.map(async (key) => {
-      const geladen = await getTemplate(key);
-      return {
-        key,
-        ...DEFAULT_TEMPLATES[key],
-        ...geladen,
-        ...FESTTEIL[key],
-      };
-    }),
-  );
-
   return (
     <div className="space-y-8">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold">Administration</h1>
-        <Link
-          href="/admin/modelle"
-          className="inline-flex items-center gap-1.5 rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 text-sm hover:bg-[var(--color-border)]/40"
-        >
-          <Boxes size={16} /> Flippermasterliste
-        </Link>
-      </div>
-
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Nutzer einladen</h2>
         <p className="text-sm text-[var(--color-muted)]">
@@ -163,8 +103,7 @@ export default async function AdminPage() {
         </h2>
         <p className="text-sm text-[var(--color-muted)]">
           &bdquo;Sichtbarkeit&ldquo; ist ein temporäres Debug-Werkzeug (zeigt,
-          welche Maschinen ein Nutzer sehen kann) und wird später wieder
-          entfernt.
+          welche Maschinen ein Nutzer sehen kann) und wird später wieder entfernt.
         </p>
         <div className="space-y-2">
           {users.map((u) => {
@@ -241,68 +180,11 @@ export default async function AdminPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Clubs ({clubList.length})</h2>
-        <div className="space-y-2">
-          {clubList.map((c) => (
-            <Card key={c.id} className="flex items-center justify-between gap-3">
-              <div>
-                <Link
-                  href={`/clubs/${c.id}`}
-                  className="font-medium hover:underline"
-                >
-                  {c.name}
-                </Link>
-                <p className="text-sm text-[var(--color-muted)]">
-                  {c.members} Mitglied(er)
-                </p>
-              </div>
-              <form action={deleteClub}>
-                <input type="hidden" name="clubId" value={c.id} />
-                <button
-                  type="submit"
-                  aria-label="Club löschen"
-                  className="text-[var(--color-muted)] hover:text-[var(--color-danger)]"
-                >
-                  <Trash2 size={16} />
-                </button>
-              </form>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">E-Mail-Vorlagen</h2>
-        <p className="text-sm text-[var(--color-muted)]">
-          Betreff und Einleitungstext der Einladungsmails lassen sich hier
-          anpassen. Der Button mit dem Einladungslink und der Gültigkeitshinweis
-          bleiben bewusst fest — sonst könnte eine bearbeitete Vorlage den Link
-          entfernen und Einladungen unbrauchbar machen.
-        </p>
-        <div className="space-y-3">
-          {vorlagen.map((v) => (
-            <EmailTemplateForm
-              key={v.key}
-              templateKey={v.key}
-              label={v.label}
-              beschreibung={v.beschreibung}
-              platzhalter={v.platzhalter}
-              subject={v.subject}
-              body={v.body}
-              angepasst={v.angepasst}
-              ctaLabel={v.ctaLabel}
-              hinweis={v.hinweis}
-            />
-          ))}
-        </div>
-      </section>
-
-      <section className="space-y-3">
         <h2 className="text-lg font-semibold">Rollen-Katalog</h2>
         <p className="text-sm text-[var(--color-muted)]">
           Rollen sind Daten (Tabelle <code>roles</code>), keine Enum-Werte.
-          Zuweisungen liegen in <code>role_assignments</code> — global
-          (ohne Club) oder je Club ({clubAssignments} Club-Zuweisungen).
+          Zuweisungen liegen in <code>role_assignments</code> — global (ohne Club)
+          oder je Club ({clubAssignments} Club-Zuweisungen).
         </p>
         <div className="space-y-2">
           {katalog.map((r) => (
