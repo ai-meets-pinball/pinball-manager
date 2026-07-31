@@ -92,25 +92,37 @@ export async function deleteGeneration(formData: FormData): Promise<void> {
 }
 
 /** Generation eines Modells von Hand setzen. „auto" gibt es zurück an den Import
-    (generationManuell=false); jeder andere Wert ist eine Hand-Zuordnung. */
-export async function assignModelGeneration(formData: FormData): Promise<void> {
+    (generationManuell=false); jeder andere Wert ist eine Hand-Zuordnung.
+    Gibt FormState zurück, damit die UI Fehler ANZEIGT statt sie zu verschlucken. */
+export async function assignModelGeneration(
+  formData: FormData,
+): Promise<FormState> {
   await requireSuperAdmin();
   const modelId = z.string().uuid().safeParse(formData.get("modelId"));
-  if (!modelId.success) return;
+  if (!modelId.success) return { error: "Ungültige Auswahl." };
   const wert = String(formData.get("generationId") ?? "");
 
-  if (wert === "auto") {
-    // Zurück in den Import-Modus: nächster Katalog-Import darf wieder setzen.
-    await db
-      .update(machineModels)
-      .set({ generationManuell: false })
-      .where(eq(machineModels.id, modelId.data));
-  } else {
-    const gid = z.string().uuid().safeParse(wert);
-    await db
-      .update(machineModels)
-      .set({ generationId: gid.success ? gid.data : null, generationManuell: true })
-      .where(eq(machineModels.id, modelId.data));
+  try {
+    if (wert === "auto") {
+      // Zurück in den Import-Modus: nächster Katalog-Import darf wieder setzen.
+      await db
+        .update(machineModels)
+        .set({ generationManuell: false })
+        .where(eq(machineModels.id, modelId.data));
+    } else {
+      const gid = z.string().uuid().safeParse(wert);
+      await db
+        .update(machineModels)
+        .set({
+          generationId: gid.success ? gid.data : null,
+          generationManuell: true,
+        })
+        .where(eq(machineModels.id, modelId.data));
+    }
+  } catch (e) {
+    console.error("[generations] assign:", (e as Error).message);
+    return { error: "Speichern fehlgeschlagen. Bitte erneut versuchen." };
   }
   revalidatePath(PFAD);
+  return {};
 }

@@ -1,14 +1,18 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Loader2 } from "lucide-react";
+import { FormFeedback } from "@/components/ui/form-feedback";
+import { Select } from "@/components/ui/input";
 import { assignModelGeneration } from "@/db/actions/generations";
+import type { FormState } from "@/db/actions/clubs";
 
 /*
-  Generation eines Modells setzen (Super-Admin, Flippermasterliste). Das Select
+  Generation eines Modells setzen (Super-Admin, Gerätetypen-Liste). Das Select
   submittet direkt bei Änderung. „Auto (Import)" gibt das Modell an den Katalog-
   Import zurück; „— keine —" ist eine bewusste Hand-Zuordnung ohne Generation.
+  Fehler der Action werden angezeigt (FormFeedback), nicht verschluckt.
 */
 export function ModelGenerationSelect({
   modelId,
@@ -23,9 +27,9 @@ export function ModelGenerationSelect({
 }) {
   const router = useRouter();
   const [pending, start] = useTransition();
+  const [state, setState] = useState<FormState>({});
 
-  // Bei Import-Zuordnung ist der Wert die aktuelle Generation, bei manuellem
-  // Modus ebenfalls — die Unterscheidung „auto" wählt man aktiv.
+  // Bei Import-Zuordnung ist der Wert „auto"; bei Hand-Zuordnung die Generation.
   const value = manuell ? (aktuell ?? "") : "auto";
 
   function onChange(e: React.ChangeEvent<HTMLSelectElement>) {
@@ -33,22 +37,28 @@ export function ModelGenerationSelect({
     const fd = new FormData();
     fd.set("modelId", modelId);
     fd.set("generationId", generationId);
+    setState({});
     start(async () => {
-      await assignModelGeneration(fd);
+      try {
+        setState(await assignModelGeneration(fd));
+      } catch {
+        setState({ error: "Speichern fehlgeschlagen. Bitte erneut versuchen." });
+      }
       router.refresh();
     });
   }
 
   return (
-    <span className="inline-flex items-center gap-2">
+    <span className="inline-flex flex-wrap items-center gap-2">
       {pending ? (
         <Loader2 size={14} className="animate-spin text-[var(--color-muted)]" />
       ) : null}
-      <select
+      <Select
         value={value}
         onChange={onChange}
         disabled={pending}
-        className="rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-sm text-[var(--color-fg)] outline-none focus:border-[var(--color-accent)]"
+        aria-label="Generation zuordnen"
+        className="max-w-64"
       >
         <option value="auto">Auto (Import)</option>
         <option value="">— keine —</option>
@@ -57,7 +67,8 @@ export function ModelGenerationSelect({
             {g.name}
           </option>
         ))}
-      </select>
+      </Select>
+      <FormFeedback state={state} />
     </span>
   );
 }

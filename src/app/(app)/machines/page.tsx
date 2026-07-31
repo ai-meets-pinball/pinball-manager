@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { Plus, Search } from "lucide-react";
+import { Plus } from "lucide-react";
 import { MachinesBoard } from "@/components/machines-board";
-import { Input } from "@/components/ui/input";
+import { SearchToolbar } from "@/components/ui/search-toolbar";
 import {
   getDueMaintenanceCountByMachine,
   getUserClubs,
@@ -48,18 +48,12 @@ export default async function MachinesPage({
       </div>
 
       {/* Suche: GET-Formular aktualisiert die URL — Filterung passiert server-seitig. */}
-      <form className="relative max-w-sm">
-        <Search
-          size={16}
-          className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)]"
-        />
-        <Input
-          name="q"
-          defaultValue={q ?? ""}
-          placeholder="Hersteller oder Modell suchen…"
-          className="pl-9"
-        />
-      </form>
+      <SearchToolbar
+        placeholder="Hersteller oder Modell suchen…"
+        defaultValue={q ?? ""}
+        label="Maschinen suchen"
+        resetHref="/machines"
+      />
 
       {items.length === 0 ? (
         <p className="text-[var(--color-muted)]">

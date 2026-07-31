@@ -3,6 +3,7 @@
 import { Mail } from "lucide-react";
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
+import { FormFeedback } from "@/components/ui/form-feedback";
 import { Field, Input, Textarea } from "@/components/ui/input";
 import type { FormState } from "@/db/actions/clubs";
 import { invitePlatformUser } from "@/db/actions/invitations";
@@ -33,16 +34,7 @@ export function InviteUserForm() {
           <Mail size={16} /> {pending ? "Senden…" : "Einladen"}
         </Button>
       </div>
-      {state.error ? (
-        <p className="text-sm text-[var(--color-danger)] sm:basis-full">
-          {state.error}
-        </p>
-      ) : null}
-      {state.message ? (
-        <p className="text-sm text-[var(--color-success)] sm:basis-full">
-          {state.message}
-        </p>
-      ) : null}
+      <FormFeedback state={state} />
     </form>
   );
 }

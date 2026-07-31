@@ -3,7 +3,10 @@ import Link from "next/link";
 import { FlaskConical } from "lucide-react";
 import { InviteUserForm } from "@/components/invite-user-form";
 import { RoleInfo } from "@/components/role-info";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ConfirmButton } from "@/components/ui/confirm-button";
+import { List, ListRow } from "@/components/ui/list";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { setGlobalRole } from "@/db/actions/admin";
 import { revokePlatformInvitation } from "@/db/actions/invitations";
@@ -71,23 +74,29 @@ export default async function AdminPage() {
               <p className="text-xs font-medium text-[var(--color-muted)]">
                 Offene Einladungen
               </p>
-              {offeneEinladungen.map((inv) => (
-                <div
-                  key={inv.id}
-                  className="flex items-center justify-between gap-3 text-sm"
-                >
-                  <span className="min-w-0 truncate">{inv.email}</span>
-                  <form action={revokePlatformInvitation}>
-                    <input type="hidden" name="invitationId" value={inv.id} />
-                    <button
-                      type="submit"
-                      className="text-xs text-[var(--color-muted)] hover:text-[var(--color-danger)]"
-                    >
-                      Zurückziehen
-                    </button>
-                  </form>
-                </div>
-              ))}
+              <List empty="Keine offenen Einladungen.">
+                {offeneEinladungen.map((inv) => (
+                  <ListRow
+                    key={inv.id}
+                    title={<span className="text-sm">{inv.email}</span>}
+                    actions={
+                      <form action={revokePlatformInvitation}>
+                        <input
+                          type="hidden"
+                          name="invitationId"
+                          value={inv.id}
+                        />
+                        <ConfirmButton
+                          question="Einladung zurückziehen?"
+                          confirmLabel="Ja, zurückziehen"
+                        >
+                          Zurückziehen
+                        </ConfirmButton>
+                      </form>
+                    }
+                  />
+                ))}
+              </List>
             </div>
           ) : null}
         </Card>
@@ -105,41 +114,41 @@ export default async function AdminPage() {
           &bdquo;Sichtbarkeit&ldquo; ist ein temporäres Debug-Werkzeug (zeigt,
           welche Maschinen ein Nutzer sehen kann) und wird später wieder entfernt.
         </p>
-        <div className="space-y-2">
+        <List empty="Noch keine Nutzer.">
           {users.map((u) => {
             const meineRollen = rolesByUser.get(u.id) ?? [];
             const istSuper = meineRollen.includes(SUPERADMIN_ROLE);
             const istSupporter = meineRollen.includes(SUPPORTER_ROLE);
             return (
-              <Card
+              <ListRow
                 key={u.id}
-                className="flex flex-wrap items-center justify-between gap-3"
-              >
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{u.name}</p>
-                  <p className="truncate text-sm text-[var(--color-muted)]">
-                    {u.email}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  {/* TEMPORÄR (Debug): Sichtbarkeits-Ansicht — siehe
-                      admin/visibility/[userId]/page.tsx. Später mit entfernen. */}
-                  <Link
-                    href={`/admin/visibility/${u.id}`}
-                    title="Debug: Welche Maschinen sieht dieser Nutzer?"
-                    className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-                  >
-                    <FlaskConical size={14} /> Sichtbarkeit
-                  </Link>
-                  {istSuper ? <StatusBadge value="superadmin" /> : null}
-                  {istSupporter ? <StatusBadge value="supporter" /> : null}
-                  {!istSuper && !istSupporter ? (
-                    <span className="text-xs text-[var(--color-faint)]">
-                      keine globale Rolle
-                    </span>
-                  ) : null}
-                  {u.id !== me.id ? (
-                    <div className="flex items-center gap-2">
+                title={u.name}
+                subtitle={u.email}
+                meta={
+                  <>
+                    {/* TEMPORÄR (Debug): Sichtbarkeits-Ansicht — siehe
+                        admin/visibility/[userId]/page.tsx. Später mit entfernen. */}
+                    <Link
+                      href={`/admin/visibility/${u.id}`}
+                      title="Debug: Welche Maschinen sieht dieser Nutzer?"
+                      className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+                    >
+                      <FlaskConical size={14} /> Sichtbarkeit
+                    </Link>
+                    {istSuper ? <StatusBadge value="superadmin" /> : null}
+                    {istSupporter ? <StatusBadge value="supporter" /> : null}
+                    {!istSuper && !istSupporter ? (
+                      <span className="text-xs text-[var(--color-faint)]">
+                        keine globale Rolle
+                      </span>
+                    ) : null}
+                  </>
+                }
+                actions={
+                  u.id !== me.id ? (
+                    <>
+                      {/* Regel: VERGEBEN ist reversibel → normaler Button;
+                          ENTZIEHEN nimmt Rechte weg → ConfirmButton. */}
                       <form action={setGlobalRole}>
                         <input type="hidden" name="userId" value={u.id} />
                         <input type="hidden" name="rolle" value="superadmin" />
@@ -148,12 +157,18 @@ export default async function AdminPage() {
                           name="grant"
                           value={istSuper ? "false" : "true"}
                         />
-                        <button
-                          type="submit"
-                          className="rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 text-sm hover:bg-[var(--color-border)]/40"
-                        >
-                          {istSuper ? "Super-Admin entziehen" : "Zum Super-Admin"}
-                        </button>
+                        {istSuper ? (
+                          <ConfirmButton
+                            question="Super-Admin wirklich entziehen?"
+                            confirmLabel="Ja, entziehen"
+                          >
+                            Super-Admin entziehen
+                          </ConfirmButton>
+                        ) : (
+                          <Button type="submit" variant="secondary" size="sm">
+                            Zum Super-Admin
+                          </Button>
+                        )}
                       </form>
                       <form action={setGlobalRole}>
                         <input type="hidden" name="userId" value={u.id} />
@@ -163,20 +178,26 @@ export default async function AdminPage() {
                           name="grant"
                           value={istSupporter ? "false" : "true"}
                         />
-                        <button
-                          type="submit"
-                          className="rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 text-sm hover:bg-[var(--color-border)]/40"
-                        >
-                          {istSupporter ? "Supporter entziehen" : "Zum Supporter"}
-                        </button>
+                        {istSupporter ? (
+                          <ConfirmButton
+                            question="Supporter wirklich entziehen?"
+                            confirmLabel="Ja, entziehen"
+                          >
+                            Supporter entziehen
+                          </ConfirmButton>
+                        ) : (
+                          <Button type="submit" variant="secondary" size="sm">
+                            Zum Supporter
+                          </Button>
+                        )}
                       </form>
-                    </div>
-                  ) : null}
-                </div>
-              </Card>
+                    </>
+                  ) : null
+                }
+              />
             );
           })}
-        </div>
+        </List>
       </section>
 
       <section className="space-y-3">
@@ -186,28 +207,27 @@ export default async function AdminPage() {
           Zuweisungen liegen in <code>role_assignments</code> — global (ohne Club)
           oder je Club ({clubAssignments} Club-Zuweisungen).
         </p>
-        <div className="space-y-2">
+        <List empty="Kein Rollen-Katalog — Migration 0004 fehlt?">
           {katalog.map((r) => (
-            <Card key={r.id} className="flex items-center justify-between gap-3">
-              <div className="min-w-0">
-                <p className="font-medium">
+            <ListRow
+              key={r.id}
+              title={
+                <>
                   {r.label}{" "}
                   <span className="font-mono text-xs text-[var(--color-faint)]">
                     {r.key}
                   </span>
-                </p>
-                {r.beschreibung ? (
-                  <p className="text-sm text-[var(--color-muted)]">
-                    {r.beschreibung}
-                  </p>
-                ) : null}
-              </div>
-              <span className="font-mono text-xs text-[var(--color-muted)]">
-                {r.scope} · Rang {r.rang}
-              </span>
-            </Card>
+                </>
+              }
+              subtitle={r.beschreibung ?? undefined}
+              meta={
+                <span className="font-mono text-xs text-[var(--color-muted)]">
+                  {r.scope} · Rang {r.rang}
+                </span>
+              }
+            />
           ))}
-        </div>
+        </List>
       </section>
     </div>
   );

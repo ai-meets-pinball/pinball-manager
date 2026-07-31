@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { Loader2, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FormFeedback } from "@/components/ui/form-feedback";
 import { importGenerationCatalog } from "@/db/actions/generations";
 import type { FormState } from "@/db/actions/clubs";
 
@@ -30,12 +31,7 @@ export function CatalogImport() {
         />
       </label>
 
-      {state.error ? (
-        <p className="text-sm text-[var(--color-danger)]">{state.error}</p>
-      ) : null}
-      {state.message ? (
-        <p className="text-sm text-[var(--color-success)]">{state.message}</p>
-      ) : null}
+      <FormFeedback state={state} />
 
       <Button type="submit" disabled={pending} className="self-start">
         {pending ? (
