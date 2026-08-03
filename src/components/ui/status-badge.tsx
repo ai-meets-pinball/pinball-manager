@@ -23,6 +23,7 @@ const tone: Record<string, string> = {
   // Globale Rolle
   superadmin: "var(--color-primary)",
   supporter: "var(--color-accent)",
+  kurator: "var(--color-success)",
   // Maschinen-Herkunft (Admin-Sichtbarkeitsansicht)
   eigene: "var(--color-primary)",
   Club: "var(--color-accent)",

@@ -1,6 +1,13 @@
 "use client";
 
-import { ListChecks, LogOut, ShieldCheck, User, Users } from "lucide-react";
+import {
+  ListChecks,
+  LogOut,
+  ShieldAlert,
+  ShieldCheck,
+  User,
+  Users,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -18,6 +25,7 @@ export function UserMenu({
   avatar,
   kuerzel,
   isSuperAdmin = false,
+  istKurator = false,
 }: {
   userName: string;
   /** Profilbild-URL (oder null → Initialen). */
@@ -25,6 +33,8 @@ export function UserMenu({
   /** Initialen für den Avatar-Fallback (lib/format.ts initialen()). */
   kuerzel: string;
   isSuperAdmin?: boolean;
+  /** Kurator ODER Super-Admin: zeigt den Menüpunkt „Kuratierung". */
+  istKurator?: boolean;
 }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -69,6 +79,7 @@ export function UserMenu({
           open ||
           pathname.startsWith("/account") ||
           pathname.startsWith("/admin") ||
+          pathname.startsWith("/kuratierung") ||
           pathname.startsWith("/clubs")
             ? "ring-2 ring-[var(--color-primary)]/40"
             : "hover:opacity-80"
@@ -121,6 +132,18 @@ export function UserMenu({
             <ListChecks size={15} className="text-[var(--color-muted)]" />
             Wartungspläne
           </Link>
+
+          {istKurator ? (
+            <Link
+              href="/kuratierung"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+              className={itemClass}
+            >
+              <ShieldAlert size={15} className="text-[var(--color-muted)]" />
+              Kuratierung
+            </Link>
+          ) : null}
 
           {isSuperAdmin ? (
             <Link

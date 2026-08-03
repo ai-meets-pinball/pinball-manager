@@ -2,6 +2,10 @@ import { Globe, Lock, Users } from "lucide-react";
 import { MachineDataTables } from "@/components/machine-data-tables";
 import { KnowledgeGemeldet } from "@/components/knowledge-gemeldet";
 import { KnowledgeHide } from "@/components/knowledge-hide";
+import {
+  KnowledgeVerbergen,
+  KnowledgeVerborgen,
+} from "@/components/knowledge-moderation";
 import { KnowledgeSignals } from "@/components/knowledge-signals";
 import { SetVisibility } from "@/components/set-visibility";
 
@@ -27,6 +31,11 @@ type Eintrag = {
   falsch: number;
   meinSignal: "hilfreich" | "falsch" | null;
   ausgeblendet: boolean;
+  // Kuratoren-Moderation: gesetzt = für alle verborgen (solche Zeilen erreichen
+  // nur noch Autor, Kuratoren und Super-Admins — der Lesepfad filtert den Rest).
+  verborgenAm: Date | null;
+  verborgenGrund: string | null;
+  verborgenVonName: string | null;
 };
 
 const SICHT: Record<Sicht, { label: string; Icon: typeof Globe }> = {
@@ -47,10 +56,13 @@ export function KnowledgeFacts({
   eintraege,
   currentUserId,
   machineId,
+  kannKuratieren = false,
 }: {
   eintraege: Eintrag[];
   currentUserId: string;
   machineId: string;
+  /** Kurator/Super-Admin: darf Einträge für alle verbergen/wiederherstellen. */
+  kannKuratieren?: boolean;
 }) {
   if (eintraege.length === 0) {
     return (
@@ -65,7 +77,7 @@ export function KnowledgeFacts({
       {eintraege.map((e) => {
         const eigen = e.autorId === currentUserId;
         // Für dich ausgeblendet (nur fremde Einträge): nur der Wiederherstellen-Stub.
-        if (!eigen && e.ausgeblendet) {
+        if (!eigen && e.ausgeblendet && !e.verborgenAm) {
           return (
             <KnowledgeHide
               key={e.id}
@@ -112,8 +124,21 @@ export function KnowledgeFacts({
                     titel={e.titel}
                   />
                 )}
+                {kannKuratieren && !e.verborgenAm ? (
+                  <KnowledgeVerbergen knowledgeId={e.id} machineId={machineId} />
+                ) : null}
               </div>
             </div>
+            {e.verborgenAm ? (
+              <KnowledgeVerborgen
+                knowledgeId={e.id}
+                machineId={machineId}
+                grund={e.verborgenGrund}
+                vonName={e.verborgenVonName}
+                am={e.verborgenAm}
+                kannKuratieren={kannKuratieren}
+              />
+            ) : null}
             <KnowledgeGemeldet hilfreich={e.hilfreich} falsch={e.falsch} />
             <MachineDataTables facts={inhaltToFacts(e.inhalt)} />
           </div>

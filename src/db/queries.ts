@@ -5,6 +5,8 @@ import {
   eq,
   ilike,
   inArray,
+  isNotNull,
+  isNull,
   lte,
   ne,
   or,
@@ -36,6 +38,7 @@ import {
 import { SHARE_DEFAULTS, type ShareDefaults } from "@/lib/share-defaults";
 import {
   getUserClubIds,
+  isKurator,
   isSuperAdmin,
   type SessionUser,
 } from "@/lib/session";
@@ -230,19 +233,36 @@ export async function getMachineModel(modelId: string) {
 
 /** Die EINE Sichtbarkeitsregel für `knowledge` (analog shareVisibilityFilter).
     Autor sieht immer eigenes; öffentlich sieht jeder; club nur Clubmitglieder;
-    Super-Admin sieht alles (undefined = keine Einschränkung). */
+    Super-Admin sieht alles (undefined = keine Einschränkung).
+
+    Kuratoren-Moderation: von Kuratoren verborgene Einträge (verborgen_am
+    gesetzt) verschwinden für alle — AUSSER für den Autor (sieht sein Eigenes
+    immer, markiert samt Begründung), für Kuratoren (sehen alles Geteilte,
+    Privates bleibt privat) und für Super-Admins. */
 async function knowledgeVisibilityFilter(
   currentUser: SessionUser,
 ): Promise<SQL | undefined> {
   if (isSuperAdmin(currentUser)) return undefined;
+  if (isKurator(currentUser)) {
+    return or(
+      eq(knowledge.createdBy, currentUser.id),
+      ne(knowledge.visibility, "privat"),
+    );
+  }
   const clubIds = await getUserClubIds(currentUser.id);
+  const nichtVerborgen = isNull(knowledge.verborgenAm);
   const parts: (SQL | undefined)[] = [
+    // Autor sieht Eigenes IMMER — auch verborgen (wird markiert, nicht versteckt).
     eq(knowledge.createdBy, currentUser.id),
-    eq(knowledge.visibility, "oeffentlich"),
+    and(eq(knowledge.visibility, "oeffentlich"), nichtVerborgen),
   ];
   if (clubIds.length > 0) {
     parts.push(
-      and(eq(knowledge.visibility, "club"), inArray(knowledge.clubId, clubIds)),
+      and(
+        eq(knowledge.visibility, "club"),
+        inArray(knowledge.clubId, clubIds),
+        nichtVerborgen,
+      ),
     );
   }
   return or(...parts);
@@ -266,6 +286,13 @@ function knowledgeAuswahl(userId: string) {
       "hilfreich" | "falsch" | null
     >`(select ${knowledgeSignals.wert} from ${knowledgeSignals} where ${knowledgeSignals.knowledgeId} = ${knowledge.id} and ${knowledgeSignals.userId} = ${userId} limit 1)`,
     ausgeblendet: sql<boolean>`exists(select 1 from ${knowledgeOverrides} where ${knowledgeOverrides.knowledgeId} = ${knowledge.id} and ${knowledgeOverrides.userId} = ${userId})`,
+    // Kuratoren-Moderation: gesetzt = für alle verborgen. Der Autoren-Join auf
+    // `user` ist schon belegt, daher Subselect für den Kuratoren-Namen.
+    verborgenAm: knowledge.verborgenAm,
+    verborgenGrund: knowledge.verborgenGrund,
+    verborgenVonName: sql<
+      string | null
+    >`(select ${user.name} from ${user} where ${user.id} = ${knowledge.verborgenVon})`,
   } as const;
 }
 
@@ -414,6 +441,60 @@ export async function getKnowledgeModels(currentUser: SessionUser) {
     .where(sichtbar)
     .groupBy(machineModels.id)
     .orderBy(machineModels.modell, machineModels.hersteller);
+}
+
+/** Kuratierungs-Übersicht (Seite /kuratierung): gemeldete und verborgene
+    GETEILTE Wissenseinträge. Bewusst OHNE persönlichen Sichtbarkeitsfilter —
+    Kuratoren moderieren alles Geteilte; Privates taucht hier nie auf.
+    Der Aufrufer sichert den Zugriff mit `kannKuratieren` ab. */
+export async function getKuratierungsUebersicht() {
+  // Dieselben Zähl-Subselects wie in knowledgeAuswahl.
+  const hilfreich = sql<number>`(select count(*) from ${knowledgeSignals} where ${knowledgeSignals.knowledgeId} = ${knowledge.id} and ${knowledgeSignals.wert} = 'hilfreich')::int`;
+  const falsch = sql<number>`(select count(*) from ${knowledgeSignals} where ${knowledgeSignals.knowledgeId} = ${knowledge.id} and ${knowledgeSignals.wert} = 'falsch')::int`;
+
+  const auswahl = {
+    id: knowledge.id,
+    typ: knowledge.typ,
+    titel: knowledge.titel,
+    visibility: knowledge.visibility,
+    autorName: user.name,
+    modelId: knowledge.modelId,
+    machineId: knowledge.machineId,
+    generationName: generations.name,
+    hilfreich,
+    falsch,
+    verborgenAm: knowledge.verborgenAm,
+    verborgenGrund: knowledge.verborgenGrund,
+    verborgenVonName: sql<
+      string | null
+    >`(select ${user.name} from ${user} where ${user.id} = ${knowledge.verborgenVon})`,
+  } as const;
+
+  // Gemeldet = dieselbe Schwelle wie das KnowledgeGemeldet-Banner (rein
+  // anzeigend — verborgen wird nur von Hand, am Eintrag selbst).
+  const gemeldet = await db
+    .select(auswahl)
+    .from(knowledge)
+    .innerJoin(user, eq(user.id, knowledge.createdBy))
+    .leftJoin(generations, eq(generations.id, knowledge.generationId))
+    .where(
+      and(
+        ne(knowledge.visibility, "privat"),
+        isNull(knowledge.verborgenAm),
+        sql`${falsch} >= 2 and ${falsch} > ${hilfreich}`,
+      ),
+    )
+    .orderBy(desc(knowledge.updatedAt));
+
+  const verborgen = await db
+    .select(auswahl)
+    .from(knowledge)
+    .innerJoin(user, eq(user.id, knowledge.createdBy))
+    .leftJoin(generations, eq(generations.id, knowledge.generationId))
+    .where(isNotNull(knowledge.verborgenAm))
+    .orderBy(desc(knowledge.verborgenAm));
+
+  return { gemeldet, verborgen };
 }
 
 /** Freigaben der Reparaturen EINER Maschine (für die eigenen Teilen-Schalter). */

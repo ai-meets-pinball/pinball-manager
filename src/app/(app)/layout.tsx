@@ -3,7 +3,7 @@ import { Nav } from "@/components/nav";
 import { db } from "@/db";
 import { user as userTable } from "@/db/schema";
 import { initialen } from "@/lib/format";
-import { isSuperAdmin, requireUser } from "@/lib/session";
+import { isSuperAdmin, kannKuratieren, requireUser } from "@/lib/session";
 
 /*
   Layout aller angemeldeten Bereiche. requireUser() ist hier die ECHTE Auth-Grenze
@@ -28,6 +28,7 @@ export default async function AppLayout({
         avatar={profil?.image ?? null}
         kuerzel={initialen({ ...profil, name: user.name, email: user.email })}
         isSuperAdmin={isSuperAdmin(user)}
+        istKurator={kannKuratieren(user)}
       />
       <main className="mx-auto max-w-5xl px-6 py-8">{children}</main>
     </div>

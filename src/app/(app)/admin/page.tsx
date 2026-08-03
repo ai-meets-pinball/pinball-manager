@@ -13,7 +13,11 @@ import { revokePlatformInvitation } from "@/db/actions/invitations";
 import { db } from "@/db";
 import { invitations, roleAssignments, roles, user } from "@/db/schema";
 import { requireUser } from "@/lib/session";
-import { SUPERADMIN_ROLE, SUPPORTER_ROLE } from "@/lib/validators";
+import {
+  KURATOR_ROLE,
+  SUPERADMIN_ROLE,
+  SUPPORTER_ROLE,
+} from "@/lib/validators";
 
 /* Nutzer & Rollen (Super-Admin). Guard + Rahmen/Navigation im admin/layout.tsx. */
 export default async function AdminPage() {
@@ -119,6 +123,7 @@ export default async function AdminPage() {
             const meineRollen = rolesByUser.get(u.id) ?? [];
             const istSuper = meineRollen.includes(SUPERADMIN_ROLE);
             const istSupporter = meineRollen.includes(SUPPORTER_ROLE);
+            const istKurator = meineRollen.includes(KURATOR_ROLE);
             return (
               <ListRow
                 key={u.id}
@@ -137,7 +142,8 @@ export default async function AdminPage() {
                     </Link>
                     {istSuper ? <StatusBadge value="superadmin" /> : null}
                     {istSupporter ? <StatusBadge value="supporter" /> : null}
-                    {!istSuper && !istSupporter ? (
+                    {istKurator ? <StatusBadge value="kurator" /> : null}
+                    {!istSuper && !istSupporter && !istKurator ? (
                       <span className="text-xs text-[var(--color-faint)]">
                         keine globale Rolle
                       </span>
@@ -188,6 +194,27 @@ export default async function AdminPage() {
                         ) : (
                           <Button type="submit" variant="secondary" size="sm">
                             Zum Supporter
+                          </Button>
+                        )}
+                      </form>
+                      <form action={setGlobalRole}>
+                        <input type="hidden" name="userId" value={u.id} />
+                        <input type="hidden" name="rolle" value="kurator" />
+                        <input
+                          type="hidden"
+                          name="grant"
+                          value={istKurator ? "false" : "true"}
+                        />
+                        {istKurator ? (
+                          <ConfirmButton
+                            question="Kurator wirklich entziehen?"
+                            confirmLabel="Ja, entziehen"
+                          >
+                            Kurator entziehen
+                          </ConfirmButton>
+                        ) : (
+                          <Button type="submit" variant="secondary" size="sm">
+                            Zum Kurator
                           </Button>
                         )}
                       </form>

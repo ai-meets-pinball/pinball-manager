@@ -34,7 +34,7 @@ import {
   repairs as repairsTable,
 } from "@/db/schema";
 import { modellName } from "@/lib/format";
-import { requireMachineAccess } from "@/lib/session";
+import { kannKuratieren, requireMachineAccess } from "@/lib/session";
 import { availableProviders } from "@/lib/ai/provider";
 
 // KI-Server-Actions dieser Route (z. B. Troubleshooting-Guide) können Minuten
@@ -492,6 +492,7 @@ export default async function MachineDetailPage({
               eintraege={knowledgeFacts}
               currentUserId={currentUser.id}
               machineId={machine.id}
+              kannKuratieren={kannKuratieren(currentUser)}
             />
 
             {darf.bearbeiten ? (
@@ -528,6 +529,7 @@ export default async function MachineDetailPage({
               eintraege={guides}
               currentUserId={currentUser.id}
               machineId={machine.id}
+              kannKuratieren={kannKuratieren(currentUser)}
             />
           ) : (
             <p className="text-sm text-[var(--color-muted)]">

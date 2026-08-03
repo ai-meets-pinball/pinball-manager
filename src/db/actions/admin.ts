@@ -5,10 +5,18 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { roleAssignments, roles } from "@/db/schema";
 import { requireSuperAdmin, roleIdByKey } from "@/lib/session";
-import { SUPERADMIN_ROLE, SUPPORTER_ROLE } from "@/lib/validators";
+import {
+  KURATOR_ROLE,
+  SUPERADMIN_ROLE,
+  SUPPORTER_ROLE,
+} from "@/lib/validators";
 
 /** Vergebbare globale Rollen (per /admin). Founder o. Ä. ließen sich hier ergänzen. */
-const VERGEBBARE_GLOBALE_ROLLEN = [SUPERADMIN_ROLE, SUPPORTER_ROLE] as const;
+const VERGEBBARE_GLOBALE_ROLLEN = [
+  SUPERADMIN_ROLE,
+  SUPPORTER_ROLE,
+  KURATOR_ROLE,
+] as const;
 
 /** Eine globale Rolle geben oder entziehen (nur Super-Admin).
     Der letzte Super-Admin bleibt geschützt. */

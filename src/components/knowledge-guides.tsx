@@ -1,6 +1,10 @@
 import { Globe, Layers, Lock, Users } from "lucide-react";
 import { KnowledgeGemeldet } from "@/components/knowledge-gemeldet";
 import { KnowledgeHide } from "@/components/knowledge-hide";
+import {
+  KnowledgeVerbergen,
+  KnowledgeVerborgen,
+} from "@/components/knowledge-moderation";
 import { KnowledgeSignals } from "@/components/knowledge-signals";
 import { SetVisibility } from "@/components/set-visibility";
 import { TroubleshootingGuideView } from "@/components/troubleshooting-guide";
@@ -27,6 +31,11 @@ type Eintrag = {
   falsch: number;
   meinSignal: "hilfreich" | "falsch" | null;
   ausgeblendet: boolean;
+  // Kuratoren-Moderation: gesetzt = für alle verborgen (solche Zeilen erreichen
+  // nur noch Autor, Kuratoren und Super-Admins — der Lesepfad filtert den Rest).
+  verborgenAm: Date | null;
+  verborgenGrund: string | null;
+  verborgenVonName: string | null;
   // Gesetzt, wenn der Guide auf Generation-Ebene liegt (gilt für alle Modelle
   // dieser Board-/Hardware-Generation).
   generationName?: string | null;
@@ -55,10 +64,13 @@ export function KnowledgeGuides({
   eintraege,
   currentUserId,
   machineId,
+  kannKuratieren = false,
 }: {
   eintraege: Eintrag[];
   currentUserId: string;
   machineId: string;
+  /** Kurator/Super-Admin: darf Einträge für alle verbergen/wiederherstellen. */
+  kannKuratieren?: boolean;
 }) {
   if (eintraege.length === 0) return null;
 
@@ -66,7 +78,7 @@ export function KnowledgeGuides({
     <div className="space-y-6">
       {eintraege.map((e) => {
         const eigen = e.autorId === currentUserId;
-        if (!eigen && e.ausgeblendet) {
+        if (!eigen && e.ausgeblendet && !e.verborgenAm) {
           return (
             <KnowledgeHide
               key={e.id}
@@ -123,8 +135,21 @@ export function KnowledgeGuides({
                     titel={e.titel}
                   />
                 )}
+                {kannKuratieren && !e.verborgenAm ? (
+                  <KnowledgeVerbergen knowledgeId={e.id} machineId={machineId} />
+                ) : null}
               </div>
             </div>
+            {e.verborgenAm ? (
+              <KnowledgeVerborgen
+                knowledgeId={e.id}
+                machineId={machineId}
+                grund={e.verborgenGrund}
+                vonName={e.verborgenVonName}
+                am={e.verborgenAm}
+                kannKuratieren={kannKuratieren}
+              />
+            ) : null}
             <KnowledgeGemeldet hilfreich={e.hilfreich} falsch={e.falsch} />
             <TroubleshootingGuideView
               daten={g.guide}
