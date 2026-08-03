@@ -5,7 +5,11 @@ import { db } from "@/db";
 import { machines, roleAssignments, roles } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { istSuperAdminEmail } from "@/lib/super-admins";
-import { SUPERADMIN_ROLE, SUPPORTER_ROLE } from "@/lib/validators";
+import {
+  KURATOR_ROLE,
+  SUPERADMIN_ROLE,
+  SUPPORTER_ROLE,
+} from "@/lib/validators";
 
 /*
   Das Herzstück der sichtbaren Autorisierung.
@@ -95,6 +99,17 @@ export async function requireSuperAdmin(): Promise<SessionUser> {
     Maschinen (nicht in private Sammlungen), ohne jede Änderung. */
 export function isSupporter(user: { roles?: string[] } | null): boolean {
   return Boolean(user?.roles?.includes(SUPPORTER_ROLE));
+}
+
+/** Kurator = globale Moderations-Rolle für die Wissensbasis: sieht alles
+    Geteilte (auch Verborgenes, markiert) — Privates bleibt privat. */
+export function isKurator(user: { roles?: string[] } | null): boolean {
+  return Boolean(user?.roles?.includes(KURATOR_ROLE));
+}
+
+/** Darf Wissenseinträge moderieren (verbergen/wiederherstellen)? */
+export function kannKuratieren(user: { roles?: string[] } | null): boolean {
+  return isKurator(user) || isSuperAdmin(user);
 }
 
 /* ── Club-Rollen ──────────────────────────────────────────────────────────── */

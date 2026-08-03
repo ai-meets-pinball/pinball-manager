@@ -11,7 +11,7 @@ import {
   getModelKnowledge,
   getSharedRepairsForModel,
 } from "@/db/queries";
-import { requireUser } from "@/lib/session";
+import { kannKuratieren, requireUser } from "@/lib/session";
 import { modellName } from "@/lib/format";
 
 /*
@@ -83,6 +83,7 @@ export default async function GeraetetypPage({
               eintraege={fakten}
               currentUserId={currentUser.id}
               machineId=""
+              kannKuratieren={kannKuratieren(currentUser)}
             />
           ) : null}
           {guides.length > 0 ? (
@@ -90,6 +91,7 @@ export default async function GeraetetypPage({
               eintraege={guides}
               currentUserId={currentUser.id}
               machineId=""
+              kannKuratieren={kannKuratieren(currentUser)}
             />
           ) : null}
           <SharedRepairs eintraege={reparaturen} />

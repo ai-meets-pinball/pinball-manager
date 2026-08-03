@@ -22,11 +22,14 @@ export function Nav({
   avatar,
   kuerzel,
   isSuperAdmin = false,
+  istKurator = false,
 }: {
   userName: string;
   avatar: string | null;
   kuerzel: string;
   isSuperAdmin?: boolean;
+  /** Kurator ODER Super-Admin: zeigt den Menüpunkt „Kuratierung". */
+  istKurator?: boolean;
 }) {
   const pathname = usePathname();
 
@@ -73,7 +76,13 @@ export function Nav({
             <span className="hidden sm:inline">Website</span>
           </Link>
           <ThemeToggle />
-          <UserMenu userName={userName} avatar={avatar} kuerzel={kuerzel} isSuperAdmin={isSuperAdmin} />
+          <UserMenu
+            userName={userName}
+            avatar={avatar}
+            kuerzel={kuerzel}
+            isSuperAdmin={isSuperAdmin}
+            istKurator={istKurator}
+          />
         </div>
       </nav>
     </header>

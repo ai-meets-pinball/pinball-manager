@@ -35,11 +35,14 @@ export default async function globalSetup() {
       USERS.member,
       USERS.outsider,
       USERS.supporter,
+      USERS.kurator,
     ]) {
       await createAccount(ctx, email);
     }
-    // Der Supporter bekommt die globale Nur-Lese-Rolle.
+    // Der Supporter bekommt die globale Nur-Lese-Rolle, der Kurator die
+    // Moderations-Rolle (Migration 0029).
     await grantGlobalRole(USERS.supporter, "supporter");
+    await grantGlobalRole(USERS.kurator, "kurator");
   } finally {
     await ctx.dispose();
   }

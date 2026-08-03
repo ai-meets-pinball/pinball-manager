@@ -413,6 +413,15 @@ export const knowledge = pgTable(
     clubId: uuid("club_id").references(() => clubs.id, { onDelete: "set null" }),
     // Rückverweis für Forks (Phase 5); Phase 1 ungenutzt, daher (noch) ohne FK.
     forkedFromId: uuid("forked_from_id"),
+    // Kuratoren-Moderation: für ALLE verborgen (außer Autor, Kuratoren und
+    // Super-Admins — die sehen den Eintrag markiert samt Begründung).
+    // verborgen_am IS NULL = sichtbar. ON DELETE SET NULL: der Eintrag bleibt
+    // verborgen, auch wenn das Kuratoren-Konto gelöscht wird.
+    verborgenAm: timestamp("verborgen_am"),
+    verborgenVon: text("verborgen_von").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    verborgenGrund: text("verborgen_grund"),
     createdBy: text("created_by")
       .notNull()
       .references(() => user.id),

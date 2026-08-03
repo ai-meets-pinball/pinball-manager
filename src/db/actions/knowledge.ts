@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { knowledge, knowledgeOverrides, knowledgeSignals } from "@/db/schema";
 import { knowledgeSichtbarFuer } from "@/db/queries";
-import { isSuperAdmin, requireUser } from "@/lib/session";
+import { isSuperAdmin, kannKuratieren, requireUser } from "@/lib/session";
 import type { FormState } from "@/db/actions/clubs";
 
 /*
@@ -88,6 +88,59 @@ export async function setKnowledgeOverride(formData: FormData): Promise<void> {
   }
 
   if (machineId) revalidatePath(`/machines/${machineId}`);
+}
+
+/*
+  Kuratoren-Moderation: einen geteilten Wissenseintrag FÜR ALLE verbergen — nur
+  mit Begründung, reversibel (restoreKnowledge). Der Autor sowie Kuratoren und
+  Super-Admins sehen den Eintrag weiterhin, markiert samt Grund (kein stilles
+  Zensieren). Die Melde-Warnung bleibt davon unabhängig rein anzeigend.
+*/
+export async function hideKnowledge(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const id = String(formData.get("knowledgeId") ?? "");
+  const machineId = String(formData.get("machineId") ?? "");
+  const grund = String(formData.get("grund") ?? "").trim();
+
+  const currentUser = await requireUser();
+  if (!kannKuratieren(currentUser)) {
+    return { error: "Nur Kuratoren dürfen Einträge verbergen." };
+  }
+  if (!grund) return { error: "Eine Begründung ist erforderlich." };
+  if (!(await knowledgeSichtbarFuer(currentUser, id))) {
+    return { error: "Wissenseintrag nicht gefunden." };
+  }
+
+  await db
+    .update(knowledge)
+    // updatedAt bewusst unangetastet — Verbergen ist keine inhaltliche Änderung
+    // und soll die Sortierung nicht verschieben.
+    .set({ verborgenAm: new Date(), verborgenVon: currentUser.id, verborgenGrund: grund })
+    .where(eq(knowledge.id, id));
+
+  if (machineId) revalidatePath(`/machines/${machineId}`);
+  revalidatePath("/kuratierung");
+  return { message: "Eintrag verborgen." };
+}
+
+/** Einen verborgenen Wissenseintrag wiederherstellen (Kurator/Super-Admin). */
+export async function restoreKnowledge(formData: FormData): Promise<void> {
+  const id = String(formData.get("knowledgeId") ?? "");
+  const machineId = String(formData.get("machineId") ?? "");
+
+  const currentUser = await requireUser();
+  if (!kannKuratieren(currentUser)) return;
+  if (!(await knowledgeSichtbarFuer(currentUser, id))) return;
+
+  await db
+    .update(knowledge)
+    .set({ verborgenAm: null, verborgenVon: null, verborgenGrund: null })
+    .where(eq(knowledge.id, id));
+
+  if (machineId) revalidatePath(`/machines/${machineId}`);
+  revalidatePath("/kuratierung");
 }
 
 /*
