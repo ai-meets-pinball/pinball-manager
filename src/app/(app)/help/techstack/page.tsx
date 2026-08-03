@@ -10,7 +10,7 @@ import {
 import type { ReactNode } from "react";
 import { HelpTabs } from "@/components/help-tabs";
 import { Card } from "@/components/ui/card";
-import { isSuperAdmin, requireUser } from "@/lib/session";
+import { isSuperAdmin, kannKuratieren, requireUser } from "@/lib/session";
 
 /*
   Hilfe-/Techstack-Seite.
@@ -226,8 +226,15 @@ const sections: StackSection[] = [
         name: "Handbuch-Pipeline (Copyright)",
         version: "Muster · Phase 2",
         beschreibung:
-          "Eigenes Handbuch-PDF hochladen → Claude (claude-sonnet-5, @anthropic-ai/sdk) extrahiert nur Faktentabellen → in machine_data gespeichert. Der Schutz ist die Pipeline: Attestation Pflicht, das PDF bleibt nur im Speicher und wird NIE gespeichert, nur die Fakten landen in der DB.",
+          "Eigenes Handbuch-PDF hochladen → Claude (claude-sonnet-5, @anthropic-ai/sdk) extrahiert nur Faktentabellen → als Wissenseintrag (knowledge) am Modell gespeichert. Der Schutz ist die Pipeline: Attestation Pflicht, das PDF bleibt nur im Speicher und wird NIE gespeichert, nur die Fakten landen in der DB.",
         imCode: "src/lib/manual-extract.ts, src/components/machine-data-tables.tsx",
+      },
+      {
+        name: "Hilfe mit EINER Inhaltsquelle + PDF-Handbuch",
+        version: "Muster",
+        beschreibung:
+          "Der Hilfe-Inhalt liegt als reine Daten in lib/help-content.ts und speist die Seiten /help und /help/admin UND den PDF-Generator (pdf-lib, kleine eigene Layout-Engine mit klickbarem Inhaltsverzeichnis). Download unter /help/manual — das Handbuch kann dadurch nie von der Online-Hilfe abweichen.",
+        imCode: "src/lib/help-content.ts, src/lib/manual-pdf.ts, src/app/(app)/help/manual/route.ts",
       },
       {
         name: "KI-Anbieter umschaltbar (Claude ⇆ Ollama)",
@@ -245,7 +252,11 @@ export default async function HelpPage() {
   const user = await requireUser();
   return (
     <div className="space-y-8">
-      <HelpTabs active="techstack" istSuperAdmin={isSuperAdmin(user)} />
+      <HelpTabs
+        active="techstack"
+        istSuperAdmin={isSuperAdmin(user)}
+        darfKuratieren={kannKuratieren(user)}
+      />
       <div className="space-y-2">
         <h1 className="flex items-center gap-2 text-2xl font-bold">
           <BookOpen size={22} className="text-[var(--color-primary)]" />
