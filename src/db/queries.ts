@@ -22,6 +22,7 @@ import {
   generations,
   knowledge,
   knowledgeOverrides,
+  knowledgeRevisions,
   knowledgeSignals,
   machineModels,
   machines,
@@ -293,6 +294,8 @@ function knowledgeAuswahl(userId: string) {
     verborgenVonName: sql<
       string | null
     >`(select ${user.name} from ${user} where ${user.id} = ${knowledge.verborgenVon})`,
+    // Bearbeitungs-Verlauf: Anzahl gesicherter alter Stände (für „Verlauf (n)").
+    revisionen: sql<number>`(select count(*) from ${knowledgeRevisions} where ${knowledgeRevisions.knowledgeId} = ${knowledge.id})::int`,
   } as const;
 }
 
@@ -441,6 +444,25 @@ export async function getKnowledgeModels(currentUser: SessionUser) {
     .where(sichtbar)
     .groupBy(machineModels.id)
     .orderBy(machineModels.modell, machineModels.hersteller);
+}
+
+/** Verlauf eines Wissenseintrags, neueste Revision zuerst. Das Autor-Gate
+    liegt in der Action (loadKnowledgeRevisions) — Verlauf ist nur für den
+    Autor bzw. Super-Admin gedacht. */
+export async function getKnowledgeRevisions(knowledgeId: string) {
+  return db
+    .select({
+      id: knowledgeRevisions.id,
+      titel: knowledgeRevisions.titel,
+      inhalt: knowledgeRevisions.inhalt,
+      editedAt: knowledgeRevisions.editedAt,
+      kommentar: knowledgeRevisions.kommentar,
+      editorName: user.name,
+    })
+    .from(knowledgeRevisions)
+    .innerJoin(user, eq(user.id, knowledgeRevisions.editedBy))
+    .where(eq(knowledgeRevisions.knowledgeId, knowledgeId))
+    .orderBy(desc(knowledgeRevisions.editedAt));
 }
 
 /** Kuratierungs-Übersicht (Seite /kuratierung): gemeldete und verborgene

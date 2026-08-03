@@ -110,6 +110,14 @@ export async function addKnowledge(opts: {
   return row.id as string;
 }
 
+/** Anzahl der Verlaufs-Revisionen eines Wissenseintrags. */
+export async function revisionCount(knowledgeId: string): Promise<number> {
+  const [r] = await sql`
+    SELECT count(*)::int AS n FROM knowledge_revisions
+    WHERE knowledge_id = ${knowledgeId}`;
+  return r.n as number;
+}
+
 /** Ein Community-Signal direkt setzen (für Schwellwert-Tests). */
 export async function addSignal(
   knowledgeId: string,

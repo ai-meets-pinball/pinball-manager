@@ -2,6 +2,7 @@ import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  index,
   integer,
   jsonb,
   numeric,
@@ -478,6 +479,32 @@ export const knowledgeOverrides = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [unique("knowledge_overrides_unique").on(t.knowledgeId, t.userId)],
+);
+
+/*
+  Bearbeitungs-Verlauf (Datenmodell-Redesign Phase 5): jede Änderung eines
+  Wissenseintrags — In-Place-Edit ODER Neu-Generierung/Import — sichert vorher
+  den ALTEN Stand als Revision. Der aktuelle Stand lebt immer in `knowledge`
+  selbst; „Verlauf leer" heißt schlicht „nie geändert". Cascade beim Löschen des
+  Eintrags — Verlauf ohne Eintrag ist wertlos.
+*/
+export const knowledgeRevisions = pgTable(
+  "knowledge_revisions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    knowledgeId: uuid("knowledge_id")
+      .notNull()
+      .references(() => knowledge.id, { onDelete: "cascade" }),
+    // Stand VOR der Änderung.
+    titel: text("titel").notNull(),
+    inhalt: jsonb("inhalt").notNull(),
+    editedBy: text("edited_by")
+      .notNull()
+      .references(() => user.id),
+    editedAt: timestamp("edited_at").notNull().defaultNow(),
+    kommentar: text("kommentar"),
+  },
+  (t) => [index("knowledge_revisions_knowledge_idx").on(t.knowledgeId)],
 );
 
 /* Troubleshooting-Guides sind seit dem Datenmodell-Redesign (Phase 2) Modell-

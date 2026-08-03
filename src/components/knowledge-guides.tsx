@@ -1,6 +1,8 @@
 import { Globe, Layers, Lock, Users } from "lucide-react";
+import { KnowledgeEdit } from "@/components/knowledge-edit";
 import { KnowledgeGemeldet } from "@/components/knowledge-gemeldet";
 import { KnowledgeHide } from "@/components/knowledge-hide";
+import { KnowledgeVerlauf } from "@/components/knowledge-verlauf";
 import {
   KnowledgeVerbergen,
   KnowledgeVerborgen,
@@ -36,6 +38,8 @@ type Eintrag = {
   verborgenAm: Date | null;
   verborgenGrund: string | null;
   verborgenVonName: string | null;
+  /** Anzahl gesicherter alter Stände (Bearbeitungs-Verlauf). */
+  revisionen: number;
   // Gesetzt, wenn der Guide auf Generation-Ebene liegt (gilt für alle Modelle
   // dieser Board-/Hardware-Generation).
   generationName?: string | null;
@@ -157,6 +161,23 @@ export function KnowledgeGuides({
               websuche={g.websuche}
               createdAt={e.createdAt}
             />
+            {eigen ? (
+              <>
+                {/* Editiert wird NUR der guide-Teil; websuche/model bleiben serverseitig. */}
+                <KnowledgeEdit
+                  knowledgeId={e.id}
+                  machineId={machineId}
+                  typ="troubleshooting"
+                  titel={e.titel}
+                  inhalt={g.guide}
+                />
+                <KnowledgeVerlauf
+                  knowledgeId={e.id}
+                  anzahl={e.revisionen}
+                  typ="troubleshooting"
+                />
+              </>
+            ) : null}
           </div>
         );
       })}

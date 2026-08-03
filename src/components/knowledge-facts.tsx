@@ -1,7 +1,10 @@
 import { Globe, Lock, Users } from "lucide-react";
 import { MachineDataTables } from "@/components/machine-data-tables";
+import { inhaltToFacts } from "@/lib/import-facts";
+import { KnowledgeEdit } from "@/components/knowledge-edit";
 import { KnowledgeGemeldet } from "@/components/knowledge-gemeldet";
 import { KnowledgeHide } from "@/components/knowledge-hide";
+import { KnowledgeVerlauf } from "@/components/knowledge-verlauf";
 import {
   KnowledgeVerbergen,
   KnowledgeVerborgen,
@@ -36,6 +39,8 @@ type Eintrag = {
   verborgenAm: Date | null;
   verborgenGrund: string | null;
   verborgenVonName: string | null;
+  /** Anzahl gesicherter alter Stände (Bearbeitungs-Verlauf). */
+  revisionen: number;
 };
 
 const SICHT: Record<Sicht, { label: string; Icon: typeof Globe }> = {
@@ -44,13 +49,6 @@ const SICHT: Record<Sicht, { label: string; Icon: typeof Globe }> = {
   oeffentlich: { label: "öffentlich", Icon: Globe },
 };
 
-function inhaltToFacts(inhalt: unknown): { typ: string; daten: unknown }[] {
-  if (!inhalt || typeof inhalt !== "object") return [];
-  return Object.entries(inhalt as Record<string, unknown>).map(([typ, daten]) => ({
-    typ,
-    daten,
-  }));
-}
 
 export function KnowledgeFacts({
   eintraege,
@@ -141,6 +139,22 @@ export function KnowledgeFacts({
             ) : null}
             <KnowledgeGemeldet hilfreich={e.hilfreich} falsch={e.falsch} />
             <MachineDataTables facts={inhaltToFacts(e.inhalt)} />
+            {eigen ? (
+              <>
+                <KnowledgeEdit
+                  knowledgeId={e.id}
+                  machineId={machineId}
+                  typ="handbuch_fakten"
+                  titel={e.titel}
+                  inhalt={e.inhalt}
+                />
+                <KnowledgeVerlauf
+                  knowledgeId={e.id}
+                  anzahl={e.revisionen}
+                  typ="handbuch_fakten"
+                />
+              </>
+            ) : null}
           </div>
         );
       })}

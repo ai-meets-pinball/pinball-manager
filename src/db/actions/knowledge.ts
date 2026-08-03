@@ -3,9 +3,16 @@
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { knowledge, knowledgeOverrides, knowledgeSignals } from "@/db/schema";
-import { knowledgeSichtbarFuer } from "@/db/queries";
+import {
+  knowledge,
+  knowledgeOverrides,
+  knowledgeRevisions,
+  knowledgeSignals,
+} from "@/db/schema";
+import { getKnowledgeRevisions, knowledgeSichtbarFuer } from "@/db/queries";
+import { parseImportedFacts } from "@/lib/import-facts";
 import { isSuperAdmin, kannKuratieren, requireUser } from "@/lib/session";
+import { FACT_TYPES, troubleshootingGuideSchema } from "@/lib/validators";
 import type { FormState } from "@/db/actions/clubs";
 
 /*
@@ -88,6 +95,112 @@ export async function setKnowledgeOverride(formData: FormData): Promise<void> {
   }
 
   if (machineId) revalidatePath(`/machines/${machineId}`);
+}
+
+/*
+  In-Place-Bearbeitung (Phase 5): Titel + Inhalt eines EIGENEN Wissenseintrags
+  ändern — die id bleibt stabil (Signale/Overrides überleben), der alte Stand
+  wird vorher als Revision gesichert. Der Inhalt kommt als JSON-Text und wird je
+  Typ autoritativ validiert: Fakten über `parseImportedFacts` (dieselbe Prüfung
+  wie beim Import), Guides über `troubleshootingGuideSchema` — dabei bleibt der
+  Umschlag (websuche, model) des bestehenden Eintrags erhalten. `sourceType` und
+  Sichtbarkeit ändert ein Edit bewusst nicht.
+*/
+export async function updateKnowledge(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const id = String(formData.get("knowledgeId") ?? "");
+  const machineId = String(formData.get("machineId") ?? "");
+  const titel = String(formData.get("titel") ?? "").trim();
+  const inhaltText = String(formData.get("inhalt") ?? "");
+  const kommentar = String(formData.get("kommentar") ?? "").trim();
+
+  const currentUser = await requireUser();
+  const [k] = await db
+    .select({
+      typ: knowledge.typ,
+      titel: knowledge.titel,
+      inhalt: knowledge.inhalt,
+      createdBy: knowledge.createdBy,
+    })
+    .from(knowledge)
+    .where(eq(knowledge.id, id))
+    .limit(1);
+  if (!k) return { error: "Wissenseintrag nicht gefunden." };
+  if (k.createdBy !== currentUser.id && !isSuperAdmin(currentUser)) {
+    return { error: "Nur der Autor darf den Eintrag bearbeiten." };
+  }
+  if (!titel) return { error: "Titel ist erforderlich." };
+
+  let inhalt: unknown;
+  if (k.typ === "handbuch_fakten") {
+    const parsed = parseImportedFacts(inhaltText);
+    if (!parsed.ok || !parsed.result) {
+      return { error: parsed.errors[0] ?? "Ungültige Fakten-Struktur." };
+    }
+    // Wie beim Import/Extrakt: nur die vorhandenen (nicht-leeren) Typen speichern.
+    const result = parsed.result;
+    inhalt = Object.fromEntries(
+      FACT_TYPES.filter((t) => result[t].rows.length > 0).map((t) => [
+        t,
+        result[t],
+      ]),
+    );
+  } else if (k.typ === "troubleshooting") {
+    let roh: unknown;
+    try {
+      roh = JSON.parse(inhaltText);
+    } catch {
+      return { error: "Kein gültiges JSON." };
+    }
+    const parsed = troubleshootingGuideSchema.safeParse(roh);
+    if (!parsed.success) {
+      return {
+        error: `Ungültige Guide-Struktur: ${parsed.error.issues[0]?.message ?? "unbekannt"}`,
+      };
+    }
+    // Umschlag (websuche, model) des bestehenden Eintrags erhalten.
+    const umschlag =
+      k.inhalt && typeof k.inhalt === "object"
+        ? (k.inhalt as Record<string, unknown>)
+        : {};
+    inhalt = { ...umschlag, guide: parsed.data };
+  } else {
+    return { error: "Dieser Eintragstyp ist nicht bearbeitbar." };
+  }
+
+  await db.transaction(async (tx) => {
+    await tx.insert(knowledgeRevisions).values({
+      knowledgeId: id,
+      titel: k.titel,
+      inhalt: k.inhalt,
+      editedBy: currentUser.id,
+      kommentar: kommentar || null,
+    });
+    await tx
+      .update(knowledge)
+      .set({ titel, inhalt, updatedAt: new Date() })
+      .where(eq(knowledge.id, id));
+  });
+
+  if (machineId) revalidatePath(`/machines/${machineId}`);
+  return { message: "Eintrag gespeichert." };
+}
+
+/** Verlauf eines Wissenseintrags — nur für den Autor (oder Super-Admin): alte
+    Stände können aus Zeiten anderer Sichtbarkeit stammen und gehören nicht in
+    fremde Hände. Lazy-Datenlader für den Verlauf-Aufklapper. */
+export async function loadKnowledgeRevisions(knowledgeId: string) {
+  const currentUser = await requireUser();
+  const [k] = await db
+    .select({ createdBy: knowledge.createdBy })
+    .from(knowledge)
+    .where(eq(knowledge.id, knowledgeId))
+    .limit(1);
+  if (!k) return [];
+  if (k.createdBy !== currentUser.id && !isSuperAdmin(currentUser)) return [];
+  return getKnowledgeRevisions(knowledgeId);
 }
 
 /*
