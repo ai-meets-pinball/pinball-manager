@@ -161,6 +161,10 @@ create table knowledge (
     check (num_nonnulls(generation_id, model_id, machine_id) = 1)
 );
 
+-- UMGESETZT (08/2026, Migration 0030). Abweichung: edited_by ist `text`
+-- (Better-Auth-User-Id, wie knowledge.created_by). Eine Revision speichert den
+-- Stand VOR der Änderung; geschrieben von updateKnowledge (In-Place-Edit) und
+-- von der Neu-Generierung/Import (facts-store, schreibeMitRevision).
 create table knowledge_revisions (
   id            uuid primary key,
   knowledge_id  uuid not null references knowledge(id) on delete cascade,

@@ -17,6 +17,18 @@ import {
 
 export type ExtractResult = ReturnType<typeof extractSchema.parse>;
 
+/** `knowledge.inhalt` (extractSchema-Objekt, nur vorhandene Typen) in die
+    {typ, daten}[]-Form von `MachineDataTables` transformieren. Liegt hier
+    (reines Modul), weil Server- UND Client-Komponenten sie aufrufen. */
+export function inhaltToFacts(
+  inhalt: unknown,
+): { typ: string; daten: unknown }[] {
+  if (!inhalt || typeof inhalt !== "object") return [];
+  return Object.entries(inhalt as Record<string, unknown>).map(
+    ([typ, daten]) => ({ typ, daten }),
+  );
+}
+
 /** Kurzbericht je vorhandenem Typ für die Vorschau. */
 export type FactReport = {
   typ: FactType;
