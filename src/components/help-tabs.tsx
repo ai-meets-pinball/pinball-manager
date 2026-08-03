@@ -1,21 +1,27 @@
 import Link from "next/link";
 
-/** Umschalter zwischen Anleitung, Techstack und (nur Super-Admins) der
-    Aufbau-Dokumentation. */
+/** Umschalter zwischen Anleitung, Techstack, der Admin-Hilfe (Kuratoren +
+    Super-Admins) und (nur Super-Admins) der Aufbau-Dokumentation. */
 const tabs = [
-  { href: "/help", key: "anleitung", label: "Anleitung", nurAdmin: false },
-  { href: "/help/techstack", key: "techstack", label: "Techstack", nurAdmin: false },
-  { href: "/help/setup", key: "setup", label: "Aufbau & Betrieb", nurAdmin: true },
+  { href: "/help", key: "anleitung", label: "Anleitung", nurAdmin: false, nurKurator: false },
+  { href: "/help/techstack", key: "techstack", label: "Techstack", nurAdmin: false, nurKurator: false },
+  { href: "/help/admin", key: "admin", label: "Administration", nurAdmin: false, nurKurator: true },
+  { href: "/help/setup", key: "setup", label: "Aufbau & Betrieb", nurAdmin: true, nurKurator: false },
 ] as const;
 
 export function HelpTabs({
   active,
   istSuperAdmin = false,
+  darfKuratieren = false,
 }: {
-  active: "anleitung" | "techstack" | "setup";
+  active: "anleitung" | "techstack" | "admin" | "setup";
   istSuperAdmin?: boolean;
+  /** Kurator ODER Super-Admin — zeigt den Tab „Administration". */
+  darfKuratieren?: boolean;
 }) {
-  const sichtbar = tabs.filter((t) => !t.nurAdmin || istSuperAdmin);
+  const sichtbar = tabs.filter(
+    (t) => (!t.nurAdmin || istSuperAdmin) && (!t.nurKurator || darfKuratieren),
+  );
 
   return (
     <div className="flex gap-1 border-b border-[var(--color-border)]">

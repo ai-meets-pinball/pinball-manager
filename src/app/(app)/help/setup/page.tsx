@@ -490,7 +490,7 @@ export default async function SetupHelpPage() {
 
   return (
     <div className="space-y-8">
-      <HelpTabs active="setup" istSuperAdmin />
+      <HelpTabs active="setup" istSuperAdmin darfKuratieren />
 
       <div className="space-y-2">
         <h1 className="flex items-center gap-2 text-2xl font-bold">
