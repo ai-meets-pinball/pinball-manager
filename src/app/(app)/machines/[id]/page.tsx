@@ -17,6 +17,7 @@ import { SharedRepairs } from "@/components/shared-repairs";
 import { StatusSeit } from "@/components/status-seit";
 import { StatusSteuerung } from "@/components/status-steuerung";
 import { TroubleshootingGenerate } from "@/components/troubleshooting-generate";
+import { TroubleshootingJsonImport } from "@/components/troubleshooting-json-import";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { deleteMachine } from "@/db/actions/machines";
@@ -41,6 +42,7 @@ import {
   repairs as repairsTable,
 } from "@/db/schema";
 import { modellName, relativeZeit } from "@/lib/format";
+import { buildGuideImportPrompt } from "@/lib/import-guide";
 import { kannKuratieren, requireMachineAccess } from "@/lib/session";
 import { availableProviders } from "@/lib/ai/provider";
 
@@ -192,8 +194,10 @@ export default async function MachineDetailPage({
   const shareDefaults = await getShareDefaults(machine);
   const repairShares = await getRepairShares(id);
 
-  // Der Guide erscheint erst, wenn es Handbuch-Fakten oder einen Guide gibt.
-  const guideSichtbar = knowledgeFacts.length > 0 || guides.length > 0;
+  // Der Guide-Reiter: für Bearbeiter immer sichtbar (Erzeugen/Importieren geht
+  // auch ohne Handbuch-Fakten); Nur-Leser sehen ihn erst, wenn Inhalte existieren.
+  const guideSichtbar =
+    knowledgeFacts.length > 0 || guides.length > 0 || darf.bearbeiten;
 
   // Zwei-Ebenen-Navigation: „Betrieb" = aktueller Zustand (Fehler, Wartung),
   // „Wissensbasis" = angesammeltes Wissen (Reparatur-Historie/DB, Handbuch-Fakten,
@@ -596,7 +600,9 @@ export default async function MachineDetailPage({
               Community-Quellen.
               {ollamaVerfuegbar
                 ? " Das lokale Modell (Ollama) arbeitet ohne Websuche — der Guide wird dann entsprechend gekennzeichnet."
-                : ""}
+                : ""}{" "}
+              Alternativ lässt sich ein fertiger Guide als JSON importieren
+              (Prompt unten kopieren).
             </p>
           )}
 
@@ -608,6 +614,19 @@ export default async function MachineDetailPage({
               centralKey={kiCentralKey}
               generation={guideGeneration}
             />
+          ) : null}
+
+          {/* Alternative ohne KI-Verarbeitung: fertiges Guide-JSON importieren
+              (gleiches Prinzip wie beim Handbuch-Fakten-Import). */}
+          {darf.bearbeiten ? (
+            <Card className="space-y-3">
+              <TroubleshootingJsonImport
+                machineId={machine.id}
+                prompt={buildGuideImportPrompt(machine)}
+                vorhanden={eigenerGuide}
+                generation={guideGeneration}
+              />
+            </Card>
           ) : null}
         </div>
       ) : null}

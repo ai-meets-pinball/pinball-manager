@@ -148,6 +148,11 @@ export function TroubleshootingGuideView({
   if (!res.success) return null;
   const guide = res.data;
 
+  // Extern erstellt und als JSON importiert (db/actions/machine-data.ts):
+  // Herkunft statt KI-Modell ausweisen; ob mit Websuche gearbeitet wurde,
+  // wissen wir nicht — darum keine „ohne Websuche"-Warnung.
+  const importiert = model === "import";
+
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-2">
@@ -160,7 +165,7 @@ export function TroubleshootingGuideView({
 
       {/* Ohne Websuche (lokales Modell) prominent kennzeichnen: der Guide stammt
           nur aus dem Modellwissen und ist nicht gegen Community-Quellen geprüft. */}
-      {!websuche ? (
+      {!websuche && !importiert ? (
         <WarnBlock text="Ohne Websuche erstellt — nur aus dem Modellwissen (lokales Modell). Plattform und bekannte Serienfehler wurden NICHT gegen Community-Quellen (IPDB, PinWiki, Pinside) verifiziert. Vor Arbeiten unbedingt mit Original-Manual und Schaltplan gegenprüfen." />
       ) : null}
 
@@ -200,11 +205,22 @@ export function TroubleshootingGuideView({
       ) : null}
 
       <p className="text-xs text-[var(--color-muted)]">
-        KI-generiert ({model}
-        {websuche ? ", mit Websuche" : ", ohne Websuche"}) am{" "}
-        {createdAt.toLocaleDateString("de-DE")}. Ein KI-generierter Leitfaden —
-        vor sicherheitsrelevanten Arbeiten mit Original-Manual und Schaltplan
-        gegenprüfen.
+        {importiert ? (
+          <>
+            Importiert (extern erstellt) am{" "}
+            {createdAt.toLocaleDateString("de-DE")}. Ein extern erstellter
+            Leitfaden — vor sicherheitsrelevanten Arbeiten mit Original-Manual
+            und Schaltplan gegenprüfen.
+          </>
+        ) : (
+          <>
+            KI-generiert ({model}
+            {websuche ? ", mit Websuche" : ", ohne Websuche"}) am{" "}
+            {createdAt.toLocaleDateString("de-DE")}. Ein KI-generierter
+            Leitfaden — vor sicherheitsrelevanten Arbeiten mit Original-Manual
+            und Schaltplan gegenprüfen.
+          </>
+        )}
       </p>
     </div>
   );
