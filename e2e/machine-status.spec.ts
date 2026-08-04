@@ -139,4 +139,16 @@ test.describe("Maschinen-Status (Dashboard)", () => {
     await expect(page.getByText("Letzte Wartung")).toBeVisible();
     await expect(page.getByText("heute")).toBeVisible();
   });
+
+  test("Übersicht listet nicht spielbereite Maschinen", async ({ page }) => {
+    // machineId steht nach den obigen Tests auf „eingeschraenkt".
+    expect((await machineStatus(machineId)).status).toBe("eingeschraenkt");
+    await loginAs(page, USERS.owner);
+    await page.goto("/dashboard");
+    const sektion = page
+      .locator("section#status")
+      .filter({ hasText: "Nicht spielbereite Maschinen" });
+    await expect(sektion).toBeVisible();
+    await expect(sektion.getByText("Eingeschränkt").first()).toBeVisible();
+  });
 });
