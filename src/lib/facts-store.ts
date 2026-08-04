@@ -139,6 +139,8 @@ export async function upsertTroubleshootingKnowledge(opts: {
   aufGeneration?: boolean;
   generationId?: string | null;
   generationName?: string | null;
+  /** Revisions-Kommentar (Verlauf), z. B. "Guide importiert" beim JSON-Import. */
+  kommentar?: string;
 }): Promise<void> {
   const {
     userId,
@@ -151,6 +153,7 @@ export async function upsertTroubleshootingKnowledge(opts: {
     aufGeneration,
     generationId,
     generationName,
+    kommentar,
   } = opts;
 
   // Zielebene bestimmen: Generation (bewusst gewählt) > Modell > Maschine.
@@ -172,7 +175,7 @@ export async function upsertTroubleshootingKnowledge(opts: {
       ziel.where,
     )!,
     userId,
-    kommentar: "Guide neu generiert",
+    kommentar: kommentar ?? "Guide neu generiert",
     neu: {
       typ: "troubleshooting",
       titel,

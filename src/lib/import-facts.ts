@@ -97,8 +97,9 @@ Regeln:
 - Keine Duplikate, keine wiederholten Kopfzeilen.
 - Antworte NUR mit dem JSON — keine Erklärung, kein Markdown, keine \`\`\`-Codezäune.`;
 
-/** Schneidet das erste JSON-Objekt aus dem Text (toleriert Prosa/```-Zäune davor/danach). */
-function sliceJsonObject(raw: string): string | null {
+/** Schneidet das erste JSON-Objekt aus dem Text (toleriert Prosa/```-Zäune
+    davor/danach). Auch vom Guide-Import (lib/import-guide.ts) genutzt. */
+export function sliceJsonObject(raw: string): string | null {
   const start = raw.indexOf("{");
   const end = raw.lastIndexOf("}");
   if (start < 0 || end < start) return null;

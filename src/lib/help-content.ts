@@ -269,19 +269,23 @@ export const ANLEITUNG: HilfeSektion[] = [
     key: "troubleshooting-guide",
     titel: "Troubleshooting-Guide",
     einleitung:
-      "Ein KI-erzeugter FAQ- und Reparatur-Leitfaden für genau dein Modell — verfügbar, sobald Handbuch-Daten vorliegen.",
+      "Ein FAQ- und Reparatur-Leitfaden für genau dein Modell — von der KI erzeugt oder als JSON importiert.",
     schritte: [
       {
-        titel: "Voraussetzung",
-        text: "Der Guide-Reiter erscheint auf der Maschinen-Detailseite, sobald für die Maschine Handbuch-Daten (z. B. Lampen-/Schalter-Matrix) ausgewertet wurden.",
+        titel: "Wo",
+        text: "Der Guide-Reiter auf der Maschinen-Detailseite ist mit Schreibrecht immer sichtbar. Wer nur lesen darf, sieht ihn, sobald Handbuch-Daten oder Guides vorliegen.",
       },
       {
         titel: "Erstellen",
         text: "Im Reiter »Guide« auf »Troubleshooting-Guide erstellen« (nur mit Schreibrecht). Claude bestimmt zunächst die Plattform bzw. Geräte-Generation und prüft sie samt bekannter Serienfehler per Websuche gegen Community-Quellen (IPDB, PinWiki, Pinside). Das dauert ein bis zwei Minuten.",
       },
       {
+        titel: "Alternative ohne KI: JSON-Import",
+        text: "Wie bei den Handbuch-Daten geht es auch ohne die KI-Erstellung in der App: Im Reiter »Guide« den vorbereiteten Prompt kopieren (er enthält bereits Hersteller, Modell und Baujahr), in ChatGPT ausführen und die JSON-Ausgabe einfügen. »Prüfen« zeigt eine Vorschau samt Warnungen, erst dann wird importiert. Der Import ersetzt deinen bisherigen Guide auf der gewählten Ebene — der alte Stand wandert in den Verlauf. Importierte Guides sind als »Importiert (extern erstellt)« gekennzeichnet.",
+      },
+      {
         titel: "Gültigkeit: Modell oder Generation",
-        text: "Hat das Modell eine Geräte-Generation (z. B. WPC-95), wählst du beim Erstellen: »Nur dieses Modell« oder »Ganze Generation«. Ein Generation-Guide erscheint automatisch bei ALLEN Modellen dieser Generation — praktisch für plattformweite Themen wie Boards und Netzteile.",
+        text: "Hat das Modell eine Geräte-Generation (z. B. WPC-95), wählst du beim Erstellen bzw. Import: »Nur dieses Modell« oder »Ganze Generation«. Ein Generation-Guide erscheint automatisch bei ALLEN Modellen dieser Generation — praktisch für plattformweite Themen wie Boards und Netzteile.",
       },
       {
         titel: "Was drinsteht",
@@ -293,7 +297,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Wichtig",
-        text: "Der Guide ist KI-generiert. Vor sicherheitsrelevanten Arbeiten immer mit dem Original-Manual und dem Schaltplan gegenprüfen.",
+        text: "Der Guide ist KI-generiert bzw. extern erstellt. Vor sicherheitsrelevanten Arbeiten immer mit dem Original-Manual und dem Schaltplan gegenprüfen.",
       },
     ],
   },
