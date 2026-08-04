@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { faults, repairFaults, repairs } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
+import { aktualisiereMaschinenStatus } from "@/db/actions/machine-status";
 import { repairSchema } from "@/lib/validators";
 
 export type FormState = { error?: string };
@@ -81,6 +82,8 @@ export async function createRepair(
     }
   });
 
+  // Eine erledigte Reparatur kann einen kritischen Fehler geräumt haben.
+  await aktualisiereMaschinenStatus(machineId);
   revalidatePath(`/machines/${machineId}`);
   redirect(`/machines/${machineId}`);
 }
@@ -141,6 +144,7 @@ export async function updateRepair(
     }
   });
 
+  await aktualisiereMaschinenStatus(machineId);
   revalidatePath(`/machines/${machineId}`);
   redirect(`/machines/${machineId}`);
 }
@@ -155,5 +159,7 @@ export async function deleteRepair(formData: FormData): Promise<void> {
     .delete(repairs)
     .where(and(eq(repairs.id, id), eq(repairs.machineId, machineId)));
 
+  // BEWUSST kein aktualisiereMaschinenStatus: das Löschen einer Reparatur
+  // öffnet keinen behobenen Fehler wieder — der Status ändert sich nicht.
   revalidatePath(`/machines/${machineId}`);
 }

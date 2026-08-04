@@ -5,6 +5,8 @@ import { Boxes, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { FaultList } from "@/components/fault-list";
 import { KnowledgeFacts } from "@/components/knowledge-facts";
 import { KnowledgeGuides } from "@/components/knowledge-guides";
+import { LiveClock } from "@/components/live-clock";
+import { MachineFaultsPreview } from "@/components/machine-faults-preview";
 import { MachineOverview, type MachineKpi } from "@/components/machine-overview";
 import { MachineTabs, type MachineTab } from "@/components/machine-tabs";
 import { MaintenancePlan } from "@/components/maintenance-plan";
@@ -12,28 +14,33 @@ import { ManualJsonImport } from "@/components/manual-json-import";
 import { ManualUpload } from "@/components/manual-upload";
 import { RepairList } from "@/components/repair-list";
 import { SharedRepairs } from "@/components/shared-repairs";
+import { StatusSeit } from "@/components/status-seit";
+import { StatusSteuerung } from "@/components/status-steuerung";
 import { TroubleshootingGenerate } from "@/components/troubleshooting-generate";
 import { Card } from "@/components/ui/card";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { deleteMachine } from "@/db/actions/machines";
 import { db } from "@/db";
 import {
+  getLetzteWartung,
+  getMachineFaults,
   getMachineGuides,
   getMachineKnowledge,
   getMaintenanceTasks,
   getModelGeneration,
   getModelGuides,
   getModelKnowledge,
+  getNeueFehlerSeitGestern,
   getRepairShares,
   getShareDefaults,
   getSharedRepairsForModel,
   getUserClubs,
 } from "@/db/queries";
 import {
-  faults as faultsTable,
   maintenancePlans as maintenancePlansTable,
   repairs as repairsTable,
 } from "@/db/schema";
-import { modellName } from "@/lib/format";
+import { modellName, relativeZeit } from "@/lib/format";
 import { kannKuratieren, requireMachineAccess } from "@/lib/session";
 import { availableProviders } from "@/lib/ai/provider";
 
@@ -108,15 +115,20 @@ export default async function MachineDetailPage({
     faultStatus && faultStatus !== "alle" ? faultStatus : undefined;
   // Alle Fehler laden (für die Badge-Zähler); die angezeigte Liste bei aktivem
   // Statusfilter in-memory filtern, damit die Zähler unabhängig vom Filter stimmen.
-  const alleFehler = await db.query.faults.findMany({
-    where: eq(faultsTable.machineId, id),
-    orderBy: [desc(faultsTable.datum)],
-  });
+  // getMachineFaults liefert den Melder-Namen mit (Übersicht + Liste).
+  const alleFehler = await getMachineFaults(id);
   const machineFaults = aktiverFilter
     ? alleFehler.filter((f) => f.status === aktiverFilter)
     : alleFehler;
   const fehlerGesamt = alleFehler.length;
-  const fehlerOffen = alleFehler.filter((f) => f.status !== "behoben").length;
+  const offeneFehler = alleFehler.filter((f) => f.status !== "behoben");
+  const fehlerOffen = offeneFehler.length;
+  const fehlerKritischOffen = offeneFehler.filter(
+    (f) => f.prioritaet === "kritisch",
+  ).length;
+  // Dashboard-Daten: letzte Wartung + „seit gestern"-Deltas.
+  const letzteWartung = await getLetzteWartung(id);
+  const deltaFehler = await getNeueFehlerSeitGestern(id);
 
   // Reparaturen samt ihrer behobenen Fehler (n:m, Datenmodell-Redesign Phase 3).
   const machineRepairsRoh = await db.query.repairs.findMany({
@@ -267,38 +279,58 @@ export default async function MachineDetailPage({
         }))
       : undefined;
 
-  // KPI-Karten der Übersicht (klickbar → öffnen den jeweiligen Reiter).
+  // KPI-Karten der Übersicht (Dashboard). Verlinkte öffnen den Reiter; die
+  // Status-Karte ist kein Link (Steuerung liegt unten in der Übersicht).
   const kpis: MachineKpi[] = [
     {
-      key: "fehler",
-      zahl: fehlerGesamt,
-      label: fehlerOffen > 0 ? `${fehlerOffen} offen` : "Fehler",
+      key: "status",
+      zahl: <StatusBadge value={machine.status} />,
+      label: "Maschinenstatus",
+      tone: "neutral",
+      sub: <StatusSeit seit={machine.statusSeit.toISOString()} />,
+    },
+    {
+      key: "fehler-offen",
+      href: `/machines/${machine.id}?bereich=fehler`,
+      zahl: fehlerOffen,
+      label: "Offene Fehler",
       tone: fehlerOffen > 0 ? "warn" : "neutral",
+      sub:
+        deltaFehler.gesamt > 0 ? `↑ ${deltaFehler.gesamt} seit gestern` : undefined,
+    },
+    {
+      key: "fehler-kritisch",
+      href: `/machines/${machine.id}?bereich=fehler`,
+      zahl: fehlerKritischOffen,
+      label: "Kritische Fehler",
+      tone: fehlerKritischOffen > 0 ? "danger" : "neutral",
+      sub:
+        deltaFehler.kritisch > 0
+          ? `↑ ${deltaFehler.kritisch} seit gestern`
+          : undefined,
+    },
+    {
+      key: "wartung",
+      href: `/machines/${machine.id}?bereich=wartung`,
+      zahl: letzteWartung ? letzteWartung.toLocaleDateString("de-DE") : "—",
+      label: "Letzte Wartung",
+      tone: wartungFaellig > 0 ? "danger" : wartungBald > 0 ? "warn" : "success",
+      sub: letzteWartung
+        ? relativeZeit(letzteWartung)
+        : wartungFaellig > 0
+          ? `${wartungFaellig} fällig`
+          : undefined,
     },
     {
       key: "reparaturen",
+      href: `/machines/${machine.id}?bereich=reparaturen`,
       zahl: machineRepairs.length,
       label: "Reparaturen",
       tone: "neutral",
     },
     {
-      key: "wartung",
-      zahl:
-        wartungFaellig > 0
-          ? wartungFaellig
-          : wartungBald > 0
-            ? wartungBald
-            : wartungsTasks.length,
-      label:
-        wartungFaellig > 0
-          ? "fällig"
-          : wartungBald > 0
-            ? "bald fällig"
-            : "Wartung",
-      tone: wartungFaellig > 0 ? "danger" : wartungBald > 0 ? "warn" : "neutral",
-    },
-    {
       key: "handbuch",
+      href: `/machines/${machine.id}?bereich=handbuch`,
       zahl: knowledgeFacts.length,
       label: knowledgeFacts.length > 0 ? "Technische Daten" : "Handbuch",
       tone: "neutral",
@@ -307,6 +339,7 @@ export default async function MachineDetailPage({
       ? [
           {
             key: "guide",
+            href: `/machines/${machine.id}?bereich=guide`,
             zahl: guides.length > 0 ? "✓" : "–",
             label: "Guide",
             tone: "neutral",
@@ -320,7 +353,10 @@ export default async function MachineDetailPage({
       {/* Kopf: Identität der Maschine + schreibende Aktionen — immer sichtbar. */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold">{modellName(machine)}</h1>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-2xl font-bold">{modellName(machine)}</h1>
+            <StatusBadge value={machine.status} />
+          </div>
           <p className="text-[var(--color-muted)]">
             {machine.baujahr ?? "Baujahr unbekannt"}
           </p>
@@ -330,7 +366,8 @@ export default async function MachineDetailPage({
             </p>
           ) : null}
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-4">
+          <LiveClock />
           {/* Schreibende Bedienelemente nur, wenn der Nutzer auch schreiben darf
               (Supporter haben nur Lesezugriff). */}
           {darf.bearbeiten ? (
@@ -363,14 +400,33 @@ export default async function MachineDetailPage({
 
       {/* ── Übersicht: Foto, OPDB/IPDB und Status-Dashboard ──────────────────── */}
       {active === "uebersicht" ? (
-        <MachineOverview
-          machineId={machine.id}
-          fotoUrl={machine.fotoUrl}
-          fotoAlt={modellName(machine)}
-          opdbRef={machine.opdbRef}
-          ipdbRef={machine.ipdbRef}
-          kpis={kpis}
-        />
+        <div className="space-y-4">
+          {darf.bearbeiten ? (
+            <StatusSteuerung
+              machineId={machine.id}
+              status={machine.status}
+              manuell={machine.statusManuell}
+            />
+          ) : machine.statusManuell && machine.statusGrund ? (
+            <p className="text-sm text-[var(--color-muted)]">
+              Status manuell gesetzt: {machine.statusGrund}
+            </p>
+          ) : null}
+          <MachineOverview
+            machineId={machine.id}
+            fotoUrl={machine.fotoUrl}
+            fotoAlt={modellName(machine)}
+            opdbRef={machine.opdbRef}
+            ipdbRef={machine.ipdbRef}
+            kpis={kpis}
+            faultsPreview={
+              <MachineFaultsPreview
+                machineId={machine.id}
+                faults={offeneFehler.slice(0, 5)}
+              />
+            }
+          />
+        </div>
       ) : null}
 
       {/* ── Fehler ───────────────────────────────────────────────────────────── */}

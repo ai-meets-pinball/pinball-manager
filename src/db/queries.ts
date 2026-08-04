@@ -3,6 +3,7 @@ import {
   count,
   desc,
   eq,
+  gte,
   ilike,
   inArray,
   isNotNull,
@@ -759,6 +760,67 @@ export async function getOpenFaultsForMachines(machineIds: string[]) {
       and(inArray(faults.machineId, machineIds), ne(faults.status, "behoben")),
     )
     .orderBy(desc(faults.datum));
+}
+
+/* ── Maschinen-Dashboard ──────────────────────────────────────────────────── */
+
+/** Fehler EINER Maschine mit Melder-Name (gemeldetVon → user.name). Speist die
+    Fehler-Vorschau auf der Übersicht (nurOffen + limit) UND die volle Liste. */
+export async function getMachineFaults(
+  machineId: string,
+  opts: { nurOffen?: boolean; limit?: number } = {},
+) {
+  const q = db
+    .select({
+      id: faults.id,
+      beschreibung: faults.beschreibung,
+      kategorie: faults.kategorie,
+      prioritaet: faults.prioritaet,
+      status: faults.status,
+      datum: faults.datum,
+      melderName: user.name,
+    })
+    .from(faults)
+    .leftJoin(user, eq(user.id, faults.gemeldetVon))
+    .where(
+      opts.nurOffen
+        ? and(eq(faults.machineId, machineId), ne(faults.status, "behoben"))
+        : eq(faults.machineId, machineId),
+    )
+    .orderBy(desc(faults.datum));
+  return opts.limit ? q.limit(opts.limit) : q;
+}
+
+/** Datum der jüngsten erledigten Wartung dieser Maschine (oder null). */
+export async function getLetzteWartung(machineId: string): Promise<Date | null> {
+  const [row] = await db
+    .select({ datum: maintenanceLog.datum })
+    .from(maintenanceLog)
+    .where(eq(maintenanceLog.machineId, machineId))
+    .orderBy(desc(maintenanceLog.datum))
+    .limit(1);
+  return row?.datum ?? null;
+}
+
+/** Neue Fehler seit gestern 00:00 (lokal) — gesamt und davon kritisch. Für die
+    „↑ X seit gestern"-Deltas auf den Fehler-Kacheln. */
+export async function getNeueFehlerSeitGestern(
+  machineId: string,
+): Promise<{ gesamt: number; kritisch: number }> {
+  const jetzt = new Date();
+  const grenze = new Date(
+    jetzt.getFullYear(),
+    jetzt.getMonth(),
+    jetzt.getDate() - 1,
+  );
+  const [row] = await db
+    .select({
+      gesamt: count(),
+      kritisch: sql<number>`count(*) filter (where ${faults.prioritaet} = 'kritisch')::int`,
+    })
+    .from(faults)
+    .where(and(eq(faults.machineId, machineId), gte(faults.datum, grenze)));
+  return { gesamt: Number(row?.gesamt ?? 0), kritisch: Number(row?.kritisch ?? 0) };
 }
 
 /** Anzahl fälliger (überfällig oder heute) Wartungen je Maschine — für die

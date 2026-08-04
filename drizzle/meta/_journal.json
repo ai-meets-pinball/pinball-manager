@@ -232,6 +232,13 @@
       "when": 1785860070903,
       "tag": "0032_enable_rls_lockdown",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1785867073987,
+      "tag": "0033_smart_raza",
+      "breakpoints": true
     }
   ]
 }

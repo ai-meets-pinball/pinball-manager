@@ -24,21 +24,29 @@ const tone: Record<string, string> = {
   superadmin: "var(--color-primary)",
   supporter: "var(--color-accent)",
   kurator: "var(--color-success)",
+  // Maschinen-Betriebsstatus (Dashboard)
+  spielbereit: "var(--color-success)",
+  eingeschraenkt: "var(--color-warn)",
+  ausser_betrieb: "var(--color-danger)",
   // Maschinen-Herkunft (Admin-Sichtbarkeitsansicht)
   eigene: "var(--color-primary)",
   Club: "var(--color-accent)",
 };
 
-/** Anzeigenamen für Club-Rollen (Enum-Werte → deutsche Labels). */
+/** Anzeigenamen für Enum-Werte, die nicht schon deutsch sind. */
 export const ROLE_LABEL: Record<string, string> = {
   owner: "Owner",
   admin: "Admin",
   member: "Mitglied",
+  // Maschinen-Betriebsstatus
+  spielbereit: "Spielbereit",
+  eingeschraenkt: "Eingeschränkt",
+  ausser_betrieb: "Außer Betrieb",
 };
 
 export function StatusBadge({ value }: { value: string }) {
   const c = tone[value] ?? "var(--color-faint)";
-  // Rollen-Enums (owner/admin/member) auf deutsche Labels abbilden; alles andere
+  // Enum-Werte (Rollen, Status) auf deutsche Labels abbilden; alles andere
   // (Fehler-/Reparatur-Status) ist bereits deutsch und bleibt unverändert.
   const label = ROLE_LABEL[value] ?? value;
   return (

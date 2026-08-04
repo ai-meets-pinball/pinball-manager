@@ -35,3 +35,24 @@ export function initialen(u: {
   }
   return (u.email?.[0] ?? "?").toUpperCase();
 }
+
+/*
+  Relative Zeitangabe für die Anzeige („vor 7 Tagen"). Bewusst tagegenau (über
+  lokale Mitternacht gerechnet), nicht sekundengenau — für „Letzte Wartung"
+  o. Ä. Reine Date-Mathematik, keine Bibliothek.
+*/
+export function relativeZeit(d: Date, jetzt: Date = new Date()): string {
+  const tag = (x: Date) =>
+    new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const tage = Math.round((tag(jetzt) - tag(d)) / 86_400_000);
+  if (tage < 0) return "in der Zukunft";
+  if (tage === 0) return "heute";
+  if (tage === 1) return "gestern";
+  if (tage < 7) return `vor ${tage} Tagen`;
+  if (tage < 14) return "vor 1 Woche";
+  if (tage < 30) return `vor ${Math.floor(tage / 7)} Wochen`;
+  if (tage < 60) return "vor 1 Monat";
+  if (tage < 365) return `vor ${Math.floor(tage / 30)} Monaten`;
+  const jahre = Math.floor(tage / 365);
+  return jahre === 1 ? "vor 1 Jahr" : `vor ${jahre} Jahren`;
+}

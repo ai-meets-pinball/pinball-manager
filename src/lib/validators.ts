@@ -38,8 +38,14 @@ export const machineSchema = z.object({
 export const faultSchema = z.object({
   beschreibung: z.string().trim().min(1, "Beschreibung ist erforderlich"),
   kategorie: optionalString,
-  prioritaet: z.enum(["niedrig", "mittel", "hoch"]),
+  prioritaet: z.enum(["niedrig", "mittel", "hoch", "kritisch"]),
   status: z.enum(["offen", "in Arbeit", "behoben"]),
+});
+
+/** Maschinen-Betriebsstatus manuell setzen (Dashboard). */
+export const machineStatusSchema = z.object({
+  status: z.enum(["spielbereit", "eingeschraenkt", "ausser_betrieb"]),
+  grund: optionalString,
 });
 
 export const repairSchema = z.object({
