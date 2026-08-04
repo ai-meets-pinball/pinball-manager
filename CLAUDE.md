@@ -56,7 +56,8 @@ App runs on http://localhost:3000.
 
 These are deliberate decisions, not omissions — preserve them:
 
-1. **Authorization lives in the app layer, not the database.** Do **not** add Supabase Row-Level Security. Access control is enforced in TypeScript so it stays visible and teachable (PRD §3, §7). Supabase is treated as a plain Postgres + Storage backend.
+1. **Authorization lives in the app layer, not the database.** Do **not** add Supabase Row-Level Security *policies*. Access control is enforced in TypeScript so it stays visible and teachable (PRD §3, §7). Supabase is treated as a plain Postgres + Storage backend.
+   - **But: RLS is ENABLED (without any policies) on every table** since migration `0032` — solely to slam the door on Supabase's public PostgREST Data API (`/rest/v1/`), which would otherwise expose all tables to anyone with the anon key, bypassing the app entirely. No policies = deny-all for the API; the app is unaffected because it connects as the table owner. **Every NEW table's migration must include `ALTER TABLE "<name>" ENABLE ROW LEVEL SECURITY;`** or the Supabase security linter errors return.
 
 2. **Manual upload handling is intentional** — there is no "we don't look" model. The legal protection is the *pipeline architecture*, not contract clauses (PRD §6).
 

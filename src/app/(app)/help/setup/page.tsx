@@ -213,8 +213,10 @@ const abschnitte: Abschnitt[] = [
           "Weil der Bucket öffentlich ist, darf man Dateiendung und Dateityp NIE aus der hochgeladenen Datei übernehmen — sonst lädt jemand eine HTML-Datei hoch, die dann als aktive Seite ausgeliefert wird. Wir prüfen deshalb die ersten Bytes der Datei (siehe `src/lib/storage.ts`).",
       },
       {
-        titel: "Kein Row-Level-Security",
+        titel: "Keine Row-Level-Security-POLICIES — aber RLS als Türschloss",
         text: "Eine bewusste Entscheidung dieses Projekts: die Zugriffsregeln stehen NICHT in der Datenbank, sondern sichtbar im TypeScript-Code (`src/lib/session.ts`). Das ist leichter nachvollziehbar — verlangt aber, dass wirklich jeder Zugriffspfad durch diese Funktionen läuft.",
+        falle:
+          "Supabase liefert ungefragt eine öffentliche REST-API über alle Tabellen mit (PostgREST, /rest/v1/ mit dem Anon-Key) — ohne RLS liest darüber JEDER die komplette Datenbank, an der App vorbei (der Security-Linter meldet das als ERROR). Deshalb ist RLS seit Migration 0032 auf allen Tabellen AKTIVIERT, ohne eine einzige Policy: das ist deny-all für die API, die App bleibt als Tabellen-Eigentümer unberührt. Jede NEUE Tabelle braucht in ihrer Migration ebenfalls ENABLE ROW LEVEL SECURITY. Zusätzlich lohnt es sich, die Data API in den Supabase-Einstellungen ganz zu deaktivieren.",
       },
     ],
   },
