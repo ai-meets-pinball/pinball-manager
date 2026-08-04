@@ -225,6 +225,13 @@
       "when": 1785786834340,
       "tag": "0031_dear_secret_warriors",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1785860070903,
+      "tag": "0032_enable_rls_lockdown",
+      "breakpoints": true
     }
   ]
 }

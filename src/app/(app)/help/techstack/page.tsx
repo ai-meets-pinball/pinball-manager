@@ -198,8 +198,8 @@ const sections: StackSection[] = [
         name: "Autorisierung in der App-Schicht",
         version: "Muster",
         beschreibung:
-          "Jeder Datenzugriff läuft durch die require*-Helfer. Die eine Regel „Eigentümer ODER Club-Mitglied“ steht sichtbar im TypeScript — kein verstecktes Row-Level-Security in der DB. Fehler und Reparaturen erben ihre Rechte über die Maschine.",
-        imCode: "src/lib/session.ts",
+          "Jeder Datenzugriff läuft durch die require*-Helfer. Die eine Regel „Eigentümer ODER Club-Mitglied“ steht sichtbar im TypeScript — keine Zugriffslogik in der DB. Row-Level-Security ist zwar auf allen Tabellen AKTIVIERT, aber ohne einzige Policy: das sperrt nur Supabases öffentliche Data-API (deny-all), die diese App nie nutzt — die App verbindet sich als Tabellen-Eigentümer und bleibt unberührt. Fehler und Reparaturen erben ihre Rechte über die Maschine.",
+        imCode: "src/lib/session.ts, drizzle/0032_enable_rls_lockdown.sql",
       },
       {
         name: "Server Actions",
