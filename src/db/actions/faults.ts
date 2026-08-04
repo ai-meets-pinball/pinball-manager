@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { faults } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
+import { aktualisiereMaschinenStatus } from "@/db/actions/machine-status";
 import { faultSchema } from "@/lib/validators";
 
 export type FormState = { error?: string };
@@ -32,6 +33,7 @@ export async function createFault(
     gemeldetVon: user.id,
   });
 
+  await aktualisiereMaschinenStatus(machineId);
   revalidatePath(`/machines/${machineId}`);
   redirect(`/machines/${machineId}`);
 }
@@ -59,6 +61,7 @@ export async function updateFault(
     })
     .where(and(eq(faults.id, id), eq(faults.machineId, machineId)));
 
+  await aktualisiereMaschinenStatus(machineId);
   revalidatePath(`/machines/${machineId}`);
   redirect(`/machines/${machineId}`);
 }
@@ -72,5 +75,6 @@ export async function deleteFault(formData: FormData): Promise<void> {
     .delete(faults)
     .where(and(eq(faults.id, id), eq(faults.machineId, machineId)));
 
+  await aktualisiereMaschinenStatus(machineId);
   revalidatePath(`/machines/${machineId}`);
 }

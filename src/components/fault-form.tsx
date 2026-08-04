@@ -11,7 +11,7 @@ type FaultValues = {
   id: string;
   beschreibung: string;
   kategorie: string | null;
-  prioritaet: "niedrig" | "mittel" | "hoch";
+  prioritaet: "niedrig" | "mittel" | "hoch" | "kritisch";
   status: "offen" | "in Arbeit" | "behoben";
 };
 
@@ -60,6 +60,7 @@ export function FaultForm({
             <option value="niedrig">niedrig</option>
             <option value="mittel">mittel</option>
             <option value="hoch">hoch</option>
+            <option value="kritisch">kritisch</option>
           </Select>
         </Field>
         <Field label="Status">

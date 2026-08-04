@@ -138,6 +138,44 @@ export async function addRepair(machineId: string) {
   return r.id as string;
 }
 
+/** Einen Fehler direkt anlegen (für den Maschinen-Status-Test). */
+export async function addFault(opts: {
+  machineId: string;
+  beschreibung?: string;
+  gemeldetVon?: string | null;
+  prioritaet?: "niedrig" | "mittel" | "hoch" | "kritisch";
+  status?: "offen" | "in Arbeit" | "behoben";
+}): Promise<string> {
+  const [r] = await sql`
+    INSERT INTO faults (machine_id, beschreibung, prioritaet, status, gemeldet_von)
+    VALUES (${opts.machineId}, ${opts.beschreibung ?? "E2E Fehler"},
+            ${opts.prioritaet ?? "mittel"}, ${opts.status ?? "offen"},
+            ${opts.gemeldetVon ?? null})
+    RETURNING id`;
+  return r.id as string;
+}
+
+/** Aktuellen Betriebsstatus einer Maschine lesen. */
+export async function machineStatus(
+  machineId: string,
+): Promise<{ status: string; manuell: boolean }> {
+  const [r] = await sql`
+    SELECT status, status_manuell FROM machines WHERE id = ${machineId}`;
+  return { status: r.status as string, manuell: r.status_manuell as boolean };
+}
+
+/** Einen Wartungs-Erledigt-Eintrag direkt setzen (für „Letzte Wartung"). */
+export async function addMaintenanceLog(machineId: string) {
+  // Ein Wartungspunkt wird gebraucht (FK), dann der Log-Eintrag.
+  const [t] = await sql`
+    INSERT INTO maintenance_tasks (machine_id, titel, intervall_typ)
+    VALUES (${machineId}, 'E2E Wartungspunkt', 'bedarf')
+    RETURNING id`;
+  await sql`
+    INSERT INTO maintenance_log (task_id, machine_id, datum)
+    VALUES (${t.id}, ${machineId}, now())`;
+}
+
 /** Eine Generation anlegen (idempotent per Name) und einem Modell zuordnen —
     damit lässt sich der Generation-Resolver testen. */
 export async function setModelGeneration(modelId: string, name: string) {

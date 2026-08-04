@@ -11,6 +11,7 @@ type Fault = {
   prioritaet: string;
   status: string;
   datum: Date;
+  melderName?: string | null;
 };
 
 export function FaultList({
@@ -43,6 +44,7 @@ export function FaultList({
             ) : null}
             <span className="ml-auto text-xs text-[var(--color-muted)]">
               {fault.datum.toLocaleDateString("de-DE")}
+              {fault.melderName ? ` · ${fault.melderName}` : ""}
             </span>
           </div>
 

@@ -37,6 +37,16 @@ export const faultPrioritaet = pgEnum("fault_prioritaet", [
   "niedrig",
   "mittel",
   "hoch",
+  "kritisch",
+]);
+
+/* Betriebsstatus einer Maschine (Dashboard). Hybrid: normalerweise automatisch
+   aus den offenen Fehlern abgeleitet (offener kritischer Fehler → eingeschränkt),
+   aber manuell übersteuerbar — siehe machines.statusManuell. */
+export const machineStatus = pgEnum("machine_status", [
+  "spielbereit",
+  "eingeschraenkt",
+  "ausser_betrieb",
 ]);
 
 /* Wartungs-Priorität — eigene Skala (Timms Wartungsliste kennt zusätzlich
@@ -242,6 +252,14 @@ export const machines = pgTable("machines", {
     () => maintenancePlans.id,
     { onDelete: "set null" },
   ),
+  // Betriebsstatus (Dashboard). `statusManuell=false` → aus den offenen Fehlern
+  // abgeleitet; `true` → per Hand gepinnt (mit Begründung). `statusSeit` speist
+  // den „Seit HH:MM:SS"-Ticker und wird nur bei echter Statusänderung gebumpt.
+  status: machineStatus("status").notNull().default("spielbereit"),
+  statusSeit: timestamp("status_seit").notNull().defaultNow(),
+  statusManuell: boolean("status_manuell").notNull().default(false),
+  statusGrund: text("status_grund"),
+  statusVon: text("status_von").references(() => user.id),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
