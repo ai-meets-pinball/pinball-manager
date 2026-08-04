@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { BookOpen, Boxes, Globe, LayoutDashboard, Wrench } from "lucide-react";
+import {
+  BookOpen,
+  Boxes,
+  Bug,
+  Globe,
+  LayoutDashboard,
+  Wrench,
+} from "lucide-react";
 import { Logo } from "@/components/logo";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
@@ -67,13 +74,28 @@ export function Nav({
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Runde Icon-Knöpfe — gleiche Optik wie Theme-Umschalter und Avatar. */}
           <Link
             href="/"
             title="Öffentliche Website"
-            className="flex items-center gap-1.5 rounded-[var(--radius)] px-2.5 py-1.5 text-sm font-medium text-[var(--color-muted)] transition-colors hover:bg-[var(--color-inset)] hover:text-[var(--color-fg)]"
+            aria-label="Öffentliche Website"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-fg)] transition-colors hover:bg-[var(--color-overlay)]"
           >
-            <Globe size={15} />
-            <span className="hidden sm:inline">Website</span>
+            <Globe size={17} />
+          </Link>
+          {/* Problem melden — direkt aus der Kopfzeile, damit die AKTUELLE
+              Seite als Herkunft (?von=…) in der Meldung landet. */}
+          <Link
+            href={`/feedback?von=${encodeURIComponent(pathname)}`}
+            title="Problem melden / Feedback"
+            aria-label="Problem melden / Feedback"
+            className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-border)] transition-colors hover:bg-[var(--color-overlay)] ${
+              pathname.startsWith("/feedback")
+                ? "text-[var(--color-accent)] ring-2 ring-[var(--color-primary)]/40"
+                : "text-[var(--color-fg)]"
+            }`}
+          >
+            <Bug size={17} />
           </Link>
           <ThemeToggle />
           <UserMenu

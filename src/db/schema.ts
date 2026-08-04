@@ -73,6 +73,16 @@ export const knowledgeSource = pgEnum("knowledge_source", [
   "community",
 ]);
 
+/* Feedback-/Bug-Report-System: Meldungen der Nutzer über die APP selbst
+   (nicht über Maschinen — das sind `faults`). */
+export const feedbackTyp = pgEnum("feedback_typ", ["fehler", "verbesserung"]);
+
+export const feedbackStatus = pgEnum("feedback_status", [
+  "offen",
+  "in Arbeit",
+  "erledigt",
+]);
+
 /* ── Clubs ────────────────────────────────────────────────────────────────── */
 
 export const clubs = pgTable("clubs", {
@@ -506,6 +516,33 @@ export const knowledgeRevisions = pgTable(
   },
   (t) => [index("knowledge_revisions_knowledge_idx").on(t.knowledgeId)],
 );
+
+/* ── Feedback / Bug-Reports ───────────────────────────────────────────────── */
+/*
+  Meldungen der Nutzer über die App (Fehler oder Verbesserungsvorschlag).
+  Der Auto-Kontext (seite, app_version, user_agent) wird SERVERSEITIG beim
+  Absenden befüllt — der Melder muss nichts davon wissen. `antwort` ist die
+  Rückmeldung eines Super-Admins und für den Melder sichtbar. Sehen dürfen
+  alle Meldungen Super-Admins und Supporter; bearbeiten nur Super-Admins.
+*/
+export const feedback = pgTable("feedback", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  typ: feedbackTyp("typ").notNull().default("fehler"),
+  titel: text("titel").notNull(),
+  beschreibung: text("beschreibung").notNull(),
+  // Auto-Kontext beim Absenden:
+  seite: text("seite"),
+  appVersion: text("app_version"),
+  userAgent: text("user_agent"),
+  screenshotUrl: text("screenshot_url"),
+  status: feedbackStatus("status").notNull().default("offen"),
+  antwort: text("antwort"),
+  createdBy: text("created_by")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
 
 /* Troubleshooting-Guides sind seit dem Datenmodell-Redesign (Phase 2) Modell-
    Wissen in `knowledge` (typ='troubleshooting') — die eigene Tabelle

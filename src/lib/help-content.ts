@@ -414,6 +414,26 @@ export const ANLEITUNG: HilfeSektion[] = [
     ],
   },
   {
+    key: "feedback",
+    titel: "Probleme melden & Feedback",
+    einleitung:
+      "Etwas in der App funktioniert nicht oder dir fehlt eine Funktion? Sag es uns direkt aus der App heraus.",
+    schritte: [
+      {
+        titel: "Melden",
+        text: "Nutzer-Icon oben rechts → »Problem melden«. Typ wählen (Fehler oder Verbesserungsvorschlag), Titel und Beschreibung eintragen, optional einen Screenshot anhängen — absenden, fertig. Die Seite, deine App-Version und dein Browser werden automatisch mitgeschickt; du musst nichts davon heraussuchen.",
+      },
+      {
+        titel: "Was passiert dann?",
+        text: "Die Betreiber werden benachrichtigt und sichten die Meldung. Unter »Meine Meldungen« auf derselben Seite siehst du jederzeit den Status (offen → in Arbeit → erledigt) und eine eventuelle Antwort.",
+      },
+      {
+        titel: "Gut zu wissen",
+        text: "Fehler AN EINER MASCHINE (z. B. »linker Flipper prellt«) gehören nicht hierher, sondern als Fehler auf die Maschinen-Detailseite — dieses Formular ist für die App selbst.",
+      },
+    ],
+  },
+  {
     key: "tipps",
     titel: "Tipps",
     einleitung: "Kleinigkeiten, die den Alltag leichter machen.",
@@ -553,6 +573,22 @@ export const ADMIN_HILFE: HilfeSektion[] = [
       {
         titel: "Wiederherstellen",
         text: "Verborgene Einträge stehen auf der Kuratierungs-Seite und lassen sich dort (oder direkt am Eintrag) mit Bestätigung wiederherstellen — der Eintrag ist danach wieder für alle sichtbar.",
+      },
+    ],
+  },
+  {
+    key: "feedback-verwaltung",
+    titel: "Feedback-Meldungen sichten",
+    einleitung:
+      "Fehlermeldungen und Verbesserungsvorschläge der Nutzer — sichtbar für Supporter und Super-Admins.",
+    schritte: [
+      {
+        titel: "Wo",
+        text: "Nutzer-Icon → »Problem melden« führt zur Seite Feedback & Fehlermeldungen. Supporter und Super-Admins sehen dort zusätzlich »Alle Meldungen« — mit Melder, Beschreibung und dem automatisch erfassten Kontext (Seite, App-Version, Browser).",
+      },
+      {
+        titel: "Triage (nur Super-Admins)",
+        text: "Je Meldung lassen sich Status (offen → in Arbeit → erledigt) und eine Antwort setzen — beides sieht der Melder unter »Meine Meldungen«. Bei einer neuen Meldung geht automatisch eine E-Mail an alle Super-Admins. Erledigte oder gegenstandslose Meldungen können gelöscht werden.",
       },
     ],
   },

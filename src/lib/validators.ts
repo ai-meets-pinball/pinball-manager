@@ -56,6 +56,16 @@ export const clubSchema = z.object({
   name: z.string().trim().min(1, "Name ist erforderlich"),
 });
 
+/* ── Feedback / Bug-Reports ───────────────────────────────────────────────── */
+
+export const FEEDBACK_STATUS = ["offen", "in Arbeit", "erledigt"] as const;
+
+export const feedbackSchema = z.object({
+  typ: z.enum(["fehler", "verbesserung"]),
+  titel: z.string().trim().min(1, "Titel ist erforderlich"),
+  beschreibung: z.string().trim().min(1, "Beschreibung ist erforderlich"),
+});
+
 /* ── Rollen & Einladungen ─────────────────────────────────────────────────── */
 
 /* Rollen-Keys. Die Rollen selbst liegen als Daten im `roles`-Katalog (DB);
