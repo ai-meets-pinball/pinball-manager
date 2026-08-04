@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { AlertTriangle, Joystick, Wrench } from "lucide-react";
+import { AlertTriangle, Joystick, PowerOff, Wrench } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { List, ListRow } from "@/components/ui/list";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -27,6 +27,11 @@ export default async function DashboardPage() {
     getOpenFaultsForMachines(ids),
   ]);
   const ueberfaellig = wartungen.filter((w) => w.status === "ueberfaellig");
+  // Betriebsstatus über die Flotte: alles außer „spielbereit" braucht Blick.
+  const nichtSpielbereit = machines.filter((m) => m.status !== "spielbereit");
+  const ausserBetrieb = nichtSpielbereit.some(
+    (m) => m.status === "ausser_betrieb",
+  );
 
   const kpis = [
     {
@@ -35,6 +40,18 @@ export default async function DashboardPage() {
       wert: machines.length,
       label: "Maschinen",
       tone: "",
+    },
+    {
+      href: "#status",
+      icon: PowerOff,
+      wert: nichtSpielbereit.length,
+      label: "nicht spielbereit",
+      tone:
+        nichtSpielbereit.length === 0
+          ? ""
+          : ausserBetrieb
+            ? "text-[var(--color-danger)]"
+            : "text-[var(--color-warn)]",
     },
     {
       href: "#fehler",
@@ -60,7 +77,7 @@ export default async function DashboardPage() {
       <h1 className="text-2xl font-bold">Übersicht</h1>
 
       {/* KPI-Kacheln — verlinken in Verwaltung bzw. zu den Abschnitten unten. */}
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         {kpis.map((k) => (
           <Link key={k.label} href={k.href} className="group">
             <Card className="flex items-center gap-3 transition-colors group-hover:border-[var(--color-primary)]">
@@ -78,6 +95,27 @@ export default async function DashboardPage() {
           </Link>
         ))}
       </div>
+
+      {/* Nicht spielbereite Maschinen zuerst — die dringendste Betriebslage. */}
+      <section id="status" className="scroll-mt-20 space-y-3">
+        <h2 className="text-lg font-semibold">
+          Nicht spielbereite Maschinen ({nichtSpielbereit.length})
+        </h2>
+        <List empty="Alle Maschinen spielbereit.">
+          {nichtSpielbereit.map((m) => (
+            <ListRow
+              key={m.id}
+              href={`/machines/${m.id}`}
+              title={modellName(m)}
+              subtitle={
+                m.statusGrund ??
+                (m.club ? m.club.name : "Private Sammlung")
+              }
+              meta={<StatusBadge value={m.status} />}
+            />
+          ))}
+        </List>
+      </section>
 
       <section id="wartung" className="scroll-mt-20 space-y-3">
         <h2 className="text-lg font-semibold">
