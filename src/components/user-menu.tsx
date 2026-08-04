@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  Bug,
   ListChecks,
   LogOut,
   ShieldAlert,
@@ -79,6 +80,7 @@ export function UserMenu({
           open ||
           pathname.startsWith("/account") ||
           pathname.startsWith("/admin") ||
+          pathname.startsWith("/feedback") ||
           pathname.startsWith("/kuratierung") ||
           pathname.startsWith("/clubs")
             ? "ring-2 ring-[var(--color-primary)]/40"
@@ -131,6 +133,17 @@ export function UserMenu({
           >
             <ListChecks size={15} className="text-[var(--color-muted)]" />
             Wartungspläne
+          </Link>
+
+          {/* Herkunfts-Seite mitgeben — landet als Auto-Kontext in der Meldung. */}
+          <Link
+            href={`/feedback?von=${encodeURIComponent(pathname)}`}
+            role="menuitem"
+            onClick={() => setOpen(false)}
+            className={itemClass}
+          >
+            <Bug size={15} className="text-[var(--color-muted)]" />
+            Problem melden
           </Link>
 
           {istKurator ? (

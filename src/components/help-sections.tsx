@@ -1,6 +1,7 @@
 import {
   Boxes,
   BookOpen,
+  Bug,
   CalendarClock,
   ClipboardList,
   Download,
@@ -53,6 +54,7 @@ const icons: Record<string, ReactNode> = {
   "wissen-teilen": <Share2 size={18} className={iconClass} />,
   "eintrag-bearbeiten": <History size={18} className={iconClass} />,
   "konto-profil": <UserCog size={18} className={iconClass} />,
+  feedback: <Bug size={18} className={iconClass} />,
   tipps: <Lightbulb size={18} className={iconClass} />,
   // Admin-Hilfe
   "nutzer-rollen": <ShieldCheck size={18} className={iconClass} />,
@@ -60,6 +62,7 @@ const icons: Record<string, ReactNode> = {
   "email-vorlagen": <Mail size={18} className={iconClass} />,
   "clubs-verwalten": <Users size={18} className={iconClass} />,
   "modelle-generationen": <ClipboardList size={18} className={iconClass} />,
+  "feedback-verwaltung": <Bug size={18} className={iconClass} />,
   kuratierung: <ShieldAlert size={18} className={iconClass} />,
   betrieb: <Server size={18} className={iconClass} />,
 };

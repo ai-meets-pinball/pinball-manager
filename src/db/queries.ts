@@ -19,6 +19,7 @@ import {
   clubSettings,
   emailTemplates,
   faults,
+  feedback,
   generations,
   knowledge,
   knowledgeOverrides,
@@ -463,6 +464,41 @@ export async function getKnowledgeRevisions(knowledgeId: string) {
     .innerJoin(user, eq(user.id, knowledgeRevisions.editedBy))
     .where(eq(knowledgeRevisions.knowledgeId, knowledgeId))
     .orderBy(desc(knowledgeRevisions.editedAt));
+}
+
+/* ── Feedback / Bug-Reports ───────────────────────────────────────────────── */
+
+/** Eigene Meldungen des Nutzers, neueste zuerst. */
+export async function getMeinFeedback(userId: string) {
+  return db
+    .select()
+    .from(feedback)
+    .where(eq(feedback.createdBy, userId))
+    .orderBy(desc(feedback.createdAt));
+}
+
+/** ALLE Meldungen samt Melder — für Super-Admins und Supporter (der Aufrufer
+    sichert den Zugriff ab; bearbeiten dürfen nur Super-Admins). */
+export async function getAllesFeedback() {
+  return db
+    .select({
+      id: feedback.id,
+      typ: feedback.typ,
+      titel: feedback.titel,
+      beschreibung: feedback.beschreibung,
+      seite: feedback.seite,
+      appVersion: feedback.appVersion,
+      userAgent: feedback.userAgent,
+      screenshotUrl: feedback.screenshotUrl,
+      status: feedback.status,
+      antwort: feedback.antwort,
+      createdAt: feedback.createdAt,
+      melderName: user.name,
+      melderEmail: user.email,
+    })
+    .from(feedback)
+    .innerJoin(user, eq(user.id, feedback.createdBy))
+    .orderBy(desc(feedback.createdAt));
 }
 
 /** Kuratierungs-Übersicht (Seite /kuratierung): gemeldete und verborgene

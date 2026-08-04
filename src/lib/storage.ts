@@ -107,3 +107,12 @@ export async function uploadAvatar(
   if (!file || file.size === 0) return null;
   return uploadBild(file, "avatars/", userId);
 }
+
+/** Optionaler Screenshot zu einer Feedback-Meldung (eigener Ordner). */
+export async function uploadFeedbackScreenshot(
+  file: File | null,
+  userId: string,
+): Promise<string | null> {
+  if (!file || file.size === 0) return null;
+  return uploadBild(file, "feedback/", userId);
+}

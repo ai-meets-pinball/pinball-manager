@@ -274,3 +274,43 @@ export async function sendInvitationEmail(
     throw new Error(`E-Mail-Versand fehlgeschlagen: ${error.message}`);
   }
 }
+
+/** Benachrichtigung an die Super-Admins über eine neue Feedback-Meldung.
+    Der Versand ist „best effort" — der Aufrufer fängt Fehler ab, damit eine
+    Meldung nie am Mailversand scheitert. */
+export async function sendFeedbackNotificationEmail(
+  to: string[],
+  meldung: {
+    typ: "fehler" | "verbesserung";
+    titel: string;
+    beschreibung: string;
+    melder: string;
+    url: string;
+  },
+) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error("RESEND_API_KEY ist nicht gesetzt");
+  if (to.length === 0) return;
+
+  const typLabel =
+    meldung.typ === "fehler" ? "Fehlermeldung" : "Verbesserungsvorschlag";
+
+  const resend = new Resend(apiKey);
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Neue ${typLabel}: ${meldung.titel}`,
+    html: `
+      <div style="font-family: sans-serif; line-height: 1.5;">
+        <h2>Neue ${typLabel}</h2>
+        <p><strong>${escapeHtml(meldung.titel)}</strong> — gemeldet von ${escapeHtml(meldung.melder)}</p>
+        ${textToHtml(meldung.beschreibung)}
+        <p><a href="${meldung.url}">Alle Meldungen ansehen</a></p>
+      </div>
+    `,
+  });
+
+  if (error) {
+    throw new Error(`E-Mail-Versand fehlgeschlagen: ${error.message}`);
+  }
+}
