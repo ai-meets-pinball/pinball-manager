@@ -1,4 +1,3 @@
-import { desc, eq } from "drizzle-orm";
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { Boxes, Pencil, Plus, Trash2, Users } from "lucide-react";
@@ -21,29 +20,10 @@ import { TroubleshootingJsonImport } from "@/components/troubleshooting-json-imp
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { deleteMachine } from "@/db/actions/machines";
-import { db } from "@/db";
-import {
-  getLetzteWartung,
-  getMachineFaults,
-  getMachineGuides,
-  getMachineKnowledge,
-  getMaintenanceTasks,
-  getModelGeneration,
-  getModelGuides,
-  getModelKnowledge,
-  getNeueFehlerSeitGestern,
-  getRepairShares,
-  getShareDefaults,
-  getSharedRepairsForModel,
-  getUserClubs,
-} from "@/db/queries";
-import {
-  maintenancePlans as maintenancePlansTable,
-  repairs as repairsTable,
-} from "@/db/schema";
+import { getMachineDetail } from "@/db/machine-detail";
 import { modellName, relativeZeit } from "@/lib/format";
 import { buildGuideImportPrompt } from "@/lib/import-guide";
-import { kannKuratieren, requireMachineAccess } from "@/lib/session";
+import { kannKuratieren } from "@/lib/session";
 import { availableProviders } from "@/lib/ai/provider";
 
 // KI-Server-Actions dieser Route (z. B. Troubleshooting-Guide) können Minuten
@@ -101,82 +81,42 @@ export default async function MachineDetailPage({
 }) {
   const { id } = await params;
   const { faultStatus, bereich } = await searchParams;
-  // Autorisierung: Eigentum ODER Club-Mitgliedschaft (kein RLS).
-  // `darf` trägt die Berechtigungsstufe, damit die UI dieselben Regeln zeigt,
-  // die die Server Actions durchsetzen.
-  const { user: currentUser, darf } = await requireMachineAccess(id);
+  // Laden UND Autorisierung liegen im Modul: was hier ankommt, ist freigegeben,
+  // und die Zähler passen zu den Listen. `darf` trägt die Berechtigungsstufe,
+  // damit die UI dieselben Regeln zeigt, die die Server Actions durchsetzen.
+  const { user: currentUser, darf, machine, fehler, wartung, wissen, reparaturen, teilen } =
+    await getMachineDetail(id);
 
-  const machine = await db.query.machines.findFirst({
-    where: (m, { eq }) => eq(m.id, id),
-    with: { club: { columns: { name: true } } },
-  });
-  if (!machine) return null; // requireMachineAccess hat bereits notFound() geprüft
+  // Die Ansicht benutzt weiterhin die gewohnten Namen.
+  const alleFehler = fehler.alle;
+  const offeneFehler = fehler.offen;
+  const fehlerGesamt = fehler.gesamt;
+  const fehlerOffen = fehler.anzahlOffen;
+  const fehlerKritischOffen = fehler.anzahlKritischOffen;
+  const deltaFehler = fehler.deltaSeitGestern;
+  const letzteWartung = wartung.letzte;
+  const wartungsTasks = wartung.tasks;
+  const wartungsStandard = wartung.standard;
+  const wartungFaellig = wartung.anzahlFaellig;
+  const wartungBald = wartung.anzahlBald;
+  const knowledgeFacts = wissen.fakten;
+  const guides = wissen.guides;
+  const eigenerGuide = wissen.eigenerGuide;
+  const guideGeneration = wissen.generation;
+  const machineRepairs = reparaturen.eigene;
+  const geteilteReparaturen = reparaturen.geteilte;
+  const repairShares = reparaturen.shares;
+  const meineClubs = teilen.meineClubs;
+  const shareDefaults = teilen.defaults;
 
   // Optionaler Statusfilter für Fehler (PRD §4.2: „offene Fehler je Maschine").
+  // Die angezeigte Liste wird in-memory gefiltert, damit die Zähler oben
+  // unabhängig vom Filter stimmen.
   const aktiverFilter =
     faultStatus && faultStatus !== "alle" ? faultStatus : undefined;
-  // Alle Fehler laden (für die Badge-Zähler); die angezeigte Liste bei aktivem
-  // Statusfilter in-memory filtern, damit die Zähler unabhängig vom Filter stimmen.
-  // getMachineFaults liefert den Melder-Namen mit (Übersicht + Liste).
-  const alleFehler = await getMachineFaults(id);
   const machineFaults = aktiverFilter
     ? alleFehler.filter((f) => f.status === aktiverFilter)
     : alleFehler;
-  const fehlerGesamt = alleFehler.length;
-  const offeneFehler = alleFehler.filter((f) => f.status !== "behoben");
-  const fehlerOffen = offeneFehler.length;
-  const fehlerKritischOffen = offeneFehler.filter(
-    (f) => f.prioritaet === "kritisch",
-  ).length;
-  // Dashboard-Daten: letzte Wartung + „seit gestern"-Deltas.
-  const letzteWartung = await getLetzteWartung(id);
-  const deltaFehler = await getNeueFehlerSeitGestern(id);
-
-  // Reparaturen samt ihrer behobenen Fehler (n:m, Datenmodell-Redesign Phase 3).
-  const machineRepairsRoh = await db.query.repairs.findMany({
-    where: eq(repairsTable.machineId, id),
-    with: {
-      repairFaults: { with: { fault: { columns: { beschreibung: true } } } },
-    },
-    orderBy: [desc(repairsTable.datum)],
-  });
-  const machineRepairs = machineRepairsRoh.map((r) => ({
-    ...r,
-    faults: r.repairFaults.map((rf) => rf.fault),
-  }));
-
-  // Datenmodell-Redesign (Phase 1): Handbuch-Fakten sind MODELL-Wissen (knowledge)
-  // — eigene + sichtbare fremde. Ohne Modell: Maschinen-Ebene.
-  const knowledgeFacts = machine.modelId
-    ? await getModelKnowledge(currentUser, machine.modelId)
-    : await getMachineKnowledge(currentUser, id);
-
-  // Datenmodell-Redesign (Phase 2): Troubleshooting-Guides sind MODELL-Wissen
-  // (knowledge, typ='troubleshooting') — eigene + sichtbare fremde. Ohne
-  // Modell: Maschinen-Ebene.
-  const guides = machine.modelId
-    ? await getModelGuides(currentUser, machine.modelId)
-    : await getMachineGuides(currentUser, id);
-  const eigenerGuide = guides.some((g) => g.autorId === currentUser.id);
-  // Generation des Modells (falls bekannt) — erlaubt einen Guide für die
-  // ganze Board-/Hardware-Generation statt nur für dieses Modell.
-  const guideGeneration = machine.modelId
-    ? await getModelGeneration(machine.modelId)
-    : null;
-
-  // Wartungsplan: Wartungspunkte samt Historie und berechneter Fälligkeit.
-  const wartungsTasks = await getMaintenanceTasks(id);
-  // Verknüpfter Standard-Wartungsplan (oder null = eigener Plan/Kopie).
-  const wartungsStandard = machine.maintenancePlanId
-    ? ((await db.query.maintenancePlans.findFirst({
-        where: eq(maintenancePlansTable.id, machine.maintenancePlanId),
-        columns: { name: true },
-      })) ?? null)
-    : null;
-  const wartungFaellig = wartungsTasks.filter(
-    (t) => t.status === "faellig",
-  ).length;
-  const wartungBald = wartungsTasks.filter((t) => t.status === "bald").length;
 
   // KI-Funktionen: welche Anbieter stehen zur Wahl? Sind beide verfügbar (lokales
   // Ollama UND Claude), darf der Nutzer je Aktion bewusst wählen. Ohne zentralen
@@ -185,14 +125,6 @@ export default async function MachineDetailPage({
   const kiProviders = availableProviders();
   const kiCentralKey = Boolean(process.env.ANTHROPIC_API_KEY);
   const ollamaVerfuegbar = kiProviders.includes("ollama");
-
-  // Geteilte Reparaturen zum selben Modell (Fakten sind jetzt knowledge, oben geladen).
-  const geteilteReparaturen = machine.modelId
-    ? await getSharedRepairsForModel(currentUser, machine.modelId, id)
-    : [];
-  const meineClubs = await getUserClubs(currentUser.id);
-  const shareDefaults = await getShareDefaults(machine);
-  const repairShares = await getRepairShares(id);
 
   // Der Guide-Reiter: für Bearbeiter immer sichtbar (Erzeugen/Importieren geht
   // auch ohne Handbuch-Fakten); Nur-Leser sehen ihn erst, wenn Inhalte existieren.
