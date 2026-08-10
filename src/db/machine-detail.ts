@@ -44,54 +44,72 @@ export async function getMachineDetail(id: string) {
   // Server Actions durchsetzen.
   const { user, machine, darf } = await requireMachineAccess(id);
 
-  // Reihenfolge wie zuvor in der Seite — dieser Schritt verschiebt nur.
-  // requireMachineAccess lädt die Maschine bereits; hier fehlt nur der
-  // Club-Name, und den auch nur für Club-Maschinen (vorher wurde dafür die
-  // ganze Maschine ein zweites Mal geladen).
-  const club = machine.clubId
-    ? ((await db.query.clubs.findFirst({
-        where: eq(clubsTable.id, machine.clubId),
-        columns: { name: true },
-      })) ?? null)
-    : null;
-  const alleFehler = await getMachineFaults(id);
-  const letzteWartung = await getLetzteWartung(id);
-  const deltaFehler = await getNeueFehlerSeitGestern(id);
-  // Reparaturen samt ihrer behobenen Fehler (n:m, Datenmodell Phase 3).
-  const repairsRoh = await db.query.repairs.findMany({
-    where: eq(repairsTable.machineId, id),
-    with: {
-      repairFaults: { with: { fault: { columns: { beschreibung: true } } } },
-    },
-    orderBy: [desc(repairsTable.datum)],
-  });
-  // Handbuch-Fakten und Guides sind MODELL-Wissen (Datenmodell Phase 1+2).
-  // Ohne Modell fällt beides auf die Maschinen-Ebene zurück.
-  const fakten = machine.modelId
-    ? await getModelKnowledge(user, machine.modelId)
-    : await getMachineKnowledge(user, id);
-  const guides = machine.modelId
-    ? await getModelGuides(user, machine.modelId)
-    : await getMachineGuides(user, id);
-  // Generation des Modells — erlaubt einen Guide für die ganze Board-/
-  // Hardware-Generation statt nur für dieses Modell.
-  const generation = machine.modelId
-    ? await getModelGeneration(machine.modelId)
-    : null;
-  const wartungsTasks = await getMaintenanceTasks(id);
-  // Verknüpfter Standard-Wartungsplan (oder null = eigener Plan/Kopie).
-  const wartungsStandard = machine.maintenancePlanId
-    ? ((await db.query.maintenancePlans.findFirst({
-        where: eq(maintenancePlansTable.id, machine.maintenancePlanId),
-        columns: { name: true },
-      })) ?? null)
-    : null;
-  const geteilteReparaturen = machine.modelId
-    ? await getSharedRepairsForModel(user, machine.modelId, id)
-    : [];
-  const meineClubs = await getUserClubs(user.id);
-  const shareDefaults = await getShareDefaults(machine);
-  const repairShares = await getRepairShares(id);
+  // Keiner dieser Schritte braucht das Ergebnis eines anderen — alles hängt
+  // nur an `id`, `user` und der bereits geladenen Maschine. Der Treiber hält
+  // standardmäßig zehn Verbindungen, der Rest reiht sich ein.
+  const [
+    club,
+    alleFehler,
+    letzteWartung,
+    deltaFehler,
+    repairsRoh,
+    fakten,
+    guides,
+    generation,
+    wartungsTasks,
+    wartungsStandard,
+    geteilteReparaturen,
+    meineClubs,
+    shareDefaults,
+    repairShares,
+  ] = await Promise.all([
+    // requireMachineAccess lädt die Maschine bereits; hier fehlt nur der
+    // Club-Name, und den auch nur für Club-Maschinen.
+    machine.clubId
+      ? db.query.clubs
+          .findFirst({
+            where: eq(clubsTable.id, machine.clubId),
+            columns: { name: true },
+          })
+          .then((c) => c ?? null)
+      : null,
+    getMachineFaults(id),
+    getLetzteWartung(id),
+    getNeueFehlerSeitGestern(id),
+    // Reparaturen samt ihrer behobenen Fehler (n:m, Datenmodell Phase 3).
+    db.query.repairs.findMany({
+      where: eq(repairsTable.machineId, id),
+      with: {
+        repairFaults: { with: { fault: { columns: { beschreibung: true } } } },
+      },
+      orderBy: [desc(repairsTable.datum)],
+    }),
+    // Handbuch-Fakten und Guides sind MODELL-Wissen (Datenmodell Phase 1+2).
+    // Ohne Modell fällt beides auf die Maschinen-Ebene zurück.
+    machine.modelId
+      ? getModelKnowledge(user, machine.modelId)
+      : getMachineKnowledge(user, id),
+    machine.modelId
+      ? getModelGuides(user, machine.modelId)
+      : getMachineGuides(user, id),
+    // Generation des Modells — erlaubt einen Guide für die ganze Board-/
+    // Hardware-Generation statt nur für dieses Modell.
+    machine.modelId ? getModelGeneration(machine.modelId) : null,
+    getMaintenanceTasks(id),
+    // Verknüpfter Standard-Wartungsplan (oder null = eigener Plan/Kopie).
+    machine.maintenancePlanId
+      ? db.query.maintenancePlans
+          .findFirst({
+            where: eq(maintenancePlansTable.id, machine.maintenancePlanId),
+            columns: { name: true },
+          })
+          .then((p) => p ?? null)
+      : null,
+    machine.modelId ? getSharedRepairsForModel(user, machine.modelId, id) : [],
+    getUserClubs(user.id),
+    getShareDefaults(machine),
+    getRepairShares(id),
+  ]);
 
   const offene = alleFehler.filter((f) => f.status !== "behoben");
 
