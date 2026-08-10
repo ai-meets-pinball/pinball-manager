@@ -14,15 +14,18 @@ import type { FormState } from "@/db/actions/form-state";
   gepinnt, wann sich überhaupt etwas ändert) liegt rein in lib/betriebsstatus.ts
   und ist dort direkt getestet.
 
-  `aktualisiereMaschinenStatus` läuft nach jeder Fehler-/Reparatur-Mutation —
-  diese Pflicht tragen weiterhin die Aufrufer in faults.ts und repairs.ts.
+  Fehler- und Reparatur-Mutationen laufen durch `mitStatusNachzug`, das die
+  Änderung und den Statusnachzug in EINE Transaktion legt. Damit ist der
+  Nachzug Teil des Aufrufs und keine Pflicht mehr, an die man sich erinnern
+  muss.
 */
 
-/** Effektivstatus neu berechnen (No-Op, wenn manuell gepinnt). */
-export async function aktualisiereMaschinenStatus(
-  machineId: string,
-): Promise<void> {
-  const [m] = await db
+/** Der Transaktions-Handle von Drizzle — dieselbe Abfrage-Schnittstelle wie `db`. */
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/** Effektivstatus neu berechnen (No-Op, wenn manuell gepinnt oder unverändert). */
+async function statusNachziehen(tx: Tx, machineId: string): Promise<void> {
+  const [m] = await tx
     .select({ status: machines.status, statusManuell: machines.statusManuell })
     .from(machines)
     .where(eq(machines.id, machineId))
@@ -31,7 +34,7 @@ export async function aktualisiereMaschinenStatus(
 
   // Die Fehler kommen ungefiltert herein: WELCHE einen Betrieb einschränken,
   // entscheidet lib/betriebsstatus.ts — nicht die WHERE-Klausel.
-  const fehler = await db
+  const fehler = await tx
     .select({ prioritaet: faults.prioritaet, status: faults.status })
     .from(faults)
     .where(eq(faults.machineId, machineId));
@@ -39,10 +42,39 @@ export async function aktualisiereMaschinenStatus(
   const neu = naechsterStatus(m, fehler);
   if (neu === null) return;
 
-  await db
+  await tx
     .update(machines)
     .set({ status: neu, statusSeit: new Date(), statusGrund: null, statusVon: null })
     .where(eq(machines.id, machineId));
+}
+
+/**
+ * Eine Fehler- oder Reparatur-Mutation ausführen und den Betriebsstatus im
+ * SELBEN Vorgang nachziehen.
+ *
+ * Vorher trugen sechs Aufrufstellen die Pflicht, danach
+ * `aktualisiereMaschinenStatus` zu rufen — eine neue Mutationsquelle hätte den
+ * Status still veralten lassen. Jetzt ist der Nachzug Teil des Aufrufs und
+ * läuft in derselben Transaktion: schlägt er fehl, gilt auch die Mutation
+ * nicht, und es kann kein Zwischenzustand entstehen, in dem ein kritischer
+ * Fehler offen ist, die Maschine aber „spielbereit" heißt.
+ */
+export async function mitStatusNachzug<T>(
+  machineId: string,
+  mutation: (tx: Tx) => Promise<T>,
+): Promise<T> {
+  return db.transaction(async (tx) => {
+    const ergebnis = await mutation(tx);
+    await statusNachziehen(tx, machineId);
+    return ergebnis;
+  });
+}
+
+/** Nur den Status nachziehen, ohne begleitende Mutation (Zurück auf Automatik). */
+export async function aktualisiereMaschinenStatus(
+  machineId: string,
+): Promise<void> {
+  await db.transaction((tx) => statusNachziehen(tx, machineId));
 }
 
 /** Status von Hand setzen (pinnt ihn). Nur mit Schreibrecht auf die Maschine. */
