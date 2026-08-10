@@ -13,7 +13,7 @@ import {
   maintenanceTasks,
 } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
-import { computeDue } from "@/lib/maintenance-due";
+import { naechsterTermin } from "@/lib/faelligkeit";
 import { anthropicModelFor, resolveProvider } from "@/lib/ai/provider";
 import { ollamaErrorMessage, ollamaJson } from "@/lib/ai/ollama";
 import { mlxErrorMessage, mlxText } from "@/lib/ai/mlx";
@@ -28,7 +28,7 @@ import {
 
 export type FormState = { error?: string; ok?: boolean };
 
-/* Fälligkeits-Helfer liegt in lib/maintenance-due.ts (rein) — auch von
+/* Fälligkeits-Helfer liegt in lib/faelligkeit.ts (rein) — auch von
    db/actions/maintenance-plans.ts (Standard-Propagation) genutzt. */
 
 /* ── Wartungspunkte: Anlegen / Bearbeiten / Löschen ───────────────────────── */
@@ -58,7 +58,7 @@ export async function createTask(
     intervallTage: d.intervallTage ?? null,
     intervallText: d.intervallText ?? null,
     // Erstfälligkeit ab jetzt (noch nie erledigt).
-    naechsteFaelligkeit: computeDue(
+    naechsteFaelligkeit: naechsterTermin(
       d.intervallTyp,
       d.intervallTage ?? null,
       new Date(),
@@ -115,7 +115,7 @@ export async function updateTask(
       intervallTyp: d.intervallTyp,
       intervallTage: d.intervallTage ?? null,
       intervallText: d.intervallText ?? null,
-      naechsteFaelligkeit: computeDue(d.intervallTyp, d.intervallTage ?? null, ab),
+      naechsteFaelligkeit: naechsterTermin(d.intervallTyp, d.intervallTage ?? null, ab),
     })
     .where(
       and(
@@ -188,7 +188,7 @@ export async function logCompletion(
       .update(maintenanceTasks)
       .set({
         zuletztErledigt: wann,
-        naechsteFaelligkeit: computeDue(task.intervallTyp, task.intervallTage, wann),
+        naechsteFaelligkeit: naechsterTermin(task.intervallTyp, task.intervallTage, wann),
         // Nächster Zyklus darf wieder erinnern.
         zuletztErinnert: null,
       })
@@ -230,7 +230,7 @@ export async function deleteTaskLog(formData: FormData): Promise<void> {
       .update(maintenanceTasks)
       .set({
         zuletztErledigt: letzte?.datum ?? null,
-        naechsteFaelligkeit: computeDue(task.intervallTyp, task.intervallTage, ab),
+        naechsteFaelligkeit: naechsterTermin(task.intervallTyp, task.intervallTage, ab),
       })
       .where(eq(maintenanceTasks.id, taskId));
   }
@@ -277,7 +277,7 @@ export async function applyStandardMaintenance(formData: FormData): Promise<void
       intervallTyp: e.intervallTyp,
       intervallTage: e.intervallTage,
       intervallText: e.intervallText,
-      naechsteFaelligkeit: computeDue(e.intervallTyp, e.intervallTage, now),
+      naechsteFaelligkeit: naechsterTermin(e.intervallTyp, e.intervallTage, now),
     }));
 
   if (neu.length > 0) await db.insert(maintenanceTasks).values(neu);
@@ -440,7 +440,7 @@ export async function importMaintenanceFromGuide(
         intervallTyp: tage ? p.intervallTyp : p.intervallTyp === "zeit" ? "bedarf" : p.intervallTyp,
         intervallTage: tage,
         intervallText: null,
-        naechsteFaelligkeit: computeDue(p.intervallTyp, tage, now),
+        naechsteFaelligkeit: naechsterTermin(p.intervallTyp, tage, now),
       };
     });
 

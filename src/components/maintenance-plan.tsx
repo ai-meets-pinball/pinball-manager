@@ -13,7 +13,10 @@ import {
   deleteTaskLog,
 } from "@/db/actions/maintenance";
 import { unlinkMachineFromStandard } from "@/db/actions/maintenance-plans";
-import type { MaintenanceStatus } from "@/db/queries";
+import {
+  intervallLabel,
+  type FaelligkeitsStatus,
+} from "@/lib/faelligkeit";
 
 /*
   Interaktiver Wartungsplan je Gerät: Wartungspunkte mit Fälligkeit, „Erledigt"-
@@ -37,7 +40,7 @@ type Task = {
   intervallText: string | null;
   zuletztErledigt: Date | null;
   naechsteFaelligkeit: Date | null;
-  status: MaintenanceStatus;
+  status: FaelligkeitsStatus;
   tageBisFaellig: number | null;
   logs: LogEntry[];
 };
@@ -56,33 +59,24 @@ function Chip({ color, children }: { color: string; children: React.ReactNode })
   );
 }
 
-function DueChip({ status, tage }: { status: MaintenanceStatus; tage: number | null }) {
+function DueChip({ status, tage }: { status: FaelligkeitsStatus; tage: number | null }) {
   if (status === "kein-termin") return <Chip color="var(--color-faint)">kein Termin</Chip>;
-  if (status === "ueberfaellig") {
+  if (status === "faellig") {
+    // „fällig" schließt den heutigen Tag ein; echt vergangene Termine heißen
+    // weiterhin „überfällig" (CONTEXT.md: überfällig ist Teilmenge von fällig).
     const n = tage != null ? Math.abs(tage) : 0;
     return (
       <Chip color="var(--color-danger)">
-        überfällig{n > 0 ? ` (seit ${n} T.)` : ""}
+        {n > 0 ? `überfällig (seit ${n} T.)` : "heute fällig"}
       </Chip>
     );
   }
   if (status === "bald") {
-    return (
-      <Chip color="var(--color-warn)">
-        {tage != null && tage <= 0 ? "heute fällig" : `fällig in ${tage} T.`}
-      </Chip>
-    );
+    return <Chip color="var(--color-warn)">fällig in {tage} T.</Chip>;
   }
   return (
     <Chip color="var(--color-success)">{tage != null ? `in ${tage} T.` : "ok"}</Chip>
   );
-}
-
-function intervallLabel(t: Task): string {
-  if (t.intervallText) return t.intervallText;
-  if (t.intervallTyp === "zeit" && t.intervallTage) return `alle ${t.intervallTage} Tage`;
-  if (t.intervallTyp === "spiele") return "nach Spielzahl";
-  return "bei Bedarf";
 }
 
 function meta(t: Task): string {

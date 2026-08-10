@@ -26,7 +26,7 @@ export default async function DashboardPage() {
     getDueMaintenanceForMachines(ids),
     getOpenFaultsForMachines(ids),
   ]);
-  const ueberfaellig = wartungen.filter((w) => w.status === "ueberfaellig");
+  const faellige = wartungen.filter((w) => w.status === "faellig");
   // Betriebsstatus über die Flotte: alles außer „spielbereit" braucht Blick.
   const nichtSpielbereit = machines.filter((m) => m.status !== "spielbereit");
   const ausserBetrieb = nichtSpielbereit.some(
@@ -65,10 +65,10 @@ export default async function DashboardPage() {
       icon: Wrench,
       wert: wartungen.length,
       label:
-        ueberfaellig.length > 0
-          ? `Wartungen (${ueberfaellig.length} überfällig)`
+        faellige.length > 0
+          ? `Wartungen (${faellige.length} fällig)`
           : "anstehende Wartungen",
-      tone: ueberfaellig.length > 0 ? "text-[var(--color-danger)]" : "",
+      tone: faellige.length > 0 ? "text-[var(--color-danger)]" : "",
     },
   ] as const;
 
@@ -133,13 +133,15 @@ export default async function DashboardPage() {
                   <StatusBadge value={w.prioritaet} />
                   <span
                     className={`text-xs ${
-                      w.status === "ueberfaellig"
+                      w.status === "faellig"
                         ? "font-semibold text-[var(--color-danger)]"
                         : "text-[var(--color-muted)]"
                     }`}
                   >
-                    {w.status === "ueberfaellig"
-                      ? `überfällig${w.tageBisFaellig != null ? ` seit ${-w.tageBisFaellig} Tag(en)` : ""}`
+                    {w.status === "faellig"
+                      ? w.tageBisFaellig
+                        ? `überfällig seit ${-w.tageBisFaellig} Tag(en)`
+                        : "heute fällig"
                       : w.tageBisFaellig != null
                         ? `in ${w.tageBisFaellig} Tag(en)`
                         : ""}

@@ -13,7 +13,7 @@ import {
   maintenanceTasks,
 } from "@/db/schema";
 import { MAINTENANCE_STANDARD } from "@/lib/maintenance-catalog";
-import { computeDue } from "@/lib/maintenance-due";
+import { naechsterTermin } from "@/lib/faelligkeit";
 import {
   isClubManager,
   isClubMember,
@@ -181,7 +181,7 @@ export async function createPlanItem(
           intervallTyp: d.intervallTyp,
           intervallTage: d.intervallTage ?? null,
           intervallText: d.intervallText ?? null,
-          naechsteFaelligkeit: computeDue(d.intervallTyp, d.intervallTage ?? null, now),
+          naechsteFaelligkeit: naechsterTermin(d.intervallTyp, d.intervallTage ?? null, now),
         })),
       );
     }
@@ -247,7 +247,7 @@ export async function updatePlanItem(
         .update(maintenanceTasks)
         .set({
           ...felder,
-          naechsteFaelligkeit: computeDue(
+          naechsteFaelligkeit: naechsterTermin(
             d.intervallTyp,
             d.intervallTage ?? null,
             t.zuletztErledigt ?? t.createdAt,
@@ -368,7 +368,7 @@ export async function linkMachineToStandard(
           .set({
             ...felder,
             planItemId: item.id,
-            naechsteFaelligkeit: computeDue(
+            naechsteFaelligkeit: naechsterTermin(
               item.intervallTyp,
               item.intervallTage,
               bestehend.zuletztErledigt ?? bestehend.createdAt,
@@ -380,7 +380,7 @@ export async function linkMachineToStandard(
           machineId,
           planItemId: item.id,
           ...felder,
-          naechsteFaelligkeit: computeDue(item.intervallTyp, item.intervallTage, now),
+          naechsteFaelligkeit: naechsterTermin(item.intervallTyp, item.intervallTage, now),
         });
       }
     }

@@ -16,6 +16,12 @@ import {
 } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  baldBis,
+  faelligBis,
+  faelligkeit,
+  type FaelligkeitsStatus,
+} from "@/lib/faelligkeit";
+import {
   clubs,
   clubSettings,
   emailTemplates,
@@ -653,12 +659,6 @@ export async function getVisibleMachines(userId: string, suche?: string) {
 
 /* ── Wartungsplan ─────────────────────────────────────────────────────────── */
 
-export type MaintenanceStatus = "ueberfaellig" | "bald" | "ok" | "kein-termin";
-
-/** Innerhalb dieses Fensters (Tage) gilt ein Termin als „bald fällig". */
-const BALD_TAGE = 14;
-const TAG_MS = 86_400_000;
-
 const PRIO_RANG: Record<string, number> = {
   kritisch: 5,
   "sehr hoch": 4,
@@ -666,27 +666,12 @@ const PRIO_RANG: Record<string, number> = {
   mittel: 2,
   niedrig: 1,
 };
-const STATUS_RANG: Record<MaintenanceStatus, number> = {
-  ueberfaellig: 0,
+const STATUS_RANG: Record<FaelligkeitsStatus, number> = {
+  faellig: 0,
   bald: 1,
   ok: 2,
   "kein-termin": 3,
 };
-
-/** Fälligkeit ableiten — nur zeitbasierte Punkte mit Termin haben einen Status. */
-function faelligkeit(
-  task: { intervallTyp: string; naechsteFaelligkeit: Date | null },
-  now: number,
-): { status: MaintenanceStatus; tageBisFaellig: number | null } {
-  if (task.intervallTyp !== "zeit" || !task.naechsteFaelligkeit) {
-    return { status: "kein-termin", tageBisFaellig: null };
-  }
-  const diff = task.naechsteFaelligkeit.getTime() - now;
-  const tageBisFaellig = Math.ceil(diff / TAG_MS);
-  if (diff < 0) return { status: "ueberfaellig", tageBisFaellig };
-  if (diff <= BALD_TAGE * TAG_MS) return { status: "bald", tageBisFaellig };
-  return { status: "ok", tageBisFaellig };
-}
 
 /** Wartungspunkte einer Maschine samt Historie und berechnetem Fälligkeits-
     Status, sortiert nach Dringlichkeit → Priorität → Titel. */
@@ -695,9 +680,9 @@ export async function getMaintenanceTasks(machineId: string) {
     where: eq(maintenanceTasks.machineId, machineId),
     with: { logs: { orderBy: [desc(maintenanceLog.datum)] } },
   });
-  const now = Date.now();
+  const jetzt = new Date();
   return tasks
-    .map((t) => ({ ...t, ...faelligkeit(t, now) }))
+    .map((t) => ({ ...t, ...faelligkeit(t, jetzt) }))
     .sort((a, b) => {
       const s = STATUS_RANG[a.status] - STATUS_RANG[b.status];
       if (s !== 0) return s;
@@ -711,6 +696,7 @@ export async function getMaintenanceTasks(machineId: string) {
     sichtbaren Maschinen — samt Maschine, nach Termin sortiert. */
 export async function getDueMaintenanceForMachines(machineIds: string[]) {
   if (machineIds.length === 0) return [];
+  const jetzt = new Date();
   const rows = await db
     .select({
       id: maintenanceTasks.id,
@@ -728,16 +714,12 @@ export async function getDueMaintenanceForMachines(machineIds: string[]) {
       and(
         inArray(maintenanceTasks.machineId, machineIds),
         eq(maintenanceTasks.aktiv, true),
-        // Fenster: überfällig + „bald" (dieselbe Grenze wie faelligkeit()).
-        lte(
-          maintenanceTasks.naechsteFaelligkeit,
-          new Date(Date.now() + BALD_TAGE * TAG_MS),
-        ),
+        // Fenster: fällig + „bald" — Grenze aus derselben Quelle wie faelligkeit().
+        lte(maintenanceTasks.naechsteFaelligkeit, baldBis(jetzt)),
       ),
     )
     .orderBy(maintenanceTasks.naechsteFaelligkeit);
-  const now = Date.now();
-  return rows.map((r) => ({ ...r, ...faelligkeit(r, now) }));
+  return rows.map((r) => ({ ...r, ...faelligkeit(r, jetzt) }));
 }
 
 /** Dashboard: offene Fehler (Status ≠ behoben) über die sichtbaren Maschinen. */
@@ -823,8 +805,9 @@ export async function getNeueFehlerSeitGestern(
   return { gesamt: Number(row?.gesamt ?? 0), kritisch: Number(row?.kritisch ?? 0) };
 }
 
-/** Anzahl fälliger (überfällig oder heute) Wartungen je Maschine — für die
-    Badges in der Maschinenliste. Nur aktive, zeitbasierte Punkte mit Termin. */
+/** Anzahl fälliger Wartungen je Maschine — für die Badges in der Maschinenliste.
+    Nur aktive, zeitbasierte Punkte mit Termin. „Fällig" schließt den heutigen
+    Tag ein; die Grenze kommt aus derselben Quelle wie faelligkeit(). */
 export async function getDueMaintenanceCountByMachine(machineIds: string[]) {
   const map = new Map<string, number>();
   if (machineIds.length === 0) return map;
@@ -835,7 +818,7 @@ export async function getDueMaintenanceCountByMachine(machineIds: string[]) {
       and(
         inArray(maintenanceTasks.machineId, machineIds),
         eq(maintenanceTasks.aktiv, true),
-        lte(maintenanceTasks.naechsteFaelligkeit, new Date()),
+        lte(maintenanceTasks.naechsteFaelligkeit, faelligBis(new Date())),
       ),
     )
     .groupBy(maintenanceTasks.machineId);
