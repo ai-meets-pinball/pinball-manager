@@ -174,7 +174,7 @@ export default async function MachineDetailPage({
       })) ?? null)
     : null;
   const wartungFaellig = wartungsTasks.filter(
-    (t) => t.status === "ueberfaellig",
+    (t) => t.status === "faellig",
   ).length;
   const wartungBald = wartungsTasks.filter((t) => t.status === "bald").length;
 

@@ -2,6 +2,7 @@ import { and, eq, inArray, isNotNull, isNull, lt, lte, or } from "drizzle-orm";
 import { db } from "@/db";
 import { machines, maintenanceTasks, user } from "@/db/schema";
 import { sendMaintenanceReminderEmail } from "@/lib/email";
+import { faelligBis } from "@/lib/faelligkeit";
 
 /*
   Täglicher Wartungs-Reminder (Vercel Cron → vercel.json). Findet fällige,
@@ -50,7 +51,9 @@ export async function GET(req: Request) {
       and(
         eq(maintenanceTasks.aktiv, true),
         isNotNull(maintenanceTasks.naechsteFaelligkeit),
-        lte(maintenanceTasks.naechsteFaelligkeit, now),
+        // Grenze aus derselben Quelle wie faelligkeit() — erinnert wird an
+        // alles, was heute oder früher fällig ist.
+        lte(maintenanceTasks.naechsteFaelligkeit, faelligBis(now)),
         or(
           isNull(maintenanceTasks.zuletztErinnert),
           lt(maintenanceTasks.zuletztErinnert, cutoff),
