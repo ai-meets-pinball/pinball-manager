@@ -1,6 +1,5 @@
 "use server";
 
-import Anthropic from "@anthropic-ai/sdk";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -14,9 +13,8 @@ import {
 } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
 import { naechsterTermin } from "@/lib/faelligkeit";
-import { anthropicModelFor, resolveProvider } from "@/lib/ai/provider";
-import { ollamaErrorMessage, ollamaJson } from "@/lib/ai/ollama";
-import { mlxErrorMessage, mlxText } from "@/lib/ai/mlx";
+import { resolveProvider } from "@/lib/ai/provider";
+import { AiError, generateJson, type AiAntwort } from "@/lib/ai/generate";
 import { MAINTENANCE_STANDARD } from "@/lib/maintenance-catalog";
 import {
   maintenanceImportJsonSchema,
@@ -345,74 +343,29 @@ export async function importMaintenanceFromGuide(
   // der Nutzer wählt je Aktion (Feld „provider"), sonst der Standard.
   const provider = resolveProvider(formData);
   const userPrompt = `Wandle diesen Wartungsplan-Abschnitt in strukturierte Wartungspunkte (JSON) um:\n\n${abschnittText}`;
-  let text: string;
 
-  if (provider === "mlx") {
-    // Lokaler MLX-Pfad: kein API-Key nötig.
-    try {
-      text = await mlxText({
-        system: IMPORT_SYSTEM,
-        prompt: userPrompt,
-        schema: maintenanceImportJsonSchema,
-      });
-    } catch (e) {
-      console.error("[maintenance-import] mlx:", (e as Error).message);
-      return { error: mlxErrorMessage(e) };
-    }
-  } else if (provider === "ollama") {
-    // Lokaler Pfad: kein API-Key nötig.
-    try {
-      text = await ollamaJson({
-        system: IMPORT_SYSTEM,
-        prompt: userPrompt,
-        schema: maintenanceImportJsonSchema,
-      });
-    } catch (e) {
-      console.error("[maintenance-import] ollama:", (e as Error).message);
-      return { error: ollamaErrorMessage(e) };
-    }
-  } else {
-    // Claude-Pfad (Standard). Ephemerer BYO-Schlüssel: nur für diesen Request,
-    // nie gespeichert/geloggt; fällt auf den zentralen Env-Key zurück.
-    const apiKey =
-      String(formData.get("apiKey") ?? "").trim() || process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      return {
-        error: "Kein Claude-API-Schlüssel vorhanden. Bitte deinen eigenen eingeben.",
-      };
-    }
-    try {
-      const client = new Anthropic({ apiKey, maxRetries: 4 });
-      const res = await client.messages
-        .stream({
-          model: anthropicModelFor(provider),
-          max_tokens: 8000,
-          system: IMPORT_SYSTEM,
-          output_config: {
-            format: { type: "json_schema", schema: maintenanceImportJsonSchema },
-          },
-          messages: [{ role: "user", content: userPrompt }],
-        })
-        .finalMessage();
+  let antwort: AiAntwort;
+  try {
+    antwort = await generateJson(provider, {
+      system: IMPORT_SYSTEM,
+      prompt: userPrompt,
+      schema: maintenanceImportJsonSchema,
+      apiKey: String(formData.get("apiKey") ?? ""),
+      zweck: "Import",
+    });
+  } catch (e) {
+    console.error("[maintenance-import]", (e as Error).message);
+    if (e instanceof AiError) return { error: e.userMessage };
+    throw e;
+  }
 
-      if (res.stop_reason === "refusal") return { error: "Die Verarbeitung wurde abgelehnt." };
-      const block = res.content.find((b) => b.type === "text");
-      if (!block || block.type !== "text") {
-        return { error: "Es konnten keine Wartungspunkte extrahiert werden." };
-      }
-      text = block.text;
-    } catch (e) {
-      console.error("[maintenance-import] API:", (e as Error).message);
-      return { error: "Import fehlgeschlagen. Bitte später erneut versuchen." };
-    }
+  if (antwort.abgeschnitten) {
+    return { error: "Die Antwort wurde abgeschnitten. Bitte erneut versuchen." };
   }
 
   let punkte: ReturnType<typeof maintenanceImportSchema.parse>["punkte"];
   try {
-    const start = text.indexOf("{");
-    const end = text.lastIndexOf("}");
-    const json = start >= 0 && end > start ? text.slice(start, end + 1) : text;
-    punkte = maintenanceImportSchema.parse(JSON.parse(json)).punkte;
+    punkte = maintenanceImportSchema.parse(antwort.json).punkte;
   } catch (e) {
     console.error("[maintenance-import] parse:", (e as Error).message);
     return { error: "Antwort konnte nicht ausgewertet werden. Bitte erneut versuchen." };
