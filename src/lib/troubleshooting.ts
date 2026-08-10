@@ -12,11 +12,9 @@ import { AiError, generateJson, type AiAntwort } from "@/lib/ai/generate";
 import {
   buildGuideSystemPrompt,
   GUIDE_OUTPUT_INSTRUCTION,
+  parseGuide,
 } from "@/lib/import-guide";
-import {
-  troubleshootingGuideJsonSchema,
-  troubleshootingGuideSchema,
-} from "@/lib/validators";
+import { troubleshootingGuideJsonSchema } from "@/lib/validators";
 
 /*
   Troubleshooting-Guide je Modell.
@@ -97,13 +95,22 @@ export async function generateTroubleshootingGuide(
     };
   }
 
-  let parsed: ReturnType<typeof troubleshootingGuideSchema.parse>;
-  try {
-    parsed = troubleshootingGuideSchema.parse(antwort.json);
-  } catch (e) {
-    console.error("[troubleshooting] parse:", (e as Error).message);
-    return { error: "Antwort konnte nicht ausgewertet werden. Bitte erneut versuchen." };
+  // Dieselbe Kette wie beim eingefügten JSON: Umschlag-Toleranz, Struktur-
+  // prüfung und die Vollständigkeits-Hinweise (fehlende Abschnitte, keine
+  // Quellen). Vorher bekam die KI-Antwort davon nichts.
+  const bericht = parseGuide(antwort.json);
+  if (!bericht.ok || !bericht.guide) {
+    console.error("[troubleshooting] parse:", bericht.errors.join(" · "));
+    return {
+      error:
+        bericht.errors[0] ??
+        "Antwort konnte nicht ausgewertet werden. Bitte erneut versuchen.",
+    };
   }
+  if (bericht.warnings.length > 0) {
+    console.error("[troubleshooting] Hinweise:", bericht.warnings.join(" · "));
+  }
+  const parsed = bericht.guide;
 
   // Datenmodell-Redesign (Phase 2): der Guide ist Modell-Wissen (knowledge,
   // typ='troubleshooting') — einmal je Autor und Ebene, mit wählbarer

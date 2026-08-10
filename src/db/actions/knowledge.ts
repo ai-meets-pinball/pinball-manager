@@ -10,7 +10,7 @@ import {
   knowledgeSignals,
 } from "@/db/schema";
 import { getKnowledgeRevisions, knowledgeSichtbarFuer } from "@/db/queries";
-import { parseImportedFacts } from "@/lib/import-facts";
+import { parseFactsText } from "@/lib/import-facts";
 import { isSuperAdmin, kannKuratieren, requireUser } from "@/lib/session";
 import { FACT_TYPES, troubleshootingGuideSchema } from "@/lib/validators";
 import type { FormState } from "@/db/actions/clubs";
@@ -101,7 +101,7 @@ export async function setKnowledgeOverride(formData: FormData): Promise<void> {
   In-Place-Bearbeitung (Phase 5): Titel + Inhalt eines EIGENEN Wissenseintrags
   ändern — die id bleibt stabil (Signale/Overrides überleben), der alte Stand
   wird vorher als Revision gesichert. Der Inhalt kommt als JSON-Text und wird je
-  Typ autoritativ validiert: Fakten über `parseImportedFacts` (dieselbe Prüfung
+  Typ autoritativ validiert: Fakten über `parseFactsText` (dieselbe Prüfung
   wie beim Import), Guides über `troubleshootingGuideSchema` — dabei bleibt der
   Umschlag (websuche, model) des bestehenden Eintrags erhalten. `sourceType` und
   Sichtbarkeit ändert ein Edit bewusst nicht.
@@ -135,7 +135,7 @@ export async function updateKnowledge(
 
   let inhalt: unknown;
   if (k.typ === "handbuch_fakten") {
-    const parsed = parseImportedFacts(inhaltText);
+    const parsed = parseFactsText(inhaltText);
     if (!parsed.ok || !parsed.result) {
       return { error: parsed.errors[0] ?? "Ungültige Fakten-Struktur." };
     }

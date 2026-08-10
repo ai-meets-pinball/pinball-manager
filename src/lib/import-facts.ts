@@ -9,7 +9,7 @@ import {
 /*
   JSON-Import von Handbuch-Fakten (Alternative zur KI-/PDF-Extraktion): der
   Nutzer erzeugt die Fakten selbst in ChatGPT (mit IMPORT_PROMPT) und fügt das
-  JSON ein. `parseImportedFacts` ist die EINE Validierungs-/Normalisierungs-
+  JSON ein. `parseFactsText` ist die EINE Validierungs-/Normalisierungs-
   funktion — sie läuft clientseitig für die Vorschau UND serverseitig autoritativ
   in der Import-Action (db/actions/machine-data.ts). Reines Modul (keine DB,
   kein "use server") → in beiden Welten importierbar.
@@ -193,34 +193,46 @@ function wouldRenderMatrix(table: FactTable): boolean {
   return cells >= 4;
 }
 
-/** Prüft, normalisiert und bewertet importiertes Fakten-JSON. */
-export function parseImportedFacts(raw: string): ImportResult {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-
+/**
+ * Wie `parseFacts`, aber für eingefügten TEXT: schneidet das JSON aus Prosa
+ * bzw. Code-Zäunen heraus und parst es. Für den Einfüge-Pfad in der Oberfläche.
+ */
+export function parseFactsText(raw: string): ImportResult {
   const slice = sliceJsonObject(raw ?? "");
   if (!slice) {
     return {
       ok: false,
       present: [],
       reports: [],
-      warnings,
+      warnings: [],
       errors: ["Kein JSON-Objekt gefunden. Füge die JSON-Ausgabe aus ChatGPT ein."],
     };
   }
-
-  let data: unknown;
   try {
-    data = JSON.parse(slice);
+    return parseFacts(JSON.parse(slice));
   } catch {
     return {
       ok: false,
       present: [],
       reports: [],
-      warnings,
+      warnings: [],
       errors: ["Kein gültiges JSON — bitte die komplette, unveränderte Ausgabe einfügen."],
     };
   }
+}
+
+/**
+ * Prüft, normalisiert und bewertet Fakten-Daten — die EINE Kette vor dem
+ * Speichern, für BEIDE Wege: die KI-Antwort und das eingefügte JSON.
+ *
+ * Vorher lief nur der Einfüge-Pfad hier durch; die KI-Antwort ging roh in
+ * `extractSchema.parse`. Ein Modell, das kurze Zeilen liefert, scheiterte
+ * damit hart, wo eine Einfügung geheilt worden wäre.
+ */
+export function parseFacts(data: unknown): ImportResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+
   if (typeof data !== "object" || data === null || Array.isArray(data)) {
     return {
       ok: false,

@@ -1,5 +1,6 @@
-import { extractSchema, FACT_TYPES } from "@/lib/validators";
+import { extractSchema, FACT_COLUMNS, FACT_TYPES } from "@/lib/validators";
 import { upsertModelKnowledge } from "@/lib/facts-store";
+import { parseFacts } from "@/lib/import-facts";
 import { SONNET_MODEL, type AiProvider } from "@/lib/ai/provider";
 import { AiError, generateJson } from "@/lib/ai/generate";
 import {
@@ -59,20 +60,25 @@ const outputJsonSchema = {
   additionalProperties: false,
 };
 
+/*
+  Die Spalten kommen aus FACT_COLUMNS, nicht als abgeschriebene Prosa. Vorher
+  standen sie hier fest verdrahtet, während der Import-Prompt sie ableitete —
+  eine Änderung an FACT_COLUMNS ließ den KI-Prompt still verrotten.
+*/
 const EXTRACT_PROMPT = `Du erhältst das Handbuch eines Flipperautomaten als PDF.
 Extrahiere AUSSCHLIESSLICH die technischen Referenztabellen, sofern im Handbuch vorhanden.
 Verwende je Tabelle GENAU diese Spaltenüberschriften (in dieser Reihenfolge), auch wenn das Handbuch
 sie anders benennt — ordne die Werte entsprechend zu; fehlt ein Wert, gib eine leere Zelle "":
 
-- coils    → ["Sol/No", "Funktion", "Typ", "Drive Q", "Wire", "Board"]
-- switches → ["Sw/No", "Column", "Row", "Typ", "Funktion"]
+- coils    → ${JSON.stringify(FACT_COLUMNS.coils)}
+- switches → ${JSON.stringify(FACT_COLUMNS.switches)}
              (Switch-Matrix: Column/Row = Rasterposition; bei nicht-Matrix-Schaltern Column/Row = "".
               Typ = "opto" wenn es ein Opto-Schalter ist, sonst "mechanisch")
-- lamps    → ["Lamp/No", "Column", "Row", "Funktion"]
+- lamps    → ${JSON.stringify(FACT_COLUMNS.lamps)}
              (Lampenmatrix 8×8: Lamp/No = Column×10 + Row; also Column/Row aus der Nummer ableiten)
-- fuses    → ["Board", "Fuse", "Rating", "Schützt"]
-- parts    → ["Part No", "Beschreibung"]
-- rules    → ["Adj/No", "Beschreibung", "Bereich/Standard"]
+- fuses    → ${JSON.stringify(FACT_COLUMNS.fuses)}
+- parts    → ${JSON.stringify(FACT_COLUMNS.parts)}
+- rules    → ${JSON.stringify(FACT_COLUMNS.rules)}
 
 Regeln: NUR reine Fakten aus diesen Tabellen — KEINEN Fließtext, KEINE Spielregeln-Erklärungen,
 KEINE ganzen Seiten, KEINE Beschreibungen. Fehlt eine Tabelle im Handbuch, gib für sie leere
@@ -139,6 +145,9 @@ async function* durchgang(
 ): AsyncGenerator<ExtractProgress, ExtractResult[] | "abort"> {
   const teile: ExtractResult[] = [];
   const gesamt = aufbereitung.pakete.length;
+  // Dieselbe Warnung („Spaltenüberschriften fehlten") kommt sonst je Paket
+  // einmal — einmal sagen reicht.
+  const gemeldet = new Set<string>();
 
   for (const paket of aufbereitung.pakete) {
     yield* meldePaket(paket, gesamt, opts.model);
@@ -167,7 +176,18 @@ async function* durchgang(
         console.error(`[manual-extract] Paket ${paket.vonSeite}-${paket.bisSeite} abgeschnitten`);
         continue;
       }
-      teile.push(extractSchema.parse(antwort.json));
+      // Dieselbe Kette wie beim eingefügten JSON: normalisieren, Zeilen
+      // auffüllen, Spalten prüfen — und die Hinweise sichtbar machen.
+      const bericht = parseFacts(antwort.json);
+      yield* meldeHinweise(bericht.warnings, gemeldet);
+      if (bericht.result) {
+        teile.push(bericht.result);
+      } else if (bericht.errors.length > 0) {
+        console.error(
+          `[manual-extract] Paket ${paket.vonSeite}-${paket.bisSeite}:`,
+          bericht.errors.join(" · "),
+        );
+      }
     } catch (e) {
       // Eine unbrauchbare Antwort kostet nur dieses Paket. Ein Verbindungs-
       // oder Rechteproblem betrifft den ganzen Lauf → abbrechen.
@@ -209,6 +229,18 @@ function* meldePaket(
         ? `${model} verarbeitet das Handbuch …`
         : "Das Handbuch wird verarbeitet …",
     };
+  }
+}
+
+/** Hinweise aus der Normalisierung an den Client geben — jeden nur einmal. */
+function* meldeHinweise(
+  hinweise: string[],
+  gemeldet: Set<string>,
+): Generator<ExtractProgress> {
+  for (const h of hinweise) {
+    if (gemeldet.has(h)) continue;
+    gemeldet.add(h);
+    yield { type: "info", message: h };
   }
 }
 
@@ -317,7 +349,18 @@ export async function* extractManualFactsStream(opts: {
         yield { type: "error", error: "Die Antwort wurde abgeschnitten. Bitte kleineres Handbuch versuchen." };
         return;
       }
-      parsed = extractSchema.parse(antwort.json);
+      const bericht = parseFacts(antwort.json);
+      yield* meldeHinweise(bericht.warnings, new Set());
+      if (!bericht.result) {
+        yield {
+          type: "error",
+          error:
+            bericht.errors[0] ??
+            "Aus dem erkannten Text ließen sich keine Tabellen lesen.",
+        };
+        return;
+      }
+      parsed = bericht.result;
     } catch (e) {
       console.error("[manual-extract] mlx:", (e as Error).message);
       yield { type: "error", error: fehlertext(e, "Die Extraktion ist fehlgeschlagen.") };
