@@ -52,7 +52,7 @@ export default async function KuratierungPage() {
   const me = await requireUser();
   if (!kannKuratieren(me)) redirect("/machines");
 
-  const { gemeldet, verborgen } = await getKuratierungsUebersicht();
+  const { gemeldet, verborgen } = await getKuratierungsUebersicht(me);
 
   return (
     <div className="space-y-8">

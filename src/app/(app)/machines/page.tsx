@@ -5,7 +5,7 @@ import { SearchToolbar } from "@/components/ui/search-toolbar";
 import {
   getDueMaintenanceCountByMachine,
   getUserClubs,
-  getVisibleMachines,
+  getMeineMaschinen,
 } from "@/db/queries";
 import { requireUser } from "@/lib/session";
 
@@ -35,9 +35,9 @@ export default async function MachinesPage({
   const dir = sp.dir === "ab" ? ("ab" as const) : ("auf" as const);
   const ansicht = sp.ansicht === "tabelle" ? ("tabelle" as const) : ("karten" as const);
 
-  const machines = await getVisibleMachines(user.id, q);
+  const machines = await getMeineMaschinen(user, q);
   // Fällige Wartungen je Maschine — für die „N fällig"-Badge.
-  const wartungFaellig = await getDueMaintenanceCountByMachine(
+  const wartungFaellig = await getDueMaintenanceCountByMachine(user, 
     machines.map((m) => m.id),
   );
   // Clubs des Nutzers — Tabs + Ziele für die Bulk-Zuweisung.

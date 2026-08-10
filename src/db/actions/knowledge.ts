@@ -192,14 +192,9 @@ export async function updateKnowledge(
     Stände können aus Zeiten anderer Sichtbarkeit stammen und gehören nicht in
     fremde Hände. Lazy-Datenlader für den Verlauf-Aufklapper. */
 export async function loadKnowledgeRevisions(knowledgeId: string) {
-  const zugriff = await requireWissenZugriff(knowledgeId);
-  if (!zugriff) return [];
-  // Kein stilles Leerergebnis: eine Verweigerung soll als solche ankommen,
-  // sonst ist sie für den Nutzer unsichtbar und in keinem Test prüfbar.
-  if (!zugriff.darf.bearbeiten) {
-    throw new Error("Nur der Autor darf den Verlauf sehen");
-  }
-  return getKnowledgeRevisions(knowledgeId);
+  // Das Autor-Gate trägt die Abfrage selbst (db/queries.ts) — hier bleibt nur
+  // die Anmeldung, damit ein nicht angemeldeter Aufruf auf /login landet.
+  return getKnowledgeRevisions(await requireUser(), knowledgeId);
 }
 
 /*

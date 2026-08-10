@@ -5,9 +5,10 @@ import { FlaskConical } from "lucide-react";
 import { List, ListRow } from "@/components/ui/list";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { db } from "@/db";
-import { getVisibleMachines } from "@/db/queries";
+import { getMaschinenVonNutzer } from "@/db/queries";
 import { clubs, roleAssignments, roles, user } from "@/db/schema";
 import { modellName } from "@/lib/format";
+import { requireSuperAdmin } from "@/lib/session";
 
 /*
   ⚠️ TEMPORÄRES DEBUG-FEATURE — bitte später wieder entfernen. ⚠️
@@ -16,7 +17,7 @@ import { modellName } from "@/lib/format";
   (eigene + über Club-Mitgliedschaft) und WARUM. Gedacht ausschließlich zur
   Fehlersuche an der Sichtbarkeits-/Autorisierungslogik.
 
-  Bewusst wird hier `getVisibleMachines()` verwendet — also exakt dieselbe
+  Bewusst wird hier `getMaschinenVonNutzer()` verwendet — dieselbe
   Query wie in der echten Maschinenliste. Eine nachgebaute Logik würde beim
   Debuggen genau die Abweichungen verstecken, die man finden will.
 
@@ -52,8 +53,11 @@ export default async function VisibilityDebugPage({
   const globaleRollen = zuweisungen.filter((z) => z.scope === "global");
   const clubRollen = zuweisungen.filter((z) => z.scope === "club");
 
-  // DIESELBE Query wie in der Maschinenliste — nur mit fremder userId.
-  const sichtbar = await getVisibleMachines(userId);
+  // Eigenes Gate statt Verlass auf das Admin-Layout: getMaschinenVonNutzer
+  // verlangt den handelnden Nutzer und prüft die Super-Admin-Rolle selbst.
+  const me = await requireSuperAdmin();
+  // DIESELBE Abfrage wie in der Maschinenliste — nur mit fremder userId.
+  const sichtbar = await getMaschinenVonNutzer(me, userId);
   const eigene = sichtbar.filter((m) => m.ownerId === userId);
   const ueberClub = sichtbar.filter((m) => m.ownerId !== userId);
 

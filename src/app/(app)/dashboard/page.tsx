@@ -6,7 +6,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import {
   getDueMaintenanceForMachines,
   getOpenFaultsForMachines,
-  getVisibleMachines,
+  getMeineMaschinen,
 } from "@/db/queries";
 import { schwerster, type Betriebsstatus } from "@/lib/betriebsstatus";
 import { modellName } from "@/lib/format";
@@ -20,12 +20,12 @@ import { requireUser } from "@/lib/session";
 */
 export default async function DashboardPage() {
   const user = await requireUser();
-  const machines = await getVisibleMachines(user.id);
+  const machines = await getMeineMaschinen(user);
   const ids = machines.map((m) => m.id);
 
   const [wartungen, fehler] = await Promise.all([
-    getDueMaintenanceForMachines(ids),
-    getOpenFaultsForMachines(ids),
+    getDueMaintenanceForMachines(user, ids),
+    getOpenFaultsForMachines(user, ids),
   ]);
   const faellige = wartungen.filter((w) => w.status === "faellig");
   // Betriebsstatus über die Flotte: alles außer „spielbereit" braucht Blick.

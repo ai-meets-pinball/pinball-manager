@@ -45,10 +45,12 @@ import {
   userSettings,
 } from "@/db/schema";
 import { SHARE_DEFAULTS, type ShareDefaults } from "@/lib/share-defaults";
+import { darfWissen, kannKuratieren } from "@/lib/rechte";
 import {
   getUserClubIds,
   isKurator,
   isSuperAdmin,
+  isSupporter,
   type SessionUser,
 } from "@/lib/session";
 import {
@@ -457,7 +459,21 @@ export async function getKnowledgeModels(currentUser: SessionUser) {
 /** Verlauf eines Wissenseintrags, neueste Revision zuerst. Das Autor-Gate
     liegt in der Action (loadKnowledgeRevisions) — Verlauf ist nur für den
     Autor bzw. Super-Admin gedacht. */
-export async function getKnowledgeRevisions(knowledgeId: string) {
+export async function getKnowledgeRevisions(
+  currentUser: SessionUser,
+  knowledgeId: string,
+) {
+  // Das Autor-Gate lag bisher in der Action — ein zweiter Aufrufer hätte den
+  // Verlauf still preisgegeben. Jetzt trägt es die Abfrage selbst.
+  const [eintrag] = await db
+    .select({ createdBy: knowledge.createdBy })
+    .from(knowledge)
+    .where(eq(knowledge.id, knowledgeId))
+    .limit(1);
+  if (!eintrag) return [];
+  if (!darfWissen(currentUser, eintrag).bearbeiten) {
+    throw new Error("Nur der Autor darf den Verlauf sehen");
+  }
   return db
     .select({
       id: knowledgeRevisions.id,
@@ -486,7 +502,10 @@ export async function getMeinFeedback(userId: string) {
 
 /** ALLE Meldungen samt Melder — für Super-Admins und Supporter (der Aufrufer
     sichert den Zugriff ab; bearbeiten dürfen nur Super-Admins). */
-export async function getAllesFeedback() {
+export async function getAllesFeedback(currentUser: SessionUser) {
+  if (!isSupporter(currentUser) && !isSuperAdmin(currentUser)) {
+    throw new Error("Kein Zugriff auf fremde Meldungen");
+  }
   return db
     .select({
       id: feedback.id,
@@ -511,8 +530,11 @@ export async function getAllesFeedback() {
 /** Kuratierungs-Übersicht (Seite /kuratierung): gemeldete und verborgene
     GETEILTE Wissenseinträge. Bewusst OHNE persönlichen Sichtbarkeitsfilter —
     Kuratoren moderieren alles Geteilte; Privates taucht hier nie auf.
-    Der Aufrufer sichert den Zugriff mit `kannKuratieren` ab. */
-export async function getKuratierungsUebersicht() {
+    Die Rolle wird hier selbst geprüft, nicht beim Aufrufer. */
+export async function getKuratierungsUebersicht(currentUser: SessionUser) {
+  if (!kannKuratieren(currentUser)) {
+    throw new Error("Nur Kuratoren dürfen die Übersicht sehen");
+  }
   // Dieselben Zähl-Subselects wie in knowledgeAuswahl.
   const hilfreich = sql<number>`(select count(*) from ${knowledgeSignals} where ${knowledgeSignals.knowledgeId} = ${knowledge.id} and ${knowledgeSignals.wert} = 'hilfreich')::int`;
   const falsch = sql<number>`(select count(*) from ${knowledgeSignals} where ${knowledgeSignals.knowledgeId} = ${knowledge.id} and ${knowledgeSignals.wert} = 'falsch')::int`;
@@ -636,15 +658,23 @@ export async function getSettingsFor(
  * Alle für den Nutzer sichtbaren Maschinen: eigene ODER aus seinen Clubs.
  * Optionaler Textfilter über Hersteller/Modell.
  */
-export async function getVisibleMachines(userId: string, suche?: string) {
+/**
+ * SQL-Bedingung „diese Maschine darf der Nutzer sehen": eigene ODER aus einem
+ * seiner Clubs. Die eine Stelle, an der Maschinen-Sichtbarkeit als Filter
+ * formuliert wird — von der Maschinenliste und von den Mengen-Abfragen
+ * (Dashboard-Badges) gemeinsam benutzt, damit letztere sich nicht darauf
+ * verlassen müssen, dass der Aufrufer schon gefiltert hat.
+ */
+async function sichtbareMaschinenFilter(userId: string): Promise<SQL | undefined> {
   const clubIds = await getUserClubIds(userId);
-
-  const sichtbar = or(
+  return or(
     eq(machines.ownerId, userId),
     clubIds.length > 0 ? inArray(machines.clubId, clubIds) : undefined,
   );
+}
 
-  const filters: (SQL | undefined)[] = [sichtbar];
+async function maschinenFuer(userId: string, suche?: string) {
+  const filters: (SQL | undefined)[] = [await sichtbareMaschinenFilter(userId)];
   if (suche && suche.trim()) {
     const q = `%${suche.trim()}%`;
     filters.push(or(ilike(machines.hersteller, q), ilike(machines.modell, q)));
@@ -655,6 +685,29 @@ export async function getVisibleMachines(userId: string, suche?: string) {
     with: { club: { columns: { name: true } } },
     orderBy: [desc(machines.createdAt)],
   });
+}
+
+/** Die eigenen sichtbaren Maschinen. Nimmt den Nutzer, nicht eine ID — so
+    lässt sich hier keine fremde ID hineinreichen. */
+export async function getMeineMaschinen(currentUser: SessionUser, suche?: string) {
+  return maschinenFuer(currentUser.id, suche);
+}
+
+/**
+ * Die Maschinen eines FREMDEN Nutzers (Admin-Sichtbarkeitsansicht). Bewusst
+ * eine eigene Funktion mit eigenem Namen und eigener Prüfung: der Blick in
+ * fremde Sammlungen soll im Code als Sonderfall sichtbar sein und nicht als
+ * derselbe Aufruf mit einem anderen Argument.
+ */
+export async function getMaschinenVonNutzer(
+  currentUser: SessionUser,
+  userId: string,
+  suche?: string,
+) {
+  if (!isSuperAdmin(currentUser)) {
+    throw new Error("Nur Super-Admins dürfen fremde Sammlungen einsehen");
+  }
+  return maschinenFuer(userId, suche);
 }
 
 /* ── Wartungsplan ─────────────────────────────────────────────────────────── */
@@ -694,9 +747,13 @@ export async function getMaintenanceTasks(machineId: string) {
 
 /** Dashboard: anstehende Wartungen (überfällig oder bald fällig) über die
     sichtbaren Maschinen — samt Maschine, nach Termin sortiert. */
-export async function getDueMaintenanceForMachines(machineIds: string[]) {
+export async function getDueMaintenanceForMachines(
+  currentUser: SessionUser,
+  machineIds: string[],
+) {
   if (machineIds.length === 0) return [];
   const jetzt = new Date();
+  const sichtbar = await sichtbareMaschinenFilter(currentUser.id);
   const rows = await db
     .select({
       id: maintenanceTasks.id,
@@ -713,6 +770,9 @@ export async function getDueMaintenanceForMachines(machineIds: string[]) {
     .where(
       and(
         inArray(maintenanceTasks.machineId, machineIds),
+        // Nicht auf den Aufrufer verlassen: dieselbe Sichtbarkeitsregel wie in
+        // der Maschinenliste, hier als Bedingung im Join.
+        sichtbar,
         eq(maintenanceTasks.aktiv, true),
         // Fenster: fällig + „bald" — Grenze aus derselben Quelle wie faelligkeit().
         lte(maintenanceTasks.naechsteFaelligkeit, baldBis(jetzt)),
@@ -723,8 +783,12 @@ export async function getDueMaintenanceForMachines(machineIds: string[]) {
 }
 
 /** Dashboard: offene Fehler (Status ≠ behoben) über die sichtbaren Maschinen. */
-export async function getOpenFaultsForMachines(machineIds: string[]) {
+export async function getOpenFaultsForMachines(
+  currentUser: SessionUser,
+  machineIds: string[],
+) {
   if (machineIds.length === 0) return [];
+  const sichtbar = await sichtbareMaschinenFilter(currentUser.id);
   return db
     .select({
       id: faults.id,
@@ -739,7 +803,11 @@ export async function getOpenFaultsForMachines(machineIds: string[]) {
     .from(faults)
     .innerJoin(machines, eq(machines.id, faults.machineId))
     .where(
-      and(inArray(faults.machineId, machineIds), ne(faults.status, "behoben")),
+      and(
+        inArray(faults.machineId, machineIds),
+        sichtbar,
+        ne(faults.status, "behoben"),
+      ),
     )
     .orderBy(desc(faults.datum));
 }
@@ -808,15 +876,22 @@ export async function getNeueFehlerSeitGestern(
 /** Anzahl fälliger Wartungen je Maschine — für die Badges in der Maschinenliste.
     Nur aktive, zeitbasierte Punkte mit Termin. „Fällig" schließt den heutigen
     Tag ein; die Grenze kommt aus derselben Quelle wie faelligkeit(). */
-export async function getDueMaintenanceCountByMachine(machineIds: string[]) {
+export async function getDueMaintenanceCountByMachine(
+  currentUser: SessionUser,
+  machineIds: string[],
+) {
   const map = new Map<string, number>();
   if (machineIds.length === 0) return map;
+  const sichtbar = await sichtbareMaschinenFilter(currentUser.id);
   const rows = await db
     .select({ machineId: maintenanceTasks.machineId, n: count() })
     .from(maintenanceTasks)
+    // Join nur, damit der Sichtbarkeitsfilter auf machines zugreifen kann.
+    .innerJoin(machines, eq(machines.id, maintenanceTasks.machineId))
     .where(
       and(
         inArray(maintenanceTasks.machineId, machineIds),
+        sichtbar,
         eq(maintenanceTasks.aktiv, true),
         lte(maintenanceTasks.naechsteFaelligkeit, faelligBis(new Date())),
       ),
