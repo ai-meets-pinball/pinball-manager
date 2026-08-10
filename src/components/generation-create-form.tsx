@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { FormFeedback } from "@/components/ui/form-feedback";
 import { Input } from "@/components/ui/input";
 import { createGeneration } from "@/db/actions/generations";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   Neue Generation von Hand anlegen (Super-Admin). Zeigt Erfolg/Fehler inline —

@@ -4,7 +4,8 @@ import { useActionState, useState } from "react";
 import { Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
-import { logCompletion, type FormState } from "@/db/actions/maintenance";
+import { logCompletion } from "@/db/actions/maintenance";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   „Erledigt eintragen" je Wartungspunkt: ein Toggle öffnet ein kompaktes Formular

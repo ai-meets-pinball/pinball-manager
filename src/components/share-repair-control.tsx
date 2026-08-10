@@ -4,7 +4,7 @@ import { Share2, X } from "lucide-react";
 import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/input";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 import { shareRepair, unshareRepair } from "@/db/actions/shares";
 import type { ShareDefaults } from "@/lib/share-defaults";
 import {

@@ -14,7 +14,7 @@ import {
   SUPERADMIN_ROLE,
 } from "@/lib/validators";
 import { APP_VERSION } from "@/lib/version";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   Feedback-/Bug-Report-System: Nutzer melden Fehler oder Verbesserungswünsche

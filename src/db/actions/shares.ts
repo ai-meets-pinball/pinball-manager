@@ -7,7 +7,7 @@ import { db } from "@/db";
 import { repairs, shareTargets, shares, user } from "@/db/schema";
 import { isClubMember, requireMachineAccess } from "@/lib/session";
 import { SHARE_SCOPES, type ShareScope } from "@/lib/sharing";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   Freigaben anlegen/ändern/aufheben. Der Bezugspunkt ist immer der GERÄTETYP

@@ -2,14 +2,21 @@ import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { db } from "@/db";
-import { machines, roleAssignments, roles } from "@/db/schema";
+import { knowledge, machines, roleAssignments, roles } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { istSuperAdminEmail } from "@/lib/super-admins";
 import {
-  KURATOR_ROLE,
-  SUPERADMIN_ROLE,
-  SUPPORTER_ROLE,
-} from "@/lib/validators";
+  darfClub,
+  darfMaschine,
+  darfWissen,
+  isSuperAdmin,
+  isSupporter,
+  mindestens,
+  type ClubRechte,
+  type MaschinenRechte,
+  type WissensRechte,
+} from "@/lib/rechte";
+import { SUPERADMIN_ROLE } from "@/lib/validators";
 
 /*
   Das Herzstück der sichtbaren Autorisierung.
@@ -83,33 +90,19 @@ export async function requireUser(): Promise<SessionUser> {
 
 /* ── Globale Rolle ────────────────────────────────────────────────────────── */
 
-/** Ist der Nutzer Super-Admin (darf alles administrieren)? */
-export function isSuperAdmin(user: { roles?: string[] } | null): boolean {
-  return Boolean(user?.roles?.includes(SUPERADMIN_ROLE));
-}
+/*
+  Die reinen Prädikate liegen in lib/rechte.ts (ohne db, ohne headers, dort
+  direkt getestet). Hier werden sie durchgereicht, damit die bestehenden
+  Aufrufer weiter aus @/lib/session importieren können — eine Definition,
+  zwei Türen.
+*/
+export { isKurator, isSuperAdmin, isSupporter, kannKuratieren } from "@/lib/rechte";
 
 /** Super-Admin erzwingen (für /admin). */
 export async function requireSuperAdmin(): Promise<SessionUser> {
   const user = await requireUser();
   if (!isSuperAdmin(user)) throw new Error("Kein Zugriff (nur Super-Admin)");
   return user;
-}
-
-/** Supporter = globale NUR-LESE-Rolle: Einblick in alle Clubs und deren
-    Maschinen (nicht in private Sammlungen), ohne jede Änderung. */
-export function isSupporter(user: { roles?: string[] } | null): boolean {
-  return Boolean(user?.roles?.includes(SUPPORTER_ROLE));
-}
-
-/** Kurator = globale Moderations-Rolle für die Wissensbasis: sieht alles
-    Geteilte (auch Verborgenes, markiert) — Privates bleibt privat. */
-export function isKurator(user: { roles?: string[] } | null): boolean {
-  return Boolean(user?.roles?.includes(KURATOR_ROLE));
-}
-
-/** Darf Wissenseinträge moderieren (verbergen/wiederherstellen)? */
-export function kannKuratieren(user: { roles?: string[] } | null): boolean {
-  return isKurator(user) || isSuperAdmin(user);
 }
 
 /* ── Club-Rollen ──────────────────────────────────────────────────────────── */
@@ -140,13 +133,12 @@ export async function isClubMember(userId: string, clubId: string) {
 
 /** Owner = oberste Club-Rolle (befördert Owner, löscht den Club). */
 export async function isClubOwner(userId: string, clubId: string) {
-  return (await getClubRole(userId, clubId)) === "owner";
+  return mindestens(await getClubRole(userId, clubId), "owner");
 }
 
 /** Manager = Owner ODER Admin (darf Mitglieder/Einladungen verwalten). */
 export async function isClubManager(userId: string, clubId: string) {
-  const rolle = await getClubRole(userId, clubId);
-  return rolle === "owner" || rolle === "admin";
+  return mindestens(await getClubRole(userId, clubId), "admin");
 }
 
 /** Club-IDs, in denen der Nutzer Mitglied ist (= club-bezogene Zuweisungen).
@@ -163,7 +155,8 @@ export async function getUserClubIds(userId: string): Promise<string[]> {
   return rows.map((r) => r.clubId).filter((id): id is string => id !== null);
 }
 
-/** Anzahl der Owner eines Clubs — für die „mind. 1 Owner"-Invariante. */
+/** Anzahl der Owner eines Clubs — für die „mind. 1 Owner"-Invariante
+    (istLetzterOwner in lib/rechte.ts). */
 export async function countClubOwners(clubId: string) {
   const rows = await db
     .select({ id: roleAssignments.id })
@@ -184,42 +177,60 @@ export async function countClubOwners(clubId: string) {
  * getrennt, damit die Nur-Lese-Rolle Supporter nichts verändern kann — vorher
  * gewährte requireMachineAccess implizit auch Schreibrechte.
  */
-export async function requireMachineAccess(machineId: string) {
+export async function requireMachineAccess(machineId: string): Promise<{
+  user: SessionUser;
+  machine: typeof machines.$inferSelect;
+  darf: MaschinenRechte;
+}> {
   const user = await requireUser();
   const machine = await db.query.machines.findFirst({
     where: eq(machines.id, machineId),
   });
   if (!machine) notFound();
 
-  const eigentuemer = machine.ownerId === user.id;
-  const mitglied =
-    machine.clubId !== null && (await isClubMember(user.id, machine.clubId));
-  const supporterLesen = isSupporter(user) && machine.clubId !== null;
-
-  const erlaubt =
-    isSuperAdmin(user) || eigentuemer || mitglied || supporterLesen;
-  if (!erlaubt) {
+  // Eine Abfrage für die Rolle, dann entscheidet die reine Regel.
+  const clubRolle = machine.clubId
+    ? await getClubRole(user.id, machine.clubId)
+    : null;
+  const darf = darfMaschine(user, machine, clubRolle);
+  if (!darf.lesen) {
     throw new Error("Kein Zugriff auf diese Maschine");
   }
+  return { user, machine, darf };
+}
 
-  const clubManager =
-    machine.clubId !== null && (await isClubManager(user.id, machine.clubId));
+/**
+ * Zugriff auf einen Wissenseintrag. Liefert den Eintrag samt `darf` — dieselbe
+ * Form wie requireMachineAccess. Ersetzt drei wortgleiche Autor-Gates in
+ * db/actions/knowledge.ts, jedes mit eigenem SELECT davor.
+ */
+export async function requireWissenZugriff(knowledgeId: string): Promise<{
+  user: SessionUser;
+  eintrag: { id: string; createdBy: string };
+  darf: WissensRechte;
+} | null> {
+  const user = await requireUser();
+  const [eintrag] = await db
+    .select({ id: knowledge.id, createdBy: knowledge.createdBy })
+    .from(knowledge)
+    .where(eq(knowledge.id, knowledgeId))
+    .limit(1);
+  if (!eintrag) return null;
+  return { user, eintrag, darf: darfWissen(user, eintrag) };
+}
 
-  // Schreiben darf, wer Eigentümer, echtes Club-Mitglied oder Super-Admin ist —
-  // NICHT ein Supporter (der hat nur über supporterLesen Zugriff).
-  const schreibberechtigt = isSuperAdmin(user) || eigentuemer || mitglied;
-
-  return {
-    user,
-    machine,
-    darf: {
-      bearbeiten: schreibberechtigt,
-      // Löschen nur Eigentümer, Club-Manager oder Super-Admin (= deleteMachine).
-      loeschen: isSuperAdmin(user) || eigentuemer || clubManager,
-      // Teilen darf, wer auch löschen darf — es gibt Daten nach außen.
-      teilen: isSuperAdmin(user) || eigentuemer || clubManager,
-    },
-  };
+/**
+ * Zugriff auf einen Club samt Rolle und `darf`. Ersetzt die dreifach
+ * wiederholte Owner-Eskalation in clubs.ts/invitations.ts.
+ */
+export async function requireClubZugriff(clubId: string): Promise<{
+  user: SessionUser;
+  rolle: string | null;
+  darf: ClubRechte;
+}> {
+  const user = await requireUser();
+  const rolle = await getClubRole(user.id, clubId);
+  return { user, rolle, darf: darfClub(user, rolle) };
 }
 
 /** SCHREIB-Zugriff auf eine Maschine erzwingen (anlegen/ändern/löschen von

@@ -4,7 +4,7 @@ import { RotateCcw, Save } from "lucide-react";
 import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Select } from "@/components/ui/input";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 import {
   resetShareSettings,
   saveShareSettings,

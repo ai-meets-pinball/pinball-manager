@@ -8,8 +8,8 @@ import { faults } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
 import { aktualisiereMaschinenStatus } from "@/db/actions/machine-status";
 import { faultSchema } from "@/lib/validators";
+import type { FormState } from "@/db/actions/form-state";
 
-export type FormState = { error?: string };
 
 export async function createFault(
   _prev: FormState,

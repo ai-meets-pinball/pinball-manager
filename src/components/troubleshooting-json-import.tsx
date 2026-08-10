@@ -10,7 +10,7 @@ import {
   parseGuideText,
   type GuideImportResult,
 } from "@/lib/import-guide";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   JSON-Import als Alternative zur KI-Generierung des Troubleshooting-Guides —

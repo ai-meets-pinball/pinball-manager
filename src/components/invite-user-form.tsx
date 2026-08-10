@@ -5,7 +5,7 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { FormFeedback } from "@/components/ui/form-feedback";
 import { Field, Input, Textarea } from "@/components/ui/input";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 import { invitePlatformUser } from "@/db/actions/invitations";
 
 /** Plattform-Einladung im Admin-Bereich: berechtigt zur Registrierung (ohne Club). */

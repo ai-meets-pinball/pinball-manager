@@ -11,7 +11,7 @@ import {
   parseFactsText,
   type ImportResult,
 } from "@/lib/import-facts";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   JSON-Import als Alternative zum KI-/PDF-Upload. Fluss: Prompt kopieren → in

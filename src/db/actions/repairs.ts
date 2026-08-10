@@ -8,8 +8,8 @@ import { faults, repairFaults, repairs } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
 import { aktualisiereMaschinenStatus } from "@/db/actions/machine-status";
 import { repairSchema } from "@/lib/validators";
+import type { FormState } from "@/db/actions/form-state";
 
-export type FormState = { error?: string };
 
 /* Die gewählten Fehler einlesen (Mehrfachauswahl) und prüfen, dass ALLE wirklich
    zu dieser Maschine gehören — sonst könnte man über eine eigene Maschine fremde

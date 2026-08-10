@@ -8,7 +8,7 @@ import { invitations, roleAssignments, user } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { istSuperAdminEmail } from "@/lib/super-admins";
 import { validatePassword } from "@/lib/validators";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   Registrierung — bewusst über eine eigene Action statt über den Client-Aufruf

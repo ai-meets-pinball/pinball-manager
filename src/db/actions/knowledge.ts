@@ -11,9 +11,14 @@ import {
 } from "@/db/schema";
 import { getKnowledgeRevisions, knowledgeSichtbarFuer } from "@/db/queries";
 import { parseFactsText } from "@/lib/import-facts";
-import { isSuperAdmin, kannKuratieren, requireUser } from "@/lib/session";
+import { darfWissen } from "@/lib/rechte";
+import {
+  kannKuratieren,
+  requireUser,
+  requireWissenZugriff,
+} from "@/lib/session";
 import { FACT_TYPES, troubleshootingGuideSchema } from "@/lib/validators";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   Datenmodell-Redesign (Phase 1): Sichtbarkeit eines Wissenseintrags ändern.
@@ -34,14 +39,9 @@ export async function setKnowledgeVisibility(
     return { error: "Ungültige Sichtbarkeit." };
   }
 
-  const currentUser = await requireUser();
-  const [k] = await db
-    .select({ createdBy: knowledge.createdBy })
-    .from(knowledge)
-    .where(eq(knowledge.id, id))
-    .limit(1);
-  if (!k) return { error: "Wissenseintrag nicht gefunden." };
-  if (k.createdBy !== currentUser.id && !isSuperAdmin(currentUser)) {
+  const zugriff = await requireWissenZugriff(id);
+  if (!zugriff) return { error: "Wissenseintrag nicht gefunden." };
+  if (!zugriff.darf.bearbeiten) {
     return { error: "Nur der Autor darf die Sichtbarkeit ändern." };
   }
 
@@ -128,7 +128,7 @@ export async function updateKnowledge(
     .where(eq(knowledge.id, id))
     .limit(1);
   if (!k) return { error: "Wissenseintrag nicht gefunden." };
-  if (k.createdBy !== currentUser.id && !isSuperAdmin(currentUser)) {
+  if (!darfWissen(currentUser, k).bearbeiten) {
     return { error: "Nur der Autor darf den Eintrag bearbeiten." };
   }
   if (!titel) return { error: "Titel ist erforderlich." };
@@ -192,14 +192,13 @@ export async function updateKnowledge(
     Stände können aus Zeiten anderer Sichtbarkeit stammen und gehören nicht in
     fremde Hände. Lazy-Datenlader für den Verlauf-Aufklapper. */
 export async function loadKnowledgeRevisions(knowledgeId: string) {
-  const currentUser = await requireUser();
-  const [k] = await db
-    .select({ createdBy: knowledge.createdBy })
-    .from(knowledge)
-    .where(eq(knowledge.id, knowledgeId))
-    .limit(1);
-  if (!k) return [];
-  if (k.createdBy !== currentUser.id && !isSuperAdmin(currentUser)) return [];
+  const zugriff = await requireWissenZugriff(knowledgeId);
+  if (!zugriff) return [];
+  // Kein stilles Leerergebnis: eine Verweigerung soll als solche ankommen,
+  // sonst ist sie für den Nutzer unsichtbar und in keinem Test prüfbar.
+  if (!zugriff.darf.bearbeiten) {
+    throw new Error("Nur der Autor darf den Verlauf sehen");
+  }
   return getKnowledgeRevisions(knowledgeId);
 }
 
@@ -244,8 +243,14 @@ export async function restoreKnowledge(formData: FormData): Promise<void> {
   const machineId = String(formData.get("machineId") ?? "");
 
   const currentUser = await requireUser();
-  if (!kannKuratieren(currentUser)) return;
-  if (!(await knowledgeSichtbarFuer(currentUser, id))) return;
+  // Kein stilles Nichtstun: wer nicht darf, bekommt einen Fehler statt eines
+  // Formulars, das scheinbar funktioniert hat.
+  if (!kannKuratieren(currentUser)) {
+    throw new Error("Nur Kuratoren dürfen Einträge wiederherstellen");
+  }
+  if (!(await knowledgeSichtbarFuer(currentUser, id))) {
+    throw new Error("Wissenseintrag nicht gefunden");
+  }
 
   await db
     .update(knowledge)

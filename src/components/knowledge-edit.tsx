@@ -9,7 +9,7 @@ import { FormFeedback } from "@/components/ui/form-feedback";
 import { updateKnowledge } from "@/db/actions/knowledge";
 import { parseFactsText } from "@/lib/import-facts";
 import { troubleshootingGuideSchema } from "@/lib/validators";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   In-Place-Editor für einen EIGENEN Wissenseintrag (Phase 5). Bewusst kein
