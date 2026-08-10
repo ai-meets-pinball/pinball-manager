@@ -8,7 +8,7 @@ import { VisibilityField } from "@/components/ui/visibility-field";
 import { importManualFacts } from "@/db/actions/machine-data";
 import {
   IMPORT_PROMPT,
-  parseImportedFacts,
+  parseFactsText,
   type ImportResult,
 } from "@/lib/import-facts";
 import type { FormState } from "@/db/actions/clubs";
@@ -16,7 +16,7 @@ import type { FormState } from "@/db/actions/clubs";
 /*
   JSON-Import als Alternative zum KI-/PDF-Upload. Fluss: Prompt kopieren → in
   ChatGPT mit dem Handbuch nutzen → JSON hier einfügen → „Prüfen" (Vorschau +
-  Warnungen, dieselbe parseImportedFacts wie serverseitig) → „Importieren".
+  Warnungen, dieselbe parseFactsText wie serverseitig) → „Importieren".
   Der Import ist erst nach erfolgreicher Prüfung aktiv; jede Änderung am JSON
   verlangt erneutes Prüfen (Korrekturschleife).
 */
@@ -103,7 +103,7 @@ export function ManualJsonImport({ machineId }: { machineId: string }) {
       <Button
         type="button"
         variant="secondary"
-        onClick={() => setCheck(parseImportedFacts(json))}
+        onClick={() => setCheck(parseFactsText(json))}
         disabled={!json.trim()}
         className="self-start"
       >
