@@ -58,29 +58,6 @@ async function shareVisibilityFilter(
   );
 }
 
-/** Einzelprüfung — dieselbe Regel wie shareVisibilityFilter. */
-export async function canSeeShare(
-  currentUser: SessionUser,
-  share: { id: string; ownerId: string; scope: string },
-): Promise<boolean> {
-  if (isSuperAdmin(currentUser)) return true;
-  if (share.ownerId === currentUser.id) return true;
-  if (share.scope === "platform") return true;
-
-  const ziele = await db.query.shareTargets.findMany({
-    where: eq(shareTargets.shareId, share.id),
-  });
-
-  if (share.scope === "users") {
-    return ziele.some((z) => z.userId === currentUser.id);
-  }
-  if (share.scope === "club") {
-    const clubIds = await getUserClubIds(currentUser.id);
-    return ziele.some((z) => z.clubId !== null && clubIds.includes(z.clubId));
-  }
-  return false;
-}
-
 /**
  * Geteilte Reparaturen zu einem Modell — die wachsende Reparaturdatenbank.
  *
