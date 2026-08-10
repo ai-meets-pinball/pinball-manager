@@ -1,4 +1,9 @@
 import { Ollama } from "ollama";
+import {
+  AiError,
+  type AiAdapter,
+  type AiFehlerArt,
+} from "@/lib/ai/types";
 
 /*
   Lokaler KI-Pfad über Ollama (siehe provider.ts). Einzige Stelle, an der das
@@ -81,6 +86,43 @@ export async function ollamaJson({
     content += part.message?.content ?? "";
   }
   return content;
+}
+
+/*
+  Adapter für den Anbieter-Seam (lib/ai/generate.ts). Ollama kennt kein PDF —
+  ein PDF-Dokument wird vorher in Text oder Seitenbilder übersetzt
+  (prepare-document.ts), hier kommen also nur Bilder an.
+*/
+export const ollamaAdapter: AiAdapter = async (anfrage) => {
+  const dok = anfrage.dokument;
+  if (dok?.art === "pdf") {
+    throw new AiError(
+      "sonstiges",
+      "Ollama kann PDFs nicht direkt lesen — das Handbuch muss vorher aufbereitet werden.",
+    );
+  }
+  const model = anfrage.model ?? (dok?.art === "bilder" ? VISION_MODEL : TEXT_MODEL);
+  try {
+    const text = await ollamaJson({
+      system: anfrage.system,
+      prompt: anfrage.prompt,
+      schema: anfrage.schema,
+      images: dok?.art === "bilder" ? dok.bilder : undefined,
+      model,
+    });
+    return { text, model, ende: "fertig" };
+  } catch (e) {
+    throw new AiError(fehlerArt(e), ollamaErrorMessage(e), e);
+  }
+};
+
+function fehlerArt(e: unknown): AiFehlerArt {
+  const msg = e instanceof Error ? e.message : String(e);
+  return /ECONNREFUSED|fetch failed|ENOTFOUND|EAI_AGAIN|network|socket|timeout|abort|ETIMEDOUT/i.test(
+    msg,
+  )
+    ? "nicht-erreichbar"
+    : "sonstiges";
 }
 
 /** Ollama-Fehler in eine sichere, spezifische deutsche Meldung übersetzen. */

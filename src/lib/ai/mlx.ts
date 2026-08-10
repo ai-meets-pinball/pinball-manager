@@ -18,6 +18,12 @@
   Nur lokal — auf Vercel ist ein localhost-MLX NICHT erreichbar.
 */
 
+import {
+  AiError,
+  type AiAdapter,
+  type AiFehlerArt,
+} from "@/lib/ai/types";
+
 // URLs schließen den /v1-Pfad ein (z. B. http://localhost:8082/v1).
 const TEXT_URL = process.env.MLX_TEXT_URL || "http://localhost:8082/v1";
 const TEXT_MODEL =
@@ -134,6 +140,39 @@ export async function mlxOcr(images: string[]): Promise<string> {
   }
   return seiten.join("\n\n");
 }
+
+/*
+  Adapter für den Anbieter-Seam (lib/ai/generate.ts). MLX bekommt immer Text:
+  gescannte Seiten sind vorher durch den OCR-Server gelaufen
+  (prepare-document.ts), ein PDF-Block kommt hier nie an.
+*/
+export const mlxAdapter: AiAdapter = async (anfrage) => {
+  if (anfrage.dokument) {
+    throw new AiError(
+      "sonstiges",
+      "MLX kann PDFs und Bilder nicht direkt lesen — das Handbuch muss vorher aufbereitet werden.",
+    );
+  }
+  const model = anfrage.model ?? TEXT_MODEL;
+  try {
+    const text = await mlxText({
+      system: anfrage.system,
+      prompt: anfrage.prompt,
+      schema: anfrage.schema,
+      model,
+    });
+    return { text, model, ende: "fertig" };
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    const art: AiFehlerArt =
+      /ECONNREFUSED|fetch failed|ENOTFOUND|EAI_AGAIN|network|socket|timeout|abort|ETIMEDOUT/i.test(
+        msg,
+      )
+        ? "nicht-erreichbar"
+        : "sonstiges";
+    throw new AiError(art, mlxErrorMessage(e), e);
+  }
+};
 
 /** MLX-Fehler in eine sichere, spezifische deutsche Meldung übersetzen. */
 export function mlxErrorMessage(e: unknown): string {
