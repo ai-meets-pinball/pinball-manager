@@ -33,7 +33,6 @@ const OCR_MODEL =
   process.env.MLX_OCR_MODEL || "mlx-community/Qwen2.5-VL-7B-Instruct-4bit";
 
 export const MLX_TEXT_URL = TEXT_URL;
-export const MLX_TEXT_MODEL = TEXT_MODEL;
 export const MLX_OCR_URL = OCR_URL;
 
 /** Ist ein OCR-Server konfiguriert? Ohne ihn gibt es keinen Scan-Pfad. */
@@ -175,7 +174,7 @@ export const mlxAdapter: AiAdapter = async (anfrage) => {
 };
 
 /** MLX-Fehler in eine sichere, spezifische deutsche Meldung übersetzen. */
-export function mlxErrorMessage(e: unknown): string {
+function mlxErrorMessage(e: unknown): string {
   const msg = e instanceof Error ? e.message : String(e);
   if (
     /ECONNREFUSED|fetch failed|ENOTFOUND|EAI_AGAIN|Failed to fetch|network|socket/i.test(

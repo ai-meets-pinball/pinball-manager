@@ -23,7 +23,6 @@ const TEXT_MODEL = process.env.OLLAMA_MODEL || "gemma3:12b";
 const VISION_MODEL = process.env.OLLAMA_VISION_MODEL || TEXT_MODEL;
 
 export const OLLAMA_URL = BASE_URL;
-export const OLLAMA_TEXT_MODEL = TEXT_MODEL;
 export const OLLAMA_VISION_MODEL_ID = VISION_MODEL;
 
 type OllamaJsonArgs = {
@@ -126,7 +125,7 @@ function fehlerArt(e: unknown): AiFehlerArt {
 }
 
 /** Ollama-Fehler in eine sichere, spezifische deutsche Meldung übersetzen. */
-export function ollamaErrorMessage(e: unknown): string {
+function ollamaErrorMessage(e: unknown): string {
   const msg = e instanceof Error ? e.message : String(e);
   if (/ECONNREFUSED|fetch failed|ENOTFOUND|EAI_AGAIN|Failed to fetch|network|socket/i.test(msg))
     return `Ollama nicht erreichbar unter ${BASE_URL}. Läuft der Dienst? (ollama serve)`;
