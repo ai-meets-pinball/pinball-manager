@@ -16,6 +16,7 @@ import {
   declineInvitation,
 } from "@/db/actions/invitations";
 import { db } from "@/db";
+import { istLetzterOwner } from "@/lib/rechte";
 import { clubs, invitations, roleAssignments, roles, user as userTable } from "@/db/schema";
 import { isSuperAdmin, requireUser } from "@/lib/session";
 
@@ -152,8 +153,7 @@ export default async function AccountPage() {
           <div className="space-y-2">
             {myClubs.map((c) => {
               // Der letzte Owner muss erst jemanden befördern.
-              const letzterOwner =
-                c.rolle === "owner" && Number(c.ownerCount) <= 1;
+              const letzterOwner = istLetzterOwner(c.rolle, Number(c.ownerCount));
               return (
                 <Card
                   key={c.id}

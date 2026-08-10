@@ -18,7 +18,7 @@ import {
   MAINTENANCE_INTERVALL_TYPEN,
   MAINTENANCE_PRIORITAETEN,
 } from "@/lib/validators";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   Punkte eines Standard-Wartungsplans (Vorlage): ANZEIGEN zuerst, Bearbeiten auf

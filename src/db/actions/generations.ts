@@ -6,7 +6,7 @@ import { z } from "zod";
 import { db } from "@/db";
 import { generations, machineModels } from "@/db/schema";
 import { requireSuperAdmin } from "@/lib/session";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   Verwaltung der Generationen (Board-/Hardware-Systeme) und der Zuordnung

@@ -11,7 +11,7 @@ import {
   statusAufAutomatik,
 } from "@/db/actions/machine-status";
 import { BETRIEBSSTATUS, STATUS_LABEL } from "@/lib/betriebsstatus";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   Betriebsstatus von Hand setzen (nur mit Schreibrecht). Aufklappbar, damit die

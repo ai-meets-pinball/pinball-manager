@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
-import type { FormState } from "@/db/actions/repairs";
+import type { FormState } from "@/db/actions/form-state";
 
 type Fault = { id: string; beschreibung: string; status: string };
 

@@ -6,8 +6,8 @@ import { AiProviderField } from "@/components/ui/ai-provider-field";
 import type { AiProvider } from "@/lib/ai/provider";
 import {
   importMaintenanceFromGuide,
-  type FormState,
 } from "@/db/actions/maintenance";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   „Aus Guide übernehmen": lässt Claude den Wartungsplan-Abschnitt des

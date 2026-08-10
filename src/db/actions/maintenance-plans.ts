@@ -22,7 +22,7 @@ import {
   type SessionUser,
 } from "@/lib/session";
 import { maintenanceTaskSchema } from "@/lib/validators";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   Standard-Wartungspläne (Vorlagen je Nutzer / je Club) und ihre PROPAGATION:
@@ -273,7 +273,10 @@ export async function deletePlanItem(formData: FormData): Promise<void> {
   });
   if (!item) return;
   const plan = await planOderFehler(item.planId);
-  if (!(await darfPlanBearbeiten(me, plan))) return;
+  // Kein stilles Nichtstun: eine Verweigerung soll ankommen.
+  if (!(await darfPlanBearbeiten(me, plan))) {
+    throw new Error("Nur Eigentümer bzw. Club-Manager dürfen den Standard ändern");
+  }
 
   await db.transaction(async (tx) => {
     // Tasks OHNE Historie mitlöschen; Tasks MIT Historie überleben und werden

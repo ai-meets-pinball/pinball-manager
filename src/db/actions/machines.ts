@@ -6,18 +6,18 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { machineModels, machines, repairs, shares } from "@/db/schema";
 import { parseOpdbRef } from "@/lib/opdb-ref";
+import { darfMaschine } from "@/lib/rechte";
 import {
-  isClubManager,
+  getClubRole,
   isClubMember,
-  isSuperAdmin,
   requireMachineAccess,
   requireMachineWrite,
   requireUser,
 } from "@/lib/session";
 import { uploadMachinePhoto } from "@/lib/storage";
 import { machineSchema } from "@/lib/validators";
+import type { FormState } from "@/db/actions/form-state";
 
-export type FormState = { error?: string };
 
 /*
   Nur echte OPDB-Bild-URLs zulassen — der Wert kommt aus einem versteckten
@@ -235,11 +235,9 @@ export async function assignMachinesToClub(
 
   const erlaubt: string[] = [];
   for (const m of selected) {
-    const darfLoeschen =
-      isSuperAdmin(user) ||
-      m.ownerId === user.id ||
-      (m.clubId !== null && (await isClubManager(user.id, m.clubId)));
-    if (darfLoeschen) erlaubt.push(m.id);
+    // Umhängen ist so einschneidend wie Löschen — dieselbe Regel, eine Quelle.
+    const rolle = m.clubId ? await getClubRole(user.id, m.clubId) : null;
+    if (darfMaschine(user, m, rolle).loeschen) erlaubt.push(m.id);
   }
 
   if (erlaubt.length > 0) {
@@ -252,14 +250,10 @@ export async function assignMachinesToClub(
 
 export async function deleteMachine(formData: FormData): Promise<void> {
   const id = String(formData.get("id"));
-  const { user, machine } = await requireMachineAccess(id);
-
-  // Löschen darf nur der Eigentümer, ein Club-Manager (Owner/Admin) oder ein Super-Admin.
-  const darfLoeschen =
-    isSuperAdmin(user) ||
-    machine.ownerId === user.id ||
-    (machine.clubId !== null && (await isClubManager(user.id, machine.clubId)));
-  if (!darfLoeschen) {
+  // `darf` entscheidet das bereits — die Regel steht in lib/rechte.ts und wird
+  // hier nicht ein zweites Mal nachgebaut.
+  const { darf } = await requireMachineAccess(id);
+  if (!darf.loeschen) {
     throw new Error("Nur Eigentümer oder Club-Owner/-Admin dürfen löschen");
   }
 

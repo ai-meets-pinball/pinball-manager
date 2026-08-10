@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
 import { setKnowledgeVisibility } from "@/db/actions/knowledge";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 type Sicht = "privat" | "club" | "oeffentlich";
 

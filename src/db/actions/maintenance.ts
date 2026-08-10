@@ -23,8 +23,8 @@ import {
   maintenanceTaskSchema,
   troubleshootingGuideSchema,
 } from "@/lib/validators";
+import type { FormState } from "@/db/actions/form-state";
 
-export type FormState = { error?: string; ok?: boolean };
 
 /* Fälligkeits-Helfer liegt in lib/faelligkeit.ts (rein) — auch von
    db/actions/maintenance-plans.ts (Standard-Propagation) genutzt. */

@@ -5,21 +5,20 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { clubs, machines, roleAssignments } from "@/db/schema";
+import { darfClub, istLetzterOwner } from "@/lib/rechte";
 import {
   countClubOwners,
   getClubRole,
-  isClubOwner,
-  isSuperAdmin,
   requireClubManager,
   requireClubOwner,
   requireUser,
   roleIdByKey,
 } from "@/lib/session";
 import { clubSchema, roleChangeSchema } from "@/lib/validators";
+import type { FormState } from "@/db/actions/form-state";
 // Hinweis: Mitglieder werden per Einladung hinzugefügt — siehe actions/invitations.ts.
 // Eine club-bezogene Rollenzuweisung IST die Mitgliedschaft (keine memberships-Tabelle).
 
-export type FormState = { error?: string; message?: string };
 
 export async function createClub(
   _prev: FormState,
@@ -63,22 +62,19 @@ export async function changeMemberRole(
   }
   const neueRolle = parsed.data.rolle;
 
+  const eigeneRolle = await getClubRole(currentUser.id, clubId);
   const aktuelleRolle = await getClubRole(targetUserId, clubId);
   if (!aktuelleRolle) return { error: "Mitglied nicht gefunden" };
   if (aktuelleRolle === neueRolle) return {};
 
   // Owner-betreffende Änderungen (rein oder raus) nur durch Owner / Super-Admin.
   const betrifftOwner = neueRolle === "owner" || aktuelleRolle === "owner";
-  if (
-    betrifftOwner &&
-    !isSuperAdmin(currentUser) &&
-    !(await isClubOwner(currentUser.id, clubId))
-  ) {
+  if (betrifftOwner && !darfClub(currentUser, eigeneRolle).ownerVergeben) {
     return { error: "Nur Owner dürfen die Owner-Rolle vergeben oder entziehen" };
   }
 
   // Letzten Owner nicht degradieren.
-  if (aktuelleRolle === "owner" && (await countClubOwners(clubId)) <= 1) {
+  if (istLetzterOwner(aktuelleRolle, await countClubOwners(clubId))) {
     return { error: "Ein Club braucht mindestens einen Owner" };
   }
 
@@ -111,13 +107,12 @@ export async function removeMember(formData: FormData): Promise<void> {
   // Owner dürfen nur von Ownern/Super-Admins entfernt werden.
   if (
     zielRolle === "owner" &&
-    !isSuperAdmin(currentUser) &&
-    !(await isClubOwner(currentUser.id, clubId))
+    !darfClub(currentUser, await getClubRole(currentUser.id, clubId)).ownerVergeben
   ) {
     throw new Error("Nur Owner dürfen einen Owner entfernen");
   }
   // Letzten Owner nicht entfernen.
-  if (zielRolle === "owner" && (await countClubOwners(clubId)) <= 1) {
+  if (istLetzterOwner(zielRolle, await countClubOwners(clubId))) {
     throw new Error("Ein Club braucht mindestens einen Owner");
   }
 
@@ -141,7 +136,7 @@ export async function leaveClub(formData: FormData): Promise<void> {
   const eigeneRolle = await getClubRole(currentUser.id, clubId);
   if (!eigeneRolle) throw new Error("Du bist kein Mitglied dieses Clubs");
 
-  if (eigeneRolle === "owner" && (await countClubOwners(clubId)) <= 1) {
+  if (istLetzterOwner(eigeneRolle, await countClubOwners(clubId))) {
     throw new Error(
       "Als letzter Owner kannst du nicht austreten — befördere zuerst jemanden zum Owner",
     );

@@ -6,7 +6,7 @@ import { db } from "@/db";
 import { user } from "@/db/schema";
 import { requireUser } from "@/lib/session";
 import { uploadAvatar } from "@/lib/storage";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   Profil speichern: Vorname/Nachname/Initialen + optionales Profilbild.

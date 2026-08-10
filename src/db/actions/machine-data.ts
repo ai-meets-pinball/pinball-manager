@@ -9,7 +9,7 @@ import {
   upsertTroubleshootingKnowledge,
 } from "@/lib/facts-store";
 import { getModelGeneration } from "@/db/queries";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   Import bereits extrahierter Handbuch-Fakten als JSON — die Alternative zum

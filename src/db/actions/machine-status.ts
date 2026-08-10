@@ -7,7 +7,7 @@ import { faults, machines } from "@/db/schema";
 import { naechsterStatus } from "@/lib/betriebsstatus";
 import { requireMachineWrite } from "@/lib/session";
 import { machineStatusSchema } from "@/lib/validators";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   Betriebsstatus einer Maschine — Laden und Schreiben. Die REGEL (abgeleitet vs.

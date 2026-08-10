@@ -11,7 +11,7 @@ import {
   type TemplateKey,
 } from "@/lib/email-templates";
 import { requireSuperAdmin } from "@/lib/session";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 const schema = z.object({
   key: z.enum(TEMPLATE_KEYS),

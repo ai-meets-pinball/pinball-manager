@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { List } from "@/components/ui/list";
 import { createStandard } from "@/db/actions/maintenance-plans";
 import { db } from "@/db";
+import { mindestens } from "@/lib/rechte";
 import {
   machines,
   maintenancePlanItems,
@@ -33,7 +34,7 @@ export default async function WartungsplaenePage() {
   const clubPlaene = await Promise.all(
     meineClubs.map(async (c) => ({
       club: c,
-      manager: c.rolle === "owner" || c.rolle === "admin",
+      manager: mindestens(c.rolle, "admin"),
       plan: await db.query.maintenancePlans.findFirst({
         where: eq(maintenancePlans.clubId, c.id),
       }),

@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
 import { FormFeedback } from "@/components/ui/form-feedback";
 import { submitFeedback, updateFeedback } from "@/db/actions/feedback";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   Feedback-Formulare (Client-Inseln der /feedback-Seite):
