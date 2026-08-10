@@ -10,6 +10,7 @@ import {
   setzeMaschinenStatus,
   statusAufAutomatik,
 } from "@/db/actions/machine-status";
+import { BETRIEBSSTATUS, STATUS_LABEL } from "@/lib/betriebsstatus";
 import type { FormState } from "@/db/actions/clubs";
 
 /*
@@ -79,9 +80,11 @@ export function StatusSteuerung({
       <div className="grid gap-3 sm:grid-cols-[14rem_1fr]">
         <Field label="Status">
           <Select name="status" defaultValue={status}>
-            <option value="spielbereit">Spielbereit</option>
-            <option value="eingeschraenkt">Eingeschränkt</option>
-            <option value="ausser_betrieb">Außer Betrieb</option>
+            {BETRIEBSSTATUS.map((s) => (
+              <option key={s} value={s}>
+                {STATUS_LABEL[s]}
+              </option>
+            ))}
           </Select>
         </Field>
         <Field label="Begründung (optional)">

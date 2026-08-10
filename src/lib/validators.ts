@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { BETRIEBSSTATUS } from "@/lib/betriebsstatus";
 
 /*
   Eingabevalidierung mit zod — bewusst explizit und an einem Ort,
@@ -42,9 +43,10 @@ export const faultSchema = z.object({
   status: z.enum(["offen", "in Arbeit", "behoben"]),
 });
 
-/** Maschinen-Betriebsstatus manuell setzen (Dashboard). */
+/** Maschinen-Betriebsstatus manuell setzen (Dashboard). Die Werte kommen aus
+    lib/betriebsstatus.ts, damit Schema, Auswahlfeld und Regel nicht driften. */
 export const machineStatusSchema = z.object({
-  status: z.enum(["spielbereit", "eingeschraenkt", "ausser_betrieb"]),
+  status: z.enum(BETRIEBSSTATUS),
   grund: optionalString,
 });
 
