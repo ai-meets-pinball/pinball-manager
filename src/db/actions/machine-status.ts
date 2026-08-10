@@ -1,22 +1,21 @@
 "use server";
 
-import { and, eq, ne } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { faults, machines } from "@/db/schema";
+import { naechsterStatus } from "@/lib/betriebsstatus";
 import { requireMachineWrite } from "@/lib/session";
 import { machineStatusSchema } from "@/lib/validators";
 import type { FormState } from "@/db/actions/clubs";
 
 /*
-  Betriebsstatus einer Maschine (Dashboard) — HYBRID:
-  - `statusManuell=false`: der Status wird aus den offenen Fehlern abgeleitet
-    (irgendein OFFENER kritischer Fehler → „eingeschränkt", sonst „spielbereit").
-    `aktualisiereMaschinenStatus` läuft nach jeder Fehler-/Reparatur-Mutation.
-  - `statusManuell=true`: von Hand gepinnt (mit Begründung) — die Automatik
-    rührt ihn NICHT an, bis „Zurück auf Automatik" gewählt wird.
-  `statusSeit` wird nur bei ECHTER Änderung gebumpt, damit der „Seit"-Ticker
-  ehrlich bleibt.
+  Betriebsstatus einer Maschine — Laden und Schreiben. Die REGEL (abgeleitet vs.
+  gepinnt, wann sich überhaupt etwas ändert) liegt rein in lib/betriebsstatus.ts
+  und ist dort direkt getestet.
+
+  `aktualisiereMaschinenStatus` läuft nach jeder Fehler-/Reparatur-Mutation —
+  diese Pflicht tragen weiterhin die Aufrufer in faults.ts und repairs.ts.
 */
 
 /** Effektivstatus neu berechnen (No-Op, wenn manuell gepinnt). */
@@ -24,22 +23,21 @@ export async function aktualisiereMaschinenStatus(
   machineId: string,
 ): Promise<void> {
   const [m] = await db
-    .select({ status: machines.status, manuell: machines.statusManuell })
+    .select({ status: machines.status, statusManuell: machines.statusManuell })
     .from(machines)
     .where(eq(machines.id, machineId))
     .limit(1);
-  if (!m || m.manuell) return;
+  if (!m) return;
 
-  const offeneKritische = await db.query.faults.findFirst({
-    where: and(
-      eq(faults.machineId, machineId),
-      eq(faults.prioritaet, "kritisch"),
-      ne(faults.status, "behoben"),
-    ),
-    columns: { id: true },
-  });
-  const neu = offeneKritische ? "eingeschraenkt" : "spielbereit";
-  if (neu === m.status) return;
+  // Die Fehler kommen ungefiltert herein: WELCHE einen Betrieb einschränken,
+  // entscheidet lib/betriebsstatus.ts — nicht die WHERE-Klausel.
+  const fehler = await db
+    .select({ prioritaet: faults.prioritaet, status: faults.status })
+    .from(faults)
+    .where(eq(faults.machineId, machineId));
+
+  const neu = naechsterStatus(m, fehler);
+  if (neu === null) return;
 
   await db
     .update(machines)

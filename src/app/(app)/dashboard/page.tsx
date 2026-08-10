@@ -8,6 +8,7 @@ import {
   getOpenFaultsForMachines,
   getVisibleMachines,
 } from "@/db/queries";
+import { schwerster, type Betriebsstatus } from "@/lib/betriebsstatus";
 import { modellName } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 
@@ -28,10 +29,12 @@ export default async function DashboardPage() {
   ]);
   const faellige = wartungen.filter((w) => w.status === "faellig");
   // Betriebsstatus über die Flotte: alles außer „spielbereit" braucht Blick.
+  // Wie schwer die Gesamtlage ist, entscheidet dieselbe Ordnung wie bei der
+  // einzelnen Maschine (lib/betriebsstatus.ts).
   const nichtSpielbereit = machines.filter((m) => m.status !== "spielbereit");
-  const ausserBetrieb = nichtSpielbereit.some(
-    (m) => m.status === "ausser_betrieb",
-  );
+  const ausserBetrieb =
+    schwerster(nichtSpielbereit.map((m) => m.status as Betriebsstatus)) ===
+    "ausser_betrieb";
 
   const kpis = [
     {
