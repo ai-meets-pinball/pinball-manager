@@ -12,11 +12,9 @@ const supabaseUrl =
   process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL!;
 
 function storageClient() {
-  return createClient(
-    supabaseUrl,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    { auth: { persistSession: false } },
-  );
+  return createClient(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: { persistSession: false },
+  });
 }
 
 /*
@@ -45,7 +43,8 @@ function erkenneBildtyp(b: Uint8Array): keyof typeof ERLAUBTE_BILDTYPEN | null {
     [...s].every((c, i) => b[offset + i] === c.charCodeAt(0));
 
   if (gleich(0, 0xff, 0xd8, 0xff)) return "image/jpeg";
-  if (gleich(0, 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a)) return "image/png";
+  if (gleich(0, 0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a))
+    return "image/png";
   if (ascii(0, "GIF8")) return "image/gif";
   if (ascii(0, "RIFF") && ascii(8, "WEBP")) return "image/webp";
   if (ascii(4, "ftyp") && ascii(8, "avif")) return "image/avif";
@@ -115,4 +114,56 @@ export async function uploadFeedbackScreenshot(
 ): Promise<string | null> {
   if (!file || file.size === 0) return null;
   return uploadBild(file, "feedback/", userId);
+}
+
+/*
+  Club-Logo: erlaubt sind JPG, PNG und SVG. SVG ist kein Magic-Byte-Format,
+  sondern XML-Text und braucht einen eigenen Zweig. Aktive Inhalte (Skripte,
+  Event-Handler) werden abgelehnt — zwar liefert der Storage von einer fremden
+  Origin aus (kein Zugriff auf App-Cookies) und die App bindet Logos nur per
+  <img> ein (führt nichts aus), aber ein Skript-SVG hat trotzdem nichts im
+  öffentlichen Bucket verloren.
+*/
+const MAX_SVG_BYTES = 1 * 1024 * 1024; // 1 MB — Logos sind klein.
+
+export async function uploadClubLogo(
+  file: File | null,
+  userId: string,
+): Promise<string | null> {
+  if (!file || file.size === 0) return null;
+
+  // Raster-Zweig: nur JPG/PNG (per Magic Bytes erkannt).
+  const kopf = new Uint8Array(await file.slice(0, 16).arrayBuffer());
+  const rasterTyp = erkenneBildtyp(kopf);
+  if (rasterTyp === "image/jpeg" || rasterTyp === "image/png") {
+    return uploadBild(file, "club-logos/", userId);
+  }
+
+  // SVG-Zweig: als Text prüfen, dann mit festem Content-Type hochladen.
+  if (file.size > MAX_SVG_BYTES) {
+    throw new Error("Logo (SVG) zu groß (maximal 1 MB).");
+  }
+  const text = await file.text();
+  if (!/<svg[\s>]/i.test(text)) {
+    throw new Error("Als Logo sind JPG, PNG und SVG möglich.");
+  }
+  if (/<script|javascript:|\son\w+\s*=/i.test(text)) {
+    throw new Error(
+      "SVG mit aktiven Inhalten (Skripte/Handler) ist nicht erlaubt.",
+    );
+  }
+
+  const supabase = storageClient();
+  const path = `club-logos/${userId}/${crypto.randomUUID()}.svg`;
+  const { error } = await supabase.storage
+    .from(bucket)
+    .upload(path, new Blob([text], { type: "image/svg+xml" }), {
+      contentType: "image/svg+xml",
+      upsert: false,
+    });
+  if (error) {
+    throw new Error(`Logo-Upload fehlgeschlagen: ${error.message}`);
+  }
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+  return data.publicUrl;
 }

@@ -114,6 +114,24 @@ export async function getBesitzerKatalog(currentUser: SessionUser) {
     .orderBy(machineBesitzer.name);
 }
 
+/** Maschine über ihren kurzen QR-Melde-Code (öffentliche Melde-Seite /m) —
+    bewusst nur die Felder, die die Seite zeigt bzw. für die Zugriffs-Weiche
+    braucht. */
+export async function getMachineByQrToken(token: string) {
+  return db.query.machines.findFirst({
+    where: eq(machines.qrToken, token),
+    columns: {
+      id: true,
+      hersteller: true,
+      modell: true,
+      baujahr: true,
+      fotoUrl: true,
+      ownerId: true,
+      clubId: true,
+    },
+  });
+}
+
 /** Die eingetragenen Besitzer EINER Maschine (n:m), alphabetisch. */
 export async function getMachineBesitzer(machineId: string) {
   return db
@@ -223,7 +241,10 @@ export async function getMachineFaults(
       prioritaet: faults.prioritaet,
       status: faults.status,
       datum: faults.datum,
-      melderName: user.name,
+      // Konto-Name — oder der Gast-Name aus der QR-Meldung, gekennzeichnet.
+      melderName: sql<
+        string | null
+      >`coalesce(${user.name}, ${faults.gemeldetVonName} || ' (Gast)')`,
     })
     .from(faults)
     .leftJoin(user, eq(user.id, faults.gemeldetVon))

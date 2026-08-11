@@ -2,6 +2,7 @@ import { and, desc, eq } from "drizzle-orm";
 import Link from "next/link";
 import { Trash2, X } from "lucide-react";
 import { AddMemberForm } from "@/components/add-member-form";
+import { ClubLogoForm } from "@/components/club-logo-form";
 import { MachineCard } from "@/components/machine-card";
 import { MemberActions } from "@/components/member-actions";
 import { RoleInfo } from "@/components/role-info";
@@ -20,11 +21,7 @@ import {
   roles,
   user,
 } from "@/db/schema";
-import {
-  isClubManager,
-  isClubOwner,
-  requireClubMember,
-} from "@/lib/session";
+import { isClubManager, isClubOwner, requireClubMember } from "@/lib/session";
 import type { ClubRole } from "@/lib/validators";
 
 export default async function ClubDetailPage({
@@ -91,7 +88,17 @@ export default async function ClubDetailPage({
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">{club.name}</h1>
+        <div className="flex items-center gap-3">
+          {club.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={club.logoUrl}
+              alt={`Logo ${club.name}`}
+              className="h-12 w-12 flex-none rounded-[var(--radius)] object-contain"
+            />
+          ) : null}
+          <h1 className="text-2xl font-bold">{club.name}</h1>
+        </div>
         {owner ? (
           <form action={deleteClub}>
             <input type="hidden" name="clubId" value={club.id} />
@@ -158,7 +165,11 @@ export default async function ClubDetailPage({
                       <StatusBadge value={inv.rolle} />
                       <form action={revokeInvitation}>
                         <input type="hidden" name="clubId" value={club.id} />
-                        <input type="hidden" name="invitationId" value={inv.id} />
+                        <input
+                          type="hidden"
+                          name="invitationId"
+                          value={inv.id}
+                        />
                         <button
                           type="submit"
                           aria-label="Einladung zurückziehen"
@@ -175,6 +186,16 @@ export default async function ClubDetailPage({
           </Card>
         ) : null}
       </section>
+
+      {/* Vereins-Logo (nur Owner/Admin) — erscheint u. a. auf den QR-Etiketten. */}
+      {manager ? (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">Logo</h2>
+          <Card>
+            <ClubLogoForm clubId={club.id} hatLogo={Boolean(club.logoUrl)} />
+          </Card>
+        </section>
+      ) : null}
 
       {/* Freigabe-Voreinstellungen für Club-Maschinen (nur Owner/Admin) */}
       {manager ? (

@@ -20,6 +20,13 @@ export function ClubForm({
       <Field label="Club-Name">
         <Input name="name" required />
       </Field>
+      <Field label="Logo (optional)" hint="JPG, PNG oder SVG.">
+        <Input
+          name="logo"
+          type="file"
+          accept=".jpg,.jpeg,.png,.svg,image/jpeg,image/png,image/svg+xml"
+        />
+      </Field>
       {state.error ? (
         <p className="text-sm text-[var(--color-danger)]">{state.error}</p>
       ) : null}

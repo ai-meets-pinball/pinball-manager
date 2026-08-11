@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
-import { Boxes, Pencil, Plus, Trash2, Users } from "lucide-react";
+import { Boxes, Pencil, Plus, QrCode, Trash2, Users } from "lucide-react";
 import { BesitzerZeile } from "@/components/besitzer-zeile";
 import { FaultList } from "@/components/fault-list";
 import { KnowledgeFacts } from "@/components/knowledge-facts";
@@ -329,6 +329,14 @@ export default async function MachineDetailPage({
         </div>
         <div className="flex items-center gap-4">
           <LiveClock />
+          {/* QR-Etikett: führt zur öffentlichen Melde-Seite dieser Maschine —
+              lesen/drucken darf jeder mit Zugriff. */}
+          <Link
+            href={`/machines/${machine.id}/qr`}
+            className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-2 text-sm hover:bg-[var(--color-border)]/40"
+          >
+            <QrCode size={15} /> QR-Code
+          </Link>
           {/* Schreibende Bedienelemente nur, wenn der Nutzer auch schreiben darf
               (Supporter haben nur Lesezugriff). */}
           {darf.bearbeiten ? (

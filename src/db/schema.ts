@@ -99,6 +99,8 @@ export const feedbackStatus = pgEnum("feedback_status", [
 export const clubs = pgTable("clubs", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
+  // Vereins-Logo (JPG/PNG/SVG, Supabase Storage club-logos/) — optional.
+  logoUrl: text("logo_url"),
   createdBy: text("created_by")
     .notNull()
     .references(() => user.id),
@@ -309,6 +311,16 @@ export const machines = pgTable("machines", {
   opdbRef: text("opdb_ref"),
   ipdbRef: text("ipdb_ref"),
   fotoUrl: text("foto_url"),
+  // QR-Melde-Code: wer den QR-Code der Maschine scannt (physischer Zugang),
+  // darf über /m/<code> einen Fehler melden — auch ohne Konto. Bewusst ein
+  // EIGENES Geheimnis statt der Maschinen-id: die id kursiert in App-URLs,
+  // der Code nur auf dem Aufkleber (und ist damit später austauschbar).
+  // KURZ (12 Hex-Zeichen ≈ 48 Bit) statt uuid, damit der QR grob und auch
+  // klein gedruckt gut scannbar bleibt.
+  qrToken: text("qr_token")
+    .notNull()
+    .unique()
+    .default(sql`substr(md5(gen_random_uuid()::text), 1, 12)`),
   // Verknüpfter Standard-Wartungsplan (maintenance_plans): gesetzt = die
   // Maschine FOLGT dem Standard (Änderungen propagieren); null = eigener Plan
   // (Kopie oder eigenständig). Standard gelöscht → Maschine wird eigenständig.
@@ -341,6 +353,9 @@ export const faults = pgTable("faults", {
   prioritaet: faultPrioritaet("prioritaet").notNull().default("mittel"),
   status: faultStatus("status").notNull().default("offen"),
   gemeldetVon: text("gemeldet_von").references(() => user.id),
+  // Gast-Meldung über den QR-Code: nur ein angegebener Name, kein Konto
+  // (dann ist gemeldetVon NULL). Anzeige als „<Name> (Gast)".
+  gemeldetVonName: text("gemeldet_von_name"),
 });
 
 /* ── Reparaturen ──────────────────────────────────────────────────────────── */

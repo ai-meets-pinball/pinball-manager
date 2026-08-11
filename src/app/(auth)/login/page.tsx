@@ -1,15 +1,29 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { PasswordField } from "@/components/ui/password-field";
 import { signIn } from "@/lib/auth-client";
 
+/* useSearchParams braucht in Next eine Suspense-Grenze — daher der Wrapper. */
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
+  // Rücksprungziel (z. B. von der QR-Melde-Seite): nur RELATIVE Pfade zulassen
+  // — sonst wäre das ein Open-Redirect auf fremde Seiten.
+  const von = useSearchParams().get("von");
+  const ziel =
+    von && von.startsWith("/") && !von.startsWith("//") ? von : "/machines";
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -29,7 +43,7 @@ export default function LoginPage() {
       setError(error.message ?? "Anmeldung fehlgeschlagen");
       return;
     }
-    router.push("/machines");
+    router.push(ziel);
     router.refresh();
   }
 
@@ -47,7 +61,9 @@ export default function LoginPage() {
             autoComplete="current-password"
           />
         </Field>
-        {error ? <p className="text-sm text-[var(--color-danger)]">{error}</p> : null}
+        {error ? (
+          <p className="text-sm text-[var(--color-danger)]">{error}</p>
+        ) : null}
         <Button type="submit" disabled={loading}>
           {loading ? "Anmelden…" : "Anmelden"}
         </Button>

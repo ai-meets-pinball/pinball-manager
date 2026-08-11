@@ -129,6 +129,10 @@ export const ANLEITUNG: HilfeSektion[] = [
         titel: "Gut zu wissen",
         text: "Das Symptom lebt am Fehler und wird nie an die Reparatur dupliziert — Fehler und Reparatur sind bewusst getrennt.",
       },
+      {
+        titel: "Per QR-Code melden — auch ohne Konto",
+        text: "Jede Maschine hat ein QR-Etikett (Detailseite → »QR-Code«, drucken und ans Gerät kleben). Wer den Code scannt, landet auf einer öffentlichen Melde-Seite: Angemeldete mit Zugriff kommen direkt in den Fehler-Reiter; alle anderen — auch Gäste ganz ohne Konto — beschreiben das Symptom und geben nur ihren Namen an (erscheint als »… (Gast)«). Priorität und Status vergibt anschließend der Betreiber. Ein Login ist der bevorzugte Weg, aber keine Voraussetzung.",
+      },
     ],
   },
   {
@@ -195,6 +199,10 @@ export const ANLEITUNG: HilfeSektion[] = [
       {
         titel: "Club erstellen",
         text: "Nutzer-Icon → Clubs → »Neuer Club«. Als Ersteller wirst du automatisch Owner.",
+      },
+      {
+        titel: "Vereins-Logo",
+        text: "Beim Erstellen oder später auf der Club-Seite (Abschnitt »Logo«, Owner/Admin) lässt sich ein Logo hochladen — JPG, PNG oder SVG. Es erscheint im Club-Kopf und kann beim Download des QR-Etiketts wahlweise links oder rechts neben den Code ins Bild integriert werden.",
       },
       {
         titel: "Mitglieder einladen",

@@ -14,11 +14,11 @@ import {
   requireUser,
   roleIdByKey,
 } from "@/lib/session";
+import { uploadClubLogo } from "@/lib/storage";
 import { clubSchema, roleChangeSchema } from "@/lib/validators";
 import type { FormState } from "@/db/actions/form-state";
 // Hinweis: Mitglieder werden per Einladung hinzugefügt — siehe actions/invitations.ts.
 // Eine club-bezogene Rollenzuweisung IST die Mitgliedschaft (keine memberships-Tabelle).
-
 
 export async function createClub(
   _prev: FormState,
@@ -30,9 +30,20 @@ export async function createClub(
     return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
   }
 
+  // Optionales Vereins-Logo (JPG/PNG/SVG).
+  let logoUrl: string | null = null;
+  try {
+    logoUrl = await uploadClubLogo(
+      formData.get("logo") as File | null,
+      currentUser.id,
+    );
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+
   const [club] = await db
     .insert(clubs)
-    .values({ name: parsed.data.name, createdBy: currentUser.id })
+    .values({ name: parsed.data.name, logoUrl, createdBy: currentUser.id })
     .returning({ id: clubs.id });
 
   // Der Ersteller wird automatisch Owner (= zugleich seine Mitgliedschaft).
@@ -44,6 +55,36 @@ export async function createClub(
 
   revalidatePath("/clubs");
   redirect(`/clubs/${club.id}`);
+}
+
+/** Vereins-Logo setzen oder entfernen (Owner/Admin). JPG, PNG oder SVG. */
+export async function setClubLogo(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const clubId = String(formData.get("clubId") ?? "");
+  const currentUser = await requireClubManager(clubId);
+
+  if (String(formData.get("entfernen") ?? "") === "true") {
+    await db.update(clubs).set({ logoUrl: null }).where(eq(clubs.id, clubId));
+    revalidatePath(`/clubs/${clubId}`);
+    return { message: "Logo entfernt." };
+  }
+
+  let logoUrl: string | null;
+  try {
+    logoUrl = await uploadClubLogo(
+      formData.get("logo") as File | null,
+      currentUser.id,
+    );
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+  if (!logoUrl) return { error: "Bitte eine Logo-Datei wählen." };
+
+  await db.update(clubs).set({ logoUrl }).where(eq(clubs.id, clubId));
+  revalidatePath(`/clubs/${clubId}`);
+  return { message: "Logo gespeichert." };
 }
 
 /** Rolle eines Mitglieds ändern (Manager). Owner betreffende Änderungen nur durch
@@ -70,7 +111,9 @@ export async function changeMemberRole(
   // Owner-betreffende Änderungen (rein oder raus) nur durch Owner / Super-Admin.
   const betrifftOwner = neueRolle === "owner" || aktuelleRolle === "owner";
   if (betrifftOwner && !darfClub(currentUser, eigeneRolle).ownerVergeben) {
-    return { error: "Nur Owner dürfen die Owner-Rolle vergeben oder entziehen" };
+    return {
+      error: "Nur Owner dürfen die Owner-Rolle vergeben oder entziehen",
+    };
   }
 
   // Letzten Owner nicht degradieren.
@@ -107,7 +150,8 @@ export async function removeMember(formData: FormData): Promise<void> {
   // Owner dürfen nur von Ownern/Super-Admins entfernt werden.
   if (
     zielRolle === "owner" &&
-    !darfClub(currentUser, await getClubRole(currentUser.id, clubId)).ownerVergeben
+    !darfClub(currentUser, await getClubRole(currentUser.id, clubId))
+      .ownerVergeben
   ) {
     throw new Error("Nur Owner dürfen einen Owner entfernen");
   }
