@@ -6,10 +6,10 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { faults, repairFaults, repairs } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
-import { aktualisiereMaschinenStatus } from "@/db/actions/machine-status";
+import { mitStatusNachzug } from "@/db/actions/machine-status";
 import { repairSchema } from "@/lib/validators";
+import type { FormState } from "@/db/actions/form-state";
 
-export type FormState = { error?: string };
 
 /* Die gewählten Fehler einlesen (Mehrfachauswahl) und prüfen, dass ALLE wirklich
    zu dieser Maschine gehören — sonst könnte man über eine eigene Maschine fremde
@@ -52,7 +52,7 @@ export async function createRepair(
 
   // Das Symptom wird NICHT kopiert — es lebt am Fehler. Hier nur die Verknüpfung.
   // `faultId` bleibt als „primärer" Fehler gesetzt (geteilte Ansicht zeigt eins).
-  await db.transaction(async (tx) => {
+  await mitStatusNachzug(machineId, async (tx) => {
     const [rep] = await tx
       .insert(repairs)
       .values({
@@ -82,8 +82,6 @@ export async function createRepair(
     }
   });
 
-  // Eine erledigte Reparatur kann einen kritischen Fehler geräumt haben.
-  await aktualisiereMaschinenStatus(machineId);
   revalidatePath(`/machines/${machineId}`);
   redirect(`/machines/${machineId}`);
 }
@@ -114,7 +112,7 @@ export async function updateRepair(
   if ("error" in faultRes) return faultRes;
   const faultIds = faultRes.ids;
 
-  await db.transaction(async (tx) => {
+  await mitStatusNachzug(machineId, async (tx) => {
     await tx
       .update(repairs)
       .set({
@@ -144,7 +142,6 @@ export async function updateRepair(
     }
   });
 
-  await aktualisiereMaschinenStatus(machineId);
   revalidatePath(`/machines/${machineId}`);
   redirect(`/machines/${machineId}`);
 }
@@ -159,7 +156,7 @@ export async function deleteRepair(formData: FormData): Promise<void> {
     .delete(repairs)
     .where(and(eq(repairs.id, id), eq(repairs.machineId, machineId)));
 
-  // BEWUSST kein aktualisiereMaschinenStatus: das Löschen einer Reparatur
+  // BEWUSST ohne mitStatusNachzug: das Löschen einer Reparatur
   // öffnet keinen behobenen Fehler wieder — der Status ändert sich nicht.
   revalidatePath(`/machines/${machineId}`);
 }

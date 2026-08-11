@@ -1,26 +1,13 @@
-import Anthropic from "@anthropic-ai/sdk";
-import { extractSchema, FACT_TYPES } from "@/lib/validators";
+import { extractSchema, FACT_COLUMNS, FACT_TYPES } from "@/lib/validators";
 import { upsertModelKnowledge } from "@/lib/facts-store";
+import { parseFacts } from "@/lib/import-facts";
+import { SONNET_MODEL, type AiProvider } from "@/lib/ai/provider";
+import { AiError, generateJson } from "@/lib/ai/generate";
 import {
-  anthropicModelFor,
-  claudePdfMaxPages,
-  SONNET_MODEL,
-  type AiProvider,
-} from "@/lib/ai/provider";
-import { ollamaErrorMessage, ollamaJson } from "@/lib/ai/ollama";
-import {
-  mlxErrorMessage,
-  mlxOcr,
-  mlxOcrConfigured,
-  mlxText,
-} from "@/lib/ai/mlx";
-import {
-  pdfPageCount,
-  preparePdfForLocalModel,
-  renderPdfPagesToPng,
-  type LocalPdfInput,
-} from "@/lib/ai/prepare-pdf";
-import { splitPdfForClaude } from "@/lib/ai/split-pdf";
+  prepareDocument,
+  type Aufbereitung,
+  type Paket,
+} from "@/lib/ai/prepare-document";
 
 /*
   Phase-2-Pipeline: Handbuch (PDF) → Faktentabellen.
@@ -30,11 +17,17 @@ import { splitPdfForClaude } from "@/lib/ai/split-pdf";
   (src/app/api/machines/[id]/extract-manual/route.ts), damit der Client bei großen
   gescannten Handbüchern live sieht, wo die Verarbeitung steht.
 
+  Der Anbieter kommt hier nur noch als Wert vor, nicht als Verzweigung:
+  prepare-document.ts übersetzt das PDF in Pakete, generate.ts spricht mit dem
+  Modell. Was hier bleibt, ist Extraktionswissen — Fortschritt melden, Pakete
+  zusammenführen, und bei „auto" mit dem stärkeren Modell nachlegen, wenn das
+  günstige nichts fand.
+
   Copyright-Leitplanken (PRD §6):
   - Upload nur mit Eigentums-/Rechtebestätigung (Attestation).
   - Das PDF wird NIE gespeichert: die Bytes leben nur im Request-Speicher und
     werden danach verworfen (kein Storage, nichts zu löschen).
-  - Nur die extrahierten Faktentabellen landen in machine_data.
+  - Nur die extrahierten Faktentabellen landen als Modell-Wissen in der DB.
 */
 
 /** Fortschritts-Events des Extraktions-Generators (an den Client gestreamt). */
@@ -46,9 +39,6 @@ export type ExtractProgress =
   | { type: "error"; error: string };
 
 const MAX_BYTES = 50 * 1024 * 1024; // 50 MB (In-Memory-Grenze, vgl. next.config.ts)
-// Vision-Batching: gescannte Seiten häppchenweise ans lokale Modell geben (kleine
-// Modelle verarbeiten wenige Bilder je Aufruf zuverlässiger und schneller).
-const VISION_BATCH = Number(process.env.LOCAL_VISION_BATCH_SIZE) || 6;
 
 /* JSON-Schema für Structured Output — spiegelt extractSchema (validators.ts). */
 const factTableJsonSchema = {
@@ -70,95 +60,29 @@ const outputJsonSchema = {
   additionalProperties: false,
 };
 
+/*
+  Die Spalten kommen aus FACT_COLUMNS, nicht als abgeschriebene Prosa. Vorher
+  standen sie hier fest verdrahtet, während der Import-Prompt sie ableitete —
+  eine Änderung an FACT_COLUMNS ließ den KI-Prompt still verrotten.
+*/
 const EXTRACT_PROMPT = `Du erhältst das Handbuch eines Flipperautomaten als PDF.
 Extrahiere AUSSCHLIESSLICH die technischen Referenztabellen, sofern im Handbuch vorhanden.
 Verwende je Tabelle GENAU diese Spaltenüberschriften (in dieser Reihenfolge), auch wenn das Handbuch
 sie anders benennt — ordne die Werte entsprechend zu; fehlt ein Wert, gib eine leere Zelle "":
 
-- coils    → ["Sol/No", "Funktion", "Typ", "Drive Q", "Wire", "Board"]
-- switches → ["Sw/No", "Column", "Row", "Typ", "Funktion"]
+- coils    → ${JSON.stringify(FACT_COLUMNS.coils)}
+- switches → ${JSON.stringify(FACT_COLUMNS.switches)}
              (Switch-Matrix: Column/Row = Rasterposition; bei nicht-Matrix-Schaltern Column/Row = "".
               Typ = "opto" wenn es ein Opto-Schalter ist, sonst "mechanisch")
-- lamps    → ["Lamp/No", "Column", "Row", "Funktion"]
+- lamps    → ${JSON.stringify(FACT_COLUMNS.lamps)}
              (Lampenmatrix 8×8: Lamp/No = Column×10 + Row; also Column/Row aus der Nummer ableiten)
-- fuses    → ["Board", "Fuse", "Rating", "Schützt"]
-- parts    → ["Part No", "Beschreibung"]
-- rules    → ["Adj/No", "Beschreibung", "Bereich/Standard"]
+- fuses    → ${JSON.stringify(FACT_COLUMNS.fuses)}
+- parts    → ${JSON.stringify(FACT_COLUMNS.parts)}
+- rules    → ${JSON.stringify(FACT_COLUMNS.rules)}
 
 Regeln: NUR reine Fakten aus diesen Tabellen — KEINEN Fließtext, KEINE Spielregeln-Erklärungen,
 KEINE ganzen Seiten, KEINE Beschreibungen. Fehlt eine Tabelle im Handbuch, gib für sie leere
 "columns" und "rows" zurück. Halte dich kompakt, keine Duplikate, keine Wiederholungen.`;
-
-/** JSON aus dem Antworttext lösen (falls das Modell etwas umrahmt). */
-function extractJson(text: string): string {
-  const start = text.indexOf("{");
-  const end = text.lastIndexOf("}");
-  return start >= 0 && end > start ? text.slice(start, end + 1) : text;
-}
-
-/** API-/Netzwerkfehler in eine sichere, spezifische Meldung übersetzen. Neben den
-    Fehlerklassen auch die Meldung prüfen: Overloaded (529) und Rate-Limit kommen aus
-    dem Stream teils NICHT als passende Klasse an, sondern als roher Error. */
-function apiErrorMessage(e: unknown): string {
-  const msg = e instanceof Error ? e.message : String(e);
-  if (e instanceof Anthropic.AuthenticationError) return "Claude-API-Key ist ungültig.";
-  if (e instanceof Anthropic.PermissionDeniedError)
-    return "Kein Zugriff auf Claude (Rechte oder Guthaben prüfen).";
-  if (e instanceof Anthropic.NotFoundError)
-    return "Modell nicht verfügbar — ANTHROPIC_MODEL prüfen.";
-  if (e instanceof Anthropic.InternalServerError || /overloaded|\b529\b/i.test(msg))
-    return "Claude ist gerade überlastet. Bitte in ein paar Minuten erneut versuchen.";
-  if (e instanceof Anthropic.RateLimitError || /rate[_ -]?limit|\b429\b/i.test(msg))
-    return "Zu viele Anfragen an Claude. Bitte kurz warten und erneut versuchen.";
-  if (e instanceof Anthropic.APIConnectionError || /connection|fetch failed|network|ECONN/i.test(msg))
-    return "Verbindung zu Claude fehlgeschlagen. Bitte später erneut versuchen.";
-  return `Extraktion fehlgeschlagen: ${msg.slice(0, 200)}`;
-}
-
-/** Streamt den Extraktions-Call und liefert die vollständige Antwort. */
-async function anthropicCall(apiKey: string, base64: string, model: string) {
-  // Mehr Retries als Default (2): transiente 429/5xx/Overloaded-Fehler von Claude
-  // sollen sich möglichst selbst heilen, bevor der Nutzer eine Fehlermeldung sieht.
-  const client = new Anthropic({ apiKey, maxRetries: 4 });
-  return client.messages
-    .stream({
-      model,
-      max_tokens: 64000,
-      output_config: { format: { type: "json_schema", schema: outputJsonSchema } },
-      messages: [
-        {
-          role: "user",
-          content: [
-            {
-              type: "document",
-              source: { type: "base64", media_type: "application/pdf", data: base64 },
-            },
-            { type: "text", text: EXTRACT_PROMPT },
-          ],
-        },
-      ],
-    })
-    .finalMessage();
-}
-
-/** Wie anthropicCall, aber mit vor-gerenderten SEITENBILDERN (hohe Detailstufe)
-    statt dem PDF-Block — schärfere Vorlage für schwer lesbare Scans. */
-async function anthropicCallImages(apiKey: string, images: string[], model: string) {
-  const client = new Anthropic({ apiKey, maxRetries: 4 });
-  const content: Anthropic.ContentBlockParam[] = images.map((data) => ({
-    type: "image",
-    source: { type: "base64", media_type: "image/png", data },
-  }));
-  content.push({ type: "text", text: EXTRACT_PROMPT });
-  return client.messages
-    .stream({
-      model,
-      max_tokens: 64000,
-      output_config: { format: { type: "json_schema", schema: outputJsonSchema } },
-      messages: [{ role: "user", content }],
-    })
-    .finalMessage();
-}
 
 type ExtractResult = ReturnType<typeof extractSchema.parse>;
 
@@ -174,9 +98,9 @@ function emptyResult(): ExtractResult {
   };
 }
 
-/** Faktentabellen mehrerer Vision-Batches zusammenführen: Zeilen anhängen,
-    Duplikate (identische Zeilen, z. B. wiederholte Kopfzeilen) entfernen. */
-function mergeFactResults(parts: ExtractResult[]): ExtractResult {
+/** Faktentabellen mehrerer Pakete zusammenführen: Zeilen anhängen, Duplikate
+    (identische Zeilen, z. B. wiederholte Kopfzeilen) entfernen. */
+export function mergeFactResults(parts: ExtractResult[]): ExtractResult {
   const merged = emptyResult();
   for (const t of FACT_TYPES) {
     const gesehen = new Set<string>();
@@ -197,143 +121,139 @@ function mergeFactResults(parts: ExtractResult[]): ExtractResult {
   return merged;
 }
 
+/** Hat ein Ergebnis überhaupt eine Zeile? */
+export function istLeer(r: ExtractResult): boolean {
+  return FACT_TYPES.every((t) => r[t].rows.length === 0);
+}
+
+/** Prompt für ein Paket: der feste Extraktionsauftrag plus, falls das Paket
+    Text statt eines Dokuments liefert, der Handbuchtext selbst. */
+function paketPrompt(text: string | undefined): string {
+  return text ? `${EXTRACT_PROMPT}\n\nHandbuchtext:\n${text}` : EXTRACT_PROMPT;
+}
+
 /*
-  Ein Claude-Durchgang über alle PDF-Pakete mit EINEM Modell. Liefert unterwegs
-  batch/info-Events und gibt die Teil-Ergebnisse zurück — oder "abort", wenn ein
-  harter Fehler auftrat (das Fehler-Event wurde dann schon gestreamt). Wird für
-  den 1. Durchgang (ggf. Haiku) und den Sonnet-Fallback wiederverwendet.
+  Ein Durchgang über alle Pakete mit EINEM Modell. Liefert unterwegs
+  batch/info-Events und gibt die Teil-Ergebnisse zurück — oder "abort", wenn
+  ein harter Fehler auftrat (das Fehler-Event wurde dann schon gestreamt).
+  Wird für den 1. Durchgang und den Sonnet-Fallback wiederverwendet.
 */
-async function* extractPdfChunksWithClaude(
-  key: string,
-  fileName: string,
-  model: string,
-  split: Awaited<ReturnType<typeof splitPdfForClaude>>,
+async function* durchgang(
+  provider: AiProvider,
+  aufbereitung: Aufbereitung,
+  opts: { apiKey?: string; model?: string },
 ): AsyncGenerator<ExtractProgress, ExtractResult[] | "abort"> {
-  const totalBatches = split.chunks.length;
   const teile: ExtractResult[] = [];
+  const gesamt = aufbereitung.pakete.length;
+  // Dieselbe Warnung („Spaltenüberschriften fehlten") kommt sonst je Paket
+  // einmal — einmal sagen reicht.
+  const gemeldet = new Set<string>();
 
-  for (let i = 0; i < split.chunks.length; i++) {
-    const chunk = split.chunks[i];
-    if (totalBatches > 1) {
-      yield {
-        type: "batch",
-        batch: i + 1,
-        totalBatches,
-        fromPage: chunk.fromPage,
-        toPage: chunk.toPage,
-      };
-    } else {
-      yield { type: "info", message: `Claude (${model}) verarbeitet das Handbuch …` };
-    }
+  for (const paket of aufbereitung.pakete) {
+    yield* meldePaket(paket, gesamt, opts.model);
 
-    let response: Awaited<ReturnType<typeof anthropicCall>>;
+    let inhalt;
     try {
-      response = await anthropicCall(key, chunk.base64, model);
+      inhalt = await paket.laden();
     } catch (e) {
-      console.error("[manual-extract] API:", (e as Error).message);
-      yield { type: "error", error: apiErrorMessage(e) };
+      yield { type: "error", error: fehlertext(e, "Das PDF konnte nicht aufbereitet werden.") };
       return "abort";
     }
 
-    console.error(
-      `[manual-extract] ${fileName} Seiten ${chunk.fromPage}-${chunk.toPage} (${model}): in=${response.usage.input_tokens} out=${response.usage.output_tokens} tokens, stop=${response.stop_reason}`,
-    );
-
-    // Ablehnung ist hart → abbrechen. Abschneiden (max_tokens) oder Parse-Fehler
-    // betrifft nur DIESES Paket → überspringen, damit der Rest nicht verloren geht.
-    if (response.stop_reason === "refusal") {
-      yield { type: "error", error: "Die Verarbeitung wurde abgelehnt." };
-      return "abort";
-    }
-    if (response.stop_reason === "max_tokens") {
-      console.error(`[manual-extract] Paket ${chunk.fromPage}-${chunk.toPage} abgeschnitten (max_tokens)`);
-      continue;
-    }
-
-    const textBlock = response.content.find((b) => b.type === "text");
-    if (!textBlock || textBlock.type !== "text") continue;
     try {
-      teile.push(extractSchema.parse(JSON.parse(extractJson(textBlock.text))));
+      const antwort = await generateJson(provider, {
+        prompt: paketPrompt(inhalt.text),
+        schema: outputJsonSchema,
+        dokument: inhalt.dokument,
+        maxTokens: 64000,
+        apiKey: opts.apiKey,
+        model: opts.model,
+        zweck: "Extraktion",
+      });
+      // Abgeschnitten betrifft nur DIESES Paket — überspringen, damit der Rest
+      // nicht verloren geht.
+      if (antwort.abgeschnitten) {
+        console.error(`[manual-extract] Paket ${paket.vonSeite}-${paket.bisSeite} abgeschnitten`);
+        continue;
+      }
+      // Dieselbe Kette wie beim eingefügten JSON: normalisieren, Zeilen
+      // auffüllen, Spalten prüfen — und die Hinweise sichtbar machen.
+      const bericht = parseFacts(antwort.json);
+      yield* meldeHinweise(bericht.warnings, gemeldet);
+      if (bericht.result) {
+        teile.push(bericht.result);
+      } else if (bericht.errors.length > 0) {
+        console.error(
+          `[manual-extract] Paket ${paket.vonSeite}-${paket.bisSeite}:`,
+          bericht.errors.join(" · "),
+        );
+      }
     } catch (e) {
-      console.error(`[manual-extract] Paket ${chunk.fromPage}-${chunk.toPage} parse:`, (e as Error).message);
+      // Eine unbrauchbare Antwort kostet nur dieses Paket. Ein Verbindungs-
+      // oder Rechteproblem betrifft den ganzen Lauf → abbrechen.
+      if (e instanceof AiError && e.art === "ungueltige-antwort") {
+        console.error(`[manual-extract] Paket ${paket.vonSeite}-${paket.bisSeite}:`, e.message);
+        continue;
+      }
+      if (!(e instanceof AiError)) {
+        // zod-Fehler: die Form stimmt nicht — auch nur dieses Paket.
+        console.error(`[manual-extract] Paket ${paket.vonSeite}-${paket.bisSeite} parse:`, (e as Error).message);
+        continue;
+      }
+      yield { type: "error", error: e.userMessage };
+      return "abort";
     }
   }
   return teile;
 }
 
-// Hohe Detailstufe: wenige Seiten je Request (die hochauflösenden Bilder sind
-// groß), lange Kante ~2200 px (Sonnet nutzt bis 2576 px).
-const HIRES_BATCH = 10;
-const HIRES_LONG_EDGE = 2200;
-
-/*
-  Wie extractPdfChunksWithClaude, aber die Seiten werden SELBST hochauflösend zu
-  Bildern gerendert und als image-Blöcke geschickt (statt PDF-Block) — für schwer
-  lesbare Scans, bei denen Claudes interne PDF-Darstellung zu grob ist.
-*/
-async function* extractImagePagesWithClaude(
-  key: string,
-  fileName: string,
-  model: string,
-  buffer: Buffer,
-  total: number,
-): AsyncGenerator<ExtractProgress, ExtractResult[] | "abort"> {
-  const totalBatches = Math.ceil(total / HIRES_BATCH);
-  const teile: ExtractResult[] = [];
-  let batchNo = 0;
-
-  for (let from = 1; from <= total; from += HIRES_BATCH) {
-    batchNo++;
-    const bis = Math.min(from + HIRES_BATCH - 1, total);
-    yield { type: "batch", batch: batchNo, totalBatches, fromPage: from, toPage: bis };
-
-    let images: string[];
-    try {
-      images = await renderPdfPagesToPng(buffer, from, HIRES_BATCH, HIRES_LONG_EDGE);
-    } catch (e) {
-      console.error("[manual-extract] render:", (e as Error).message);
-      yield { type: "error", error: "Die Seiten konnten nicht gerendert werden." };
-      return "abort";
-    }
-
-    let response: Awaited<ReturnType<typeof anthropicCallImages>>;
-    try {
-      response = await anthropicCallImages(key, images, model);
-    } catch (e) {
-      console.error("[manual-extract] API:", (e as Error).message);
-      yield { type: "error", error: apiErrorMessage(e) };
-      return "abort";
-    }
-
-    console.error(
-      `[manual-extract] ${fileName} Seiten ${from}-${bis} (HiRes ${model}): in=${response.usage.input_tokens} out=${response.usage.output_tokens} tokens, stop=${response.stop_reason}`,
-    );
-
-    if (response.stop_reason === "refusal") {
-      yield { type: "error", error: "Die Verarbeitung wurde abgelehnt." };
-      return "abort";
-    }
-    if (response.stop_reason === "max_tokens") {
-      console.error(`[manual-extract] HiRes-Batch ${from}-${bis} abgeschnitten (max_tokens)`);
-      continue;
-    }
-
-    const textBlock = response.content.find((b) => b.type === "text");
-    if (!textBlock || textBlock.type !== "text") continue;
-    try {
-      teile.push(extractSchema.parse(JSON.parse(extractJson(textBlock.text))));
-    } catch (e) {
-      console.error(`[manual-extract] HiRes-Batch ${from}-${bis} parse:`, (e as Error).message);
-    }
+/** Fortschritt für ein Paket melden: Batch-Zähler, bei nur einem Paket eine
+    schlichte Statuszeile. */
+function* meldePaket(
+  paket: Paket,
+  gesamt: number,
+  model: string | undefined,
+): Generator<ExtractProgress> {
+  if (gesamt > 1) {
+    yield {
+      type: "batch",
+      batch: paket.nummer,
+      totalBatches: gesamt,
+      fromPage: paket.vonSeite,
+      toPage: paket.bisSeite,
+    };
+  } else {
+    yield {
+      type: "info",
+      message: model
+        ? `${model} verarbeitet das Handbuch …`
+        : "Das Handbuch wird verarbeitet …",
+    };
   }
-  return teile;
+}
+
+/** Hinweise aus der Normalisierung an den Client geben — jeden nur einmal. */
+function* meldeHinweise(
+  hinweise: string[],
+  gemeldet: Set<string>,
+): Generator<ExtractProgress> {
+  for (const h of hinweise) {
+    if (gemeldet.has(h)) continue;
+    gemeldet.add(h);
+    yield { type: "info", message: h };
+  }
+}
+
+function fehlertext(e: unknown, fallback: string): string {
+  if (e instanceof AiError) return e.userMessage;
+  return (e as Error)?.message || fallback;
 }
 
 /*
   Der eigentliche Extraktions-Lauf als Generator. Validiert Attestation/Datei,
-  wählt den Anbieter-Pfad, liefert unterwegs Fortschritts-Events und schreibt die
-  Fakten am Ende in machine_data. Autorisierung passiert VOR dem Aufruf in der
-  Route (requireMachineWrite).
+  lässt das PDF für den Anbieter aufbereiten, liefert unterwegs Fortschritts-
+  Events und schreibt die Fakten am Ende als Modell-Wissen. Autorisierung
+  passiert VOR dem Aufruf in der Route (requireMachineWrite).
 */
 export async function* extractManualFactsStream(opts: {
   userId: string;
@@ -348,7 +268,7 @@ export async function* extractManualFactsStream(opts: {
   attest: boolean;
   provider: AiProvider;
   apiKey?: string;
-  /** Hohe Detailstufe: Seiten hochauflösend als Bilder an Sonnet (nur Claude-Pfad). */
+  /** Hohe Detailstufe: Seiten hochauflösend als Bilder an Sonnet (nur Claude). */
   highDetail?: boolean;
 }): AsyncGenerator<ExtractProgress> {
   const { userId, machine, visibility, file, attest, provider, apiKey, highDetail } =
@@ -375,222 +295,101 @@ export async function* extractManualFactsStream(opts: {
     return;
   }
 
+  yield { type: "info", message: "PDF wird vorbereitet …" };
+  let aufbereitung: Aufbereitung;
+  try {
+    aufbereitung = await prepareDocument({
+      provider,
+      buffer: Buffer.from(await file.arrayBuffer()),
+      highDetail,
+    });
+  } catch (e) {
+    console.error("[manual-extract] prepare:", (e as Error).message);
+    yield { type: "error", error: fehlertext(e, "Das PDF konnte nicht vorbereitet werden.") };
+    return;
+  }
+
+  yield {
+    type: "start",
+    mode: aufbereitung.modus,
+    totalPages: aufbereitung.seiten,
+    totalBatches: aufbereitung.pakete.length,
+  };
+
+  // Hohe Detailstufe geht immer an Sonnet, unabhängig von der Anbieter-Wahl.
+  const erstesModell = highDetail ? SONNET_MODEL() : undefined;
+
   let parsed: ExtractResult;
 
-  if (provider === "ollama") {
-    // Lokaler Pfad: kein API-Key nötig. PDF → Text oder Seitenbilder (in-memory).
-    let prepared: LocalPdfInput;
-    try {
-      yield { type: "info", message: "PDF wird vorbereitet …" };
-      prepared = await preparePdfForLocalModel(Buffer.from(await file.arrayBuffer()));
-    } catch (e) {
-      console.error("[manual-extract] pdf:", (e as Error).message);
-      yield {
-        type: "error",
-        error: (e as Error).message || "Das PDF konnte nicht vorbereitet werden.",
-      };
-      return;
-    }
-
-    try {
-      if (prepared.mode === "text") {
-        yield { type: "start", mode: "text", totalPages: 0, totalBatches: 1 };
-        yield { type: "info", message: "Fakten werden aus dem Handbuchtext extrahiert …" };
-        const jsonText = await ollamaJson({
-          prompt: `${EXTRACT_PROMPT}\n\nHandbuchtext:\n${prepared.text}`,
-          schema: outputJsonSchema,
-        });
-        parsed = extractSchema.parse(JSON.parse(extractJson(jsonText)));
-      } else {
-        // Gescannt: seitenweise in Batches ans Vision-Modell, dann zusammenführen.
-        const totalBatches = Math.ceil(prepared.totalPages / VISION_BATCH);
-        yield {
-          type: "start",
-          mode: "vision",
-          totalPages: prepared.totalPages,
-          totalBatches,
-        };
-
-        const teile: ExtractResult[] = [];
-        let batch = 0;
-        for (let from = 1; from <= prepared.totalPages; from += VISION_BATCH) {
-          batch++;
-          const bis = Math.min(from + VISION_BATCH - 1, prepared.totalPages);
-          yield { type: "batch", batch, totalBatches, fromPage: from, toPage: bis };
-
-          const images = await prepared.renderRange(from, VISION_BATCH);
-          const jsonText = await ollamaJson({
-            prompt: `${EXTRACT_PROMPT}\n\nDie folgenden Bilder sind die Seiten ${from}–${bis} eines gescannten Handbuchs.`,
-            schema: outputJsonSchema,
-            images,
-          });
-          try {
-            teile.push(extractSchema.parse(JSON.parse(extractJson(jsonText))));
-          } catch (e) {
-            // Eine unbrauchbare Batch-Antwort überspringen, nicht alles verlieren.
-            console.error(`[manual-extract] ollama batch ${from}-${bis}:`, (e as Error).message);
-          }
-        }
-        console.error(
-          `[manual-extract] ollama vision: ${prepared.totalPages} Seiten, ${teile.length}/${totalBatches} Batches verwertbar`,
-        );
-        parsed = mergeFactResults(teile);
+  if (aufbereitung.zuTextVereinen) {
+    // MLX-Scan: die Pakete liefern OCR-Text, der zu EINEM Struktur-Aufruf
+    // zusammengefügt wird.
+    const teile: string[] = [];
+    for (const paket of aufbereitung.pakete) {
+      yield* meldePaket(paket, aufbereitung.pakete.length, undefined);
+      try {
+        const inhalt = await paket.laden();
+        teile.push(inhalt.text ?? "");
+      } catch (e) {
+        console.error("[manual-extract] ocr:", (e as Error).message);
+        yield { type: "error", error: fehlertext(e, "Die Seiten konnten nicht gelesen werden.") };
+        return;
       }
-    } catch (e) {
-      console.error("[manual-extract] ollama:", (e as Error).message);
-      yield { type: "error", error: ollamaErrorMessage(e) };
-      return;
     }
-  } else if (provider === "mlx") {
-    // Lokaler MLX-Pfad. Text: das GANZE Handbuch in einen Long-Context-Call.
-    // Scan: Seiten erst per OCR-Server zu Text, dann derselbe Struktur-Call
-    // (2-stufig OCR → Text → JSON, vereint mit dem digitalen Pfad).
-    let prepared: LocalPdfInput;
+    yield { type: "info", message: "Fakten werden aus dem erkannten Text extrahiert …" };
     try {
-      yield { type: "info", message: "PDF wird vorbereitet …" };
-      prepared = await preparePdfForLocalModel(Buffer.from(await file.arrayBuffer()));
-    } catch (e) {
-      console.error("[manual-extract] pdf:", (e as Error).message);
-      yield {
-        type: "error",
-        error: (e as Error).message || "Das PDF konnte nicht vorbereitet werden.",
-      };
-      return;
-    }
-
-    try {
-      let handbuchtext: string;
-      if (prepared.mode === "text") {
-        yield { type: "start", mode: "text", totalPages: 0, totalBatches: 1 };
-        yield { type: "info", message: "Fakten werden aus dem Handbuchtext extrahiert …" };
-        handbuchtext = prepared.text;
-      } else {
-        // Gescannt: erst OCR (Seiten → Text) über den MLX-OCR-Server.
-        if (!mlxOcrConfigured()) {
-          yield {
-            type: "error",
-            error:
-              "Gescanntes Handbuch: für MLX ist kein OCR-Server konfiguriert (MLX_OCR_URL). Bitte Ollama/Claude nutzen oder den OCR-Server starten (docs/MLX_SETUP.md).",
-          };
-          return;
-        }
-        const totalBatches = Math.ceil(prepared.totalPages / VISION_BATCH);
-        yield {
-          type: "start",
-          mode: "vision",
-          totalPages: prepared.totalPages,
-          totalBatches,
-        };
-        const teile: string[] = [];
-        let batch = 0;
-        for (let from = 1; from <= prepared.totalPages; from += VISION_BATCH) {
-          batch++;
-          const bis = Math.min(from + VISION_BATCH - 1, prepared.totalPages);
-          yield { type: "batch", batch, totalBatches, fromPage: from, toPage: bis };
-          const images = await prepared.renderRange(from, VISION_BATCH);
-          teile.push(await mlxOcr(images));
-        }
-        yield { type: "info", message: "Fakten werden aus dem erkannten Text extrahiert …" };
-        handbuchtext = teile.join("\n\n");
-      }
-
-      const jsonText = await mlxText({
-        prompt: `${EXTRACT_PROMPT}\n\nHandbuchtext:\n${handbuchtext}`,
+      const antwort = await generateJson(provider, {
+        prompt: paketPrompt(teile.join("\n\n")),
         schema: outputJsonSchema,
+        maxTokens: 64000,
+        apiKey,
+        zweck: "Extraktion",
       });
-      parsed = extractSchema.parse(JSON.parse(extractJson(jsonText)));
+      if (antwort.abgeschnitten) {
+        yield { type: "error", error: "Die Antwort wurde abgeschnitten. Bitte kleineres Handbuch versuchen." };
+        return;
+      }
+      const bericht = parseFacts(antwort.json);
+      yield* meldeHinweise(bericht.warnings, new Set());
+      if (!bericht.result) {
+        yield {
+          type: "error",
+          error:
+            bericht.errors[0] ??
+            "Aus dem erkannten Text ließen sich keine Tabellen lesen.",
+        };
+        return;
+      }
+      parsed = bericht.result;
     } catch (e) {
       console.error("[manual-extract] mlx:", (e as Error).message);
-      yield { type: "error", error: mlxErrorMessage(e) };
+      yield { type: "error", error: fehlertext(e, "Die Extraktion ist fehlgeschlagen.") };
       return;
     }
   } else {
-    // Claude-Pfad (Standard). Ephemerer BYO-Schlüssel: nur für diesen Request,
-    // nie gespeichert/geloggt; fällt auf den zentralen Env-Key zurück.
-    const key = apiKey || process.env.ANTHROPIC_API_KEY;
-    if (!key) {
+    const erste = yield* durchgang(provider, aufbereitung, {
+      apiKey,
+      model: erstesModell,
+    });
+    if (erste === "abort") return;
+    parsed = mergeFactResults(erste);
+
+    // Auto-Eskalation: fand das günstige Modell KEINE einzige Tabelle, mit dem
+    // stärkeren Sonnet nachlegen (nur bei Provider "auto"). Kostet nur dann
+    // extra, wenn Haiku ohnehin nichts geliefert hätte. Das ist Extraktions-
+    // wissen — „das Ergebnis ist leer" weiß kein Anbieter-Adapter.
+    if (provider === "auto" && istLeer(parsed)) {
+      const stark = SONNET_MODEL();
       yield {
-        type: "error",
-        error: "Kein Claude-API-Schlüssel vorhanden. Bitte deinen eigenen eingeben.",
+        type: "info",
+        message: `Günstiges Modell fand keine Tabellen — schalte auf ${stark} …`,
       };
-      return;
-    }
-
-    if (highDetail) {
-      // Hohe Detailstufe: Seiten selbst hochauflösend rendern und als Bilder an
-      // Sonnet (High-Res-Vision) — für schwer lesbare Scans, wo der PDF-Block zu
-      // grob ist. Immer Sonnet, unabhängig von der Anbieter-Wahl.
-      const buf = Buffer.from(await file.arrayBuffer());
-      let total: number;
-      try {
-        total = await pdfPageCount(buf);
-      } catch (e) {
-        console.error("[manual-extract] pagecount:", (e as Error).message);
-        yield {
-          type: "error",
-          error: "Das PDF konnte nicht gelesen werden. Ist es ein gültiges PDF?",
-        };
-        return;
-      }
-      yield {
-        type: "start",
-        mode: "vision",
-        totalPages: total,
-        totalBatches: Math.ceil(total / HIRES_BATCH),
-      };
-      const r = yield* extractImagePagesWithClaude(key, file.name, SONNET_MODEL(), buf, total);
-      if (r === "abort") return;
-      parsed = mergeFactResults(r);
-    } else {
-      // Claude liest das PDF nativ, aber je Request begrenzt (Seiten + 32 MB).
-      // Große Handbücher in Pakete teilen und die Fakten zusammenführen.
-      let split: Awaited<ReturnType<typeof splitPdfForClaude>>;
-      try {
-        split = await splitPdfForClaude(
-          Buffer.from(await file.arrayBuffer()),
-          claudePdfMaxPages(provider),
-        );
-      } catch (e) {
-        console.error("[manual-extract] split:", (e as Error).message);
-        yield {
-          type: "error",
-          error: "Das PDF konnte nicht gelesen/aufgeteilt werden. Ist es ein gültiges PDF?",
-        };
-        return;
-      }
-
-      yield {
-        type: "start",
-        mode: "text",
-        totalPages: split.totalPages,
-        totalBatches: split.chunks.length,
-      };
-
-      // 1. Durchgang mit dem gewählten Modell (bei "auto": das günstige Haiku).
-      const first = yield* extractPdfChunksWithClaude(
-        key,
-        file.name,
-        anthropicModelFor(provider),
-        split,
-      );
-      if (first === "abort") return;
-      let merged = mergeFactResults(first);
-
-      // Auto-Eskalation: fand das günstige Modell KEINE einzige Tabelle, mit dem
-      // stärkeren Sonnet nachlegen (nur bei Provider "auto"). Kostet nur dann extra,
-      // wenn Haiku ohnehin nichts geliefert hätte.
-      if (provider === "auto" && FACT_TYPES.every((t) => merged[t].rows.length === 0)) {
-        const strong = SONNET_MODEL();
-        yield {
-          type: "info",
-          message: `Günstiges Modell fand keine Tabellen — schalte auf ${strong} …`,
-        };
-        const second = yield* extractPdfChunksWithClaude(key, file.name, strong, split);
-        if (second === "abort") return;
-        merged = mergeFactResults(second);
-      }
-
-      parsed = merged;
+      const zweite = yield* durchgang(provider, aufbereitung, {
+        apiKey,
+        model: stark,
+      });
+      if (zweite === "abort") return;
+      parsed = mergeFactResults(zweite);
     }
   }
 
@@ -603,7 +402,6 @@ export async function* extractManualFactsStream(opts: {
   }
 
   yield { type: "info", message: "Fakten werden gespeichert …" };
-  // Datenmodell-Redesign: Fakten als MODELL-Wissen schreiben (nicht mehr machine_data).
   await upsertModelKnowledge({ userId, machine, result: parsed, visibility });
   const counts: Record<string, number> = {};
   for (const t of present) counts[t] = parsed[t].rows.length;

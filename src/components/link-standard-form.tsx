@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { FormFeedback } from "@/components/ui/form-feedback";
 import { Select } from "@/components/ui/input";
 import { linkMachineToStandard } from "@/db/actions/maintenance-plans";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   Maschine mit einem Standard-Wartungsplan verknüpfen: „Mein Standard" oder ein

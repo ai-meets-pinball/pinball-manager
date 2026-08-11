@@ -6,7 +6,7 @@ import { Suspense, useActionState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { PasswordField } from "@/components/ui/password-field";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 import { registerAccount } from "@/db/actions/register";
 import { PASSWORD_HINT } from "@/lib/validators";
 

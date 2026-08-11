@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
 import { FormFeedback } from "@/components/ui/form-feedback";
 import { createTipp } from "@/db/actions/tipps";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   Neuen allgemeinen Tipp anlegen (typ='tipp'). Der Geltungsbereich ist n:m:

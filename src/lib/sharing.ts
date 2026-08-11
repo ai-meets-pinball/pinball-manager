@@ -6,7 +6,7 @@
   `db` herein, landet der Postgres-Treiber im Client-Bundle und der Build
   bricht ("Module not found: Can't resolve 'fs'").
 
-  Die eigentliche Sichtbarkeitsregel (shareVisibilityFilter / canSeeShare)
+  Die eigentliche Sichtbarkeitsregel (shareVisibilityFilter)
   steht in db/queries.ts — direkt neben getVisibleMachines, weil beide
   Regeln zusammengehören und gemeinsam geändert werden müssen.
 */

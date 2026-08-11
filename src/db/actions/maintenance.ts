@@ -1,6 +1,5 @@
 "use server";
 
-import Anthropic from "@anthropic-ai/sdk";
 import { and, desc, eq, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -13,10 +12,9 @@ import {
   maintenanceTasks,
 } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
-import { computeDue } from "@/lib/maintenance-due";
-import { anthropicModelFor, resolveProvider } from "@/lib/ai/provider";
-import { ollamaErrorMessage, ollamaJson } from "@/lib/ai/ollama";
-import { mlxErrorMessage, mlxText } from "@/lib/ai/mlx";
+import { naechsterTermin } from "@/lib/faelligkeit";
+import { resolveProvider } from "@/lib/ai/provider";
+import { AiError, generateJson, type AiAntwort } from "@/lib/ai/generate";
 import { MAINTENANCE_STANDARD } from "@/lib/maintenance-catalog";
 import {
   maintenanceImportJsonSchema,
@@ -25,10 +23,10 @@ import {
   maintenanceTaskSchema,
   troubleshootingGuideSchema,
 } from "@/lib/validators";
+import type { FormState } from "@/db/actions/form-state";
 
-export type FormState = { error?: string; ok?: boolean };
 
-/* Fälligkeits-Helfer liegt in lib/maintenance-due.ts (rein) — auch von
+/* Fälligkeits-Helfer liegt in lib/faelligkeit.ts (rein) — auch von
    db/actions/maintenance-plans.ts (Standard-Propagation) genutzt. */
 
 /* ── Wartungspunkte: Anlegen / Bearbeiten / Löschen ───────────────────────── */
@@ -58,7 +56,7 @@ export async function createTask(
     intervallTage: d.intervallTage ?? null,
     intervallText: d.intervallText ?? null,
     // Erstfälligkeit ab jetzt (noch nie erledigt).
-    naechsteFaelligkeit: computeDue(
+    naechsteFaelligkeit: naechsterTermin(
       d.intervallTyp,
       d.intervallTage ?? null,
       new Date(),
@@ -115,7 +113,7 @@ export async function updateTask(
       intervallTyp: d.intervallTyp,
       intervallTage: d.intervallTage ?? null,
       intervallText: d.intervallText ?? null,
-      naechsteFaelligkeit: computeDue(d.intervallTyp, d.intervallTage ?? null, ab),
+      naechsteFaelligkeit: naechsterTermin(d.intervallTyp, d.intervallTage ?? null, ab),
     })
     .where(
       and(
@@ -188,7 +186,7 @@ export async function logCompletion(
       .update(maintenanceTasks)
       .set({
         zuletztErledigt: wann,
-        naechsteFaelligkeit: computeDue(task.intervallTyp, task.intervallTage, wann),
+        naechsteFaelligkeit: naechsterTermin(task.intervallTyp, task.intervallTage, wann),
         // Nächster Zyklus darf wieder erinnern.
         zuletztErinnert: null,
       })
@@ -230,7 +228,7 @@ export async function deleteTaskLog(formData: FormData): Promise<void> {
       .update(maintenanceTasks)
       .set({
         zuletztErledigt: letzte?.datum ?? null,
-        naechsteFaelligkeit: computeDue(task.intervallTyp, task.intervallTage, ab),
+        naechsteFaelligkeit: naechsterTermin(task.intervallTyp, task.intervallTage, ab),
       })
       .where(eq(maintenanceTasks.id, taskId));
   }
@@ -277,7 +275,7 @@ export async function applyStandardMaintenance(formData: FormData): Promise<void
       intervallTyp: e.intervallTyp,
       intervallTage: e.intervallTage,
       intervallText: e.intervallText,
-      naechsteFaelligkeit: computeDue(e.intervallTyp, e.intervallTage, now),
+      naechsteFaelligkeit: naechsterTermin(e.intervallTyp, e.intervallTage, now),
     }));
 
   if (neu.length > 0) await db.insert(maintenanceTasks).values(neu);
@@ -345,74 +343,29 @@ export async function importMaintenanceFromGuide(
   // der Nutzer wählt je Aktion (Feld „provider"), sonst der Standard.
   const provider = resolveProvider(formData);
   const userPrompt = `Wandle diesen Wartungsplan-Abschnitt in strukturierte Wartungspunkte (JSON) um:\n\n${abschnittText}`;
-  let text: string;
 
-  if (provider === "mlx") {
-    // Lokaler MLX-Pfad: kein API-Key nötig.
-    try {
-      text = await mlxText({
-        system: IMPORT_SYSTEM,
-        prompt: userPrompt,
-        schema: maintenanceImportJsonSchema,
-      });
-    } catch (e) {
-      console.error("[maintenance-import] mlx:", (e as Error).message);
-      return { error: mlxErrorMessage(e) };
-    }
-  } else if (provider === "ollama") {
-    // Lokaler Pfad: kein API-Key nötig.
-    try {
-      text = await ollamaJson({
-        system: IMPORT_SYSTEM,
-        prompt: userPrompt,
-        schema: maintenanceImportJsonSchema,
-      });
-    } catch (e) {
-      console.error("[maintenance-import] ollama:", (e as Error).message);
-      return { error: ollamaErrorMessage(e) };
-    }
-  } else {
-    // Claude-Pfad (Standard). Ephemerer BYO-Schlüssel: nur für diesen Request,
-    // nie gespeichert/geloggt; fällt auf den zentralen Env-Key zurück.
-    const apiKey =
-      String(formData.get("apiKey") ?? "").trim() || process.env.ANTHROPIC_API_KEY;
-    if (!apiKey) {
-      return {
-        error: "Kein Claude-API-Schlüssel vorhanden. Bitte deinen eigenen eingeben.",
-      };
-    }
-    try {
-      const client = new Anthropic({ apiKey, maxRetries: 4 });
-      const res = await client.messages
-        .stream({
-          model: anthropicModelFor(provider),
-          max_tokens: 8000,
-          system: IMPORT_SYSTEM,
-          output_config: {
-            format: { type: "json_schema", schema: maintenanceImportJsonSchema },
-          },
-          messages: [{ role: "user", content: userPrompt }],
-        })
-        .finalMessage();
+  let antwort: AiAntwort;
+  try {
+    antwort = await generateJson(provider, {
+      system: IMPORT_SYSTEM,
+      prompt: userPrompt,
+      schema: maintenanceImportJsonSchema,
+      apiKey: String(formData.get("apiKey") ?? ""),
+      zweck: "Import",
+    });
+  } catch (e) {
+    console.error("[maintenance-import]", (e as Error).message);
+    if (e instanceof AiError) return { error: e.userMessage };
+    throw e;
+  }
 
-      if (res.stop_reason === "refusal") return { error: "Die Verarbeitung wurde abgelehnt." };
-      const block = res.content.find((b) => b.type === "text");
-      if (!block || block.type !== "text") {
-        return { error: "Es konnten keine Wartungspunkte extrahiert werden." };
-      }
-      text = block.text;
-    } catch (e) {
-      console.error("[maintenance-import] API:", (e as Error).message);
-      return { error: "Import fehlgeschlagen. Bitte später erneut versuchen." };
-    }
+  if (antwort.abgeschnitten) {
+    return { error: "Die Antwort wurde abgeschnitten. Bitte erneut versuchen." };
   }
 
   let punkte: ReturnType<typeof maintenanceImportSchema.parse>["punkte"];
   try {
-    const start = text.indexOf("{");
-    const end = text.lastIndexOf("}");
-    const json = start >= 0 && end > start ? text.slice(start, end + 1) : text;
-    punkte = maintenanceImportSchema.parse(JSON.parse(json)).punkte;
+    punkte = maintenanceImportSchema.parse(antwort.json).punkte;
   } catch (e) {
     console.error("[maintenance-import] parse:", (e as Error).message);
     return { error: "Antwort konnte nicht ausgewertet werden. Bitte erneut versuchen." };
@@ -440,7 +393,7 @@ export async function importMaintenanceFromGuide(
         intervallTyp: tage ? p.intervallTyp : p.intervallTyp === "zeit" ? "bedarf" : p.intervallTyp,
         intervallTage: tage,
         intervallText: null,
-        naechsteFaelligkeit: computeDue(p.intervallTyp, tage, now),
+        naechsteFaelligkeit: naechsterTermin(p.intervallTyp, tage, now),
       };
     });
 

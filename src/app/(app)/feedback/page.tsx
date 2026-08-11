@@ -36,7 +36,7 @@ export default async function FeedbackPage({
   const darfBearbeiten = isSuperAdmin(user);
 
   const meine = await getMeinFeedback(user.id);
-  const alle = darfAlleSehen ? await getAllesFeedback() : [];
+  const alle = darfAlleSehen ? await getAllesFeedback(user) : [];
 
   return (
     <div className="space-y-8">

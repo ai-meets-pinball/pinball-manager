@@ -6,7 +6,7 @@ import { Loader2, Pencil } from "lucide-react";
 import { FormFeedback } from "@/components/ui/form-feedback";
 import { Select } from "@/components/ui/input";
 import { assignModelGeneration } from "@/db/actions/generations";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   Generation eines Modells: ANZEIGEN zuerst (der Name als Text), Ändern auf

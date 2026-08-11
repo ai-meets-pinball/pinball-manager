@@ -2,14 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { requireMachineAccess } from "@/lib/session";
-import { parseImportedFacts } from "@/lib/import-facts";
-import { parseImportedGuide } from "@/lib/import-guide";
+import { parseFactsText } from "@/lib/import-facts";
+import { parseGuideText } from "@/lib/import-guide";
 import {
   upsertModelKnowledge,
   upsertTroubleshootingKnowledge,
 } from "@/lib/facts-store";
 import { getModelGeneration } from "@/db/queries";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   Import bereits extrahierter Handbuch-Fakten als JSON — die Alternative zum
@@ -32,7 +32,7 @@ export async function importManualFacts(
     return { error: "Kein Schreibzugriff auf diese Maschine." };
   }
 
-  const pruefung = parseImportedFacts(raw);
+  const pruefung = parseFactsText(raw);
   if (!pruefung.ok || !pruefung.result) {
     return { error: pruefung.errors[0] ?? "Keine importierbaren Tabellen im JSON gefunden." };
   }
@@ -79,7 +79,7 @@ export async function importTroubleshootingGuide(
     return { error: "Kein Schreibzugriff auf diese Maschine." };
   }
 
-  const pruefung = parseImportedGuide(raw);
+  const pruefung = parseGuideText(raw);
   if (!pruefung.ok || !pruefung.guide) {
     return { error: pruefung.errors[0] ?? "Kein importierbarer Guide im JSON gefunden." };
   }

@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Select, Textarea } from "@/components/ui/input";
-import type { FormState } from "@/db/actions/faults";
+import type { FormState } from "@/db/actions/form-state";
 
 const KATEGORIEN = ["Spule", "Schalter", "Anzeige", "mechanisch", "Sonstiges"];
 

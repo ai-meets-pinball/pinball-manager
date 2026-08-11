@@ -3,13 +3,12 @@
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { db } from "@/db";
 import { faults } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
-import { aktualisiereMaschinenStatus } from "@/db/actions/machine-status";
+import { mitStatusNachzug } from "@/db/actions/machine-status";
 import { faultSchema } from "@/lib/validators";
+import type { FormState } from "@/db/actions/form-state";
 
-export type FormState = { error?: string };
 
 export async function createFault(
   _prev: FormState,
@@ -24,16 +23,17 @@ export async function createFault(
     return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
   }
 
-  await db.insert(faults).values({
-    machineId,
-    beschreibung: parsed.data.beschreibung,
-    kategorie: parsed.data.kategorie ?? null,
-    prioritaet: parsed.data.prioritaet,
-    status: parsed.data.status,
-    gemeldetVon: user.id,
-  });
+  await mitStatusNachzug(machineId, (tx) =>
+    tx.insert(faults).values({
+      machineId,
+      beschreibung: parsed.data.beschreibung,
+      kategorie: parsed.data.kategorie ?? null,
+      prioritaet: parsed.data.prioritaet,
+      status: parsed.data.status,
+      gemeldetVon: user.id,
+    }),
+  );
 
-  await aktualisiereMaschinenStatus(machineId);
   revalidatePath(`/machines/${machineId}`);
   redirect(`/machines/${machineId}`);
 }
@@ -51,17 +51,18 @@ export async function updateFault(
     return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
   }
 
-  await db
-    .update(faults)
-    .set({
-      beschreibung: parsed.data.beschreibung,
-      kategorie: parsed.data.kategorie ?? null,
-      prioritaet: parsed.data.prioritaet,
-      status: parsed.data.status,
-    })
-    .where(and(eq(faults.id, id), eq(faults.machineId, machineId)));
+  await mitStatusNachzug(machineId, (tx) =>
+    tx
+      .update(faults)
+      .set({
+        beschreibung: parsed.data.beschreibung,
+        kategorie: parsed.data.kategorie ?? null,
+        prioritaet: parsed.data.prioritaet,
+        status: parsed.data.status,
+      })
+      .where(and(eq(faults.id, id), eq(faults.machineId, machineId))),
+  );
 
-  await aktualisiereMaschinenStatus(machineId);
   revalidatePath(`/machines/${machineId}`);
   redirect(`/machines/${machineId}`);
 }
@@ -71,10 +72,9 @@ export async function deleteFault(formData: FormData): Promise<void> {
   const id = String(formData.get("id"));
   await requireMachineWrite(machineId);
 
-  await db
-    .delete(faults)
-    .where(and(eq(faults.id, id), eq(faults.machineId, machineId)));
+  await mitStatusNachzug(machineId, (tx) =>
+    tx.delete(faults).where(and(eq(faults.id, id), eq(faults.machineId, machineId))),
+  );
 
-  await aktualisiereMaschinenStatus(machineId);
   revalidatePath(`/machines/${machineId}`);
 }

@@ -1,3 +1,5 @@
+import { STATUS_LABEL } from "@/lib/betriebsstatus";
+
 /*
   Status-/Prioritäts-Chip, einheitlich für Fehler, Reparaturen & Rollen.
   Die Tönung wird per color-mix aus der jeweiligen Token-Farbe abgeleitet,
@@ -38,10 +40,9 @@ export const ROLE_LABEL: Record<string, string> = {
   owner: "Owner",
   admin: "Admin",
   member: "Mitglied",
-  // Maschinen-Betriebsstatus
-  spielbereit: "Spielbereit",
-  eingeschraenkt: "Eingeschränkt",
-  ausser_betrieb: "Außer Betrieb",
+  // Betriebsstatus kommt aus lib/betriebsstatus.ts — eine Quelle für Badge,
+  // Auswahlfeld und Übersicht.
+  ...STATUS_LABEL,
 };
 
 export function StatusBadge({ value }: { value: string }) {

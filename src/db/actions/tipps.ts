@@ -10,7 +10,7 @@ import {
   machineModels,
 } from "@/db/schema";
 import { isSuperAdmin, requireMachineWrite, requireUser } from "@/lib/session";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   Allgemeine Tipps (typ='tipp'): frei formuliertes Wissen, das ein oder mehrere

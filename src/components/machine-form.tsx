@@ -6,7 +6,7 @@ import { OpdbSearch } from "@/components/opdb-search";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/input";
 import { modellName } from "@/lib/format";
-import type { FormState } from "@/db/actions/machines";
+import type { FormState } from "@/db/actions/form-state";
 
 type Club = { id: string; name: string };
 

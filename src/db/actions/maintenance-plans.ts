@@ -13,7 +13,7 @@ import {
   maintenanceTasks,
 } from "@/db/schema";
 import { MAINTENANCE_STANDARD } from "@/lib/maintenance-catalog";
-import { computeDue } from "@/lib/maintenance-due";
+import { naechsterTermin } from "@/lib/faelligkeit";
 import {
   isClubManager,
   isClubMember,
@@ -22,7 +22,7 @@ import {
   type SessionUser,
 } from "@/lib/session";
 import { maintenanceTaskSchema } from "@/lib/validators";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   Standard-Wartungspläne (Vorlagen je Nutzer / je Club) und ihre PROPAGATION:
@@ -181,7 +181,7 @@ export async function createPlanItem(
           intervallTyp: d.intervallTyp,
           intervallTage: d.intervallTage ?? null,
           intervallText: d.intervallText ?? null,
-          naechsteFaelligkeit: computeDue(d.intervallTyp, d.intervallTage ?? null, now),
+          naechsteFaelligkeit: naechsterTermin(d.intervallTyp, d.intervallTage ?? null, now),
         })),
       );
     }
@@ -247,7 +247,7 @@ export async function updatePlanItem(
         .update(maintenanceTasks)
         .set({
           ...felder,
-          naechsteFaelligkeit: computeDue(
+          naechsteFaelligkeit: naechsterTermin(
             d.intervallTyp,
             d.intervallTage ?? null,
             t.zuletztErledigt ?? t.createdAt,
@@ -273,7 +273,10 @@ export async function deletePlanItem(formData: FormData): Promise<void> {
   });
   if (!item) return;
   const plan = await planOderFehler(item.planId);
-  if (!(await darfPlanBearbeiten(me, plan))) return;
+  // Kein stilles Nichtstun: eine Verweigerung soll ankommen.
+  if (!(await darfPlanBearbeiten(me, plan))) {
+    throw new Error("Nur Eigentümer bzw. Club-Manager dürfen den Standard ändern");
+  }
 
   await db.transaction(async (tx) => {
     // Tasks OHNE Historie mitlöschen; Tasks MIT Historie überleben und werden
@@ -368,7 +371,7 @@ export async function linkMachineToStandard(
           .set({
             ...felder,
             planItemId: item.id,
-            naechsteFaelligkeit: computeDue(
+            naechsteFaelligkeit: naechsterTermin(
               item.intervallTyp,
               item.intervallTage,
               bestehend.zuletztErledigt ?? bestehend.createdAt,
@@ -380,7 +383,7 @@ export async function linkMachineToStandard(
           machineId,
           planItemId: item.id,
           ...felder,
-          naechsteFaelligkeit: computeDue(item.intervallTyp, item.intervallTage, now),
+          naechsteFaelligkeit: naechsterTermin(item.intervallTyp, item.intervallTage, now),
         });
       }
     }

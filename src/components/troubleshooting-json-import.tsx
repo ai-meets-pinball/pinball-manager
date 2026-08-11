@@ -7,16 +7,16 @@ import { Field, Textarea } from "@/components/ui/input";
 import { VisibilityField } from "@/components/ui/visibility-field";
 import { importTroubleshootingGuide } from "@/db/actions/machine-data";
 import {
-  parseImportedGuide,
+  parseGuideText,
   type GuideImportResult,
 } from "@/lib/import-guide";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   JSON-Import als Alternative zur KI-Generierung des Troubleshooting-Guides —
   gleiches Prinzip wie ManualJsonImport: Prompt kopieren → extern (z. B. ChatGPT)
   ausführen → JSON hier einfügen → „Prüfen" (Vorschau, dieselbe
-  parseImportedGuide wie serverseitig) → „Importieren". Der Prompt ist
+  parseGuideText wie serverseitig) → „Importieren". Der Prompt ist
   maschinenspezifisch (Hersteller/Modell/Baujahr) und kommt deshalb als Prop
   vom Server. Import erst nach erfolgreicher Prüfung; jede Änderung am JSON
   verlangt erneutes Prüfen.
@@ -110,7 +110,7 @@ export function TroubleshootingJsonImport({
       <Button
         type="button"
         variant="secondary"
-        onClick={() => setCheck(parseImportedGuide(json))}
+        onClick={() => setCheck(parseGuideText(json))}
         disabled={!json.trim()}
         className="self-start"
       >

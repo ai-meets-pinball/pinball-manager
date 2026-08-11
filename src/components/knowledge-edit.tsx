@@ -7,14 +7,14 @@ import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/input";
 import { FormFeedback } from "@/components/ui/form-feedback";
 import { updateKnowledge } from "@/db/actions/knowledge";
-import { parseImportedFacts } from "@/lib/import-facts";
+import { parseFactsText } from "@/lib/import-facts";
 import { troubleshootingGuideSchema } from "@/lib/validators";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   In-Place-Editor für einen EIGENEN Wissenseintrag (Phase 5). Bewusst kein
   struktureller Tabellen-Editor: Titel als Textfeld, Inhalt als JSON-Textarea
-  mit „Prüfen"-Schleife — Fakten laufen durch dieselbe parseImportedFacts wie
+  mit „Prüfen"-Schleife — Fakten laufen durch dieselbe parseFactsText wie
   der Import, Guides durch troubleshootingGuideSchema. Gespeichert wird erst
   nach erfolgreicher Prüfung; jede Textänderung invalidiert sie (Muster von
   ManualJsonImport). Der alte Stand landet serverseitig im Verlauf.
@@ -59,7 +59,7 @@ export function KnowledgeEdit({
 
   function pruefen() {
     if (typ === "handbuch_fakten") {
-      const r = parseImportedFacts(json);
+      const r = parseFactsText(json);
       setCheck(
         r.ok
           ? {

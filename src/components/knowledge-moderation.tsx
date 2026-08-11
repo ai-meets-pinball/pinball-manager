@@ -6,7 +6,7 @@ import { EyeOff, ShieldAlert } from "lucide-react";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { FormFeedback } from "@/components/ui/form-feedback";
 import { hideKnowledge, restoreKnowledge } from "@/db/actions/knowledge";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   Kuratoren-Moderation (UI). Zwei Bausteine:

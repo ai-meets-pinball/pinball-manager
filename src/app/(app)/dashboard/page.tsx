@@ -6,8 +6,9 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import {
   getDueMaintenanceForMachines,
   getOpenFaultsForMachines,
-  getVisibleMachines,
+  getMeineMaschinen,
 } from "@/db/queries";
+import { schwerster, type Betriebsstatus } from "@/lib/betriebsstatus";
 import { modellName } from "@/lib/format";
 import { requireUser } from "@/lib/session";
 
@@ -19,19 +20,21 @@ import { requireUser } from "@/lib/session";
 */
 export default async function DashboardPage() {
   const user = await requireUser();
-  const machines = await getVisibleMachines(user.id);
+  const machines = await getMeineMaschinen(user);
   const ids = machines.map((m) => m.id);
 
   const [wartungen, fehler] = await Promise.all([
-    getDueMaintenanceForMachines(ids),
-    getOpenFaultsForMachines(ids),
+    getDueMaintenanceForMachines(user, ids),
+    getOpenFaultsForMachines(user, ids),
   ]);
-  const ueberfaellig = wartungen.filter((w) => w.status === "ueberfaellig");
+  const faellige = wartungen.filter((w) => w.status === "faellig");
   // Betriebsstatus über die Flotte: alles außer „spielbereit" braucht Blick.
+  // Wie schwer die Gesamtlage ist, entscheidet dieselbe Ordnung wie bei der
+  // einzelnen Maschine (lib/betriebsstatus.ts).
   const nichtSpielbereit = machines.filter((m) => m.status !== "spielbereit");
-  const ausserBetrieb = nichtSpielbereit.some(
-    (m) => m.status === "ausser_betrieb",
-  );
+  const ausserBetrieb =
+    schwerster(nichtSpielbereit.map((m) => m.status as Betriebsstatus)) ===
+    "ausser_betrieb";
 
   const kpis = [
     {
@@ -65,10 +68,10 @@ export default async function DashboardPage() {
       icon: Wrench,
       wert: wartungen.length,
       label:
-        ueberfaellig.length > 0
-          ? `Wartungen (${ueberfaellig.length} überfällig)`
+        faellige.length > 0
+          ? `Wartungen (${faellige.length} fällig)`
           : "anstehende Wartungen",
-      tone: ueberfaellig.length > 0 ? "text-[var(--color-danger)]" : "",
+      tone: faellige.length > 0 ? "text-[var(--color-danger)]" : "",
     },
   ] as const;
 
@@ -133,13 +136,15 @@ export default async function DashboardPage() {
                   <StatusBadge value={w.prioritaet} />
                   <span
                     className={`text-xs ${
-                      w.status === "ueberfaellig"
+                      w.status === "faellig"
                         ? "font-semibold text-[var(--color-danger)]"
                         : "text-[var(--color-muted)]"
                     }`}
                   >
-                    {w.status === "ueberfaellig"
-                      ? `überfällig${w.tageBisFaellig != null ? ` seit ${-w.tageBisFaellig} Tag(en)` : ""}`
+                    {w.status === "faellig"
+                      ? w.tageBisFaellig
+                        ? `überfällig seit ${-w.tageBisFaellig} Tag(en)`
+                        : "heute fällig"
                       : w.tageBisFaellig != null
                         ? `in ${w.tageBisFaellig} Tag(en)`
                         : ""}

@@ -40,9 +40,10 @@ export const faultPrioritaet = pgEnum("fault_prioritaet", [
   "kritisch",
 ]);
 
-/* Betriebsstatus einer Maschine (Dashboard). Hybrid: normalerweise automatisch
-   aus den offenen Fehlern abgeleitet (offener kritischer Fehler → eingeschränkt),
-   aber manuell übersteuerbar — siehe machines.statusManuell. */
+/* Betriebsstatus einer Maschine. Die Werte sind hier als DB-Enum verankert; die
+   REGEL dahinter (abgeleitet vs. manuell gepinnt) liegt in lib/betriebsstatus.ts,
+   und lib/validators.ts leitet sein Schema von dort ab. Wer hier Werte ändert,
+   ändert sie auch dort — und braucht eine Migration. */
 export const machineStatus = pgEnum("machine_status", [
   "spielbereit",
   "eingeschraenkt",

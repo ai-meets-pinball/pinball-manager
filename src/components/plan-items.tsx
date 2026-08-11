@@ -13,11 +13,12 @@ import {
   deletePlanItem,
   updatePlanItem,
 } from "@/db/actions/maintenance-plans";
+import { intervallLabel } from "@/lib/faelligkeit";
 import {
   MAINTENANCE_INTERVALL_TYPEN,
   MAINTENANCE_PRIORITAETEN,
 } from "@/lib/validators";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   Punkte eines Standard-Wartungsplans (Vorlage): ANZEIGEN zuerst, Bearbeiten auf
@@ -37,14 +38,6 @@ export type PlanItem = {
   intervallTage: number | null;
   intervallText: string | null;
 };
-
-function intervallLabel(i: PlanItem): string {
-  if (i.intervallText) return i.intervallText;
-  if (i.intervallTyp === "zeit" && i.intervallTage)
-    return `alle ${i.intervallTage} Tage`;
-  if (i.intervallTyp === "spiele") return "nach Spielzahl";
-  return "bei Bedarf";
-}
 
 /** Die Feldergruppe — geteilt von Bearbeiten (Row) und Anlegen (CreateForm). */
 function ItemFelder({ werte }: { werte?: Partial<PlanItem> }) {

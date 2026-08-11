@@ -8,7 +8,7 @@ import { FormFeedback } from "@/components/ui/form-feedback";
 import { Input } from "@/components/ui/input";
 import { ListRow } from "@/components/ui/list";
 import { deleteGeneration, renameGeneration } from "@/db/actions/generations";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 import { modellName } from "@/lib/format";
 
 /*

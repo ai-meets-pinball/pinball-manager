@@ -11,7 +11,7 @@ import { removeAvatar, updateProfile } from "@/db/actions/profile";
 import { changeEmail, changePassword } from "@/lib/auth-client";
 import { initialen } from "@/lib/format";
 import { PASSWORD_HINT, validatePassword } from "@/lib/validators";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /** Profil: Vorname/Nachname/Initialen + Profilbild. Der Anzeigename (`name`)
     wird serverseitig aus Vor- + Nachname abgeleitet (db/actions/profile.ts). */

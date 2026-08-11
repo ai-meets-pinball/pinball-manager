@@ -7,7 +7,7 @@ import { db } from "@/db";
 import { clubSettings, userSettings } from "@/db/schema";
 import { requireClubManager, requireUser } from "@/lib/session";
 import { SHARE_SCOPES } from "@/lib/sharing";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 /*
   Freigabe-Voreinstellungen speichern/zurücksetzen.

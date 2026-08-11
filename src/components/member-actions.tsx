@@ -8,8 +8,8 @@ import {
   changeMemberRole,
   leaveClub,
   removeMember,
-  type FormState,
 } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 import { CLUB_ROLES, type ClubRole } from "@/lib/validators";
 
 /*

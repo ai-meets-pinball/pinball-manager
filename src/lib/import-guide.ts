@@ -8,7 +8,7 @@ import {
   Troubleshooting-Guide als JSON-Import (Alternative zur KI-Generierung in der
   App) — dasselbe Prinzip wie beim Handbuch-Fakten-Import (lib/import-facts.ts):
   der Nutzer kopiert einen fertigen Prompt, lässt den Guide extern (z. B. in
-  ChatGPT) erzeugen und fügt das JSON hier ein. `parseImportedGuide` ist die
+  ChatGPT) erzeugen und fügt das JSON hier ein. `parseGuideText` ist die
   EINE Validierungsfunktion — sie läuft clientseitig für die Vorschau UND
   serverseitig autoritativ in der Import-Action (db/actions/machine-data.ts).
 
@@ -204,29 +204,38 @@ const LEER: Omit<GuideImportResult, "warnings" | "errors"> = {
   quellen: 0,
 };
 
-/** Prüft und bewertet importiertes Guide-JSON (Vorschau + Server-Import). */
-export function parseImportedGuide(raw: string): GuideImportResult {
-  const warnings: string[] = [];
-
+/**
+ * Wie `parseGuide`, aber für eingefügten TEXT: schneidet das JSON aus Prosa
+ * bzw. Code-Zäunen heraus und parst es. Für den Einfüge-Pfad in der Oberfläche.
+ */
+export function parseGuideText(raw: string): GuideImportResult {
   const slice = sliceJsonObject(raw ?? "");
   if (!slice) {
     return {
       ...LEER,
-      warnings,
+      warnings: [],
       errors: ["Kein JSON-Objekt gefunden. Füge die JSON-Ausgabe aus ChatGPT ein."],
     };
   }
-
-  let data: unknown;
   try {
-    data = JSON.parse(slice);
+    return parseGuide(JSON.parse(slice));
   } catch {
     return {
       ...LEER,
-      warnings,
+      warnings: [],
       errors: ["Kein gültiges JSON — bitte die komplette, unveränderte Ausgabe einfügen."],
     };
   }
+}
+
+/**
+ * Prüft und bewertet Guide-Daten — die EINE Kette vor dem Speichern, für
+ * BEIDE Wege: die KI-Antwort und das eingefügte JSON. Vorher bekam nur der
+ * Einfüge-Pfad die Umschlag-Toleranz und die Vollständigkeits-Warnungen.
+ */
+export function parseGuide(eingabe: unknown): GuideImportResult {
+  const warnings: string[] = [];
+  let data = eingabe;
 
   // Toleranz: wer versehentlich den gespeicherten Umschlag { guide, websuche,
   // model } einfügt, meint das innere Guide-Objekt.

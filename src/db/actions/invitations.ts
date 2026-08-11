@@ -11,17 +11,16 @@ import {
   sendInvitationEmail,
   sendPlatformInvitationEmail,
 } from "@/lib/email";
+import { darfClub } from "@/lib/rechte";
 import {
   getClubRole,
-  isClubOwner,
-  isSuperAdmin,
   requireClubManager,
   requireSuperAdmin,
   requireUser,
   roleIdByKey,
 } from "@/lib/session";
 import { inviteSchema } from "@/lib/validators";
-import type { FormState } from "@/db/actions/clubs";
+import type { FormState } from "@/db/actions/form-state";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 Tage
 
@@ -50,8 +49,7 @@ export async function inviteMember(
   // Zum Owner einladen dürfen nur Owner (oder Super-Admin).
   if (
     rolle === "owner" &&
-    !isSuperAdmin(currentUser) &&
-    !(await isClubOwner(currentUser.id, clubId))
+    !darfClub(currentUser, await getClubRole(currentUser.id, clubId)).ownerVergeben
   ) {
     return { error: "Nur Owner dürfen jemanden zum Owner einladen" };
   }
