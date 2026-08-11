@@ -4,9 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-**Phase 1 (MVP) scaffolded and implemented.** The Next.js app exists with auth, machine CRUD, fault tracking, repair history, clubs/memberships, and search/filter. Data access is **Drizzle ORM** ([src/db/schema.ts](src/db/schema.ts)); auth is **Better Auth** ([src/lib/auth.ts](src/lib/auth.ts)); app-layer authorization lives in [src/lib/session.ts](src/lib/session.ts). Runtime needs a Supabase Postgres + a public Storage bucket `machine-photos` (see README).
+**Phase 1 (MVP) scaffolded and implemented.** The Next.js app exists with auth, machine CRUD, fault tracking, repair history, clubs/memberships, and search/filter. Data access is **Drizzle ORM** ([src/db/schema.ts](src/db/schema.ts)); auth is **Better Auth** ([src/lib/auth.ts](src/lib/auth.ts)). Runtime needs a Supabase Postgres + a public Storage bucket `machine-photos` (see README).
 
 The product is a repair/management database for pinball machines (German-language domain: *Maschinen* = machines, *Fehler* = faults, *Reparaturen* = repairs). It doubles as a teaching example for the "KI meets Pinball" group, so **readability and visible architecture are valued over scalability** (PRD §8).
+
+**[CONTEXT.md](CONTEXT.md) is the glossary** — it fixes what the things are called (Maschine, Fehler, Betriebsstatus, Geltungsbereich, Sichtbarkeit …) and which words to avoid. Read it before naming anything new. Domain concepts get German names, infrastructure without domain meaning stays English.
+
+**Rules live in pure modules, I/O calls them.** The pattern to follow when adding logic: the decision goes in a `lib/` module with no DB and no `headers()` — [rechte.ts](src/lib/rechte.ts) (authorization), [faelligkeit.ts](src/lib/faelligkeit.ts) (maintenance due dates), [betriebsstatus.ts](src/lib/betriebsstatus.ts) (operational status), [ai/generate.ts](src/lib/ai/generate.ts) (the AI provider seam). The action or query loads the row and calls the rule. That is what makes the rules unit-testable and readable; putting a decision into a SQL `WHERE` clause or a server action hides it.
 
 ## Commands
 
@@ -14,17 +18,22 @@ The product is a repair/management database for pinball machines (German-languag
 npm install                  # install dependencies
 cp .env.example .env.local   # then fill in values (see README "Umgebungsvariablen")
 npm run db:migrate           # write schema to the DB (or: npm run db:push)
-npm run dev                  # dev server on http://localhost:3000 (Next.js 16 + Turbopack)
+npm run dev                  # dev server on http://localhost:3100 (Next.js 16 + Turbopack)
 npm run build                # production build (used to verify changes)
 npm run db:generate          # regenerate SQL migrations after editing src/db/schema.ts
 
+# Unit-Tests (Vitest) — nur die REINEN Regeln, ohne DB und ohne Browser
+npm test                     # einmal durchlaufen
+npm run test:watch           # während der Arbeit
+
 # E2E (Playwright) — läuft gegen eine EIGENE Test-DB, nie gegen die produktive
-npm run e2e:install          # Chromium einmalig holen
+npm run e2e:install          # Chromium holen — auch NACH jedem npm install nötig,
+                             # das @playwright/test anhebt (sonst: „Executable doesn't exist")
 npm run e2e                  # Suite starten (Test-Server auf Port 3101)
 npm run e2e:ui               # interaktiv
 ```
 
-App runs on http://localhost:3000.
+App runs on http://localhost:3100.
 
 > **E2E-Setup:** `E2E_DATABASE_URL` in `.env.local` setzen (**zweite** Datenbank!). Lokal z. B.
 > `docker run -d --name pinball-e2e -e POSTGRES_PASSWORD=e2e -p 5433:5432 postgres:16`.
@@ -77,7 +86,10 @@ These are deliberate decisions, not omissions — preserve them:
 ## Roadmap phasing
 
 - **Phase 1 (MVP):** Auth, machine CRUD, fault tracking, repair history, search/filter.
-- **Phase 2:** Manual upload + fact extraction + service-console-style display. **Partially implemented:** per-machine manual (PDF) upload → **Claude (`claude-sonnet-5`) extracts fact tables** (coils/switches/lamps/fuses/parts/rules) → stored in `machine_data`, rendered as tables. The extraction engine is Claude via `@anthropic-ai/sdk` (`src/lib/manual-extract.ts`), **not** a local OCR lib. **Copyright pipeline is load-bearing:** attestation required, the PDF is held **in memory only and never persisted** (no Storage bucket, `serverActions.bodySizeLimit` raised for the upload), only extracted facts are stored. Needs `ANTHROPIC_API_KEY`. **Optional local path:** with `AI_PROVIDER=ollama`, all three AI features (extraction, guide, maintenance import) run on a local Ollama model instead ([src/lib/ai/](src/lib/ai/); the PDF is preprocessed to text/page-images in-memory via `unpdf`). Claude stays the default and the copyright pipeline holds for both providers; on Ollama the guide is generated **without web search** (flagged via `troubleshooting_guides.websuche`).
+- **Phase 2:** Manual upload + fact extraction + service-console-style display. **Partially implemented:** per-machine manual (PDF) upload → a model **extracts fact tables** (coils/switches/lamps/fuses/parts/rules) → stored as **model-level `knowledge`** (not `machine_data` — see the data-model redesign), rendered as tables. **Copyright pipeline is load-bearing:** attestation required, the PDF is held **in memory only and never persisted** (no Storage bucket, `serverActions.bodySizeLimit` raised for the upload), only extracted facts are stored. `manual-extract.integration.test.ts` pins that invariant.
+  - **All three AI features go through one seam:** [src/lib/ai/generate.ts](src/lib/ai/generate.ts) (`generateJson`) with four adapters — anthropic, ollama, mlx, plus a scripted one for tests. `@anthropic-ai/sdk` is touched in [src/lib/ai/anthropic.ts](src/lib/ai/anthropic.ts) and nowhere else. **Do not add `if (provider === …)` to a feature** — that ladder was removed on purpose; extend the seam or the adapter instead.
+  - PDFs are turned into what a provider can read by [src/lib/ai/prepare-document.ts](src/lib/ai/prepare-document.ts) (Claude: native PDF packets; Ollama: text or page images; MLX: OCR first). Packets load lazily so a 400-page scan does not blow up memory.
+  - Claude is the default (`ANTHROPIC_API_KEY`); `AI_PROVIDER=ollama|mlx` runs everything locally. Web search only exists on Claude — callers ask for it with `websuche: true` and read back `antwort.websucheGenutzt`, which is stored so the lower reliability stays visible.
 - **Phase 3:** AI fault diagnosis (text), image-based component recognition (vision), club features. (Claude is now the chosen model family — see Phase 2.)
 
 Build Phase 1 features only unless explicitly directed to later phases.

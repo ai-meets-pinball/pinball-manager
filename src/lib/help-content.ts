@@ -166,7 +166,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Intervall & Fälligkeit",
-        text: "Nur zeitbasierte Punkte (z. B. »alle 30 Tage«) bekommen einen Termin und eine Fälligkeits-Anzeige (überfällig / bald fällig). Spielzahl- und Bedarf-Punkte sind reine Checkliste ohne Termin.",
+        text: "Nur zeitbasierte Punkte (z. B. »alle 30 Tage«) bekommen einen Termin und eine Fälligkeits-Anzeige: »heute fällig«, »überfällig (seit N T.)« oder »bald fällig« für die nächsten 14 Tage. Gezählt wird tageweise — ein Punkt, der heute dran ist, gilt den ganzen Tag als fällig, nicht erst ab der Uhrzeit. Spielzahl- und Bedarf-Punkte sind reine Checkliste ohne Termin.",
       },
       {
         titel: "Erledigt eintragen",
