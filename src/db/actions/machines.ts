@@ -1,10 +1,18 @@
 "use server";
 
-import { and, eq, inArray } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { machineModels, machines, repairs, shares } from "@/db/schema";
+import {
+  machineBesitzer,
+  machineBesitzerZuordnung,
+  machineModels,
+  machines,
+  repairs,
+  shares,
+  user,
+} from "@/db/schema";
 import { parseOpdbRef } from "@/lib/opdb-ref";
 import { darfMaschine } from "@/lib/rechte";
 import {
@@ -17,7 +25,6 @@ import {
 import { uploadMachinePhoto } from "@/lib/storage";
 import { machineSchema } from "@/lib/validators";
 import type { FormState } from "@/db/actions/form-state";
-
 
 /*
   Nur echte OPDB-Bild-URLs zulassen — der Wert kommt aus einem versteckten
@@ -99,8 +106,185 @@ async function widerrufeFreigaben(machineId: string) {
   await db
     .delete(shares)
     .where(
-      and(eq(shares.artefaktTyp, "repair"), inArray(shares.artefaktId, eigeneReparaturen)),
+      and(
+        eq(shares.artefaktTyp, "repair"),
+        inArray(shares.artefaktId, eigeneReparaturen),
+      ),
     );
+}
+
+/*
+  Besitzer-Felder des Formulars auflösen — ein Gerät kann MEHRERE Besitzer
+  haben. Drei Wege, beliebig kombinierbar:
+  - besitzerIds: bestehende Katalog-Einträge (Scope-Prüfung je Eintrag),
+  - besitzerUserIds: Plattform-Nutzer (der Besitzer ist oft schon Mitglied),
+  - besitzerNeuName/-Email: neue Namen (Paare in DOM-Reihenfolge).
+  Neues wird im Geltungsbereich der Maschine dedupliziert — gleicher Name
+  (case-insensitiv) bzw. gleiches Konto → derselbe Eintrag, kein Duplikat;
+  ein namensgleicher Eintrag ohne Konto wird beim Nutzer-Weg VERKNÜPFT statt
+  dupliziert. Eine nachgereichte E-Mail füllt nur ein LEERES E-Mail-Feld
+  (kein stilles Überschreiben). Nichts angegeben → leere Liste.
+*/
+async function besitzerAufloesen(
+  userId: string,
+  zielClubId: string | null,
+  formData: FormData,
+): Promise<{ besitzerIds: string[] } | { error: string }> {
+  const gewaehlte = formData
+    .getAll("besitzerIds")
+    .map((v) => String(v).trim())
+    .filter(Boolean);
+  const nutzerIds = formData
+    .getAll("besitzerUserIds")
+    .map((v) => String(v).trim())
+    .filter(Boolean);
+  const neuNamen = formData.getAll("besitzerNeuName").map(String);
+  const neuEmails = formData.getAll("besitzerNeuEmail").map(String);
+
+  const scopeBedingung = zielClubId
+    ? eq(machineBesitzer.clubId, zielClubId)
+    : and(
+        isNull(machineBesitzer.clubId),
+        eq(machineBesitzer.createdBy, userId),
+      );
+
+  // Set statt Array: derselbe Besitzer über zwei Wege gewählt bleibt EINE Zuordnung.
+  const ergebnis = new Set<string>();
+
+  // 1) Bestehende Katalog-Einträge.
+  for (const gewaehlt of gewaehlte) {
+    const eintrag = await db.query.machineBesitzer.findFirst({
+      where: eq(machineBesitzer.id, gewaehlt),
+    });
+    if (!eintrag) return { error: "Besitzer-Eintrag nicht gefunden." };
+    const erlaubt = eintrag.clubId
+      ? await isClubMember(userId, eintrag.clubId)
+      : eintrag.createdBy === userId;
+    if (!erlaubt) return { error: "Kein Zugriff auf diesen Besitzer-Eintrag." };
+    ergebnis.add(eintrag.id);
+  }
+
+  // 2) Plattform-Nutzer als Besitzer: nur wer zum Geltungsbereich gehört —
+  // Club-Maschine → Mitglied dieses Clubs, private Maschine → man selbst
+  // (kein Durchprobieren fremder Nutzer-IDs).
+  for (const nutzerId of nutzerIds) {
+    const erlaubt = zielClubId
+      ? await isClubMember(nutzerId, zielClubId)
+      : nutzerId === userId;
+    if (!erlaubt) {
+      return {
+        error: "Dieser Nutzer gehört nicht zum Geltungsbereich der Maschine.",
+      };
+    }
+    const zielNutzer = await db.query.user.findFirst({
+      where: eq(user.id, nutzerId),
+      columns: { id: true, name: true },
+    });
+    if (!zielNutzer) return { error: "Nutzer nicht gefunden." };
+
+    const [mitKonto] = await db
+      .select({ id: machineBesitzer.id })
+      .from(machineBesitzer)
+      .where(and(scopeBedingung, eq(machineBesitzer.userId, nutzerId)))
+      .limit(1);
+    if (mitKonto) {
+      ergebnis.add(mitKonto.id);
+      continue;
+    }
+
+    const [namensgleich] = await db
+      .select()
+      .from(machineBesitzer)
+      .where(
+        and(
+          scopeBedingung,
+          sql`lower(${machineBesitzer.name}) = ${zielNutzer.name.toLowerCase()}`,
+        ),
+      )
+      .limit(1);
+    if (namensgleich) {
+      if (namensgleich.userId && namensgleich.userId !== nutzerId) {
+        return {
+          error:
+            "Ein namensgleicher Besitzer ist bereits mit einem anderen Konto verknüpft.",
+        };
+      }
+      if (!namensgleich.userId) {
+        await db
+          .update(machineBesitzer)
+          .set({ userId: nutzerId })
+          .where(eq(machineBesitzer.id, namensgleich.id));
+      }
+      ergebnis.add(namensgleich.id);
+      continue;
+    }
+
+    // Bewusst OHNE E-Mail: für verknüpfte Konten braucht der Katalog keine —
+    // und Mitglieder-Adressen gehören nicht in die Club-weit sichtbare Liste.
+    const [neu] = await db
+      .insert(machineBesitzer)
+      .values({
+        name: zielNutzer.name,
+        userId: nutzerId,
+        clubId: zielClubId,
+        createdBy: userId,
+      })
+      .returning({ id: machineBesitzer.id });
+    ergebnis.add(neu.id);
+  }
+
+  // 3) Neue Namen (+ optionale E-Mail), Paare in DOM-Reihenfolge.
+  for (let i = 0; i < neuNamen.length; i++) {
+    const name = neuNamen[i].trim();
+    if (!name) continue;
+    const email = (neuEmails[i] ?? "").trim().toLowerCase() || null;
+
+    const [vorhanden] = await db
+      .select()
+      .from(machineBesitzer)
+      .where(
+        and(
+          scopeBedingung,
+          sql`lower(${machineBesitzer.name}) = ${name.toLowerCase()}`,
+        ),
+      )
+      .limit(1);
+    if (vorhanden) {
+      if (email && !vorhanden.email) {
+        await db
+          .update(machineBesitzer)
+          .set({ email })
+          .where(eq(machineBesitzer.id, vorhanden.id));
+      }
+      ergebnis.add(vorhanden.id);
+      continue;
+    }
+
+    const [neu] = await db
+      .insert(machineBesitzer)
+      .values({ name, email, clubId: zielClubId, createdBy: userId })
+      .returning({ id: machineBesitzer.id });
+    ergebnis.add(neu.id);
+  }
+
+  return { besitzerIds: [...ergebnis] };
+}
+
+/** Die Besitzer-Zuordnungen einer Maschine auf die aufgelöste Liste setzen
+    (ersetzt den kompletten Stand — die Liste IST die Wahrheit des Formulars). */
+async function schreibeBesitzerZuordnung(
+  machineId: string,
+  besitzerIds: string[],
+) {
+  await db
+    .delete(machineBesitzerZuordnung)
+    .where(eq(machineBesitzerZuordnung.machineId, machineId));
+  if (besitzerIds.length > 0) {
+    await db
+      .insert(machineBesitzerZuordnung)
+      .values(besitzerIds.map((besitzerId) => ({ machineId, besitzerId })))
+      .onConflictDoNothing();
+  }
 }
 
 export async function createMachine(
@@ -119,6 +303,13 @@ export async function createMachine(
 
   const modelId = await ensureMachineModel(data, opdbImageUrl(formData));
 
+  const besitzer = await besitzerAufloesen(
+    user.id,
+    data.clubId ?? null,
+    formData,
+  );
+  if ("error" in besitzer) return besitzer;
+
   const [created] = await db
     .insert(machines)
     .values({
@@ -133,6 +324,8 @@ export async function createMachine(
       fotoUrl,
     })
     .returning({ id: machines.id });
+
+  await schreibeBesitzerZuordnung(created.id, besitzer.besitzerIds);
 
   revalidatePath("/machines");
   redirect(`/machines/${created.id}`);
@@ -177,6 +370,9 @@ export async function updateMachine(
     await widerrufeFreigaben(id);
   }
 
+  const besitzer = await besitzerAufloesen(user.id, clubId, formData);
+  if ("error" in besitzer) return besitzer;
+
   await db
     .update(machines)
     .set({
@@ -191,6 +387,8 @@ export async function updateMachine(
       ...(neuesFoto ? { fotoUrl: neuesFoto } : {}),
     })
     .where(eq(machines.id, id));
+
+  await schreibeBesitzerZuordnung(id, besitzer.besitzerIds);
 
   revalidatePath("/machines");
   revalidatePath(`/machines/${id}`);
@@ -241,11 +439,17 @@ export async function assignMachinesToClub(
   }
 
   if (erlaubt.length > 0) {
-    await db.update(machines).set({ clubId }).where(inArray(machines.id, erlaubt));
+    await db
+      .update(machines)
+      .set({ clubId })
+      .where(inArray(machines.id, erlaubt));
     revalidatePath("/machines");
   }
 
-  return { anzahl: erlaubt.length, uebersprungen: selected.length - erlaubt.length };
+  return {
+    anzahl: erlaubt.length,
+    uebersprungen: selected.length - erlaubt.length,
+  };
 }
 
 export async function deleteMachine(formData: FormData): Promise<void> {

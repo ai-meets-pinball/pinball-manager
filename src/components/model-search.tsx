@@ -89,7 +89,7 @@ export function ModelSearch({
       </div>
 
       {results.length > 0 ? (
-        <ul className="overflow-hidden rounded-[var(--radius)] border border-[var(--color-border)]">
+        <ul className="max-h-72 overflow-y-auto rounded-[var(--radius)] border border-[var(--color-border)]">
           {results.map((r) => (
             <li key={r.id}>
               <button

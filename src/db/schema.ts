@@ -227,6 +227,69 @@ export const machineModels = pgTable("machine_models", {
   fetchedAt: timestamp("fetched_at").notNull().defaultNow(),
 });
 
+/* ── Geräte-Besitzer (Katalog) ───────────────────────────────────────────── */
+/*
+  Der TATSÄCHLICHE Besitzer eines Geräts — getrennt von machines.ownerId (das
+  ist der anlegende Nutzer und trägt die Autorisierung; der Besitzer hier ist
+  REIN INFORMATIV und vergibt keine Rechte). Oft ist der Besitzer kein
+  Plattform-Nutzer, sondern nur ein Name — die Namen bilden einen Katalog:
+  einmal gewählt, wieder auswählbar. Geltungsbereich: Club-Eintrag (für alle
+  Mitglieder wählbar) oder privater Eintrag des Erstellers (clubId = NULL).
+  `email` ist die Basis für eine spätere Club-Einladung; `userId` wird gesetzt,
+  sobald der Besitzer ein Konto hat (beim Annehmen der Einladung verknüpft).
+*/
+export const machineBesitzer = pgTable(
+  "machine_besitzer",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    name: text("name").notNull(),
+    email: text("email"),
+    // NULL = privater Eintrag des Erstellers; gesetzt = Club-Katalog.
+    clubId: uuid("club_id").references(() => clubs.id, {
+      onDelete: "cascade",
+    }),
+    createdBy: text("created_by")
+      .notNull()
+      .references(() => user.id),
+    // Verknüpftes Plattform-Konto (sobald bekannt) — rein informativ.
+    userId: text("user_id").references(() => user.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [
+    // Ein Name je Geltungsbereich (case-insensitiv) — das macht den Katalog
+    // wiederverwendbar statt beliebig.
+    uniqueIndex("machine_besitzer_club_name_unique")
+      .on(t.clubId, sql`lower(${t.name})`)
+      .where(sql`club_id IS NOT NULL`),
+    uniqueIndex("machine_besitzer_privat_name_unique")
+      .on(t.createdBy, sql`lower(${t.name})`)
+      .where(sql`club_id IS NULL`),
+  ],
+);
+
+/*
+  Zuordnung Maschine ↔ Besitzer (n:m): ein Gerät kann MEHRERE Besitzer haben
+  (z. B. gemeinsam angeschafft), derselbe Besitzer mehrere Geräte. Löschen auf
+  beiden Seiten räumt die Zuordnung mit ab.
+*/
+export const machineBesitzerZuordnung = pgTable(
+  "machine_besitzer_zuordnung",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    machineId: uuid("machine_id")
+      .notNull()
+      .references(() => machines.id, { onDelete: "cascade" }),
+    besitzerId: uuid("besitzer_id")
+      .notNull()
+      .references(() => machineBesitzer.id, { onDelete: "cascade" }),
+  },
+  (t) => [
+    unique("machine_besitzer_zuordnung_unique").on(t.machineId, t.besitzerId),
+  ],
+);
+
 /* ── Maschinen ────────────────────────────────────────────────────────────── */
 
 export const machines = pgTable("machines", {

@@ -49,7 +49,9 @@ export function OpdbSearch({
         } catch {
           if (reqId === latestReq.current) {
             setResults([]);
-            setError("OPDB-Suche fehlgeschlagen. Bitte später erneut versuchen.");
+            setError(
+              "OPDB-Suche fehlgeschlagen. Bitte später erneut versuchen.",
+            );
           }
         }
       });
@@ -96,7 +98,7 @@ export function OpdbSearch({
       </div>
 
       {results.length > 0 ? (
-        <ul className="overflow-hidden rounded-[var(--radius)] border border-[var(--color-border)]">
+        <ul className="max-h-72 overflow-y-auto rounded-[var(--radius)] border border-[var(--color-border)]">
           {results.map((r) => (
             <li key={r.id}>
               <button

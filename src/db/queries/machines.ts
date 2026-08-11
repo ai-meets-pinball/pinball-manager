@@ -6,6 +6,7 @@ import {
   gte,
   ilike,
   inArray,
+  isNull,
   ne,
   or,
   sql,
@@ -15,16 +16,15 @@ import { db } from "@/db";
 import {
   faults,
   generations,
+  machineBesitzer,
+  machineBesitzerZuordnung,
   machineModels,
   machines,
   maintenanceLog,
+  roleAssignments,
   user,
 } from "@/db/schema";
-import {
-  getUserClubIds,
-  isSuperAdmin,
-  type SessionUser,
-} from "@/lib/session";
+import { getUserClubIds, isSuperAdmin, type SessionUser } from "@/lib/session";
 
 /*
   Maschinen: Sichtbarkeit, Fehler und die Kennzahlen der Detailseite.
@@ -60,7 +60,9 @@ export async function getModelGeneration(modelId: string) {
  * (Dashboard-Badges) gemeinsam benutzt, damit letztere sich nicht darauf
  * verlassen müssen, dass der Aufrufer schon gefiltert hat.
  */
-export async function sichtbareMaschinenFilter(userId: string): Promise<SQL | undefined> {
+export async function sichtbareMaschinenFilter(
+  userId: string,
+): Promise<SQL | undefined> {
   const clubIds = await getUserClubIds(userId);
   return or(
     eq(machines.ownerId, userId),
@@ -82,9 +84,81 @@ async function maschinenFuer(userId: string, suche?: string) {
   });
 }
 
+/*
+  Besitzer-Katalog für den Picker im Maschinen-Formular: die eigenen privaten
+  Einträge (clubId NULL) plus die Einträge aller Clubs, in denen der Nutzer
+  Mitglied ist. Der Client filtert je nach gewähltem Club auf die passende
+  Teilmenge (Club-Eintrag ↔ Club-Maschine, privater Eintrag ↔ private Maschine).
+*/
+export async function getBesitzerKatalog(currentUser: SessionUser) {
+  const clubIds = await getUserClubIds(currentUser.id);
+  const bedingungen: SQL[] = [
+    and(
+      isNull(machineBesitzer.clubId),
+      eq(machineBesitzer.createdBy, currentUser.id),
+    )!,
+  ];
+  if (clubIds.length > 0) {
+    bedingungen.push(inArray(machineBesitzer.clubId, clubIds));
+  }
+  return db
+    .select({
+      id: machineBesitzer.id,
+      name: machineBesitzer.name,
+      email: machineBesitzer.email,
+      clubId: machineBesitzer.clubId,
+      userId: machineBesitzer.userId,
+    })
+    .from(machineBesitzer)
+    .where(or(...bedingungen))
+    .orderBy(machineBesitzer.name);
+}
+
+/** Die eingetragenen Besitzer EINER Maschine (n:m), alphabetisch. */
+export async function getMachineBesitzer(machineId: string) {
+  return db
+    .select({
+      id: machineBesitzer.id,
+      name: machineBesitzer.name,
+      email: machineBesitzer.email,
+      userId: machineBesitzer.userId,
+    })
+    .from(machineBesitzerZuordnung)
+    .innerJoin(
+      machineBesitzer,
+      eq(machineBesitzer.id, machineBesitzerZuordnung.besitzerId),
+    )
+    .where(eq(machineBesitzerZuordnung.machineId, machineId))
+    .orderBy(machineBesitzer.name);
+}
+
+/*
+  Plattform-Nutzer, die als Besitzer wählbar sind: die Mitglieder der eigenen
+  Clubs (der Besitzer ist oft schon Nutzer). Bewusst KEIN globales Nutzer-
+  Verzeichnis — sichtbar ist nur, wen man ohnehin kennt (Club-Mitglieder;
+  für private Maschinen bietet das Formular nur den Nutzer selbst an).
+*/
+export async function getBesitzerNutzerKatalog(currentUser: SessionUser) {
+  const clubIds = await getUserClubIds(currentUser.id);
+  if (clubIds.length === 0) return [];
+  return db
+    .select({
+      userId: roleAssignments.userId,
+      name: user.name,
+      clubId: roleAssignments.clubId,
+    })
+    .from(roleAssignments)
+    .innerJoin(user, eq(user.id, roleAssignments.userId))
+    .where(inArray(roleAssignments.clubId, clubIds))
+    .orderBy(user.name);
+}
+
 /** Die eigenen sichtbaren Maschinen. Nimmt den Nutzer, nicht eine ID — so
     lässt sich hier keine fremde ID hineinreichen. */
-export async function getMeineMaschinen(currentUser: SessionUser, suche?: string) {
+export async function getMeineMaschinen(
+  currentUser: SessionUser,
+  suche?: string,
+) {
   return maschinenFuer(currentUser.id, suche);
 }
 
@@ -163,7 +237,9 @@ export async function getMachineFaults(
 }
 
 /** Datum der jüngsten erledigten Wartung dieser Maschine (oder null). */
-export async function getLetzteWartung(machineId: string): Promise<Date | null> {
+export async function getLetzteWartung(
+  machineId: string,
+): Promise<Date | null> {
   const [row] = await db
     .select({ datum: maintenanceLog.datum })
     .from(maintenanceLog)
@@ -191,5 +267,8 @@ export async function getNeueFehlerSeitGestern(
     })
     .from(faults)
     .where(and(eq(faults.machineId, machineId), gte(faults.datum, grenze)));
-  return { gesamt: Number(row?.gesamt ?? 0), kritisch: Number(row?.kritisch ?? 0) };
+  return {
+    gesamt: Number(row?.gesamt ?? 0),
+    kritisch: Number(row?.kritisch ?? 0),
+  };
 }

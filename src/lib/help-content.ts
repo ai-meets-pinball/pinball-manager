@@ -105,6 +105,10 @@ export const ANLEITUNG: HilfeSektion[] = [
         titel: "Bearbeiten",
         text: "Über »Bearbeiten« änderst du Daten, Foto, Modell-Zuordnung oder die Club-Zuordnung.",
       },
+      {
+        titel: "Besitzer",
+        text: "Jede Maschine kann BESITZER tragen — die Personen, denen das Gerät tatsächlich gehört (nicht zwingend, wer es angelegt hat); auch mehrere, z. B. bei gemeinsam angeschafften Geräten. Das ist rein informativ und vergibt keine Rechte. Zur Auswahl stehen bisherige Besitzer-Namen (je Club bzw. privat — einmal angelegt, wieder wählbar), die MITGLIEDER des Clubs (ist der Besitzer schon Nutzer, wird sein Konto direkt verknüpft) oder ein neuer Name mit optionaler E-Mail. Hat ein Besitzer eine E-Mail und noch kein Konto, können Club-Owner/-Admins ihn direkt von der Detailseite in den Club einladen; nimmt er an, wird sein Konto automatisch mit dem Besitzer-Eintrag verknüpft.",
+      },
     ],
   },
   {

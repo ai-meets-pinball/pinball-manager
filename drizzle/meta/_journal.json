@@ -246,6 +246,20 @@
       "when": 1786469465142,
       "tag": "0034_fair_squadron_sinister",
       "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1786471782312,
+      "tag": "0035_ambitious_maria_hill",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1786473021579,
+      "tag": "0036_shocking_champions",
+      "breakpoints": true
     }
   ]
 }

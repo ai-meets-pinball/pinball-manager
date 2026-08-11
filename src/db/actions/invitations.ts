@@ -6,11 +6,9 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
+import { verknuepfeBesitzerMitKonto } from "@/db/besitzer-link";
 import { clubs, invitations, roleAssignments, user } from "@/db/schema";
-import {
-  sendInvitationEmail,
-  sendPlatformInvitationEmail,
-} from "@/lib/email";
+import { sendInvitationEmail, sendPlatformInvitationEmail } from "@/lib/email";
 import { darfClub } from "@/lib/rechte";
 import {
   getClubRole,
@@ -49,7 +47,8 @@ export async function inviteMember(
   // Zum Owner einladen dürfen nur Owner (oder Super-Admin).
   if (
     rolle === "owner" &&
-    !darfClub(currentUser, await getClubRole(currentUser.id, clubId)).ownerVergeben
+    !darfClub(currentUser, await getClubRole(currentUser.id, clubId))
+      .ownerVergeben
   ) {
     return { error: "Nur Owner dürfen jemanden zum Owner einladen" };
   }
@@ -97,7 +96,8 @@ export async function inviteMember(
   } catch (e) {
     console.error("[invite] email:", (e as Error).message);
     return {
-      error: "Einladung gespeichert, aber der E-Mail-Versand ist fehlgeschlagen.",
+      error:
+        "Einladung gespeichert, aber der E-Mail-Versand ist fehlgeschlagen.",
     };
   }
 
@@ -161,7 +161,8 @@ export async function invitePlatformUser(
   } catch (e) {
     console.error("[invite] platform email:", (e as Error).message);
     return {
-      error: "Einladung gespeichert, aber der E-Mail-Versand ist fehlgeschlagen.",
+      error:
+        "Einladung gespeichert, aber der E-Mail-Versand ist fehlgeschlagen.",
     };
   }
 
@@ -204,6 +205,9 @@ async function acceptForUser(
     .update(invitations)
     .set({ status: "accepted" })
     .where(eq(invitations.id, inv.id));
+
+  // Wartet ein Besitzer-Eintrag auf dieses Konto? Jetzt verknüpfen.
+  await verknuepfeBesitzerMitKonto(userId, userEmail);
 
   return { clubId: inv.clubId ?? undefined };
 }
@@ -258,9 +262,7 @@ export async function revokePlatformInvitation(
   await db
     .update(invitations)
     .set({ status: "revoked" })
-    .where(
-      and(eq(invitations.id, invitationId), isNull(invitations.clubId)),
-    );
+    .where(and(eq(invitations.id, invitationId), isNull(invitations.clubId)));
 
   revalidatePath("/admin");
 }

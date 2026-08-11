@@ -4,6 +4,7 @@ import { and, count, eq, gt } from "drizzle-orm";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { db } from "@/db";
+import { verknuepfeBesitzerMitKonto } from "@/db/besitzer-link";
 import { invitations, roleAssignments, user } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { istSuperAdminEmail } from "@/lib/super-admins";
@@ -76,7 +77,9 @@ export async function registerAccount(
       ),
     });
     if (!einladung || einladung.email.toLowerCase() !== email) {
-      return { error: "Einladung ungültig, abgelaufen oder für eine andere Adresse." };
+      return {
+        error: "Einladung ungültig, abgelaufen oder für eine andere Adresse.",
+      };
     }
 
     // Atomar beanspruchen: nur EIN Aufruf gewinnt das Rennen.
@@ -84,7 +87,10 @@ export async function registerAccount(
       .update(invitations)
       .set({ status: "claiming" })
       .where(
-        and(eq(invitations.id, einladung.id), eq(invitations.status, "pending")),
+        and(
+          eq(invitations.id, einladung.id),
+          eq(invitations.status, "pending"),
+        ),
       )
       .returning({ id: invitations.id });
     if (beansprucht.length === 0) {
@@ -119,6 +125,11 @@ export async function registerAccount(
         .update(invitations)
         .set({ status: "accepted" })
         .where(eq(invitations.id, einladungId));
+    }
+
+    // Wartet ein Besitzer-Eintrag auf dieses Konto? Jetzt verknüpfen.
+    if (neueUserId) {
+      await verknuepfeBesitzerMitKonto(neueUserId, email);
     }
 
     return { message: "Konto erstellt." };

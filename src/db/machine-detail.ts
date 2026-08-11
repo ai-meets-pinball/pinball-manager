@@ -2,6 +2,7 @@ import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
   getLetzteWartung,
+  getMachineBesitzer,
   getMachineFaults,
   getMachineGuides,
   getMachineKnowledge,
@@ -21,7 +22,8 @@ import {
   maintenancePlans as maintenancePlansTable,
   repairs as repairsTable,
 } from "@/db/schema";
-import { requireMachineAccess } from "@/lib/session";
+import { darfClub } from "@/lib/rechte";
+import { getClubRole, requireMachineAccess } from "@/lib/session";
 
 /*
   Alles, was die Maschinen-Detailseite anzeigt — hinter einem Aufruf.
@@ -50,6 +52,8 @@ export async function getMachineDetail(id: string) {
   // standardmäßig zehn Verbindungen, der Rest reiht sich ein.
   const [
     club,
+    besitzer,
+    clubRolle,
     alleFehler,
     letzteWartung,
     deltaFehler,
@@ -75,6 +79,11 @@ export async function getMachineDetail(id: string) {
           })
           .then((c) => c ?? null)
       : null,
+    // Tatsächliche Besitzer (n:m — ein Gerät kann mehrere haben), rein
+    // informativ, siehe Schema.
+    getMachineBesitzer(id),
+    // Club-Rolle des Betrachters — für die Frage „darf er den Besitzer einladen?".
+    machine.clubId ? getClubRole(user.id, machine.clubId) : null,
     getMachineFaults(id),
     getLetzteWartung(id),
     getNeueFehlerSeitGestern(id),
@@ -122,6 +131,19 @@ export async function getMachineDetail(id: string) {
     user,
     darf,
     machine: { ...machine, club },
+    // Besitzer-Liste, je Eintrag mit der Frage, ob der Betrachter ihn in den
+    // Club einladen darf (Club-Maschine, E-Mail vorhanden, noch kein Konto
+    // verknüpft, Betrachter ist Club-Owner/-Admin). Die Server Action prüft
+    // dieselbe Regel erneut.
+    besitzer: besitzer.map((b) => ({
+      ...b,
+      einladbar: Boolean(
+        machine.clubId &&
+        b.email &&
+        !b.userId &&
+        darfClub(user, clubRolle).verwalten,
+      ),
+    })),
     fehler: {
       alle: alleFehler,
       offen: offene,

@@ -10,6 +10,15 @@ import type { FormState } from "@/db/actions/form-state";
 
 type Club = { id: string; name: string };
 
+/** Katalog-Eintrag für den Besitzer-Picker (siehe getBesitzerKatalog). */
+type BesitzerEintrag = {
+  id: string;
+  name: string;
+  email: string | null;
+  clubId: string | null;
+  userId: string | null;
+};
+
 type MachineValues = {
   id: string;
   hersteller: string;
@@ -18,7 +27,25 @@ type MachineValues = {
   opdbRef: string | null;
   ipdbRef: string | null;
   clubId: string | null;
+  /** Bereits eingetragene Besitzer (n:m) — für die Chip-Vorbelegung. */
+  besitzer: { id: string; name: string }[];
 };
+
+/*
+  Ein gewählter Besitzer im Formular (Chip). Drei Arten, entsprechend den drei
+  Server-Wegen in besitzerAufloesen: bestehender Katalog-Eintrag, Plattform-
+  Nutzer, neuer Name (+ optionale E-Mail).
+*/
+type BesitzerChip =
+  | { art: "eintrag"; id: string; name: string }
+  | { art: "nutzer"; userId: string; name: string }
+  | { art: "neu"; name: string; email: string };
+
+function chipKey(c: BesitzerChip): string {
+  if (c.art === "eintrag") return `e:${c.id}`;
+  if (c.art === "nutzer") return `u:${c.userId}`;
+  return `n:${c.name.toLowerCase()}`;
+}
 
 /* Der gewählte Modell (Katalog oder OPDB) — fürs Anzeige-Panel. */
 type Auswahl = {
@@ -41,16 +68,98 @@ type Auswahl = {
 export function MachineForm({
   action,
   clubs,
+  besitzerKatalog,
+  mitglieder,
+  aktuellerNutzer,
   machine,
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   clubs: Club[];
+  besitzerKatalog: BesitzerEintrag[];
+  /** Club-Mitglieder als wählbare Besitzer (der Besitzer ist oft schon Nutzer). */
+  mitglieder: { userId: string; name: string; clubId: string | null }[];
+  aktuellerNutzer: { id: string; name: string };
   machine?: MachineValues;
 }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     action,
     {},
   );
+
+  /*
+    Besitzer-Picker (ein Gerät kann MEHRERE Besitzer haben): die Auswahl lebt
+    als Chip-Liste; hinzugefügt wird über ein Select (bisherige Einträge,
+    Club-Mitglieder, „neu" = Name + E-Mail). Der Katalog hängt am
+    GELTUNGSBEREICH der Maschine — bei einer Club-Maschine stehen die Einträge
+    dieses Clubs zur Wahl, bei einer privaten die eigenen. Darum ist die
+    Club-Auswahl kontrolliert: wechselt der Club, fallen Chips aus dem alten
+    Geltungsbereich weg (neue Namen bleiben — sie entstehen im neuen Scope).
+  */
+  const [clubSel, setClubSel] = useState(machine?.clubId ?? "");
+  const [chips, setChips] = useState<BesitzerChip[]>(() =>
+    (machine?.besitzer ?? []).map((b) => ({
+      art: "eintrag",
+      id: b.id,
+      name: b.name,
+    })),
+  );
+  const [pickerSel, setPickerSel] = useState("");
+  const [neuName, setNeuName] = useState("");
+  const [neuEmail, setNeuEmail] = useState("");
+
+  const besitzerAuswahl = besitzerKatalog.filter(
+    (b) =>
+      (clubSel ? b.clubId === clubSel : b.clubId === null) &&
+      !chips.some((c) => c.art === "eintrag" && c.id === b.id),
+  );
+  // Nutzer als Besitzer: Club-Maschine → Mitglieder dieses Clubs; private →
+  // nur man selbst. Wer schon gewählt ist oder einen verknüpften Katalog-
+  // Eintrag hat, taucht nicht (doppelt) auf.
+  const nutzerAuswahl = (
+    clubSel
+      ? mitglieder.filter((m) => m.clubId === clubSel)
+      : [
+          {
+            userId: aktuellerNutzer.id,
+            name: aktuellerNutzer.name,
+            clubId: null,
+          },
+        ]
+  ).filter(
+    (m) =>
+      !chips.some((c) => c.art === "nutzer" && c.userId === m.userId) &&
+      !besitzerKatalog.some(
+        (b) =>
+          b.userId === m.userId &&
+          (clubSel ? b.clubId === clubSel : b.clubId === null),
+      ),
+  );
+
+  function addChip(chip: BesitzerChip) {
+    setChips((alt) =>
+      alt.some((c) => chipKey(c) === chipKey(chip)) ? alt : [...alt, chip],
+    );
+  }
+
+  function besitzerHinzufuegen() {
+    if (pickerSel === "neu") {
+      const name = neuName.trim();
+      if (!name) return;
+      addChip({ art: "neu", name, email: neuEmail.trim() });
+      setNeuName("");
+      setNeuEmail("");
+      setPickerSel("");
+      return;
+    }
+    if (pickerSel.startsWith("user:")) {
+      const m = nutzerAuswahl.find((n) => n.userId === pickerSel.slice(5));
+      if (m) addChip({ art: "nutzer", userId: m.userId, name: m.name });
+    } else if (pickerSel) {
+      const b = besitzerAuswahl.find((e) => e.id === pickerSel);
+      if (b) addChip({ art: "eintrag", id: b.id, name: b.name });
+    }
+    setPickerSel("");
+  }
 
   const [vals, setVals] = useState({
     hersteller: machine?.hersteller ?? "",
@@ -253,8 +362,21 @@ export function MachineForm({
         </p>
       )}
 
-      <Field label="Club (optional)" hint="Geteilt mit den Mitgliedern des Clubs.">
-        <Select name="clubId" defaultValue={machine?.clubId ?? ""}>
+      <Field
+        label="Club (optional)"
+        hint="Geteilt mit den Mitgliedern des Clubs."
+      >
+        <Select
+          name="clubId"
+          value={clubSel}
+          onChange={(e) => {
+            setClubSel(e.target.value);
+            // Chips aus dem alten Geltungsbereich passen nicht mehr —
+            // neue Namen bleiben, sie entstehen einfach im neuen Scope.
+            setChips((alt) => alt.filter((c) => c.art === "neu"));
+            setPickerSel("");
+          }}
+        >
           <option value="">— Nur für mich —</option>
           {clubs.map((c) => (
             <option key={c.id} value={c.id}>
@@ -262,6 +384,126 @@ export function MachineForm({
             </option>
           ))}
         </Select>
+      </Field>
+
+      <Field
+        label={`Besitzer (${chips.length})`}
+        hint="Wem gehört das Gerät tatsächlich? Ein Gerät kann mehrere Besitzer haben. Rein informativ — vergibt keine Rechte; einmal angelegte Namen bleiben wählbar. Gleicher Name + E-Mail trägt die E-Mail bei einem bestehenden Eintrag nach."
+      >
+        <div className="space-y-2">
+          {/* Die Auswahl geht als Hidden-Inputs mit — je Chip einer seiner drei
+              Wege (Eintrag / Nutzer / neuer Name mit E-Mail-Paar). */}
+          {chips.map((c) =>
+            c.art === "eintrag" ? (
+              <input
+                key={chipKey(c)}
+                type="hidden"
+                name="besitzerIds"
+                value={c.id}
+              />
+            ) : c.art === "nutzer" ? (
+              <input
+                key={chipKey(c)}
+                type="hidden"
+                name="besitzerUserIds"
+                value={c.userId}
+              />
+            ) : (
+              <span key={chipKey(c)}>
+                <input type="hidden" name="besitzerNeuName" value={c.name} />
+                <input type="hidden" name="besitzerNeuEmail" value={c.email} />
+              </span>
+            ),
+          )}
+
+          {chips.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {chips.map((c) => (
+                <span
+                  key={chipKey(c)}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] px-2.5 py-1 text-sm"
+                >
+                  {c.name}
+                  {c.art === "neu" && c.email ? (
+                    <span className="text-xs text-[var(--color-muted)]">
+                      {c.email}
+                    </span>
+                  ) : null}
+                  <button
+                    type="button"
+                    aria-label={`${c.name} entfernen`}
+                    onClick={() =>
+                      setChips((alt) =>
+                        alt.filter((x) => chipKey(x) !== chipKey(c)),
+                      )
+                    }
+                    className="text-[var(--color-muted)] hover:text-[var(--color-danger)]"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          ) : null}
+
+          <div className="flex flex-wrap items-center gap-2">
+            <Select
+              value={pickerSel}
+              onChange={(e) => setPickerSel(e.target.value)}
+              className="min-w-48 flex-1"
+            >
+              <option value="">— Besitzer wählen —</option>
+              {besitzerAuswahl.length > 0 ? (
+                <optgroup label="Bisherige Besitzer">
+                  {besitzerAuswahl.map((b) => (
+                    <option key={b.id} value={b.id}>
+                      {b.name}
+                      {b.userId
+                        ? " · auf der Plattform"
+                        : b.email
+                          ? ` · ${b.email}`
+                          : ""}
+                    </option>
+                  ))}
+                </optgroup>
+              ) : null}
+              {nutzerAuswahl.length > 0 ? (
+                <optgroup label={clubSel ? "Club-Mitglieder" : "Du selbst"}>
+                  {nutzerAuswahl.map((m) => (
+                    <option key={m.userId} value={`user:${m.userId}`}>
+                      {m.name}
+                      {m.userId === aktuellerNutzer.id ? " (ich)" : ""}
+                    </option>
+                  ))}
+                </optgroup>
+              ) : null}
+              <option value="neu">+ Neuer Besitzer …</option>
+            </Select>
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={besitzerHinzufuegen}
+              disabled={!pickerSel || (pickerSel === "neu" && !neuName.trim())}
+            >
+              Hinzufügen
+            </Button>
+          </div>
+          {pickerSel === "neu" ? (
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <Input
+                value={neuName}
+                onChange={(e) => setNeuName(e.target.value)}
+                placeholder="Name des Besitzers"
+              />
+              <Input
+                value={neuEmail}
+                onChange={(e) => setNeuEmail(e.target.value)}
+                type="email"
+                placeholder="E-Mail (optional)"
+              />
+            </div>
+          ) : null}
+        </div>
       </Field>
 
       <Field

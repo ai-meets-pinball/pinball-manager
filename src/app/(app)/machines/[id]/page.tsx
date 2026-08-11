@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { Boxes, Pencil, Plus, Trash2, Users } from "lucide-react";
+import { BesitzerZeile } from "@/components/besitzer-zeile";
 import { FaultList } from "@/components/fault-list";
 import { KnowledgeFacts } from "@/components/knowledge-facts";
 import { KnowledgeGuides } from "@/components/knowledge-guides";
@@ -95,6 +96,7 @@ export default async function MachineDetailPage({
     user: currentUser,
     darf,
     machine,
+    besitzer,
     fehler,
     wartung,
     wissen,
@@ -322,6 +324,8 @@ export default async function MachineDetailPage({
               <Users size={14} /> {machine.club.name}
             </p>
           ) : null}
+          {/* Tatsächliche Besitzer (rein informativ) + ggf. Club-Einladung. */}
+          <BesitzerZeile machineId={machine.id} besitzer={besitzer} />
         </div>
         <div className="flex items-center gap-4">
           <LiveClock />
