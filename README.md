@@ -58,7 +58,7 @@ cp .env.example .env.local
 npm run dev
 ```
 
-Die App läuft dann auf [http://localhost:3000](http://localhost:3000).
+Die App läuft dann auf [http://localhost:3100](http://localhost:3100).
 
 ### Umgebungsvariablen
 
@@ -68,7 +68,7 @@ DATABASE_URL="postgresql://..."
 
 # Better Auth
 BETTER_AUTH_SECRET="<zufälliges-secret>"
-BETTER_AUTH_URL="http://localhost:3000"
+BETTER_AUTH_URL="http://localhost:3100"
 
 # Supabase Storage (nur Storage — nicht Auth, nicht Daten)
 NEXT_PUBLIC_SUPABASE_URL="https://<projekt>.supabase.co"
