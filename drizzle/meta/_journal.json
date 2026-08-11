@@ -239,6 +239,13 @@
       "when": 1785867073987,
       "tag": "0033_smart_raza",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1786469465142,
+      "tag": "0034_fair_squadron_sinister",
+      "breakpoints": true
     }
   ]
 }

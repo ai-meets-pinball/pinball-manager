@@ -5,9 +5,14 @@ import { Boxes, Pencil, Plus, Trash2, Users } from "lucide-react";
 import { FaultList } from "@/components/fault-list";
 import { KnowledgeFacts } from "@/components/knowledge-facts";
 import { KnowledgeGuides } from "@/components/knowledge-guides";
+import { KnowledgeTipps } from "@/components/knowledge-tipps";
+import { TippForm } from "@/components/tipp-form";
 import { LiveClock } from "@/components/live-clock";
 import { MachineFaultsPreview } from "@/components/machine-faults-preview";
-import { MachineOverview, type MachineKpi } from "@/components/machine-overview";
+import {
+  MachineOverview,
+  type MachineKpi,
+} from "@/components/machine-overview";
 import { MachineTabs, type MachineTab } from "@/components/machine-tabs";
 import { MaintenancePlan } from "@/components/maintenance-plan";
 import { ManualJsonImport } from "@/components/manual-json-import";
@@ -31,6 +36,8 @@ import {
   getModelGeneration,
   getModelGuides,
   getModelKnowledge,
+  getModelTipps,
+  getTippZielKatalog,
   getNeueFehlerSeitGestern,
   getRepairShares,
   getShareDefaults,
@@ -65,6 +72,7 @@ const LEAF_LABEL = {
   reparaturen: "Reparaturen",
   handbuch: "Handbuch",
   guide: "Guide",
+  tipps: "Tipps",
 } as const;
 type Leaf = keyof typeof LEAF_LABEL;
 
@@ -164,6 +172,17 @@ export default async function MachineDetailPage({
     ? await getModelGeneration(machine.modelId)
     : null;
 
+  // Allgemeine Tipps (typ='tipp'): n:m auf Modelle/Generationen — sichtbar ist,
+  // was das Modell dieser Maschine oder dessen Generation trifft. Ohne
+  // Modell-Zuordnung gibt es keinen Anker (Tipps sind bewusst modell-/
+  // generationsbezogen, nie maschinenbezogen).
+  const tipps = machine.modelId
+    ? await getModelTipps(currentUser, machine.modelId)
+    : [];
+  // Ziel-Katalog für das Anlege-Formular (nur wenn es gebraucht wird).
+  const tippKatalog =
+    darf.bearbeiten && machine.modelId ? await getTippZielKatalog() : null;
+
   // Wartungsplan: Wartungspunkte samt Historie und berechneter Fälligkeit.
   const wartungsTasks = await getMaintenanceTasks(id);
   // Verknüpfter Standard-Wartungsplan (oder null = eigener Plan/Kopie).
@@ -210,8 +229,8 @@ export default async function MachineDetailPage({
       key: "wissen",
       label: "Wissensbasis",
       leaves: guideSichtbar
-        ? ["reparaturen", "handbuch", "guide"]
-        : ["reparaturen", "handbuch"],
+        ? ["reparaturen", "handbuch", "guide", "tipps"]
+        : ["reparaturen", "handbuch", "tipps"],
     },
   ];
 
@@ -239,15 +258,12 @@ export default async function MachineDetailPage({
       ) : wartungBald > 0 ? (
         <CountPill n={wartungBald} tone="warn" />
       ) : undefined,
-    reparaturen:
-      machineRepairs.length > 0 ? (
-        <CountPill n={machineRepairs.length} />
-      ) : undefined,
-    handbuch:
-      knowledgeFacts.length > 0 ? (
-        <CountPill n={knowledgeFacts.length} />
-      ) : undefined,
-    guide: undefined,
+    // Wissensbasis-Blätter zeigen ihre Bestandszahl immer — auch die 0, damit
+    // man ohne Klick sieht, wo (noch) nichts liegt.
+    reparaturen: <CountPill n={machineRepairs.length} />,
+    handbuch: <CountPill n={knowledgeFacts.length} />,
+    guide: <CountPill n={guides.length} />,
+    tipps: <CountPill n={tipps.length} />,
   };
 
   // Haupt-Gruppen: Badge zeigt die dringendste Lage der enthaltenen Blätter,
@@ -300,7 +316,9 @@ export default async function MachineDetailPage({
       label: "Offene Fehler",
       tone: fehlerOffen > 0 ? "warn" : "neutral",
       sub:
-        deltaFehler.gesamt > 0 ? `↑ ${deltaFehler.gesamt} seit gestern` : undefined,
+        deltaFehler.gesamt > 0
+          ? `↑ ${deltaFehler.gesamt} seit gestern`
+          : undefined,
     },
     {
       key: "fehler-kritisch",
@@ -318,7 +336,8 @@ export default async function MachineDetailPage({
       href: `/machines/${machine.id}?bereich=wartung`,
       zahl: letzteWartung ? letzteWartung.toLocaleDateString("de-DE") : "—",
       label: "Letzte Wartung",
-      tone: wartungFaellig > 0 ? "danger" : wartungBald > 0 ? "warn" : "success",
+      tone:
+        wartungFaellig > 0 ? "danger" : wartungBald > 0 ? "warn" : "success",
       sub: letzteWartung
         ? relativeZeit(letzteWartung)
         : wartungFaellig > 0
@@ -496,7 +515,10 @@ export default async function MachineDetailPage({
               teilen={
                 darf.teilen && machine.modelId
                   ? {
-                      clubs: meineClubs.map((c) => ({ id: c.id, name: c.name })),
+                      clubs: meineClubs.map((c) => ({
+                        id: c.id,
+                        name: c.name,
+                      })),
                       defaults: shareDefaults,
                       shares: Object.fromEntries(repairShares),
                     }
@@ -595,9 +617,8 @@ export default async function MachineDetailPage({
             <p className="text-sm text-[var(--color-muted)]">
               Erzeuge aus Hersteller, Modell und Baujahr einen umfassenden FAQ-
               und Troubleshooting-Guide (Plattform-Erkennung, Fehlersuche nach
-              Subsystemen, bekannte Serienfehler, Wartung).{" "}
-              Claude prüft dabei Plattform und Serienprobleme per Websuche gegen
-              Community-Quellen.
+              Subsystemen, bekannte Serienfehler, Wartung). Claude prüft dabei
+              Plattform und Serienprobleme per Websuche gegen Community-Quellen.
               {ollamaVerfuegbar
                 ? " Das lokale Modell (Ollama) arbeitet ohne Websuche — der Guide wird dann entsprechend gekennzeichnet."
                 : ""}{" "}
@@ -628,6 +649,36 @@ export default async function MachineDetailPage({
               />
             </Card>
           ) : null}
+        </div>
+      ) : null}
+
+      {/* ── Allgemeine Tipps (Modell-/Generations-Wissen, n:m) ───────────────── */}
+      {active === "tipps" ? (
+        <div className="space-y-3">
+          {machine.modelId ? (
+            <>
+              <KnowledgeTipps
+                eintraege={tipps}
+                currentUserId={currentUser.id}
+                machineId={machine.id}
+                kannKuratieren={kannKuratieren(currentUser)}
+              />
+              {tippKatalog ? (
+                <TippForm
+                  machineId={machine.id}
+                  modelle={tippKatalog.modelle}
+                  generationen={tippKatalog.generationen}
+                  vorauswahlModelId={machine.modelId}
+                />
+              ) : null}
+            </>
+          ) : (
+            <p className="text-sm text-[var(--color-muted)]">
+              Tipps gelten für Modelle oder ganze Generationen. Diese Maschine
+              ist keinem Modell zugeordnet — wähle beim Bearbeiten eine
+              OPDB-Referenz, dann erscheinen hier passende Tipps.
+            </p>
+          )}
         </div>
       ) : null}
     </div>

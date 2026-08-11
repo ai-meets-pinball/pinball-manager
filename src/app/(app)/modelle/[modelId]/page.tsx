@@ -3,12 +3,15 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { KnowledgeFacts } from "@/components/knowledge-facts";
 import { KnowledgeGuides } from "@/components/knowledge-guides";
+import { KnowledgeTipps } from "@/components/knowledge-tipps";
+import { MachineTabs, type MachineTab } from "@/components/machine-tabs";
 import { SharedRepairs } from "@/components/shared-repairs";
 import { Card } from "@/components/ui/card";
 import {
   getMachineModel,
   getModelGuides,
   getModelKnowledge,
+  getModelTipps,
   getSharedRepairsForModel,
 } from "@/db/queries";
 import { kannKuratieren, requireUser } from "@/lib/session";
@@ -19,26 +22,49 @@ import { modellName } from "@/lib/format";
   sichtbare Wissen (knowledge, Modell-Ebene) + geteilte Reparaturen —
   unabhängig davon, ob er selbst eine Instanz besitzt. Eigene Wissenseinträge
   lassen sich hier in der Sichtbarkeit ändern.
+
+  Wie die Maschinen-Detailseite in Reiter gegliedert (?bereich=…, MachineTabs):
+  Handbuch-Daten · Guide · Reparaturen sind so ohne Scrollen direkt erreichbar,
+  jeder Reiter mit Bestandszahl — auch (0).
 */
 export default async function GeraetetypPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ modelId: string }>;
+  searchParams: Promise<{ bereich?: string }>;
 }) {
-  const { modelId } = await params;
+  const [{ modelId }, { bereich }] = await Promise.all([params, searchParams]);
   const currentUser = await requireUser();
 
   const model = await getMachineModel(modelId);
   if (!model) notFound();
 
-  const [fakten, guides, reparaturen] = await Promise.all([
+  const [fakten, guides, tipps, reparaturen] = await Promise.all([
     getModelKnowledge(currentUser, modelId),
     getModelGuides(currentUser, modelId),
+    getModelTipps(currentUser, modelId),
     getSharedRepairsForModel(currentUser, modelId),
   ]);
 
-  const leer =
-    fakten.length === 0 && guides.length === 0 && reparaturen.length === 0;
+  // Alle Bereiche bekommen einen Reiter samt Bestandszahl — auch mit (0),
+  // damit ohne Klick sichtbar ist, wo (noch) nichts liegt.
+  const bereiche = [
+    { key: "handbuch", label: "Handbuch-Daten", anzahl: fakten.length },
+    { key: "guide", label: "Troubleshooting-Guide", anzahl: guides.length },
+    { key: "tipps", label: "Tipps", anzahl: tipps.length },
+    { key: "reparaturen", label: "Reparaturen", anzahl: reparaturen.length },
+  ];
+  const leer = bereiche.every((b) => b.anzahl === 0);
+
+  const active = bereiche.some((b) => b.key === bereich) ? bereich : "handbuch";
+
+  const tabs: MachineTab[] = bereiche.map((b) => ({
+    key: b.key,
+    label: `${b.label} (${b.anzahl})`,
+    href: `/modelle/${modelId}?bereich=${b.key}`,
+    active: b.key === active,
+  }));
 
   return (
     <div className="space-y-6">
@@ -59,9 +85,7 @@ export default async function GeraetetypPage({
           />
         ) : null}
         <div>
-          <h1 className="text-2xl font-bold">
-            {modellName(model)}
-          </h1>
+          <h1 className="text-2xl font-bold">{modellName(model)}</h1>
           <p className="text-[var(--color-muted)]">
             {model.baujahr ?? "Baujahr unbekannt"} · Modell
           </p>
@@ -72,13 +96,15 @@ export default async function GeraetetypPage({
         <Card>
           <p className="text-sm text-[var(--color-muted)]">
             Für dieses Modell ist dir gegenüber noch kein Wissen sichtbar.
-            Sobald jemand Handbuch-Daten oder Reparaturen freigibt, erscheinen sie
-            hier.
+            Sobald jemand Handbuch-Daten oder Reparaturen freigibt, erscheinen
+            sie hier.
           </p>
         </Card>
       ) : (
-        <div className="space-y-6">
-          {fakten.length > 0 ? (
+        <>
+          <MachineTabs primary={tabs} />
+
+          {active === "handbuch" ? (
             <KnowledgeFacts
               eintraege={fakten}
               currentUserId={currentUser.id}
@@ -86,16 +112,40 @@ export default async function GeraetetypPage({
               kannKuratieren={kannKuratieren(currentUser)}
             />
           ) : null}
-          {guides.length > 0 ? (
-            <KnowledgeGuides
-              eintraege={guides}
+          {active === "guide" ? (
+            guides.length > 0 ? (
+              <KnowledgeGuides
+                eintraege={guides}
+                currentUserId={currentUser.id}
+                machineId=""
+                kannKuratieren={kannKuratieren(currentUser)}
+              />
+            ) : (
+              <p className="text-sm text-[var(--color-muted)]">
+                Für dieses Modell ist dir gegenüber noch kein
+                Troubleshooting-Guide sichtbar.
+              </p>
+            )
+          ) : null}
+          {active === "tipps" ? (
+            <KnowledgeTipps
+              eintraege={tipps}
               currentUserId={currentUser.id}
               machineId=""
               kannKuratieren={kannKuratieren(currentUser)}
             />
           ) : null}
-          <SharedRepairs eintraege={reparaturen} />
-        </div>
+          {active === "reparaturen" ? (
+            reparaturen.length > 0 ? (
+              <SharedRepairs eintraege={reparaturen} />
+            ) : (
+              <p className="text-sm text-[var(--color-muted)]">
+                Für dieses Modell sind dir gegenüber noch keine Reparaturen
+                freigegeben.
+              </p>
+            )
+          ) : null}
+        </>
       )}
     </div>
   );

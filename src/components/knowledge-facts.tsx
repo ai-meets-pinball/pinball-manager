@@ -1,4 +1,6 @@
 import { Globe, Lock, Users } from "lucide-react";
+import { Card } from "@/components/ui/card";
+import { KnowledgeEntryTabs } from "@/components/knowledge-entry-tabs";
 import { MachineDataTables } from "@/components/machine-data-tables";
 import { inhaltToFacts } from "@/lib/import-facts";
 import { KnowledgeEdit } from "@/components/knowledge-edit";
@@ -49,7 +51,6 @@ const SICHT: Record<Sicht, { label: string; Icon: typeof Globe }> = {
   oeffentlich: { label: "öffentlich", Icon: Globe },
 };
 
-
 export function KnowledgeFacts({
   eintraege,
   currentUserId,
@@ -70,94 +71,102 @@ export function KnowledgeFacts({
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {eintraege.map((e) => {
-        const eigen = e.autorId === currentUserId;
-        // Für dich ausgeblendet (nur fremde Einträge): nur der Wiederherstellen-Stub.
-        if (!eigen && e.ausgeblendet && !e.verborgenAm) {
-          return (
-            <KnowledgeHide
-              key={e.id}
-              knowledgeId={e.id}
-              machineId={machineId}
-              ausgeblendet
-              titel={e.titel}
-            />
-          );
-        }
-        const S = SICHT[e.visibility];
-        return (
-          <div key={e.id} className="space-y-2">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <p className="text-sm text-[var(--color-muted)]">
-                {eigen
-                  ? "Deine Handbuch-Daten"
-                  : `Geteilt von ${e.autorName ?? "unbekannt"}`}
-                {" · "}
-                <span className="inline-flex items-center gap-1">
-                  <S.Icon size={13} /> {S.label}
-                </span>
-              </p>
-              <div className="flex items-center gap-3">
-                <KnowledgeSignals
-                  knowledgeId={e.id}
-                  machineId={machineId}
-                  hilfreich={e.hilfreich}
-                  falsch={e.falsch}
-                  meinSignal={e.meinSignal}
-                  eigen={eigen}
-                />
-                {eigen ? (
-                  <SetVisibility
-                    knowledgeId={e.id}
-                    machineId={machineId}
-                    current={e.visibility}
-                  />
-                ) : (
-                  <KnowledgeHide
-                    knowledgeId={e.id}
-                    machineId={machineId}
-                    ausgeblendet={false}
-                    titel={e.titel}
-                  />
-                )}
-                {kannKuratieren && !e.verborgenAm ? (
-                  <KnowledgeVerbergen knowledgeId={e.id} machineId={machineId} />
-                ) : null}
-              </div>
-            </div>
-            {e.verborgenAm ? (
-              <KnowledgeVerborgen
+  // Jeder Eintrag wird ein eigener Reiter (eigene Daten zuerst, dann je ein
+  // Reiter pro teilendem Autor) — statt alle Blöcke untereinander zu stapeln.
+  const tabs = eintraege.map((e) => {
+    const eigen = e.autorId === currentUserId;
+    const label = eigen ? "Deine Handbuch-Daten" : (e.autorName ?? "Unbekannt");
+    // Für dich ausgeblendet (nur fremde Einträge): nur der Wiederherstellen-Stub.
+    if (!eigen && e.ausgeblendet && !e.verborgenAm) {
+      return {
+        id: e.id,
+        label,
+        panel: (
+          <KnowledgeHide
+            knowledgeId={e.id}
+            machineId={machineId}
+            ausgeblendet
+            titel={e.titel}
+          />
+        ),
+      };
+    }
+    const S = SICHT[e.visibility];
+    return {
+      id: e.id,
+      label,
+      panel: (
+        <Card className="space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="text-sm text-[var(--color-muted)]">
+              {eigen
+                ? "Deine Handbuch-Daten"
+                : `Geteilt von ${e.autorName ?? "unbekannt"}`}
+              {" · "}
+              <span className="inline-flex items-center gap-1">
+                <S.Icon size={13} /> {S.label}
+              </span>
+            </p>
+            <div className="flex items-center gap-3">
+              <KnowledgeSignals
                 knowledgeId={e.id}
                 machineId={machineId}
-                grund={e.verborgenGrund}
-                vonName={e.verborgenVonName}
-                am={e.verborgenAm}
-                kannKuratieren={kannKuratieren}
+                hilfreich={e.hilfreich}
+                falsch={e.falsch}
+                meinSignal={e.meinSignal}
+                eigen={eigen}
               />
-            ) : null}
-            <KnowledgeGemeldet hilfreich={e.hilfreich} falsch={e.falsch} />
-            <MachineDataTables facts={inhaltToFacts(e.inhalt)} />
-            {eigen ? (
-              <>
-                <KnowledgeEdit
+              {eigen ? (
+                <SetVisibility
                   knowledgeId={e.id}
                   machineId={machineId}
-                  typ="handbuch_fakten"
-                  titel={e.titel}
-                  inhalt={e.inhalt}
+                  current={e.visibility}
                 />
-                <KnowledgeVerlauf
+              ) : (
+                <KnowledgeHide
                   knowledgeId={e.id}
-                  anzahl={e.revisionen}
-                  typ="handbuch_fakten"
+                  machineId={machineId}
+                  ausgeblendet={false}
+                  titel={e.titel}
                 />
-              </>
-            ) : null}
+              )}
+              {kannKuratieren && !e.verborgenAm ? (
+                <KnowledgeVerbergen knowledgeId={e.id} machineId={machineId} />
+              ) : null}
+            </div>
           </div>
-        );
-      })}
-    </div>
-  );
+          {e.verborgenAm ? (
+            <KnowledgeVerborgen
+              knowledgeId={e.id}
+              machineId={machineId}
+              grund={e.verborgenGrund}
+              vonName={e.verborgenVonName}
+              am={e.verborgenAm}
+              kannKuratieren={kannKuratieren}
+            />
+          ) : null}
+          <KnowledgeGemeldet hilfreich={e.hilfreich} falsch={e.falsch} />
+          <MachineDataTables facts={inhaltToFacts(e.inhalt)} />
+          {eigen ? (
+            <>
+              <KnowledgeEdit
+                knowledgeId={e.id}
+                machineId={machineId}
+                typ="handbuch_fakten"
+                titel={e.titel}
+                inhalt={e.inhalt}
+              />
+              <KnowledgeVerlauf
+                knowledgeId={e.id}
+                anzahl={e.revisionen}
+                typ="handbuch_fakten"
+              />
+            </>
+          ) : null}
+        </Card>
+      ),
+    };
+  });
+
+  return <KnowledgeEntryTabs tabs={tabs} />;
 }

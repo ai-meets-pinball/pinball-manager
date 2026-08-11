@@ -166,6 +166,11 @@ export async function updateKnowledge(
         ? (k.inhalt as Record<string, unknown>)
         : {};
     inhalt = { ...umschlag, guide: parsed.data };
+  } else if (k.typ === "tipp") {
+    // Tipps sind freier Text — kein JSON, nur Nicht-Leere prüfen.
+    const text = inhaltText.trim();
+    if (!text) return { error: "Der Tipp-Text ist erforderlich." };
+    inhalt = { text };
   } else {
     return { error: "Dieser Eintragstyp ist nicht bearbeitbar." };
   }
@@ -230,7 +235,11 @@ export async function hideKnowledge(
     .update(knowledge)
     // updatedAt bewusst unangetastet — Verbergen ist keine inhaltliche Änderung
     // und soll die Sortierung nicht verschieben.
-    .set({ verborgenAm: new Date(), verborgenVon: currentUser.id, verborgenGrund: grund })
+    .set({
+      verborgenAm: new Date(),
+      verborgenVon: currentUser.id,
+      verborgenGrund: grund,
+    })
     .where(eq(knowledge.id, id));
 
   if (machineId) revalidatePath(`/machines/${machineId}`);

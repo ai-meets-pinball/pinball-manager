@@ -19,19 +19,23 @@ import { kannKuratieren, requireUser } from "@/lib/session";
 
 /** Linkziel eines Wissenseintrags: Modell-Seite, Maschinen-Seite oder nichts
     (Generation-Einträge haben keine eigene Seite — sie erscheinen auf allen
-    Modellen der Generation). */
+    Modellen der Generation). Tipps hängen n:m an Zielen — als Linkziel dient
+    ihr erstes Ziel-Modell. */
 function eintragHref(e: {
   modelId: string | null;
   machineId: string | null;
+  tippModelId: string | null;
 }): string | undefined {
   if (e.modelId) return `/modelle/${e.modelId}`;
   if (e.machineId) return `/machines/${e.machineId}`;
+  if (e.tippModelId) return `/modelle/${e.tippModelId}?bereich=tipps`;
   return undefined;
 }
 
 const TYP_LABEL: Record<string, string> = {
   handbuch_fakten: "Handbuch-Daten",
   troubleshooting: "Troubleshooting-Guide",
+  tipp: "Tipp",
 };
 
 const SICHT_LABEL: Record<string, string> = {

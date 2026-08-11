@@ -439,7 +439,9 @@ export const knowledge = pgTable(
       onDelete: "cascade",
     }),
     // Anker für visibility='club' — welcher Club darf sehen.
-    clubId: uuid("club_id").references(() => clubs.id, { onDelete: "set null" }),
+    clubId: uuid("club_id").references(() => clubs.id, {
+      onDelete: "set null",
+    }),
     // Rückverweis für Forks (Phase 5); Phase 1 ungenutzt, daher (noch) ohne FK.
     forkedFromId: uuid("forked_from_id"),
     // Kuratoren-Moderation: für ALLE verborgen (außer Autor, Kuratoren und
@@ -458,10 +460,45 @@ export const knowledge = pgTable(
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (t) => [
+    // Tipps (typ='tipp') hängen NICHT direkt an einer Ebene — ihr Geltungsbereich
+    // liegt n:m in `knowledge_targets` (ein Tipp kann mehrere Modelle und/oder
+    // Generationen betreffen). Alles andere Wissen: GENAU eine Ebene.
     check(
       "knowledge_genau_eine_ebene",
-      sql`num_nonnulls(${t.generationId}, ${t.modelId}, ${t.machineId}) = 1`,
+      sql`case when ${t.typ} = 'tipp' then num_nonnulls(${t.generationId}, ${t.modelId}, ${t.machineId}) = 0 else num_nonnulls(${t.generationId}, ${t.modelId}, ${t.machineId}) = 1 end`,
     ),
+  ],
+);
+
+/*
+  Geltungsbereich allgemeiner Tipps (typ='tipp'): je Zeile GENAU ein Ziel —
+  ein Modell ODER eine Generation. Ein Tipp mit mehreren Zeilen gilt für alle
+  genannten Ziele; Signale/Moderation bleiben am einen `knowledge`-Eintrag.
+*/
+export const knowledgeTargets = pgTable(
+  "knowledge_targets",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    knowledgeId: uuid("knowledge_id")
+      .notNull()
+      .references(() => knowledge.id, { onDelete: "cascade" }),
+    generationId: uuid("generation_id").references(() => generations.id, {
+      onDelete: "cascade",
+    }),
+    modelId: uuid("model_id").references(() => machineModels.id, {
+      onDelete: "cascade",
+    }),
+  },
+  (t) => [
+    check(
+      "knowledge_targets_genau_ein_ziel",
+      sql`num_nonnulls(${t.generationId}, ${t.modelId}) = 1`,
+    ),
+    // Dasselbe Ziel nicht doppelt an einem Tipp (NULLS NOT DISTINCT, damit
+    // z. B. zweimal dasselbe Modell trotz generation_id=NULL kollidiert).
+    unique("knowledge_targets_eindeutig")
+      .on(t.knowledgeId, t.generationId, t.modelId)
+      .nullsNotDistinct(),
   ],
 );
 
@@ -647,7 +684,9 @@ export const maintenanceTasks = pgTable("maintenance_tasks", {
   taetigkeit: text("taetigkeit"), // Prüfen / Reinigen / Ersetzen / Testen …
   beschreibung: text("beschreibung"),
   prioritaet: maintenancePrioritaet("prioritaet").notNull().default("mittel"),
-  intervallTyp: maintenanceIntervallTyp("intervall_typ").notNull().default("bedarf"),
+  intervallTyp: maintenanceIntervallTyp("intervall_typ")
+    .notNull()
+    .default("bedarf"),
   intervallTage: integer("intervall_tage"), // nur bei intervallTyp "zeit"
   intervallText: text("intervall_text"), // Original-Label, z. B. „500 Spiele / monatlich"
   aktiv: boolean("aktiv").notNull().default(true),
@@ -684,20 +723,23 @@ export const rolesRelations = relations(roles, ({ many }) => ({
   assignments: many(roleAssignments),
 }));
 
-export const roleAssignmentsRelations = relations(roleAssignments, ({ one }) => ({
-  user: one(user, {
-    fields: [roleAssignments.userId],
-    references: [user.id],
+export const roleAssignmentsRelations = relations(
+  roleAssignments,
+  ({ one }) => ({
+    user: one(user, {
+      fields: [roleAssignments.userId],
+      references: [user.id],
+    }),
+    role: one(roles, {
+      fields: [roleAssignments.roleId],
+      references: [roles.id],
+    }),
+    club: one(clubs, {
+      fields: [roleAssignments.clubId],
+      references: [clubs.id],
+    }),
   }),
-  role: one(roles, {
-    fields: [roleAssignments.roleId],
-    references: [roles.id],
-  }),
-  club: one(clubs, {
-    fields: [roleAssignments.clubId],
-    references: [clubs.id],
-  }),
-}));
+);
 
 export const invitationsRelations = relations(invitations, ({ one }) => ({
   club: one(clubs, {

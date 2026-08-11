@@ -26,6 +26,7 @@ import {
   knowledgeOverrides,
   knowledgeRevisions,
   knowledgeSignals,
+  knowledgeTargets,
   machineModels,
   machines,
   maintenanceLog,
@@ -54,9 +55,7 @@ import {
 /** E-Mail-Vorlage laden: DB-Eintrag falls angepasst, sonst der Standard aus dem
     Code. Liegt hier (Server-Seite), damit lib/email-templates.ts client-safe
     bleibt — sonst landet der Postgres-Treiber im Client-Bundle. */
-export async function getTemplate(
-  key: TemplateKey,
-): Promise<ResolvedTemplate> {
+export async function getTemplate(key: TemplateKey): Promise<ResolvedTemplate> {
   const row = await db.query.emailTemplates.findFirst({
     where: eq(emailTemplates.key, key),
   });
@@ -121,7 +120,9 @@ async function shareVisibilityFilter(
   const clubZiele = db
     .select({ id: shareTargets.shareId })
     .from(shareTargets)
-    .where(clubIds.length > 0 ? inArray(shareTargets.clubId, clubIds) : sql`false`);
+    .where(
+      clubIds.length > 0 ? inArray(shareTargets.clubId, clubIds) : sql`false`,
+    );
 
   const nutzerZiele = db
     .select({ id: shareTargets.shareId })
@@ -383,7 +384,10 @@ export async function getModelGeneration(modelId: string) {
  * Board-/Hardware-Generation gilt für alle ihre Modelle. Fakten bleiben bewusst
  * modell-exakt (Editionsunterschiede) und werden hier NICHT aufgelöst.
  */
-export async function getModelGuides(currentUser: SessionUser, modelId: string) {
+export async function getModelGuides(
+  currentUser: SessionUser,
+  modelId: string,
+) {
   const sichtbar = await knowledgeVisibilityFilter(currentUser);
   const [model] = await db
     .select({ generationId: machineModels.generationId })
@@ -425,6 +429,67 @@ export async function getMachineGuides(
       ),
     )
     .orderBy(desc(knowledge.updatedAt));
+}
+
+/*
+  Allgemeine Tipps (typ='tipp'): Geltungsbereich liegt n:m in `knowledge_targets`
+  (ein Tipp → mehrere Modelle und/oder Generationen). Sichtbar an einem Modell
+  ist ein Tipp, wenn eines seiner Ziele das Modell selbst ODER dessen Generation
+  ist. Die Ziel-Namen kommen als Arrays mit, damit die Karte „gilt für …" zeigen
+  kann.
+*/
+export async function getModelTipps(currentUser: SessionUser, modelId: string) {
+  const sichtbar = await knowledgeVisibilityFilter(currentUser);
+  const [model] = await db
+    .select({ generationId: machineModels.generationId })
+    .from(machineModels)
+    .where(eq(machineModels.id, modelId));
+
+  const zielTrifft = model?.generationId
+    ? or(
+        eq(knowledgeTargets.modelId, modelId),
+        eq(knowledgeTargets.generationId, model.generationId),
+      )
+    : eq(knowledgeTargets.modelId, modelId);
+
+  return db
+    .select({
+      ...knowledgeAuswahl(currentUser.id),
+      zielModelle: sql<
+        string[]
+      >`(select coalesce(array_agg(${machineModels.modell} order by ${machineModels.modell}), '{}') from ${knowledgeTargets} join ${machineModels} on ${machineModels.id} = ${knowledgeTargets.modelId} where ${knowledgeTargets.knowledgeId} = ${knowledge.id})`,
+      zielGenerationen: sql<
+        string[]
+      >`(select coalesce(array_agg(${generations.name} order by ${generations.name}), '{}') from ${knowledgeTargets} join ${generations} on ${generations.id} = ${knowledgeTargets.generationId} where ${knowledgeTargets.knowledgeId} = ${knowledge.id})`,
+    })
+    .from(knowledge)
+    .innerJoin(user, eq(user.id, knowledge.createdBy))
+    .where(
+      and(
+        eq(knowledge.typ, "tipp"),
+        sql`exists(select 1 from ${knowledgeTargets} where ${knowledgeTargets.knowledgeId} = ${knowledge.id} and ${zielTrifft})`,
+        sichtbar,
+      ),
+    )
+    .orderBy(desc(knowledge.updatedAt));
+}
+
+/** Modell-Katalog für den Ziel-Picker des Tipp-Formulars (Flippermaster). */
+export async function getTippZielKatalog() {
+  const modelle = await db
+    .select({
+      id: machineModels.id,
+      hersteller: machineModels.hersteller,
+      modell: machineModels.modell,
+      baujahr: machineModels.baujahr,
+    })
+    .from(machineModels)
+    .orderBy(machineModels.modell, machineModels.hersteller);
+  const generationenListe = await db
+    .select({ id: generations.id, name: generations.name })
+    .from(generations)
+    .orderBy(generations.name);
+  return { modelle, generationen: generationenListe };
 }
 
 /** Wissensbasis-Katalog: Modelle mit für den Nutzer sichtbarem Wissen —
@@ -520,6 +585,11 @@ export async function getKuratierungsUebersicht() {
     modelId: knowledge.modelId,
     machineId: knowledge.machineId,
     generationName: generations.name,
+    // Tipps (typ='tipp') haben keine direkte Ebene — als Linkziel dient das
+    // erste Ziel-Modell aus knowledge_targets (null, wenn rein generationsweit).
+    tippModelId: sql<
+      string | null
+    >`(select ${knowledgeTargets.modelId} from ${knowledgeTargets} where ${knowledgeTargets.knowledgeId} = ${knowledge.id} and ${knowledgeTargets.modelId} is not null limit 1)`,
     hilfreich,
     falsch,
     verborgenAm: knowledge.verborgenAm,
@@ -792,7 +862,9 @@ export async function getMachineFaults(
 }
 
 /** Datum der jüngsten erledigten Wartung dieser Maschine (oder null). */
-export async function getLetzteWartung(machineId: string): Promise<Date | null> {
+export async function getLetzteWartung(
+  machineId: string,
+): Promise<Date | null> {
   const [row] = await db
     .select({ datum: maintenanceLog.datum })
     .from(maintenanceLog)
@@ -820,7 +892,10 @@ export async function getNeueFehlerSeitGestern(
     })
     .from(faults)
     .where(and(eq(faults.machineId, machineId), gte(faults.datum, grenze)));
-  return { gesamt: Number(row?.gesamt ?? 0), kritisch: Number(row?.kritisch ?? 0) };
+  return {
+    gesamt: Number(row?.gesamt ?? 0),
+    kritisch: Number(row?.kritisch ?? 0),
+  };
 }
 
 /** Anzahl fälliger (überfällig oder heute) Wartungen je Maschine — für die

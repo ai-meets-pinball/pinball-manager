@@ -21,6 +21,9 @@ import type { FormState } from "@/db/actions/clubs";
 
   Bei Guides ist `inhalt` NUR der guide-Teil — der Umschlag (websuche, model)
   bleibt serverseitig erhalten und ist nicht editierbar.
+
+  Tipps (typ='tipp') sind freier Text statt JSON — dort entfällt die
+  Prüf-Schleife, gespeichert wird direkt (Server prüft auf Nicht-Leere).
 */
 type Pruefung = { ok: boolean; meldungen: string[] };
 
@@ -34,12 +37,16 @@ export function KnowledgeEdit({
   knowledgeId: string;
   /** "" auf der Modellseite — dann sorgt router.refresh() für die Aktualisierung. */
   machineId: string;
-  typ: "handbuch_fakten" | "troubleshooting";
+  typ: "handbuch_fakten" | "troubleshooting" | "tipp";
   titel: string;
   inhalt: unknown;
 }) {
   const router = useRouter();
-  const [json, setJson] = useState(() => JSON.stringify(inhalt, null, 2));
+  const [json, setJson] = useState(() =>
+    typ === "tipp"
+      ? String((inhalt as { text?: unknown } | null)?.text ?? "")
+      : JSON.stringify(inhalt, null, 2),
+  );
   const [check, setCheck] = useState<Pruefung | null>(null);
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     async (prev, fd) => {
@@ -88,18 +95,29 @@ export function KnowledgeEdit({
       <summary className="flex cursor-pointer items-center gap-1.5 px-3 py-2 text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]">
         <Pencil size={14} /> Bearbeiten
       </summary>
-      <form action={formAction} className="space-y-3 border-t border-[var(--color-border)] p-3">
+      <form
+        action={formAction}
+        className="space-y-3 border-t border-[var(--color-border)] p-3"
+      >
         <input type="hidden" name="knowledgeId" value={knowledgeId} />
         <input type="hidden" name="machineId" value={machineId} />
         <Field label="Titel">
           <Input name="titel" defaultValue={titel} required />
         </Field>
         <Field
-          label={typ === "handbuch_fakten" ? "Fakten (JSON)" : "Guide (JSON)"}
+          label={
+            typ === "handbuch_fakten"
+              ? "Fakten (JSON)"
+              : typ === "troubleshooting"
+                ? "Guide (JSON)"
+                : "Text"
+          }
           hint={
             typ === "handbuch_fakten"
               ? "Struktur wie beim JSON-Import: { coils: { columns, rows }, … }"
-              : "Nur der Guide selbst — Websuche-/Modell-Angaben bleiben erhalten."
+              : typ === "troubleshooting"
+                ? "Nur der Guide selbst — Websuche-/Modell-Angaben bleiben erhalten."
+                : undefined
           }
         >
           <Textarea
@@ -109,25 +127,34 @@ export function KnowledgeEdit({
               setJson(e.target.value);
               setCheck(null); // nach Änderung erneut prüfen
             }}
-            rows={12}
-            className="font-mono text-xs"
+            rows={typ === "tipp" ? 6 : 12}
+            className={typ === "tipp" ? undefined : "font-mono text-xs"}
           />
         </Field>
         <Field label="Kommentar zur Änderung (optional)">
-          <Input name="kommentar" placeholder="z. B. Tippfehler in der Spulen-Tabelle korrigiert" />
+          <Input
+            name="kommentar"
+            placeholder="z. B. Tippfehler in der Spulen-Tabelle korrigiert"
+          />
         </Field>
 
         <div className="flex flex-wrap items-center gap-2">
+          {typ !== "tipp" ? (
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={pruefen}
+              disabled={!json.trim()}
+            >
+              Prüfen
+            </Button>
+          ) : null}
+          {/* JSON-Typen: Speichern erst nach erfolgreicher Prüfung. Tipps
+              (freier Text) speichern direkt, sobald Text vorhanden ist. */}
           <Button
-            type="button"
-            variant="secondary"
-            onClick={pruefen}
-            disabled={!json.trim()}
+            type="submit"
+            disabled={pending || (typ === "tipp" ? !json.trim() : !check?.ok)}
           >
-            Prüfen
-          </Button>
-          {/* Speichern erst nach erfolgreicher Prüfung. */}
-          <Button type="submit" disabled={pending || !check?.ok}>
             {pending ? <Loader2 size={16} className="animate-spin" /> : null}
             {pending ? "Speichere…" : "Speichern"}
           </Button>

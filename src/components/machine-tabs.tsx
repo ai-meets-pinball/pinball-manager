@@ -2,7 +2,8 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 
 /*
-  Zweistufige Reiter-Navigation der Maschinen-Detailseite. Server-gerendert wie
+  Zweistufige Reiter-Navigation der Maschinen-Detailseite; die Modell-Seite
+  (/modelle/[modelId]) nutzt dieselbe Leiste nur mit der Hauptreihe. Server-gerendert wie
   <HelpTabs>: der aktive Bereich kommt aus der URL (?bereich=<Blatt>), nicht aus
   Client-State — deep-linkbar, reload-fest, Next prefetcht die Links.
 

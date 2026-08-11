@@ -99,7 +99,7 @@ export const ANLEITUNG: HilfeSektion[] = [
     schritte: [
       {
         titel: "Übersicht & Reiter",
-        text: "Die Detailseite öffnet mit einer Übersicht (Foto, OPDB/IPDB und Status-Karten). Darüber liegen drei Reiter: »Übersicht«, »Betrieb« (Fehler, Wartung) und »Wissensbasis« (Reparaturen, Handbuch, Guide). Wählst du eine Gruppe, erscheint darunter eine schmale Unterreihe für ihre Bereiche. Reiter und Status-Karten tragen Zähler (z. B. offene Fehler, fällige Wartung); die Leiste bleibt beim Scrollen sichtbar.",
+        text: "Die Detailseite öffnet mit einer Übersicht (Foto, OPDB/IPDB und Status-Karten). Darüber liegen drei Reiter: »Übersicht«, »Betrieb« (Fehler, Wartung) und »Wissensbasis« (Reparaturen, Handbuch, Guide, Tipps). Wählst du eine Gruppe, erscheint darunter eine schmale Unterreihe für ihre Bereiche. Reiter und Status-Karten tragen Zähler (z. B. offene Fehler, fällige Wartung); die Leiste bleibt beim Scrollen sichtbar.",
       },
       {
         titel: "Bearbeiten",
@@ -313,11 +313,15 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Modellseite",
-        text: "Die Modellseite bündelt alles zu einem Modell: Handbuch-Daten, Troubleshooting-Guides und geteilte Reparaturen. Eigene Einträge lassen sich hier genauso verwalten wie auf der Maschinen-Detailseite.",
+        text: "Die Modellseite bündelt alles zu einem Modell in Reitern: Handbuch-Daten, Troubleshooting-Guide, Tipps und geteilte Reparaturen — jeweils mit Anzahl. Eigene Einträge lassen sich hier genauso verwalten wie auf der Maschinen-Detailseite.",
       },
       {
         titel: "Drei Ebenen",
         text: "Wissen hängt an einer von drei Ebenen: an der Geräte-Generation (gilt für alle Modelle der Generation), am Modell (Normalfall, edition-genau) oder an einer einzelnen Maschine (nur wenn sie kein Modell hat). Handbuch-Fakten bleiben bewusst modell-genau, weil sich Editionen (Pro/Premium) unterscheiden.",
+      },
+      {
+        titel: "Allgemeine Tipps",
+        text: "Im Reiter »Tipps« (Maschine wie Modellseite) sammelst du frei formulierte Hinweise — z. B. Wartungskniffe oder bekannte Schwachstellen. Ein Tipp kann anders als übriges Wissen MEHRERE Modelle und/oder ganze Generationen zugleich betreffen; die Ziele wählst du beim Anlegen aus dem Katalog (das Modell der aktuellen Maschine ist vorausgewählt). Jeder Tipp zeigt »gilt für …«, trägt eine Sichtbarkeit und lässt sich wie andere Einträge bewerten, ausblenden, bearbeiten und (nur vom Autor) löschen.",
       },
     ],
   },

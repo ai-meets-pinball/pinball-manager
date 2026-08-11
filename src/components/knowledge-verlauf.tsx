@@ -30,7 +30,7 @@ export function KnowledgeVerlauf({
 }: {
   knowledgeId: string;
   anzahl: number;
-  typ: "handbuch_fakten" | "troubleshooting";
+  typ: "handbuch_fakten" | "troubleshooting" | "tipp";
 }) {
   const [revisionen, setRevisionen] = useState<Revision[] | null>(null);
   const [laedt, setLaedt] = useState(false);
@@ -88,12 +88,22 @@ function RevisionInhalt({
   inhalt,
   editedAt,
 }: {
-  typ: "handbuch_fakten" | "troubleshooting";
+  typ: "handbuch_fakten" | "troubleshooting" | "tipp";
   inhalt: unknown;
   editedAt: Date;
 }) {
   if (typ === "handbuch_fakten") {
     return <MachineDataTables facts={inhaltToFacts(inhalt)} />;
+  }
+  if (typ === "tipp") {
+    // Tipps: der Stand ist einfach der frühere Text.
+    const t =
+      inhalt && typeof inhalt === "object"
+        ? (inhalt as Record<string, unknown>).text
+        : null;
+    return typeof t === "string" ? (
+      <p className="whitespace-pre-wrap text-sm">{t}</p>
+    ) : null;
   }
   // Guides: die Revision speichert den Umschlag-Snapshot { guide, websuche, model }.
   const o =
