@@ -81,10 +81,19 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
   return { id: u.id, name: u.name, email: u.email, roles: keys };
 }
 
-/** Erzwingt eine Anmeldung; leitet sonst auf /login um. */
+/** Erzwingt eine Anmeldung; leitet sonst auf /login um — mit dem aktuellen
+    Pfad als Rücksprungziel (?von=, gesetzt vom Proxy), damit Deep-Links wie
+    gescannte QR-Ziele die Anmeldung überleben. */
 export async function requireUser(): Promise<SessionUser> {
   const user = await getCurrentUser();
-  if (!user) redirect("/login");
+  if (!user) {
+    const ziel = (await headers()).get("x-von");
+    redirect(
+      ziel && ziel.startsWith("/") && !ziel.startsWith("//")
+        ? `/login?von=${encodeURIComponent(ziel)}`
+        : "/login",
+    );
+  }
   return user;
 }
 
@@ -96,7 +105,12 @@ export async function requireUser(): Promise<SessionUser> {
   Aufrufer weiter aus @/lib/session importieren können — eine Definition,
   zwei Türen.
 */
-export { isKurator, isSuperAdmin, isSupporter, kannKuratieren } from "@/lib/rechte";
+export {
+  isKurator,
+  isSuperAdmin,
+  isSupporter,
+  kannKuratieren,
+} from "@/lib/rechte";
 
 /** Super-Admin erzwingen (für /admin). */
 export async function requireSuperAdmin(): Promise<SessionUser> {
@@ -150,7 +164,10 @@ export async function getUserClubIds(userId: string): Promise<string[]> {
     .select({ clubId: roleAssignments.clubId })
     .from(roleAssignments)
     .where(
-      and(eq(roleAssignments.userId, userId), isNotNull(roleAssignments.clubId)),
+      and(
+        eq(roleAssignments.userId, userId),
+        isNotNull(roleAssignments.clubId),
+      ),
     );
   return rows.map((r) => r.clubId).filter((id): id is string => id !== null);
 }

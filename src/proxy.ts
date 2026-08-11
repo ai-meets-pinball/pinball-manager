@@ -53,12 +53,17 @@ export function proxy(request: NextRequest) {
     ? "Content-Security-Policy-Report-Only"
     : "Content-Security-Policy";
 
-  const { pathname } = request.nextUrl;
+  const { pathname, search } = request.nextUrl;
   if (
     PROTECTED.some((p) => pathname.startsWith(p)) &&
     !getSessionCookie(request)
   ) {
-    const res = NextResponse.redirect(new URL("/login", request.url));
+    // Deep-Link erhalten: das Ziel wandert als ?von= mit zum Login (die
+    // Login-Seite springt nach der Anmeldung dorthin zurück) — wichtig z. B.
+    // für gescannte QR-Links auf eine Maschine.
+    const login = new URL("/login", request.url);
+    login.searchParams.set("von", pathname + search);
+    const res = NextResponse.redirect(login);
     res.headers.set(responseHeader, csp);
     return res;
   }
@@ -69,6 +74,10 @@ export function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-nonce", nonce);
   requestHeaders.set("Content-Security-Policy", csp);
+  // Aktueller Pfad für requireUser: fällt die Session serverseitig durch
+  // (Cookie vorhanden, aber abgelaufen), bleibt der Deep-Link so trotzdem
+  // erhalten (?von= am Login).
+  requestHeaders.set("x-von", pathname + search);
 
   const res = NextResponse.next({ request: { headers: requestHeaders } });
   res.headers.set(responseHeader, csp);
