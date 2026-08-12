@@ -21,16 +21,26 @@ import { cardSurface } from "@/components/ui/card";
 */
 export function List({
   empty,
+  kompakt = false,
   children,
 }: {
   /** Text für den Leerfall — bewusst Pflicht. */
   empty: string;
+  /** Kompakt: dichte Zeilen mit Haarlinien statt einzelner Karten. Die Zeilen
+      müssen dann ebenfalls `kompakt` gesetzt bekommen (ListRow). */
+  kompakt?: boolean;
   children?: ReactNode;
 }) {
   if (Children.count(children) === 0) {
     return <p className="text-sm text-[var(--color-muted)]">{empty}</p>;
   }
-  return <ul className="space-y-2">{children}</ul>;
+  return kompakt ? (
+    <ul className="divide-y divide-[var(--color-line)] overflow-hidden rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)]">
+      {children}
+    </ul>
+  ) : (
+    <ul className="space-y-2">{children}</ul>
+  );
 }
 
 export function ListRow({
@@ -40,6 +50,7 @@ export function ListRow({
   subtitle,
   meta,
   actions,
+  kompakt = false,
   children,
 }: {
   leading?: ReactNode;
@@ -48,10 +59,19 @@ export function ListRow({
   subtitle?: ReactNode;
   meta?: ReactNode;
   actions?: ReactNode;
+  /** Kompakt-Zeile (in einer `kompakt`-List): ohne eigene Karten-Oberfläche,
+      engeres Padding — die Trennung übernimmt die Haarlinie der List. */
+  kompakt?: boolean;
   children?: ReactNode;
 }) {
   return (
-    <li className={`${cardSurface} flex flex-wrap items-center gap-3`}>
+    <li
+      className={
+        kompakt
+          ? "flex flex-wrap items-center gap-3 px-3 py-2"
+          : `${cardSurface} flex flex-wrap items-center gap-3`
+      }
+    >
       {leading ? <div className="flex-none">{leading}</div> : null}
       <div className="min-w-0 flex-1">
         <p className="truncate font-medium">

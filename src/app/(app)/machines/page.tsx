@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { LayoutGrid, Plus, Table2 } from "lucide-react";
 import { MachinesBoard } from "@/components/machines-board";
+import { ChipFilter } from "@/components/ui/chip-filter";
 import { SearchToolbar } from "@/components/ui/search-toolbar";
 import {
   getDueMaintenanceCountByMachine,
@@ -33,11 +34,13 @@ export default async function MachinesPage({
   const clubFilter = sp.club ?? "";
   const sort = sp.sort === "name" || sp.sort === "jahr" ? sp.sort : "neu";
   const dir = sp.dir === "ab" ? ("ab" as const) : ("auf" as const);
-  const ansicht = sp.ansicht === "tabelle" ? ("tabelle" as const) : ("karten" as const);
+  const ansicht =
+    sp.ansicht === "tabelle" ? ("tabelle" as const) : ("karten" as const);
 
   const machines = await getMeineMaschinen(user, q);
   // Fällige Wartungen je Maschine — für die „N fällig"-Badge.
-  const wartungFaellig = await getDueMaintenanceCountByMachine(user, 
+  const wartungFaellig = await getDueMaintenanceCountByMachine(
+    user,
     machines.map((m) => m.id),
   );
   // Clubs des Nutzers — Tabs + Ziele für die Bulk-Zuweisung.
@@ -196,33 +199,19 @@ export default async function MachinesPage({
         </div>
       </div>
 
-      {/* Tabs: Alle · Privat · je Club — nur zeigen, wenn es etwas zu filtern gibt. */}
+      {/* Bereichs-Filter: Alle · Privat · je Club — dieselbe Chip-Komponente
+          wie in der Übersicht (nur zeigen, wenn es etwas zu filtern gibt). */}
       {tabs.length > 2 || tabs[1].count > 0 ? (
-        <nav
-          aria-label="Nach Club filtern"
-          className="flex flex-wrap gap-1 border-b border-[var(--color-border)]"
-        >
-          {tabs.map((t) => {
-            const aktiv = clubFilter === t.key;
-            return (
-              <Link
-                key={t.key || "alle"}
-                href={href({ club: t.key })}
-                aria-current={aktiv ? "page" : undefined}
-                className={`-mb-px border-b-2 px-3 py-2 text-sm ${
-                  aktiv
-                    ? "border-[var(--color-primary)] text-[var(--color-primary)]"
-                    : "border-transparent text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-                }`}
-              >
-                {t.label}{" "}
-                <span className="text-xs text-[var(--color-faint)]">
-                  ({t.count})
-                </span>
-              </Link>
-            );
-          })}
-        </nav>
+        <ChipFilter
+          ariaLabel="Nach Club filtern"
+          options={tabs.map((t) => ({
+            key: t.key,
+            label: t.label,
+            count: t.count,
+            href: href({ club: t.key }),
+            aktiv: clubFilter === t.key,
+          }))}
+        />
       ) : null}
 
       <p className="text-sm">

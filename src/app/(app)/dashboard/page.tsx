@@ -1,6 +1,14 @@
 import Link from "next/link";
-import { AlertTriangle, Joystick, PowerOff, Wrench } from "lucide-react";
+import {
+  AlertTriangle,
+  Joystick,
+  LayoutGrid,
+  List as ListIcon,
+  PowerOff,
+  Wrench,
+} from "lucide-react";
 import { Card } from "@/components/ui/card";
+import { ChipFilter } from "@/components/ui/chip-filter";
 import { List, ListRow } from "@/components/ui/list";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
@@ -21,7 +29,7 @@ import { requireUser } from "@/lib/session";
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ scope?: string }>;
+  searchParams: Promise<{ scope?: string; ansicht?: string }>;
 }) {
   const user = await requireUser();
   const alleMaschinen = await getMeineMaschinen(user);
@@ -56,22 +64,67 @@ export default async function DashboardPage({
   const gewaehlt = (sp.scope ?? "").split(",").filter((k) => gueltig.has(k));
   const aktiv = new Set(gewaehlt.length ? gewaehlt : scopes.map((s) => s.key));
 
+  // Ansicht: Karten (voreingestellt) oder kompakte Liste (dichte Zeilen).
+  const ansicht = sp.ansicht === "liste" ? "liste" : "karten";
+  const kompakt = ansicht === "liste";
+
+  // Gemeinsamer URL-Bauer: hält Bereich UND Ansicht (jede Änderung erhält das
+  // jeweils andere). Volle/leere Bereichswahl und die Karten-Ansicht sind der
+  // parameterfreie Normalfall.
+  const href = (naechste: {
+    scope?: string[];
+    ansicht?: "karten" | "liste";
+  }) => {
+    const bereiche = naechste.scope ?? gewaehlt;
+    const a = naechste.ansicht ?? ansicht;
+    const p = new URLSearchParams();
+    if (bereiche.length && bereiche.length < scopes.length) {
+      p.set(
+        "scope",
+        scopes
+          .map((s) => s.key)
+          .filter((k) => bereiche.includes(k))
+          .join(","),
+      );
+    }
+    if (a === "liste") p.set("ansicht", "liste");
+    const qs = p.toString();
+    return `/dashboard${qs ? `?${qs}` : ""}`;
+  };
+
   const machines = alleMaschinen.filter((m) => aktiv.has(scopeKey(m.clubId)));
   const erlaubteIds = new Set(machines.map((m) => m.id));
   const wartungen = wartungenAlle.filter((w) => erlaubteIds.has(w.machineId));
   const fehler = fehlerAlle.filter((f) => erlaubteIds.has(f.machineId));
 
-  // Toggle-Link: schaltet EINEN Bereich in der Auswahl an/aus. Volle bzw. leere
-  // Auswahl wird als „alle" ohne Parameter geschrieben (saubere URL).
+  // Bereich-Toggle: schaltet EINEN Bereich in der Auswahl an/aus.
   const toggleHref = (key: string) => {
     const cur = new Set(gewaehlt.length ? gewaehlt : scopes.map((s) => s.key));
     if (cur.has(key)) cur.delete(key);
     else cur.add(key);
-    const arr = scopes.map((s) => s.key).filter((k) => cur.has(k));
-    const voll = arr.length === 0 || arr.length === scopes.length;
-    const qs = voll ? "" : `?scope=${arr.join(",")}`;
-    return `/dashboard${qs}`;
+    return href({ scope: scopes.map((s) => s.key).filter((k) => cur.has(k)) });
   };
+
+  // Pillen-Optionen für den Bereichsfilter (mit Maschinenzahl je Bereich).
+  const proScope = new Map<string, number>();
+  for (const m of alleMaschinen) {
+    const k = scopeKey(m.clubId);
+    proScope.set(k, (proScope.get(k) ?? 0) + 1);
+  }
+  const bereichOptionen = scopes.map((s) => ({
+    key: s.key,
+    label: s.label,
+    count: proScope.get(s.key) ?? 0,
+    href: toggleHref(s.key),
+    aktiv: aktiv.has(s.key),
+  }));
+
+  const ansichtStil = (an: boolean) =>
+    `rounded-[var(--radius)] border p-1.5 ${
+      an
+        ? "border-[var(--color-accent)] text-[var(--color-accent)]"
+        : "border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+    }`;
 
   const faellige = wartungen.filter((w) => w.status === "faellig");
   // Betriebsstatus über die Flotte: alles außer „spielbereit" braucht Blick.
@@ -123,34 +176,37 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-8">
-      <h1 className="text-2xl font-bold">Übersicht</h1>
+      <div className="flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold">Übersicht</h1>
+        {/* Karten- vs. kompakte Listenansicht für die drei Abschnitte unten. */}
+        <div className="flex items-center gap-1" aria-label="Ansicht">
+          <Link
+            href={href({ ansicht: "karten" })}
+            aria-label="Kartenansicht"
+            title="Kartenansicht"
+            className={ansichtStil(ansicht === "karten")}
+          >
+            <LayoutGrid size={16} />
+          </Link>
+          <Link
+            href={href({ ansicht: "liste" })}
+            aria-label="Listenansicht"
+            title="Listenansicht"
+            className={ansichtStil(ansicht === "liste")}
+          >
+            <ListIcon size={16} />
+          </Link>
+        </div>
+      </div>
 
       {/* Bereichs-Filter (nur bei mehreren Optionen): mehrere Bereiche lassen
           sich gleichzeitig aktivieren. Alle aktiv = kein Filter. */}
       {scopes.length > 1 ? (
-        <div
-          className="flex flex-wrap items-center gap-2"
-          aria-label="Nach Bereich filtern"
-        >
-          <span className="text-sm text-[var(--color-muted)]">Bereich:</span>
-          {scopes.map((s) => {
-            const an = aktiv.has(s.key);
-            return (
-              <Link
-                key={s.key}
-                href={toggleHref(s.key)}
-                aria-pressed={an}
-                className={`rounded-full border px-3 py-1 text-sm transition-colors ${
-                  an
-                    ? "border-[var(--color-accent)] bg-[var(--color-accent)] text-[var(--color-accent-fg)]"
-                    : "border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-                }`}
-              >
-                {s.label}
-              </Link>
-            );
-          })}
-        </div>
+        <ChipFilter
+          label="Bereich:"
+          ariaLabel="Nach Bereich filtern"
+          options={bereichOptionen}
+        />
       ) : null}
 
       {/* KPI-Kacheln — verlinken in Verwaltung bzw. zu den Abschnitten unten. */}
@@ -178,10 +234,11 @@ export default async function DashboardPage({
         <h2 className="text-lg font-semibold">
           Nicht spielbereite Maschinen ({nichtSpielbereit.length})
         </h2>
-        <List empty="Alle Maschinen spielbereit.">
+        <List empty="Alle Maschinen spielbereit." kompakt={kompakt}>
           {nichtSpielbereit.map((m) => (
             <ListRow
               key={m.id}
+              kompakt={kompakt}
               href={`/machines/${m.id}`}
               title={modellName(m)}
               subtitle={
@@ -197,10 +254,11 @@ export default async function DashboardPage({
         <h2 className="text-lg font-semibold">
           Anstehende Wartungen ({wartungen.length})
         </h2>
-        <List empty="Nichts fällig — alles gewartet.">
+        <List empty="Nichts fällig — alles gewartet." kompakt={kompakt}>
           {wartungen.map((w) => (
             <ListRow
               key={w.id}
+              kompakt={kompakt}
               href={`/machines/${w.machineId}?bereich=wartung`}
               title={w.titel}
               subtitle={modellName(w)}
@@ -233,10 +291,11 @@ export default async function DashboardPage({
         <h2 className="text-lg font-semibold">
           Offene Fehler ({fehler.length})
         </h2>
-        <List empty="Keine offenen Fehler — läuft.">
+        <List empty="Keine offenen Fehler — läuft." kompakt={kompakt}>
           {fehler.map((f) => (
             <ListRow
               key={f.id}
+              kompakt={kompakt}
               href={`/machines/${f.machineId}?bereich=fehler`}
               title={f.beschreibung}
               subtitle={`${modellName(f)} · ${f.datum.toLocaleDateString("de-DE")}`}
