@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { and, eq, gte, sql } from "drizzle-orm";
 import { ChevronDown, LogOut } from "lucide-react";
 import {
@@ -11,13 +12,16 @@ import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { getSettingsFor } from "@/db/queries";
 import { leaveClub } from "@/db/actions/clubs";
-import {
-  acceptInvitation,
-  declineInvitation,
-} from "@/db/actions/invitations";
+import { acceptInvitation, declineInvitation } from "@/db/actions/invitations";
 import { db } from "@/db";
 import { istLetzterOwner } from "@/lib/rechte";
-import { clubs, invitations, roleAssignments, roles, user as userTable } from "@/db/schema";
+import {
+  clubs,
+  invitations,
+  roleAssignments,
+  roles,
+  user as userTable,
+} from "@/db/schema";
 import { isSuperAdmin, requireUser } from "@/lib/session";
 
 export default async function AccountPage() {
@@ -145,7 +149,10 @@ export default async function AccountPage() {
         {myClubs.length === 0 ? (
           <p className="text-[var(--color-muted)]">
             Du bist in keinem Club.{" "}
-            <Link href="/clubs" className="text-[var(--color-accent)] underline">
+            <Link
+              href="/clubs"
+              className="text-[var(--color-accent)] underline"
+            >
               Clubs ansehen
             </Link>
           </p>
@@ -153,7 +160,10 @@ export default async function AccountPage() {
           <div className="space-y-2">
             {myClubs.map((c) => {
               // Der letzte Owner muss erst jemanden befördern.
-              const letzterOwner = istLetzterOwner(c.rolle, Number(c.ownerCount));
+              const letzterOwner = istLetzterOwner(
+                c.rolle,
+                Number(c.ownerCount),
+              );
               return (
                 <Card
                   key={c.id}
@@ -177,12 +187,13 @@ export default async function AccountPage() {
                     ) : (
                       <form action={leaveClub}>
                         <input type="hidden" name="clubId" value={c.id} />
-                        <button
-                          type="submit"
+                        <ConfirmButton
+                          question="Diesen Club verlassen?"
+                          confirmLabel="Ja, verlassen"
                           className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)] hover:text-[var(--color-danger)]"
                         >
                           <LogOut size={14} /> Verlassen
-                        </button>
+                        </ConfirmButton>
                       </form>
                     )}
                   </div>

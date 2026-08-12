@@ -13,10 +13,7 @@ import {
   deleteTaskLog,
 } from "@/db/actions/maintenance";
 import { unlinkMachineFromStandard } from "@/db/actions/maintenance-plans";
-import {
-  intervallLabel,
-  type FaelligkeitsStatus,
-} from "@/lib/faelligkeit";
+import { intervallLabel, type FaelligkeitsStatus } from "@/lib/faelligkeit";
 
 /*
   Interaktiver Wartungsplan je Gerät: Wartungspunkte mit Fälligkeit, „Erledigt"-
@@ -45,7 +42,13 @@ type Task = {
   logs: LogEntry[];
 };
 
-function Chip({ color, children }: { color: string; children: React.ReactNode }) {
+function Chip({
+  color,
+  children,
+}: {
+  color: string;
+  children: React.ReactNode;
+}) {
   return (
     <span
       className="inline-flex rounded-[4px] px-2 py-0.5 text-[11px] font-semibold"
@@ -59,8 +62,15 @@ function Chip({ color, children }: { color: string; children: React.ReactNode })
   );
 }
 
-function DueChip({ status, tage }: { status: FaelligkeitsStatus; tage: number | null }) {
-  if (status === "kein-termin") return <Chip color="var(--color-faint)">kein Termin</Chip>;
+function DueChip({
+  status,
+  tage,
+}: {
+  status: FaelligkeitsStatus;
+  tage: number | null;
+}) {
+  if (status === "kein-termin")
+    return <Chip color="var(--color-faint)">kein Termin</Chip>;
   if (status === "faellig") {
     // „fällig" schließt den heutigen Tag ein; echt vergangene Termine heißen
     // weiterhin „überfällig" (CONTEXT.md: überfällig ist Teilmenge von fällig).
@@ -75,7 +85,9 @@ function DueChip({ status, tage }: { status: FaelligkeitsStatus; tage: number | 
     return <Chip color="var(--color-warn)">fällig in {tage} T.</Chip>;
   }
   return (
-    <Chip color="var(--color-success)">{tage != null ? `in ${tage} T.` : "ok"}</Chip>
+    <Chip color="var(--color-success)">
+      {tage != null ? `in ${tage} T.` : "ok"}
+    </Chip>
   );
 }
 
@@ -115,8 +127,8 @@ export function MaintenancePlan({
           <div className="flex flex-wrap items-center gap-3 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2 text-sm">
             <span className="inline-flex items-center gap-1.5">
               <ListChecks size={15} className="text-[var(--color-primary)]" />
-              Verknüpft mit <strong>„{verknuepfterPlan.name}“</strong> — Änderungen
-              am Standard wirken hier.
+              Verknüpft mit <strong>„{verknuepfterPlan.name}“</strong> —
+              Änderungen am Standard wirken hier.
             </span>
             <Link
               href="/wartungsplaene"
@@ -209,13 +221,18 @@ export function MaintenancePlan({
                 ) : null}
               </div>
 
-              {t.beschreibung ? <p className="text-sm">{t.beschreibung}</p> : null}
+              {t.beschreibung ? (
+                <p className="text-sm">{t.beschreibung}</p>
+              ) : null}
 
               {schreibbar ? (
                 <div className="space-y-2">
                   {/* Erledigt-Melden geht IMMER (auch bei Standard-Punkten —
                       der Zustand gehört der Maschine). */}
-                  <MaintenanceCompleteButton machineId={machineId} taskId={t.id} />
+                  <MaintenanceCompleteButton
+                    machineId={machineId}
+                    taskId={t.id}
+                  />
                   {t.planItemId ? (
                     <p className="text-xs text-[var(--color-muted)]">
                       Vom Standard verwaltet —{" "}
@@ -236,7 +253,11 @@ export function MaintenancePlan({
                         <Pencil size={14} /> Bearbeiten
                       </Link>
                       <form action={deleteTask}>
-                        <input type="hidden" name="machineId" value={machineId} />
+                        <input
+                          type="hidden"
+                          name="machineId"
+                          value={machineId}
+                        />
                         <input type="hidden" name="id" value={t.id} />
                         <ConfirmButton
                           question="Wartungspunkt löschen (samt Historie)?"
@@ -267,16 +288,21 @@ export function MaintenancePlan({
                         {l.notiz ? <span>{l.notiz}</span> : null}
                         {schreibbar ? (
                           <form action={deleteTaskLog} className="ml-auto">
-                            <input type="hidden" name="machineId" value={machineId} />
+                            <input
+                              type="hidden"
+                              name="machineId"
+                              value={machineId}
+                            />
                             <input type="hidden" name="taskId" value={t.id} />
                             <input type="hidden" name="logId" value={l.id} />
-                            <button
-                              type="submit"
+                            <ConfirmButton
+                              question="Diesen Historien-Eintrag löschen?"
+                              confirmLabel="Ja, löschen"
                               title="Eintrag löschen"
                               className="text-[var(--color-muted)] hover:text-[var(--color-danger)]"
                             >
                               <X size={13} />
-                            </button>
+                            </ConfirmButton>
                           </form>
                         ) : null}
                       </li>

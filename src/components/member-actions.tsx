@@ -1,14 +1,11 @@
 "use client";
 
 import { LogOut, UserMinus } from "lucide-react";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { useActionState } from "react";
 import { Select } from "@/components/ui/input";
 import { ROLE_LABEL, StatusBadge } from "@/components/ui/status-badge";
-import {
-  changeMemberRole,
-  leaveClub,
-  removeMember,
-} from "@/db/actions/clubs";
+import { changeMemberRole, leaveClub, removeMember } from "@/db/actions/clubs";
 import type { FormState } from "@/db/actions/form-state";
 import { CLUB_ROLES, type ClubRole } from "@/lib/validators";
 
@@ -39,7 +36,8 @@ export function MemberActions({
   );
 
   // Owner darf nur ein Owner (oder Super-Admin) anfassen.
-  const editable = canManage && !isSelf && (rolle !== "owner" || canManageOwner);
+  const editable =
+    canManage && !isSelf && (rolle !== "owner" || canManageOwner);
   const roleOptions: ClubRole[] = canManageOwner
     ? [...CLUB_ROLES]
     : CLUB_ROLES.filter((r) => r !== "owner");
@@ -78,25 +76,27 @@ export function MemberActions({
           <form action={removeMember}>
             <input type="hidden" name="clubId" value={clubId} />
             <input type="hidden" name="userId" value={memberId} />
-            <button
-              type="submit"
+            <ConfirmButton
+              question="Dieses Mitglied aus dem Club entfernen?"
+              confirmLabel="Ja, entfernen"
               aria-label="Mitglied entfernen"
               className="text-[var(--color-muted)] hover:text-[var(--color-danger)]"
             >
               <UserMinus size={16} />
-            </button>
+            </ConfirmButton>
           </form>
         ) : null}
 
         {isSelf ? (
           <form action={leaveClub}>
             <input type="hidden" name="clubId" value={clubId} />
-            <button
-              type="submit"
+            <ConfirmButton
+              question="Diesen Club verlassen?"
+              confirmLabel="Ja, verlassen"
               className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)] hover:text-[var(--color-danger)]"
             >
               <LogOut size={14} /> Verlassen
-            </button>
+            </ConfirmButton>
           </form>
         ) : null}
       </div>

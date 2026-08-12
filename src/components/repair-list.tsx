@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { LinkIcon, Pencil, Trash2 } from "lucide-react";
 import { ShareRepairControl } from "@/components/share-repair-control";
 import { Card } from "@/components/ui/card";
@@ -102,12 +103,13 @@ export function RepairList({
               <form action={deleteRepair}>
                 <input type="hidden" name="machineId" value={machineId} />
                 <input type="hidden" name="id" value={repair.id} />
-                <button
-                  type="submit"
+                <ConfirmButton
+                  question="Diese Reparatur löschen?"
+                  confirmLabel="Ja, löschen"
                   className="inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-danger)]"
                 >
                   <Trash2 size={14} /> Löschen
-                </button>
+                </ConfirmButton>
               </form>
             </div>
           ) : null}

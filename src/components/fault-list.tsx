@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Pencil, Trash2, Wrench } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -25,9 +26,7 @@ export function FaultList({
   schreibbar?: boolean;
 }) {
   if (faults.length === 0) {
-    return (
-      <p className="text-[var(--color-muted)]">Keine Fehler erfasst.</p>
-    );
+    return <p className="text-[var(--color-muted)]">Keine Fehler erfasst.</p>;
   }
 
   return (
@@ -67,12 +66,13 @@ export function FaultList({
               <form action={deleteFault}>
                 <input type="hidden" name="machineId" value={machineId} />
                 <input type="hidden" name="id" value={fault.id} />
-                <button
-                  type="submit"
+                <ConfirmButton
+                  question="Diesen Fehler löschen?"
+                  confirmLabel="Ja, löschen"
                   className="inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-danger)]"
                 >
                   <Trash2 size={14} /> Löschen
-                </button>
+                </ConfirmButton>
               </form>
             </div>
           ) : null}

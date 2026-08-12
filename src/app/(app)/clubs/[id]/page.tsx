@@ -1,4 +1,5 @@
 import { and, desc, eq } from "drizzle-orm";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import Link from "next/link";
 import { Trash2, X } from "lucide-react";
 import { AddMemberForm } from "@/components/add-member-form";
@@ -102,12 +103,13 @@ export default async function ClubDetailPage({
         {owner ? (
           <form action={deleteClub}>
             <input type="hidden" name="clubId" value={club.id} />
-            <button
-              type="submit"
+            <ConfirmButton
+              question="Club endgültig löschen? Maschinen bleiben beim Eigentümer, alle Mitgliedschaften und Einladungen entfallen."
+              confirmLabel="Ja, Club löschen"
               className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-danger)]/40 px-3 py-2 text-sm text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10"
             >
               <Trash2 size={15} /> Club löschen
-            </button>
+            </ConfirmButton>
           </form>
         ) : null}
       </div>
@@ -170,13 +172,14 @@ export default async function ClubDetailPage({
                           name="invitationId"
                           value={inv.id}
                         />
-                        <button
-                          type="submit"
+                        <ConfirmButton
+                          question="Diese Einladung zurückziehen?"
+                          confirmLabel="Ja, zurückziehen"
                           aria-label="Einladung zurückziehen"
                           className="text-[var(--color-muted)] hover:text-[var(--color-danger)]"
                         >
                           <X size={16} />
-                        </button>
+                        </ConfirmButton>
                       </form>
                     </div>
                   </div>

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import Link from "next/link";
 import { Boxes, Pencil, Plus, QrCode, Trash2, Users } from "lucide-react";
 import { BesitzerZeile } from "@/components/besitzer-zeile";
@@ -353,12 +354,13 @@ export default async function MachineDetailPage({
           {darf.loeschen ? (
             <form action={deleteMachine}>
               <input type="hidden" name="id" value={machine.id} />
-              <button
-                type="submit"
+              <ConfirmButton
+                question="Diese Maschine samt Fehlern, Reparaturen und Wartungspunkten löschen?"
+                confirmLabel="Ja, löschen"
                 className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-danger)]/40 px-3 py-2 text-sm text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10"
               >
                 <Trash2 size={15} /> Löschen
-              </button>
+              </ConfirmButton>
             </form>
           ) : null}
         </div>
