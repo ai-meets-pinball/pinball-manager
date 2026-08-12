@@ -6,8 +6,10 @@ import { Loader2, Pencil } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/input";
 import { FormFeedback } from "@/components/ui/form-feedback";
+import { LinksFeld } from "@/components/links-feld";
 import { updateKnowledge } from "@/db/actions/knowledge";
 import { parseFactsText } from "@/lib/import-facts";
+import { leseTippInhalt } from "@/lib/tipp-inhalt";
 import { troubleshootingGuideSchema } from "@/lib/validators";
 import type { FormState } from "@/db/actions/form-state";
 
@@ -42,10 +44,10 @@ export function KnowledgeEdit({
   inhalt: unknown;
 }) {
   const router = useRouter();
+  // Tipps: Text und Links getrennt (Links über LinksFeld); sonst JSON-Textarea.
+  const tippInhalt = typ === "tipp" ? leseTippInhalt(inhalt) : null;
   const [json, setJson] = useState(() =>
-    typ === "tipp"
-      ? String((inhalt as { text?: unknown } | null)?.text ?? "")
-      : JSON.stringify(inhalt, null, 2),
+    tippInhalt ? tippInhalt.text : JSON.stringify(inhalt, null, 2),
   );
   const [check, setCheck] = useState<Pruefung | null>(null);
   const [state, formAction, pending] = useActionState<FormState, FormData>(
@@ -117,7 +119,7 @@ export function KnowledgeEdit({
               ? "Struktur wie beim JSON-Import: { coils: { columns, rows }, … }"
               : typ === "troubleshooting"
                 ? "Nur der Guide selbst — Websuche-/Modell-Angaben bleiben erhalten."
-                : undefined
+                : "Formatierung: **fett**, _kursiv_, Aufzählung mit Bindestrich am Zeilenanfang, [Text](https://…)."
           }
         >
           <Textarea
@@ -131,6 +133,9 @@ export function KnowledgeEdit({
             className={typ === "tipp" ? undefined : "font-mono text-xs"}
           />
         </Field>
+        {/* Tipps: weiterführende Links mit-bearbeiten (sonst gingen sie beim
+            Speichern verloren, da sie im selben inhalt-JSON stecken). */}
+        {tippInhalt ? <LinksFeld defaultLinks={tippInhalt.links} /> : null}
         <Field label="Kommentar zur Änderung (optional)">
           <Input
             name="kommentar"

@@ -1,9 +1,20 @@
 "use client";
 
-import { useMemo, useState, type CSSProperties } from "react";
-import { ChevronDown, Printer, Search } from "lucide-react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type CSSProperties,
+} from "react";
+import { createPortal } from "react-dom";
+import { ChevronDown, Loader2, Plus, Printer, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/input";
+import {
+  qrKarteFuerMaschine,
+  sucheMeineMaschinen,
+} from "@/db/actions/qr-karten";
 import {
   SCORECARD_FORMATS,
   formatePassendZuHersteller,
@@ -28,15 +39,20 @@ import {
 */
 const HINWEIS = "Defekt? QR scannen & Fehler melden — auch ohne Konto.";
 const PX_PRO_MM = 96 / 25.4; // CSS-Referenz (96 dpi)
+const EINSTELLUNGEN_KEY = "qr-print-einstellungen";
 
 type Modus = "etikett" | "scorecard";
 
+type Karte = { id: string; name: string; qrSvg: string };
+
 export function QrPrint({
+  machineId,
   qrSvg,
   name,
   logoDataUrl,
   hersteller,
 }: {
+  machineId: string;
   qrSvg: string;
   name: string;
   logoDataUrl: string | null;
@@ -76,6 +92,126 @@ export function QrPrint({
   // Schriftgröße als Faktor auf die automatische Basisgröße (0,6×–2,0×).
   const [schriftFaktor, setSchriftFaktor] = useState(1);
 
+  // „Look"-Einstellungen sind maschinenUNabhängig → in localStorage merken,
+  // damit das nächste Etikett (auch anderer Maschinen) so vorbelegt ist.
+  // Initial-Render nutzt bewusst die Defaults (SSR-gleich); nach dem Mount wird
+  // geladen und gesetzt. Nur der QR/Name/Logo selbst kommt je Maschine aus Props.
+  const [geladen, setGeladen] = useState(false);
+  useEffect(() => {
+    try {
+      const roh = localStorage.getItem(EINSTELLUNGEN_KEY);
+      if (roh) {
+        const s = JSON.parse(roh);
+        if (s.modus === "etikett" || s.modus === "scorecard") setModus(s.modus);
+        if (typeof s.breite === "string") setBreite(s.breite);
+        if (typeof s.hoehe === "string") setHoehe(s.hoehe);
+        if (typeof s.quer === "boolean") setQuer(s.quer);
+        if (SCORECARD_FORMATS.some((f) => f.id === s.formatId))
+          setFormatId(s.formatId);
+        if (typeof s.zeigeName === "boolean") setZeigeName(s.zeigeName);
+        if (typeof s.zeigeHinweis === "boolean")
+          setZeigeHinweis(s.zeigeHinweis);
+        if (typeof s.zeigeLogo === "boolean") setZeigeLogo(s.zeigeLogo);
+        if (["oben", "links", "rechts"].includes(s.logoPos))
+          setLogoPos(s.logoPos);
+        if (typeof s.schriftFaktor === "number")
+          setSchriftFaktor(s.schriftFaktor);
+        if (s.blatt === "exakt" || s.blatt === "a4") setBlatt(s.blatt);
+      }
+    } catch {
+      /* defektes/gesperrtes localStorage → Defaults */
+    }
+    setGeladen(true);
+  }, []);
+  useEffect(() => {
+    if (!geladen) return; // nicht mit Defaults überschreiben, bevor geladen wurde
+    try {
+      localStorage.setItem(
+        EINSTELLUNGEN_KEY,
+        JSON.stringify({
+          modus,
+          breite,
+          hoehe,
+          quer,
+          formatId,
+          zeigeName,
+          zeigeHinweis,
+          zeigeLogo,
+          logoPos,
+          schriftFaktor,
+          blatt,
+        }),
+      );
+    } catch {
+      /* Speicher voll/gesperrt → ignorieren */
+    }
+  }, [
+    geladen,
+    modus,
+    breite,
+    hoehe,
+    quer,
+    formatId,
+    zeigeName,
+    zeigeHinweis,
+    zeigeLogo,
+    logoPos,
+    schriftFaktor,
+    blatt,
+  ]);
+
+  // Portal-Ziel steht erst nach dem Mount (kein document beim SSR).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  // „Weitere Karten auf die Seite" (nur A4): Maschinen-Suche + Zusatzkarten.
+  const [weitere, setWeitere] = useState(false);
+  const [msuche, setMsuche] = useState("");
+  const [mtreffer, setMtreffer] = useState<{ id: string; name: string }[]>([]);
+  const [mladen, setMladen] = useState(false);
+  const [zusatz, setZusatz] = useState<Karte[]>([]);
+  const [mfehler, setMfehler] = useState<string | null>(null);
+  const suchNr = useRef(0);
+
+  // Debounced Maschinen-Suche (Muster wie model-search): die laufende Nummer
+  // verwirft veraltete Antworten.
+  useEffect(() => {
+    if (!weitere) return;
+    const q = msuche.trim();
+    const timer = setTimeout(() => {
+      if (q.length < 1) {
+        suchNr.current += 1;
+        setMtreffer([]);
+        return;
+      }
+      const nr = ++suchNr.current;
+      setMladen(true);
+      sucheMeineMaschinen(q)
+        .then((r) => {
+          if (nr === suchNr.current) setMtreffer(r);
+        })
+        .catch(() => {
+          if (nr === suchNr.current) setMtreffer([]);
+        })
+        .finally(() => {
+          if (nr === suchNr.current) setMladen(false);
+        });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [msuche, weitere]);
+
+  async function karteHinzufuegen(id: string) {
+    setMfehler(null);
+    const res = await qrKarteFuerMaschine(id);
+    if ("error" in res) {
+      setMfehler(res.error);
+      return;
+    }
+    setZusatz((alt) =>
+      alt.some((k) => k.id === res.id) ? alt : [...alt, res],
+    );
+  }
+
   const gefiltert = useMemo(() => {
     const q = suche.trim().toLowerCase();
     if (!q) return SCORECARD_FORMATS;
@@ -108,16 +244,17 @@ export function QrPrint({
   const gewaehlt =
     SCORECARD_FORMATS.find((x) => x.id === formatId) ?? SCORECARD_FORMATS[0];
 
-  // Dynamisches Print-CSS: @page-Größe (exakt = Kartengröße, a4 = A4) + „nur
-  // die Karte/das Blatt sichtbar".
+  // Dynamisches Print-CSS. Der Druck-Inhalt hängt via Portal DIREKT am <body>
+  // (#qr-print-root); im Druck wird alles ANDERE ausgeblendet und die Wurzel
+  // im NORMALEN Fluss gezeigt — so paginiert der Browser die Kacheln über
+  // mehrere A4-Seiten (mit `position: fixed` ginge das nicht). @page = A4 bei
+  // A4-Modus, sonst exakte Kartengröße.
   const printCss = gueltig
     ? `@page { size: ${blatt === "a4" ? "A4" : `${breiteMm}mm ${hoeheMm}mm`}; margin: 0; }
 @media print {
   html, body { background: #ffffff; }
-  body * { visibility: hidden !important; }
-  #qr-print-root, #qr-print-root * { visibility: visible !important; }
-  #qr-print-root { position: fixed !important; inset: 0 !important; margin: 0 !important; }
-  /* Hintergrundfarben (Schnittmarken) auch wirklich drucken. */
+  body > *:not(#qr-print-root) { display: none !important; }
+  #qr-print-root { display: block !important; }
   #qr-print-root, #qr-print-root * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 }`
     : "";
@@ -169,8 +306,10 @@ export function QrPrint({
 
   // Eine Karte in echten mm — Layout ist Spalte: Name / Mittelteil (QR +
   // optional Logo) / Hinweis. Der QR wird per meet immer vollständig
-  // eingepasst (nie beschnitten).
-  const karte = (
+  // eingepasst (nie beschnitten). Nimmt Name + QR-SVG, damit dieselbe Karte
+  // für die aktuelle Maschine UND jede Zusatzkarte gerendert werden kann; der
+  // Look (Logo, Toggles, Format) gilt für alle gemeinsam.
+  const kartenInhalt = (kName: string, kSvg: string) => (
     <div
       className="qr-karte"
       style={{
@@ -199,7 +338,7 @@ export function QrPrint({
             flex: "0 0 auto",
           }}
         >
-          {name}
+          {kName}
         </p>
       ) : null}
       {/* Mittelteil: QR (füllt den Rest) + optional das Logo. Bei „oben"
@@ -235,7 +374,7 @@ export function QrPrint({
           // QR-SVG stammt aus der qrcode-Bibliothek (Server), kein Nutzer-Input.
           // Das SVG hat viewBox + Default preserveAspectRatio „xMidYMid meet" →
           // es wird immer VOLLSTÄNDIG (quadratisch, zentriert) eingepasst.
-          dangerouslySetInnerHTML={{ __html: qrSvg }}
+          dangerouslySetInnerHTML={{ __html: kSvg }}
         />
         {zeigeLogo && logoDataUrl && logoPos === "rechts" ? logoSeite : null}
       </div>
@@ -279,7 +418,7 @@ export function QrPrint({
   ];
 
   // Die Karte inkl. Marken (A4) bzw. pur (exakt).
-  const kartenBox =
+  const kartenBoxFuer = (kName: string, kSvg: string) =>
     blatt === "a4" ? (
       <div
         style={{
@@ -288,12 +427,19 @@ export function QrPrint({
           height: `${hoeheMm}mm`,
         }}
       >
-        {karte}
+        {kartenInhalt(kName, kSvg)}
         {schnittmarken}
       </div>
     ) : (
-      karte
+      kartenInhalt(kName, kSvg)
     );
+
+  // Alle zu druckenden Karten: die aktuelle Maschine + (nur A4) die Zusatzkarten.
+  const zusatzAktiv = blatt === "a4" && weitere;
+  const alleKarten: Karte[] = [
+    { id: machineId, name, qrSvg },
+    ...(zusatzAktiv ? zusatz : []),
+  ];
 
   return (
     <div className="space-y-4">
@@ -546,6 +692,101 @@ export function QrPrint({
           </div>
         </Field>
 
+        {/* Weitere Karten auf die A4-Seite (nur im A4-Modus). */}
+        {blatt === "a4" ? (
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={weitere}
+                onChange={(e) => setWeitere(e.target.checked)}
+              />
+              Weitere Karten auf die Seite drucken
+            </label>
+
+            {weitere ? (
+              <div className="max-w-md space-y-2">
+                {/* Bereits hinzugefügte Zusatzkarten. */}
+                {zusatz.length > 0 ? (
+                  <ul className="flex flex-wrap gap-1.5">
+                    {zusatz.map((k) => (
+                      <li
+                        key={k.id}
+                        className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] px-2.5 py-1 text-sm"
+                      >
+                        {k.name}
+                        <button
+                          type="button"
+                          aria-label={`${k.name} entfernen`}
+                          onClick={() =>
+                            setZusatz((alt) => alt.filter((x) => x.id !== k.id))
+                          }
+                          className="text-[var(--color-muted)] hover:text-[var(--color-danger)]"
+                        >
+                          <X size={14} />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+
+                {/* Maschinen-Suche zum Hinzufügen. */}
+                <div className="relative">
+                  <Search
+                    size={15}
+                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)]"
+                  />
+                  <Input
+                    value={msuche}
+                    onChange={(e) => setMsuche(e.target.value)}
+                    placeholder="Maschine suchen (Name) …"
+                    className="pl-9"
+                  />
+                  {mladen ? (
+                    <Loader2
+                      size={15}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-[var(--color-muted)]"
+                    />
+                  ) : null}
+                </div>
+                {mtreffer.filter(
+                  (m) =>
+                    m.id !== machineId && !zusatz.some((k) => k.id === m.id),
+                ).length > 0 ? (
+                  <ul className="max-h-56 divide-y divide-[var(--color-border)] overflow-y-auto rounded-[var(--radius)] border border-[var(--color-border)]">
+                    {mtreffer
+                      .filter(
+                        (m) =>
+                          m.id !== machineId &&
+                          !zusatz.some((k) => k.id === m.id),
+                      )
+                      .map((m) => (
+                        <li key={m.id}>
+                          <button
+                            type="button"
+                            onClick={() => karteHinzufuegen(m.id)}
+                            className="flex w-full items-center justify-between gap-2 px-3 py-2 text-left text-sm hover:bg-[var(--color-border)]/40"
+                          >
+                            <span className="min-w-0 truncate">{m.name}</span>
+                            <Plus
+                              size={15}
+                              className="flex-none text-[var(--color-muted)]"
+                            />
+                          </button>
+                        </li>
+                      ))}
+                  </ul>
+                ) : null}
+                {mfehler ? (
+                  <p className="text-sm text-[var(--color-danger)]">
+                    {mfehler}
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         {/* Vorschau + Druck. */}
         <div className="flex flex-wrap items-start gap-6">
           <div>
@@ -575,7 +816,7 @@ export function QrPrint({
                     padding: blatt === "a4" ? `${MARKE_MM}mm` : 0,
                   }}
                 >
-                  {kartenBox}
+                  {kartenBoxFuer(name, qrSvg)}
                 </div>
               </div>
             ) : (
@@ -583,6 +824,12 @@ export function QrPrint({
                 Bitte gültige Maße angeben (mind. 10 mm).
               </p>
             )}
+            {zusatzAktiv && zusatz.length > 0 ? (
+              <p className="mt-2 text-xs text-[var(--color-muted)]">
+                {alleKarten.length} Karten auf A4 (läuft bei Bedarf auf weitere
+                Seiten über).
+              </p>
+            ) : null}
           </div>
 
           <div className="space-y-2">
@@ -602,34 +849,46 @@ export function QrPrint({
         </div>
       </div>
 
-      {/* ── Druck-Wurzel. Auf dem Bildschirm off-canvas; im Druck macht das
-             Print-CSS sie sichtbar. Exakt: nur die Karte (füllt die
-             kartengroße Seite). A4: die Karte mittig auf einer A4-Seite mit
-             Schnittmarken. ─────────────────────────────────────────────── */}
-      {gueltig ? (
-        <div
-          id="qr-print-root"
-          aria-hidden
-          style={{ position: "absolute", left: "-99999px", top: 0 }}
-        >
-          {blatt === "a4" ? (
-            <div
-              style={{
-                width: "210mm",
-                height: "297mm",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                background: "#ffffff",
-              }}
-            >
-              {kartenBox}
-            </div>
-          ) : (
-            kartenBox
-          )}
-        </div>
-      ) : null}
+      {/* ── Druck-Wurzel via Portal DIREKT am <body> (auf dem Bildschirm per
+             display:none versteckt; im Druck macht das Print-CSS sie sichtbar
+             und blendet alles andere aus → paginiert im normalen Fluss).
+             A4: Kacheln (inline-block, je Karte Schnittmarken, break-inside),
+             Exakt: die eine Karte in Kartengröße = eine Seite. ────────────── */}
+      {mounted && gueltig
+        ? createPortal(
+            <div id="qr-print-root" style={{ display: "none" }}>
+              {blatt === "a4" ? (
+                <div
+                  style={{
+                    width: "210mm",
+                    boxSizing: "border-box",
+                    padding: `${MARKE_MM + 2}mm`,
+                    background: "#ffffff",
+                  }}
+                >
+                  {alleKarten.map((k) => (
+                    <div
+                      key={k.id}
+                      style={{
+                        display: "inline-block",
+                        verticalAlign: "top",
+                        // Abstand ≥ 2× Markenlänge, damit sich die Marken
+                        // benachbarter Karten nicht berühren.
+                        margin: `${MARKE_MM + 2}mm`,
+                        breakInside: "avoid",
+                      }}
+                    >
+                      {kartenBoxFuer(k.name, k.qrSvg)}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                kartenBoxFuer(name, qrSvg)
+              )}
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   );
 }

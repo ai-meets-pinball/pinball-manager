@@ -7,6 +7,7 @@ import { QrPrint } from "@/components/qr-print";
 import { db } from "@/db";
 import { clubs } from "@/db/schema";
 import { requireMachineAccess } from "@/lib/session";
+import { baseUrl, erzeugeQrSvg } from "@/lib/qr-code";
 import { modellName } from "@/lib/format";
 
 /*
@@ -20,12 +21,6 @@ import { modellName } from "@/lib/format";
   skalierbar, ideal für Druckereien). Beim Drucken blendet `print:hidden`
   alles außer dem Etikett aus (App-Header siehe Layout).
 */
-function baseUrl() {
-  return (
-    process.env.BETTER_AUTH_URL?.replace(/\/$/, "") ?? "http://localhost:3100"
-  );
-}
-
 /** Dateiname-tauglicher Maschinenname (qr-godzilla-premium.png). */
 function dateiname(name: string): string {
   return name
@@ -64,12 +59,7 @@ export default async function MachineQrPage({
   // Bewusst knapp (/m/<12 Zeichen>): je kürzer die URL, desto gröber und
   // robuster der QR-Code.
   const meldeUrl = `${baseUrl()}/m/${machine.qrToken}`;
-  const svg = await QRCode.toString(meldeUrl, {
-    type: "svg",
-    margin: 1,
-    width: 480,
-    errorCorrectionLevel: "M",
-  });
+  const svg = await erzeugeQrSvg(machine.qrToken);
   // Hochauflösendes PNG (2048 px) — Grundlage für den Download.
   const pngDataUrl = await QRCode.toDataURL(meldeUrl, {
     margin: 1,
@@ -109,6 +99,7 @@ export default async function MachineQrPage({
       <section className="space-y-3 print:space-y-0">
         <h1 className="text-xl font-bold print:hidden">QR-Code drucken</h1>
         <QrPrint
+          machineId={machine.id}
           qrSvg={svg}
           name={modellName(machine)}
           logoDataUrl={logoDataUrl}

@@ -10,6 +10,7 @@ import {
   machineModels,
 } from "@/db/schema";
 import { isSuperAdmin, requireMachineWrite, requireUser } from "@/lib/session";
+import { baueLinks } from "@/lib/tipp-inhalt";
 import type { FormState } from "@/db/actions/form-state";
 
 /*
@@ -32,6 +33,13 @@ export async function createTipp(
     .getAll("generationen")
     .map(String)
     .filter(Boolean);
+  // Weiterführende Links (index-gleiche Reihen aus LinksFeld); unsichere/leere
+  // URLs fallen in baueLinks weg.
+  const links = baueLinks(
+    formData.getAll("linkUrl").map(String),
+    formData.getAll("linkName").map(String),
+    formData.getAll("linkBeschreibung").map(String),
+  );
 
   const { user: currentUser } = await requireMachineWrite(machineId);
 
@@ -72,7 +80,7 @@ export async function createTipp(
       .values({
         typ: "tipp",
         titel,
-        inhalt: { text },
+        inhalt: links.length ? { text, links } : { text },
         sourceType: "eigen",
         visibility,
         createdBy: currentUser.id,

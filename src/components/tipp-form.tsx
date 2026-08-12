@@ -5,6 +5,7 @@ import { Layers, Lightbulb, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
 import { FormFeedback } from "@/components/ui/form-feedback";
+import { LinksFeld } from "@/components/links-feld";
 import { createTipp } from "@/db/actions/tipps";
 import type { FormState } from "@/db/actions/form-state";
 
@@ -102,7 +103,10 @@ export function TippForm({
             placeholder="z. B. Flipperfinger-Gummis regelmäßig tauschen"
           />
         </Field>
-        <Field label="Tipp">
+        <Field
+          label="Tipp"
+          hint="Formatierung: **fett**, _kursiv_, Aufzählung mit Bindestrich am Zeilenanfang, [Text](https://…). URLs werden automatisch anklickbar."
+        >
           <Textarea
             name="text"
             required
@@ -111,12 +115,21 @@ export function TippForm({
           />
         </Field>
 
+        {/* Weiterführende Links (optional) — eigene URL + Name + Beschreibung. */}
+        <LinksFeld />
+
         {/* Bewusst KEIN <Field> (= <label>) um den Picker: Button und
             Checkboxen in einem Label führen zu Klick-Weiterleitungen
             (gleiches Problem wie beim Feedback-Screenshot-Dropfeld). */}
         <div className="flex flex-col gap-1.5 text-sm">
           <span className="font-medium">
-            Gilt für ({anzahlZiele} ausgewählt)
+            Für welche Modelle/Generationen gilt der Tipp?
+          </span>
+          <span className="text-xs text-[var(--color-muted)]">
+            {anzahlZiele === 1
+              ? "1 Ziel ausgewählt"
+              : `${anzahlZiele} Ziele ausgewählt`}
+            {" — das Modell dieser Maschine ist vorausgewählt."}
           </span>
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-2">

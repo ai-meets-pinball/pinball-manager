@@ -25,13 +25,15 @@
   --color-primary-soft: #3a352f;
   --color-accent: #7a3a44; /* Bordeaux — Markenakzent */
   --color-accent-soft: #9a5560;
+  --color-accent-fg: #faf9f6; /* Text auf Bordeaux (heller Akzent = heller Text) */
   --color-success: #4f7359; /* Salbei */
   --color-warn: #8a6a3f; /* Ocker (z. B. „in Reparatur") */
   --color-danger: #7a3a44; /* Bordeaux für Löschen/Fehler — kein Rot */
 
   --font-sans: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-space-mono), ui-monospace, monospace;
-  --font-display: var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-display:
+    var(--font-space-grotesk), ui-sans-serif, system-ui, sans-serif;
 
   --radius: 0.375rem;
 }
@@ -54,6 +56,7 @@
   --color-primary-soft: #d8d3c9;
   --color-accent: #c98a94; /* helleres Bordeaux für dunklen Grund */
   --color-accent-soft: #d8a3ac;
+  --color-accent-fg: #17150f; /* dunkler Text auf dem hellen Akzent (Kontrast) */
   --color-success: #7fae89;
   --color-warn: #c2a06a;
   --color-danger: #c98a94;

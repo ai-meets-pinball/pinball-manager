@@ -11,6 +11,7 @@ import {
 } from "@/db/schema";
 import { getKnowledgeRevisions, knowledgeSichtbarFuer } from "@/db/queries";
 import { parseFactsText } from "@/lib/import-facts";
+import { baueLinks } from "@/lib/tipp-inhalt";
 import { darfWissen } from "@/lib/rechte";
 import {
   kannKuratieren,
@@ -167,10 +168,16 @@ export async function updateKnowledge(
         : {};
     inhalt = { ...umschlag, guide: parsed.data };
   } else if (k.typ === "tipp") {
-    // Tipps sind freier Text — kein JSON, nur Nicht-Leere prüfen.
+    // Tipps sind freier Text (kein JSON) plus optionale Links — nur Nicht-Leere
+    // des Textes prüfen; Links kommen wie im Formular aus index-gleichen Reihen.
     const text = inhaltText.trim();
     if (!text) return { error: "Der Tipp-Text ist erforderlich." };
-    inhalt = { text };
+    const links = baueLinks(
+      formData.getAll("linkUrl").map(String),
+      formData.getAll("linkName").map(String),
+      formData.getAll("linkBeschreibung").map(String),
+    );
+    inhalt = links.length ? { text, links } : { text };
   } else {
     return { error: "Dieser Eintragstyp ist nicht bearbeitbar." };
   }
