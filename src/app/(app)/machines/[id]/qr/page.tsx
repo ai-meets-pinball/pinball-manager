@@ -2,8 +2,8 @@ import QRCode from "qrcode";
 import Link from "next/link";
 import { eq } from "drizzle-orm";
 import { ArrowLeft } from "lucide-react";
-import { PrintButton } from "@/components/print-button";
 import { QrDownload } from "@/components/qr-download";
+import { QrPrint } from "@/components/qr-print";
 import { db } from "@/db";
 import { clubs } from "@/db/schema";
 import { requireMachineAccess } from "@/lib/session";
@@ -89,7 +89,7 @@ export default async function MachineQrPage({
   const logoDataUrl = await logoAlsDataUrl(club?.logoUrl ?? null);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3 print:hidden">
         <Link
           href={`/machines/${machine.id}`}
@@ -97,30 +97,24 @@ export default async function MachineQrPage({
         >
           <ArrowLeft size={14} /> {modellName(machine)}
         </Link>
-        <div className="flex flex-wrap items-center gap-2">
-          <QrDownload
-            qrSvg={svg}
-            qrPngDataUrl={pngDataUrl}
-            logoDataUrl={logoDataUrl}
-            basisname={basisname}
-          />
-          <PrintButton />
-        </div>
+        <QrDownload
+          qrSvg={svg}
+          qrPngDataUrl={pngDataUrl}
+          logoDataUrl={logoDataUrl}
+          basisname={basisname}
+        />
       </div>
 
-      {/* Das Etikett — bewusst schlicht, damit es auf jedem Drucker taugt. */}
-      <div className="mx-auto max-w-xs space-y-3 rounded-[var(--radius)] border border-[var(--color-border)] bg-white p-6 text-center text-black">
-        <p className="text-lg font-bold">{modellName(machine)}</p>
-        <div
-          className="mx-auto w-full [&_svg]:h-auto [&_svg]:w-full"
-          // QR kommt aus der qrcode-Bibliothek (Server), kein Nutzer-Input.
-          dangerouslySetInnerHTML={{ __html: svg }}
+      {/* Drucken: Etiketten (frei) oder Scorecards (Herstellermaße). */}
+      <section className="space-y-3 print:space-y-0">
+        <h1 className="text-xl font-bold print:hidden">QR-Code drucken</h1>
+        <QrPrint
+          qrSvg={svg}
+          name={modellName(machine)}
+          logoDataUrl={logoDataUrl}
+          hersteller={machine.hersteller}
         />
-        <p className="text-sm font-medium">
-          Etwas kaputt? QR-Code scannen und Fehler melden — geht auch ohne
-          Konto.
-        </p>
-      </div>
+      </section>
 
       <p className="text-center text-xs text-[var(--color-muted)] print:hidden">
         Der Code führt zu <span className="font-mono">{meldeUrl}</span>

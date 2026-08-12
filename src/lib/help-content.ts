@@ -133,6 +133,10 @@ export const ANLEITUNG: HilfeSektion[] = [
         titel: "Per QR-Code melden — auch ohne Konto",
         text: "Jede Maschine hat ein QR-Etikett (Detailseite → »QR-Code«, drucken und ans Gerät kleben). Wer den Code scannt, landet auf einer öffentlichen Melde-Seite: Angemeldete mit Zugriff kommen direkt in den Fehler-Reiter; alle anderen — auch Gäste ganz ohne Konto — beschreiben das Symptom und geben nur ihren Namen an (erscheint als »… (Gast)«). Priorität und Status vergibt anschließend der Betreiber. Ein Login ist der bevorzugte Weg, aber keine Voraussetzung.",
       },
+      {
+        titel: "QR-Code drucken (Etikett oder Scorecard)",
+        text: "Auf der QR-Seite lässt sich der Code maßstabsgetreu drucken: als EIGENES Etikett mit frei wählbaren Maßen (Breite×Höhe in mm, Hoch- oder Querformat) oder als SCORECARD in herstellerspezifischen Kartenmaßen — das passende Format wird anhand des Herstellers vorausgewählt, ist aber frei änderbar. Je Druck lassen sich Name, Hinweistext und (bei Club-Maschinen) das Club-Logo zuschalten sowie mehrere Kopien wählen (eine Karte pro Seite). Zusätzlich gibt es den Bild-Download (PNG/SVG) für Bildbearbeitung oder Druckereien. Tipp: im Druckdialog die Papiergröße auf die angezeigten Maße stellen und Ränder auf 0.",
+      },
     ],
   },
   {
