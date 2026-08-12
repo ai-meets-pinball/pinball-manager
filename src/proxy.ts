@@ -34,7 +34,7 @@ function buildCsp(nonce: string): string {
     // Inline-Styles: Next + React style={{…}} (z. B. die farbcodierten Chips).
     `style-src 'self' 'unsafe-inline'`,
     // Bilder: Supabase-Storage (Fotos) + OPDB + data: (Favicons u. Ä.).
-    `img-src 'self' data: https://*.supabase.co https://img.opdb.org`,
+    `img-src 'self' data: blob: https://*.supabase.co https://img.opdb.org`,
     `font-src 'self'`, // next/font/google wird selbst gehostet
     `connect-src 'self'${dev ? " ws:" : ""}`, // Dev: HMR-WebSocket
     `object-src 'none'`,

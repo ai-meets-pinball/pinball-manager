@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { BildFeld } from "@/components/bild-feld";
 import { Button } from "@/components/ui/button";
 import { Field, Select, Textarea } from "@/components/ui/input";
 import type { FormState } from "@/db/actions/form-state";
@@ -56,7 +57,10 @@ export function FaultForm({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field label="Priorität">
-          <Select name="prioritaet" defaultValue={fault?.prioritaet ?? "mittel"}>
+          <Select
+            name="prioritaet"
+            defaultValue={fault?.prioritaet ?? "mittel"}
+          >
             <option value="niedrig">niedrig</option>
             <option value="mittel">mittel</option>
             <option value="hoch">hoch</option>
@@ -71,6 +75,15 @@ export function FaultForm({
           </Select>
         </Field>
       </div>
+
+      {/* Fotos nur beim ANLEGEN (beim Melden); Bearbeiten ändert nur die Daten.
+          Kein <label> drumherum — sonst öffnet der Klick den Dialog doppelt. */}
+      {!fault ? (
+        <div className="flex flex-col gap-1.5 text-sm">
+          <span className="font-medium">Fotos (optional)</span>
+          <BildFeld />
+        </div>
+      ) : null}
 
       {state.error ? (
         <p className="text-sm text-[var(--color-danger)]">{state.error}</p>

@@ -358,6 +358,22 @@ export const faults = pgTable("faults", {
   gemeldetVonName: text("gemeldet_von_name"),
 });
 
+/*
+  Fotos zu einer Fehlermeldung (n:1) — beim Melden angehängt (angemeldet ODER
+  Gast über den QR-Code). Liegen im öffentlichen Storage-Bucket (Ordner
+  fault-images/), hier nur die URL. Löscht die Maschine/den Fehler, fallen die
+  Zeilen per Cascade mit weg (die Storage-Objekte bleiben — wie bei den übrigen
+  Uploads bewusst nicht mitgelöscht).
+*/
+export const faultImages = pgTable("fault_images", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  faultId: uuid("fault_id")
+    .notNull()
+    .references(() => faults.id, { onDelete: "cascade" }),
+  url: text("url").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 /* ── Reparaturen ──────────────────────────────────────────────────────────── */
 /* Optionale Verknüpfung zu einem Fehler. Behebt die Reparatur den Fehler,
    wird dessen Status in der Server Action auf "behoben" gesetzt (nicht per Trigger). */

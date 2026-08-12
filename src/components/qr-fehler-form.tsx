@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { CheckCircle2, Loader2 } from "lucide-react";
+import { BildFeld } from "@/components/bild-feld";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/input";
 import { meldeFehlerPerQr } from "@/db/actions/qr-melden";
@@ -70,6 +71,11 @@ export function QrFehlerForm({
           />
         </Field>
       )}
+      {/* Fotos vom Defekt — mobil direkt per Kamera. Kein <label> drumherum. */}
+      <div className="flex flex-col gap-1.5 text-sm">
+        <span className="font-medium">Fotos (optional)</span>
+        <BildFeld />
+      </div>
       {state.error ? (
         <p className="text-sm text-[var(--color-danger)]">{state.error}</p>
       ) : null}

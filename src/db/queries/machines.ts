@@ -14,6 +14,7 @@ import {
 } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  faultImages,
   faults,
   generations,
   machineBesitzer,
@@ -245,6 +246,10 @@ export async function getMachineFaults(
       melderName: sql<
         string | null
       >`coalesce(${user.name}, ${faults.gemeldetVonName} || ' (Gast)')`,
+      // Angehängte Fotos (URLs) — eine Abfrage, korrelierter array_agg.
+      bilder: sql<
+        string[]
+      >`(select coalesce(array_agg(${faultImages.url} order by ${faultImages.createdAt}), '{}') from ${faultImages} where ${faultImages.faultId} = ${faults.id})`,
     })
     .from(faults)
     .leftJoin(user, eq(user.id, faults.gemeldetVon))

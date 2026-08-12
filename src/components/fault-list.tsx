@@ -13,6 +13,8 @@ type Fault = {
   status: string;
   datum: Date;
   melderName?: string | null;
+  /** Angehängte Fotos (URLs). */
+  bilder?: string[];
 };
 
 export function FaultList({
@@ -48,6 +50,27 @@ export function FaultList({
           </div>
 
           <p className="whitespace-pre-wrap">{fault.beschreibung}</p>
+
+          {fault.bilder && fault.bilder.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {fault.bilder.map((url) => (
+                <a
+                  key={url}
+                  href={url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="block h-20 w-20 overflow-hidden rounded-[var(--radius)] border border-[var(--color-border)]"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={url}
+                    alt="Foto zum Fehler"
+                    className="h-full w-full object-cover"
+                  />
+                </a>
+              ))}
+            </div>
+          ) : null}
 
           {schreibbar ? (
             <div className="flex gap-3 text-sm">

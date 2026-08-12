@@ -116,6 +116,27 @@ export async function uploadFeedbackScreenshot(
   return uploadBild(file, "feedback/", userId);
 }
 
+/** Höchstzahl Fotos je Fehlermeldung (angemeldet wie Gast). */
+export const MAX_FAULT_IMAGES = 5;
+
+/*
+  Fotos zu einer Fehlermeldung. `uploaderId` ist die Nutzer-id oder — bei
+  Gast-Meldungen über den QR-Code — der feste Segment-Name „gast" (nur für den
+  Ablagepfad; die Magic-Byte-/Größenprüfung von uploadBild greift für beide).
+  Lädt bis zu MAX_FAULT_IMAGES nicht-leere Dateien hoch und liefert die URLs.
+*/
+export async function uploadFaultImages(
+  files: File[],
+  uploaderId: string,
+): Promise<string[]> {
+  const echte = files
+    .filter((f) => f instanceof File && f.size > 0)
+    .slice(0, MAX_FAULT_IMAGES);
+  return Promise.all(
+    echte.map((f) => uploadBild(f, "fault-images/", uploaderId)),
+  );
+}
+
 /*
   Club-Logo: erlaubt sind JPG, PNG und SVG. SVG ist kein Magic-Byte-Format,
   sondern XML-Text und braucht einen eigenen Zweig. Aktive Inhalte (Skripte,

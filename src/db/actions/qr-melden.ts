@@ -2,10 +2,11 @@
 
 import { and, count, eq, gte, isNotNull, ne } from "drizzle-orm";
 import { db } from "@/db";
-import { faults } from "@/db/schema";
+import { faultImages, faults } from "@/db/schema";
 import { mitStatusNachzug } from "@/db/machine-status-core";
 import { getMachineByQrToken } from "@/db/queries";
 import { getCurrentUser } from "@/lib/session";
+import { MAX_FAULT_IMAGES, uploadFaultImages } from "@/lib/storage";
 import type { FormState } from "@/db/actions/form-state";
 
 /*
@@ -109,15 +110,39 @@ export async function meldeFehlerPerQr(
     }
   }
 
+  // Fotos ZUERST hochladen (Prüfung greift für Gäste wie Angemeldete); scheitert
+  // es, wird kein Fehler angelegt. Gäste laden unter dem Segment „gast".
+  const bilder = formData.getAll("bilder") as File[];
+  if (
+    bilder.filter((f) => f instanceof File && f.size > 0).length >
+    MAX_FAULT_IMAGES
+  ) {
+    return { error: `Höchstens ${MAX_FAULT_IMAGES} Bilder.` };
+  }
+  let urls: string[];
+  try {
+    urls = await uploadFaultImages(bilder, currentUser?.id ?? "gast");
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+
   // Wie jede Fehler-Mutation: Anlegen + Betriebsstatus-Nachzug in EINEM Vorgang.
-  await mitStatusNachzug(machine.id, (tx) =>
-    tx.insert(faults).values({
-      machineId: machine.id,
-      beschreibung,
-      gemeldetVon: currentUser?.id ?? null,
-      gemeldetVonName: currentUser ? null : name,
-    }),
+  const [neu] = await mitStatusNachzug(machine.id, (tx) =>
+    tx
+      .insert(faults)
+      .values({
+        machineId: machine.id,
+        beschreibung,
+        gemeldetVon: currentUser?.id ?? null,
+        gemeldetVonName: currentUser ? null : name,
+      })
+      .returning({ id: faults.id }),
   );
+  if (urls.length > 0) {
+    await db
+      .insert(faultImages)
+      .values(urls.map((url) => ({ faultId: neu.id, url })));
+  }
 
   return {
     message: "Danke! Der Fehler ist gemeldet und wird geprüft.",

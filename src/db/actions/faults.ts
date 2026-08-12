@@ -3,9 +3,11 @@
 import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { faults } from "@/db/schema";
+import { db } from "@/db";
+import { faultImages, faults } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
 import { mitStatusNachzug } from "@/db/machine-status-core";
+import { MAX_FAULT_IMAGES, uploadFaultImages } from "@/lib/storage";
 import { faultSchema } from "@/lib/validators";
 import type { FormState } from "@/db/actions/form-state";
 
@@ -22,16 +24,40 @@ export async function createFault(
     return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
   }
 
-  await mitStatusNachzug(machineId, (tx) =>
-    tx.insert(faults).values({
-      machineId,
-      beschreibung: parsed.data.beschreibung,
-      kategorie: parsed.data.kategorie ?? null,
-      prioritaet: parsed.data.prioritaet,
-      status: parsed.data.status,
-      gemeldetVon: user.id,
-    }),
+  // Fotos ZUERST hochladen (Magic-Byte-/Größenprüfung) — schlägt es fehl, wird
+  // gar kein Fehler angelegt, und die Meldung geht sauber an den Nutzer zurück.
+  const bilder = formData.getAll("bilder") as File[];
+  if (
+    bilder.filter((f) => f instanceof File && f.size > 0).length >
+    MAX_FAULT_IMAGES
+  ) {
+    return { error: `Höchstens ${MAX_FAULT_IMAGES} Bilder.` };
+  }
+  let urls: string[];
+  try {
+    urls = await uploadFaultImages(bilder, user.id);
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
+
+  const [neu] = await mitStatusNachzug(machineId, (tx) =>
+    tx
+      .insert(faults)
+      .values({
+        machineId,
+        beschreibung: parsed.data.beschreibung,
+        kategorie: parsed.data.kategorie ?? null,
+        prioritaet: parsed.data.prioritaet,
+        status: parsed.data.status,
+        gemeldetVon: user.id,
+      })
+      .returning({ id: faults.id }),
   );
+  if (urls.length > 0) {
+    await db
+      .insert(faultImages)
+      .values(urls.map((url) => ({ faultId: neu.id, url })));
+  }
 
   revalidatePath(`/machines/${machineId}`);
   redirect(`/machines/${machineId}`);
