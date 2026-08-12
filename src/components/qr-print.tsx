@@ -117,6 +117,8 @@ export function QrPrint({
   body * { visibility: hidden !important; }
   #qr-print-root, #qr-print-root * { visibility: visible !important; }
   #qr-print-root { position: fixed !important; inset: 0 !important; margin: 0 !important; }
+  /* Hintergrundfarben (Schnittmarken) auch wirklich drucken. */
+  #qr-print-root, #qr-print-root * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
 }`
     : "";
 
@@ -143,18 +145,26 @@ export function QrPrint({
       }}
     />
   ) : null;
+  // Seitliches Logo bekommt eine EIGENE HÄLFTE (flex 1) und wird darin zentriert
+  // — genau wie der QR in seiner Hälfte (siehe Mittelteil: QR ebenfalls flex 1).
   const logoSeite = logoDataUrl ? (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
-      src={logoDataUrl}
-      alt=""
+    <div
       style={{
-        maxHeight: "100%",
-        maxWidth: "34%",
-        objectFit: "contain",
-        flex: "0 0 auto",
+        flex: "1 1 0",
+        minWidth: 0,
+        alignSelf: "stretch",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
       }}
-    />
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={logoDataUrl}
+        alt=""
+        style={{ maxHeight: "100%", maxWidth: "90%", objectFit: "contain" }}
+      />
+    </div>
   ) : null;
 
   // Eine Karte in echten mm — Layout ist Spalte: Name / Mittelteil (QR +
@@ -212,8 +222,11 @@ export function QrPrint({
         <div
           className="[&_svg]:h-full [&_svg]:w-full"
           style={{
-            flex: "1 1 auto",
+            // Bei seitlichem Logo eine gleich große Hälfte (1 1 0) wie das Logo;
+            // sonst füllt der QR den ganzen Mittelteil.
+            flex: mitLogoSeite ? "1 1 0" : "1 1 auto",
             minHeight: 0,
+            minWidth: 0,
             alignSelf: "stretch",
             display: "flex",
             alignItems: "center",
@@ -245,7 +258,18 @@ export function QrPrint({
   // je Ecke ein waagerechter + ein senkrechter, knapp außerhalb der Karte.
   const MARKE_MM = 4;
   const marke = (s: CSSProperties, key: string) => (
-    <div key={key} style={{ position: "absolute", background: "#000", ...s }} />
+    <div
+      key={key}
+      style={{
+        position: "absolute",
+        background: "#000",
+        // Browser drucken Hintergrundfarben sonst NICHT — sonst wären die
+        // Marken im echten Druck unsichtbar.
+        WebkitPrintColorAdjust: "exact",
+        printColorAdjust: "exact",
+        ...s,
+      }}
+    />
   );
   const schnittmarken = [
     marke(
