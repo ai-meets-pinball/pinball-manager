@@ -141,8 +141,13 @@ export async function registerAccount(
         .set({ status: "pending" })
         .where(eq(invitations.id, einladungId));
     }
-    const msg = e instanceof Error ? e.message : "Registrierung fehlgeschlagen";
-    console.error("[register]", msg);
-    return { error: msg };
+    // Details nur ins Server-Log; dem Client eine GENERISCHE Meldung — die
+    // rohe Better-Auth-Meldung („User already exists" o. ä.) wäre ein
+    // Konto-Existenz-Orakel.
+    console.error("[register]", e instanceof Error ? e.message : e);
+    return {
+      error:
+        "Registrierung fehlgeschlagen. Bitte prüfe deine Angaben und versuche es erneut.",
+    };
   }
 }

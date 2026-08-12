@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { PasswordField } from "@/components/ui/password-field";
 import { signIn } from "@/lib/auth-client";
+import { istSichererPfad } from "@/lib/safe-path";
 
 /* useSearchParams braucht in Next eine Suspense-Grenze — daher der Wrapper. */
 export default function LoginPage() {
@@ -20,10 +21,10 @@ export default function LoginPage() {
 function LoginForm() {
   const router = useRouter();
   // Rücksprungziel (z. B. von der QR-Melde-Seite): nur RELATIVE Pfade zulassen
-  // — sonst wäre das ein Open-Redirect auf fremde Seiten.
+  // — sonst wäre das ein Open-Redirect auf fremde Seiten. Neben „//" auch „/\"
+  // ablehnen: Browser normalisieren den Backslash zu „/" → protokoll-relativ.
   const von = useSearchParams().get("von");
-  const ziel =
-    von && von.startsWith("/") && !von.startsWith("//") ? von : "/machines";
+  const ziel = istSichererPfad(von) ? von : "/machines";
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 

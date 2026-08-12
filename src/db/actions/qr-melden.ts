@@ -1,10 +1,64 @@
 "use server";
 
+import { and, count, eq, gte, isNotNull, ne } from "drizzle-orm";
+import { db } from "@/db";
 import { faults } from "@/db/schema";
-import { mitStatusNachzug } from "@/db/actions/machine-status";
+import { mitStatusNachzug } from "@/db/machine-status-core";
 import { getMachineByQrToken } from "@/db/queries";
 import { getCurrentUser } from "@/lib/session";
 import type { FormState } from "@/db/actions/form-state";
+
+/*
+  Missbrauchsbremse für GAST-Meldungen: Der QR-Aufkleber sitzt öffentlich am
+  Gerät — wer ihn sieht, kennt den Token. Ein Skript könnte damit die
+  Fehlerliste fluten.
+
+  Bewusst wird NICHT die GESAMTZAHL gedeckelt (ein öffentlicher Club darf viele
+  echte Melder haben — das wäre die falsche Grenze), sondern nur:
+  1. die RATE je Maschine in einem kurzen Zeitfenster (ein Skript feuert schnell,
+     echte Menschen selten mehr als ein paar Meldungen in Minuten), und
+  2. exakte DUPLIKATE (dieselbe offene Beschreibung nochmal) — die werden
+     freundlich als „schon gemeldet" quittiert, ohne eine zweite Zeile anzulegen.
+  Angemeldete Nutzer (mit Konto) sind von beidem nicht betroffen.
+*/
+const GAST_FENSTER_MS = 10 * 60_000; // 10 Minuten
+const GAST_MAX_IM_FENSTER = 8;
+
+async function gastMeldungenImFenster(machineId: string): Promise<number> {
+  const seit = new Date(Date.now() - GAST_FENSTER_MS);
+  const [row] = await db
+    .select({ n: count() })
+    .from(faults)
+    .where(
+      and(
+        eq(faults.machineId, machineId),
+        isNotNull(faults.gemeldetVonName),
+        gte(faults.datum, seit),
+      ),
+    );
+  return Number(row?.n ?? 0);
+}
+
+/** Liegt derselbe Fehler (exakt gleiche Beschreibung) als Gast-Meldung schon
+    offen vor? Dann keine zweite Zeile anlegen. */
+async function gastDuplikat(
+  machineId: string,
+  beschreibung: string,
+): Promise<boolean> {
+  const [row] = await db
+    .select({ id: faults.id })
+    .from(faults)
+    .where(
+      and(
+        eq(faults.machineId, machineId),
+        isNotNull(faults.gemeldetVonName),
+        ne(faults.status, "behoben"),
+        eq(faults.beschreibung, beschreibung),
+      ),
+    )
+    .limit(1);
+  return Boolean(row);
+}
 
 /*
   Fehler melden über den QR-Code der Maschine — die EINZIGE Schreib-Aktion, die
@@ -40,6 +94,19 @@ export async function meldeFehlerPerQr(
   if (!currentUser) {
     if (!name) return { error: "Bitte gib deinen Namen an." };
     if (name.length > 100) return { error: "Der Name ist zu lang." };
+    // Nur Gäste bremsen (Token-Besitz ist die einzige Hürde); angemeldete
+    // Meldungen sind über das Konto zurechenbar und bleiben unbegrenzt.
+    if (await gastDuplikat(machine.id, beschreibung)) {
+      // Als Erfolg quittieren — der Melder soll nicht raten, ob es geklappt
+      // hat, aber es entsteht keine doppelte Zeile.
+      return { message: "Danke! Dieser Fehler wurde bereits gemeldet." };
+    }
+    if ((await gastMeldungenImFenster(machine.id)) >= GAST_MAX_IM_FENSTER) {
+      return {
+        error:
+          "Gerade gehen viele Meldungen zu diesem Gerät ein. Bitte in ein paar Minuten erneut versuchen.",
+      };
+    }
   }
 
   // Wie jede Fehler-Mutation: Anlegen + Betriebsstatus-Nachzug in EINEM Vorgang.

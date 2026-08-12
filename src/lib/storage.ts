@@ -126,6 +126,41 @@ export async function uploadFeedbackScreenshot(
 */
 const MAX_SVG_BYTES = 1 * 1024 * 1024; // 1 MB — Logos sind klein.
 
+/*
+  Prüft SVG-Text auf aktive/gefährliche Inhalte. Bleibt bewusst eine DENYLIST
+  (ein vollständiger XML-Parser/Sanitizer wäre für ein Vereinslogo überzogen) —
+  aber eine breite: Skripte, Event-Handler, externe/Skript-URLs, eingebettete
+  Fremd-Dokumente, Animation von href/URL-Attributen, XML-Entities/DOCTYPE
+  (XXE), CSS-@import und Meta-Refresh werden abgelehnt.
+
+  Kontext-Einordnung: Das Logo liegt in einem Bucket auf FREMDER Origin
+  (*.supabase.co) und wird in der App nur per <img> eingebunden (führt nichts
+  aus). Ein Skript-SVG kann also keine App-Session stehlen; die Prüfung
+  verhindert primär, dass der öffentliche Bucket aktive Inhalte unter der
+  Projekt-Domain hostet. Gibt bei einem Treffer das verletzte Muster zurück
+  (für die Fehlermeldung), sonst null.
+
+  Exportiert, damit die Regel direkt testbar ist (storage.test.ts).
+*/
+const SVG_VERBOTEN: readonly RegExp[] = [
+  /<script[\s/>]/i,
+  /<foreignobject[\s/>]/i,
+  /<(iframe|embed|object|audio|video|link|meta)[\s/>]/i,
+  /<use\b[^>]*\bhref/i, // <use href=…> / xlink:href
+  /<(animate|animatetransform|animatemotion|set)\b/i, // kann href/URL animieren
+  /<!doctype/i,
+  /<!entity/i,
+  /<!\[cdata\[/i, // maskiert oft Payloads
+  /javascript:/i,
+  /\bdata:\s*text\/html/i,
+  /\son\w+\s*=/i, // onload=, onerror=, …
+  /@import/i,
+];
+
+export function svgVerletzung(text: string): RegExp | null {
+  return SVG_VERBOTEN.find((re) => re.test(text)) ?? null;
+}
+
 export async function uploadClubLogo(
   file: File | null,
   userId: string,
@@ -147,9 +182,9 @@ export async function uploadClubLogo(
   if (!/<svg[\s>]/i.test(text)) {
     throw new Error("Als Logo sind JPG, PNG und SVG möglich.");
   }
-  if (/<script|javascript:|\son\w+\s*=/i.test(text)) {
+  if (svgVerletzung(text)) {
     throw new Error(
-      "SVG mit aktiven Inhalten (Skripte/Handler) ist nicht erlaubt.",
+      "SVG mit aktiven Inhalten (Skripte, Handler, externe Verweise) ist nicht erlaubt.",
     );
   }
 

@@ -6,10 +6,9 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { faults, repairFaults, repairs } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
-import { mitStatusNachzug } from "@/db/actions/machine-status";
+import { mitStatusNachzug } from "@/db/machine-status-core";
 import { repairSchema } from "@/lib/validators";
 import type { FormState } from "@/db/actions/form-state";
-
 
 /* Die gewählten Fehler einlesen (Mehrfachauswahl) und prüfen, dass ALLE wirklich
    zu dieser Maschine gehören — sonst könnte man über eine eigene Maschine fremde

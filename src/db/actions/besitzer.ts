@@ -9,6 +9,7 @@ import {
   machines,
 } from "@/db/schema";
 import { inviteMember } from "@/db/actions/invitations";
+import { requireClubManager } from "@/lib/session";
 import type { FormState } from "@/db/actions/form-state";
 
 /*
@@ -34,6 +35,12 @@ export async function inviteBesitzer(
   if (!machine?.clubId) {
     return { error: "Nur Besitzer von Club-Maschinen lassen sich einladen." };
   }
+
+  // Rechte-Gate ZUERST — vor jedem weiteren Lookup: sonst verrieten die
+  // folgenden, unterscheidbaren Fehlermeldungen einem Nicht-Manager die
+  // Existenz/den Zustand fremder Maschinen und Besitzer (OWASP A01). Wirft für
+  // Nicht-Owner/-Admin (dieselbe Prüfung, die inviteMember unten erneut macht).
+  await requireClubManager(machine.clubId);
 
   // Der Besitzer muss wirklich AN DIESER Maschine eingetragen sein.
   const [zuordnung] = await db

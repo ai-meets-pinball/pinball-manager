@@ -1,3 +1,4 @@
+import { timingSafeEqual } from "node:crypto";
 import { and, eq, inArray, isNotNull, isNull, lt, lte, or } from "drizzle-orm";
 import { db } from "@/db";
 import { machines, maintenanceTasks, user } from "@/db/schema";
@@ -22,10 +23,23 @@ const REMIND_AFTER_TAGE = 7;
 
 export const dynamic = "force-dynamic";
 
+/** Timing-sicherer Vergleich zweier Strings gleicher Bedeutung. */
+function sicherGleich(a: string, b: string): boolean {
+  const ba = Buffer.from(a);
+  const bb = Buffer.from(b);
+  // timingSafeEqual verlangt gleiche Länge — bei Ungleichheit trotzdem einen
+  // konstant-zeitigen Vergleich gegen sich selbst fahren, dann false liefern.
+  if (ba.length !== bb.length) {
+    timingSafeEqual(ba, ba);
+    return false;
+  }
+  return timingSafeEqual(ba, bb);
+}
+
 export async function GET(req: Request) {
   const secret = process.env.CRON_SECRET;
-  const auth = req.headers.get("authorization");
-  if (!secret || auth !== `Bearer ${secret}`) {
+  const auth = req.headers.get("authorization") ?? "";
+  if (!secret || !sicherGleich(auth, `Bearer ${secret}`)) {
     return new Response("Unauthorized", { status: 401 });
   }
 
@@ -63,6 +77,7 @@ export async function GET(req: Request) {
 
   // Je Eigentümer gruppieren → ein Digest, gegliedert nach Gerät.
   type Owner = {
+    ownerId: string;
     email: string;
     geraete: Map<string, { geraet: string; id: string; punkte: string[] }>;
     taskIds: string[];
@@ -71,12 +86,21 @@ export async function GET(req: Request) {
   for (const r of rows) {
     let o = byOwner.get(r.ownerId);
     if (!o) {
-      o = { email: r.email, geraete: new Map(), taskIds: [] };
+      o = {
+        ownerId: r.ownerId,
+        email: r.email,
+        geraete: new Map(),
+        taskIds: [],
+      };
       byOwner.set(r.ownerId, o);
     }
     let g = o.geraete.get(r.machineId);
     if (!g) {
-      g = { geraet: `${r.hersteller} ${r.modell}`, id: r.machineId, punkte: [] };
+      g = {
+        geraet: `${r.hersteller} ${r.modell}`,
+        id: r.machineId,
+        punkte: [],
+      };
       o.geraete.set(r.machineId, g);
     }
     g.punkte.push(r.titel);
@@ -87,7 +111,11 @@ export async function GET(req: Request) {
   let erinnert = 0;
   for (const o of byOwner.values()) {
     try {
-      await sendMaintenanceReminderEmail(o.email, [...o.geraete.values()], baseUrl);
+      await sendMaintenanceReminderEmail(
+        o.email,
+        [...o.geraete.values()],
+        baseUrl,
+      );
       // Nur bei Erfolg als „erinnert" markieren, sonst greift der nächste Lauf erneut.
       await db
         .update(maintenanceTasks)
@@ -96,7 +124,8 @@ export async function GET(req: Request) {
       empfaenger += 1;
       erinnert += o.taskIds.length;
     } catch (e) {
-      console.error("[maintenance-reminders]", o.email, (e as Error).message);
+      // Keine E-Mail-Adresse ins Log (PII) — die Owner-ID reicht zur Diagnose.
+      console.error("[maintenance-reminders]", o.ownerId, (e as Error).message);
     }
   }
 

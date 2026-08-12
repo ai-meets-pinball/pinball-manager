@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { knowledge, machines, roleAssignments, roles } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { istSuperAdminEmail } from "@/lib/super-admins";
+import { istSichererPfad } from "@/lib/safe-path";
 import {
   darfClub,
   darfMaschine,
@@ -89,7 +90,7 @@ export async function requireUser(): Promise<SessionUser> {
   if (!user) {
     const ziel = (await headers()).get("x-von");
     redirect(
-      ziel && ziel.startsWith("/") && !ziel.startsWith("//")
+      istSichererPfad(ziel)
         ? `/login?von=${encodeURIComponent(ziel)}`
         : "/login",
     );
