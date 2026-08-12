@@ -1,5 +1,6 @@
 /*
-  App-Version — sichtbar im Nutzer-Dropdown. Konvention: Start bei 0.50, je
-  Release manuell um 0.01 erhöhen (0.51, 0.52, …).
+  App-Version — sichtbar im Nutzer-Dropdown, auf jede Feedback-Meldung gestempelt
+  und ins PDF-Handbuch geschrieben. Konvention: je COMMIT um 0.01 erhöhen
+  (0.60 → 0.61 → …). Zwei Nachkommastellen halten.
 */
-export const APP_VERSION = "0.51";
+export const APP_VERSION = "0.60";
