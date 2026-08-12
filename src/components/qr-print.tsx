@@ -71,6 +71,8 @@ export function QrPrint({
   const [zeigeName, setZeigeName] = useState(true);
   const [zeigeHinweis, setZeigeHinweis] = useState(true);
   const [zeigeLogo, setZeigeLogo] = useState(false);
+  // Logo-Position relativ zum QR: oben, links oder rechts.
+  const [logoPos, setLogoPos] = useState<"oben" | "links" | "rechts">("oben");
   // Schriftgröße als Faktor auf die automatische Basisgröße (0,6×–2,0×).
   const [schriftFaktor, setSchriftFaktor] = useState(1);
 
@@ -123,9 +125,41 @@ export function QrPrint({
     ? Math.min(1, 320 / (Math.max(breiteMm, hoeheMm) * PX_PRO_MM))
     : 1;
 
-  // Eine Karte in echten mm — Layout ist Spalte: Name / QR (füllt Rest) /
-  // Hinweis. Der QR liegt in einem flexiblen Bereich und wird per meet immer
-  // vollständig eingepasst (nie beschnitten).
+  // Logo neben dem QR (links/rechts) → Reihe statt Spalte im Mittelteil.
+  const mitLogoSeite =
+    zeigeLogo &&
+    Boolean(logoDataUrl) &&
+    (logoPos === "links" || logoPos === "rechts");
+  const logoOben = logoDataUrl ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={logoDataUrl}
+      alt=""
+      style={{
+        maxHeight: "16%",
+        maxWidth: "60%",
+        objectFit: "contain",
+        flex: "0 0 auto",
+      }}
+    />
+  ) : null;
+  const logoSeite = logoDataUrl ? (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={logoDataUrl}
+      alt=""
+      style={{
+        maxHeight: "100%",
+        maxWidth: "34%",
+        objectFit: "contain",
+        flex: "0 0 auto",
+      }}
+    />
+  ) : null;
+
+  // Eine Karte in echten mm — Layout ist Spalte: Name / Mittelteil (QR +
+  // optional Logo) / Hinweis. Der QR wird per meet immer vollständig
+  // eingepasst (nie beschnitten).
   const karte = (
     <div
       className="qr-karte"
@@ -145,14 +179,6 @@ export function QrPrint({
         fontSize: `${Math.min(breiteMm, hoeheMm) * 0.07 * schriftFaktor}mm`,
       }}
     >
-      {zeigeLogo && logoDataUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={logoDataUrl}
-          alt=""
-          style={{ maxHeight: "14%", maxWidth: "60%", objectFit: "contain" }}
-        />
-      ) : null}
       {zeigeName ? (
         <p
           style={{
@@ -166,22 +192,40 @@ export function QrPrint({
           {name}
         </p>
       ) : null}
-      {/* Flexibler QR-Bereich: nimmt den Rest, QR-SVG per meet komplett drin. */}
+      {/* Mittelteil: QR (füllt den Rest) + optional das Logo. Bei „oben"
+          stapelt es über dem QR (Spalte), bei „links"/„rechts" daneben (Reihe).
+          Der QR wird per meet immer vollständig eingepasst (nie beschnitten). */}
       <div
-        className="[&_svg]:h-full [&_svg]:w-full"
         style={{
           flex: "1 1 auto",
           minHeight: 0,
           alignSelf: "stretch",
           display: "flex",
+          flexDirection: mitLogoSeite ? "row" : "column",
           alignItems: "center",
           justifyContent: "center",
+          gap: "2mm",
         }}
-        // QR-SVG stammt aus der qrcode-Bibliothek (Server), kein Nutzer-Input.
-        // Das SVG hat viewBox + Default preserveAspectRatio „xMidYMid meet" →
-        // es wird immer VOLLSTÄNDIG (quadratisch, zentriert) eingepasst.
-        dangerouslySetInnerHTML={{ __html: qrSvg }}
-      />
+      >
+        {zeigeLogo && logoDataUrl && logoPos === "links" ? logoSeite : null}
+        {zeigeLogo && logoDataUrl && logoPos === "oben" ? logoOben : null}
+        <div
+          className="[&_svg]:h-full [&_svg]:w-full"
+          style={{
+            flex: "1 1 auto",
+            minHeight: 0,
+            alignSelf: "stretch",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          // QR-SVG stammt aus der qrcode-Bibliothek (Server), kein Nutzer-Input.
+          // Das SVG hat viewBox + Default preserveAspectRatio „xMidYMid meet" →
+          // es wird immer VOLLSTÄNDIG (quadratisch, zentriert) eingepasst.
+          dangerouslySetInnerHTML={{ __html: qrSvg }}
+        />
+        {zeigeLogo && logoDataUrl && logoPos === "rechts" ? logoSeite : null}
+      </div>
       {zeigeHinweis ? (
         <p
           style={{
@@ -478,6 +522,34 @@ export function QrPrint({
             </label>
           ) : null}
         </div>
+
+        {/* Logo-Position (nur wenn Logo aktiv). */}
+        {logoDataUrl && zeigeLogo ? (
+          <div className="flex items-center gap-1.5">
+            <span className="text-sm text-[var(--color-muted)]">Logo:</span>
+            {(
+              [
+                ["oben", "oben"],
+                ["links", "links"],
+                ["rechts", "rechts"],
+              ] as const
+            ).map(([wert, label]) => (
+              <button
+                key={wert}
+                type="button"
+                onClick={() => setLogoPos(wert)}
+                aria-pressed={logoPos === wert}
+                className={`rounded-full border px-3 py-1 text-sm transition-colors ${
+                  logoPos === wert
+                    ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
+                    : "border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+        ) : null}
 
         {/* Schriftgröße (Name + Hinweis). */}
         {zeigeName || zeigeHinweis ? (
