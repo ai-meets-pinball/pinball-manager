@@ -254,96 +254,28 @@ export function QrPrint({
     </div>
   );
 
-  // Schnittmarken (nur im A4-Modus): 8 kurze Striche an den Kartenecken,
-  // je Ecke ein waagerechter + ein senkrechter, knapp außerhalb der Karte.
+  // Schnittmarken (nur im A4-Modus): je Ecke ein waagerechter + ein senkrechter
+  // Strich knapp außerhalb der Karte. Als BORDER gezeichnet (Vordergrund) statt
+  // als background-Div — Browser drucken Hintergrundfarben oft NICHT, Ränder
+  // aber immer.
   const MARKE_MM = 4;
+  const STRICH = "0.3mm solid #000";
   const marke = (s: CSSProperties, key: string) => (
-    <div
-      key={key}
-      style={{
-        position: "absolute",
-        background: "#000",
-        // Browser drucken Hintergrundfarben sonst NICHT — sonst wären die
-        // Marken im echten Druck unsichtbar.
-        WebkitPrintColorAdjust: "exact",
-        printColorAdjust: "exact",
-        ...s,
-      }}
-    />
+    <div key={key} style={{ position: "absolute", ...s }} />
   );
+  const hStrich = (s: CSSProperties, key: string) =>
+    marke({ ...s, width: `${MARKE_MM}mm`, borderTop: STRICH }, key);
+  const vStrich = (s: CSSProperties, key: string) =>
+    marke({ ...s, height: `${MARKE_MM}mm`, borderLeft: STRICH }, key);
   const schnittmarken = [
-    marke(
-      {
-        left: `-${MARKE_MM}mm`,
-        top: 0,
-        width: `${MARKE_MM}mm`,
-        height: "0.2mm",
-      },
-      "tl-h",
-    ),
-    marke(
-      {
-        top: `-${MARKE_MM}mm`,
-        left: 0,
-        width: "0.2mm",
-        height: `${MARKE_MM}mm`,
-      },
-      "tl-v",
-    ),
-    marke(
-      {
-        right: `-${MARKE_MM}mm`,
-        top: 0,
-        width: `${MARKE_MM}mm`,
-        height: "0.2mm",
-      },
-      "tr-h",
-    ),
-    marke(
-      {
-        top: `-${MARKE_MM}mm`,
-        right: 0,
-        width: "0.2mm",
-        height: `${MARKE_MM}mm`,
-      },
-      "tr-v",
-    ),
-    marke(
-      {
-        left: `-${MARKE_MM}mm`,
-        bottom: 0,
-        width: `${MARKE_MM}mm`,
-        height: "0.2mm",
-      },
-      "bl-h",
-    ),
-    marke(
-      {
-        bottom: `-${MARKE_MM}mm`,
-        left: 0,
-        width: "0.2mm",
-        height: `${MARKE_MM}mm`,
-      },
-      "bl-v",
-    ),
-    marke(
-      {
-        right: `-${MARKE_MM}mm`,
-        bottom: 0,
-        width: `${MARKE_MM}mm`,
-        height: "0.2mm",
-      },
-      "br-h",
-    ),
-    marke(
-      {
-        bottom: `-${MARKE_MM}mm`,
-        right: 0,
-        width: "0.2mm",
-        height: `${MARKE_MM}mm`,
-      },
-      "br-v",
-    ),
+    hStrich({ left: `-${MARKE_MM}mm`, top: 0 }, "tl-h"),
+    vStrich({ top: `-${MARKE_MM}mm`, left: 0 }, "tl-v"),
+    hStrich({ right: `-${MARKE_MM}mm`, top: 0 }, "tr-h"),
+    vStrich({ top: `-${MARKE_MM}mm`, right: 0 }, "tr-v"),
+    hStrich({ left: `-${MARKE_MM}mm`, bottom: 0 }, "bl-h"),
+    vStrich({ bottom: `-${MARKE_MM}mm`, left: 0 }, "bl-v"),
+    hStrich({ right: `-${MARKE_MM}mm`, bottom: 0 }, "br-h"),
+    vStrich({ bottom: `-${MARKE_MM}mm`, right: 0 }, "br-v"),
   ];
 
   // Die Karte inkl. Marken (A4) bzw. pur (exakt).
