@@ -26,6 +26,7 @@ export function QrDownload({
   basisname: string;
 }) {
   const [variante, setVariante] = useState<Variante>("ohne");
+  const [fehler, setFehler] = useState<string | null>(null);
   const mitLogo = variante !== "ohne" && logoDataUrl;
 
   function herunterladen(href: string, dateiname: string) {
@@ -62,6 +63,7 @@ export function QrDownload({
   }
 
   async function pngHerunterladen() {
+    setFehler(null);
     if (!mitLogo) {
       herunterladen(qrPngDataUrl, `${basisname}.png`);
       return;
@@ -76,28 +78,36 @@ export function QrDownload({
           reject(new Error("Bild konnte nicht geladen werden"));
         img.src = src;
       });
-    const [qrBild, logoBild] = await Promise.all([
-      laden(qrPngDataUrl),
-      laden(logoDataUrl),
-    ]);
+    try {
+      const [qrBild, logoBild] = await Promise.all([
+        laden(qrPngDataUrl),
+        laden(logoDataUrl),
+      ]);
 
-    const canvas = document.createElement("canvas");
-    canvas.width = 2 * S + G;
-    canvas.height = S;
-    const ctx = canvas.getContext("2d")!;
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
+      const canvas = document.createElement("canvas");
+      canvas.width = 2 * S + G;
+      canvas.height = S;
+      const ctx = canvas.getContext("2d")!;
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Logo proportional in sein Quadrat einpassen (contain, mittig).
-    const skala = Math.min(S / logoBild.width, S / logoBild.height);
-    const lw = logoBild.width * skala;
-    const lh = logoBild.height * skala;
-    const logoX0 = variante === "links" ? 0 : S + G;
-    const qrX0 = variante === "links" ? S + G : 0;
-    ctx.drawImage(logoBild, logoX0 + (S - lw) / 2, (S - lh) / 2, lw, lh);
-    ctx.drawImage(qrBild, qrX0, 0, S, S);
+      // Logo proportional in sein Quadrat einpassen (contain, mittig). Ein SVG
+      // ohne intrinsische Maße meldet width/height 0 → dann das Quadrat füllen,
+      // statt mit Infinity/NaN zu skalieren (leeres Bild).
+      const lwOrig = logoBild.width || S;
+      const lhOrig = logoBild.height || S;
+      const skala = Math.min(S / lwOrig, S / lhOrig);
+      const lw = lwOrig * skala;
+      const lh = lhOrig * skala;
+      const logoX0 = variante === "links" ? 0 : S + G;
+      const qrX0 = variante === "links" ? S + G : 0;
+      ctx.drawImage(logoBild, logoX0 + (S - lw) / 2, (S - lh) / 2, lw, lh);
+      ctx.drawImage(qrBild, qrX0, 0, S, S);
 
-    herunterladen(canvas.toDataURL("image/png"), `${basisname}.png`);
+      herunterladen(canvas.toDataURL("image/png"), `${basisname}.png`);
+    } catch {
+      setFehler("Bild konnte nicht erzeugt werden. Bitte erneut versuchen.");
+    }
   }
 
   const knopfKlasse =
@@ -146,6 +156,9 @@ export function QrDownload({
       <button type="button" onClick={svgHerunterladen} className={knopfKlasse}>
         <Download size={15} /> SVG
       </button>
+      {fehler ? (
+        <span className="text-sm text-[var(--color-danger)]">{fehler}</span>
+      ) : null}
     </div>
   );
 }

@@ -1,6 +1,6 @@
 "use server";
 
-import { and, eq, inArray, isNull, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, sql, type SQL } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
@@ -114,6 +114,48 @@ async function widerrufeFreigaben(machineId: string) {
 }
 
 /*
+  Einen Besitzer im Scope anlegen ODER den bereits vorhandenen namensgleichen
+  Eintrag zurückgeben — RACE-FEST: legen zwei parallele Requests denselben Namen
+  im selben Scope an (Doppelklick, zwei Tabs, zwei Club-Mitglieder gleichzeitig),
+  sieht das vorherige SELECT nichts und der INSERT läuft in die partiellen
+  Unique-Indizes (machine_besitzer_*_name_unique → Postgres 23505). Statt als 500
+  durchzuschlagen, wird dann der vom Konkurrenten angelegte Eintrag nachgeladen.
+*/
+async function legeBesitzerAn(
+  werte: {
+    name: string;
+    email?: string | null;
+    userId?: string | null;
+    clubId: string | null;
+    createdBy: string;
+  },
+  scopeBedingung: SQL | undefined,
+): Promise<string> {
+  try {
+    const [neu] = await db
+      .insert(machineBesitzer)
+      .values(werte)
+      .returning({ id: machineBesitzer.id });
+    return neu.id;
+  } catch (e) {
+    if ((e as { code?: string }).code !== "23505") throw e;
+    // Konkurrent war schneller — seinen Eintrag im selben Scope nachladen.
+    const [vorhanden] = await db
+      .select({ id: machineBesitzer.id })
+      .from(machineBesitzer)
+      .where(
+        and(
+          scopeBedingung,
+          sql`lower(${machineBesitzer.name}) = ${werte.name.toLowerCase()}`,
+        ),
+      )
+      .limit(1);
+    if (!vorhanden) throw e; // ein anderer Constraint — nicht verschlucken
+    return vorhanden.id;
+  }
+}
+
+/*
   Besitzer-Felder des Formulars auflösen — ein Gerät kann MEHRERE Besitzer
   haben. Drei Wege, beliebig kombinierbar:
   - besitzerIds: bestehende Katalog-Einträge (Scope-Prüfung je Eintrag),
@@ -157,10 +199,16 @@ async function besitzerAufloesen(
       where: eq(machineBesitzer.id, gewaehlt),
     });
     if (!eintrag) return { error: "Besitzer-Eintrag nicht gefunden." };
-    const erlaubt = eintrag.clubId
-      ? await isClubMember(userId, eintrag.clubId)
-      : eintrag.createdBy === userId;
-    if (!erlaubt) return { error: "Kein Zugriff auf diesen Besitzer-Eintrag." };
+    // Der Eintrag muss zum GELTUNGSBEREICH DER MASCHINE gehören — nicht bloß zu
+    // irgendeinem Scope, den der Nutzer sehen darf. Sonst ließe sich (per
+    // handgebautem Request oder altem Chip) ein Besitzer aus einem anderen
+    // Club/dem Privatbestand an diese Maschine hängen (Scope-Verwischung).
+    const imScope = zielClubId
+      ? eintrag.clubId === zielClubId
+      : eintrag.clubId === null && eintrag.createdBy === userId;
+    if (!imScope) {
+      return { error: "Dieser Besitzer gehört nicht zu dieser Maschine." };
+    }
     ergebnis.add(eintrag.id);
   }
 
@@ -221,16 +269,17 @@ async function besitzerAufloesen(
 
     // Bewusst OHNE E-Mail: für verknüpfte Konten braucht der Katalog keine —
     // und Mitglieder-Adressen gehören nicht in die Club-weit sichtbare Liste.
-    const [neu] = await db
-      .insert(machineBesitzer)
-      .values({
-        name: zielNutzer.name,
-        userId: nutzerId,
-        clubId: zielClubId,
-        createdBy: userId,
-      })
-      .returning({ id: machineBesitzer.id });
-    ergebnis.add(neu.id);
+    ergebnis.add(
+      await legeBesitzerAn(
+        {
+          name: zielNutzer.name,
+          userId: nutzerId,
+          clubId: zielClubId,
+          createdBy: userId,
+        },
+        scopeBedingung,
+      ),
+    );
   }
 
   // 3) Neue Namen (+ optionale E-Mail), Paare in DOM-Reihenfolge.
@@ -260,11 +309,12 @@ async function besitzerAufloesen(
       continue;
     }
 
-    const [neu] = await db
-      .insert(machineBesitzer)
-      .values({ name, email, clubId: zielClubId, createdBy: userId })
-      .returning({ id: machineBesitzer.id });
-    ergebnis.add(neu.id);
+    ergebnis.add(
+      await legeBesitzerAn(
+        { name, email, clubId: zielClubId, createdBy: userId },
+        scopeBedingung,
+      ),
+    );
   }
 
   return { besitzerIds: [...ergebnis] };

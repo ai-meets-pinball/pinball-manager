@@ -265,19 +265,22 @@ export async function getModelTipps(currentUser: SessionUser, modelId: string) {
 
 /** Modell-Katalog für den Ziel-Picker des Tipp-Formulars (Flippermaster). */
 export async function getTippZielKatalog() {
-  const modelle = await db
-    .select({
-      id: machineModels.id,
-      hersteller: machineModels.hersteller,
-      modell: machineModels.modell,
-      baujahr: machineModels.baujahr,
-    })
-    .from(machineModels)
-    .orderBy(machineModels.modell, machineModels.hersteller);
-  const generationenListe = await db
-    .select({ id: generations.id, name: generations.name })
-    .from(generations)
-    .orderBy(generations.name);
+  // Die beiden Kataloge hängen nicht voneinander ab → parallel laden.
+  const [modelle, generationenListe] = await Promise.all([
+    db
+      .select({
+        id: machineModels.id,
+        hersteller: machineModels.hersteller,
+        modell: machineModels.modell,
+        baujahr: machineModels.baujahr,
+      })
+      .from(machineModels)
+      .orderBy(machineModels.modell, machineModels.hersteller),
+    db
+      .select({ id: generations.id, name: generations.name })
+      .from(generations)
+      .orderBy(generations.name),
+  ]);
   return { modelle, generationen: generationenListe };
 }
 
@@ -358,9 +361,10 @@ export async function getKuratierungsUebersicht(currentUser: SessionUser) {
     generationName: generations.name,
     // Tipps (typ='tipp') haben keine direkte Ebene — als Linkziel dient das
     // erste Ziel-Modell aus knowledge_targets (null, wenn rein generationsweit).
+    // ORDER BY, damit das Linkziel bei mehreren Ziel-Modellen deterministisch ist.
     tippModelId: sql<
       string | null
-    >`(select ${knowledgeTargets.modelId} from ${knowledgeTargets} where ${knowledgeTargets.knowledgeId} = ${knowledge.id} and ${knowledgeTargets.modelId} is not null limit 1)`,
+    >`(select ${knowledgeTargets.modelId} from ${knowledgeTargets} where ${knowledgeTargets.knowledgeId} = ${knowledge.id} and ${knowledgeTargets.modelId} is not null order by ${knowledgeTargets.modelId} limit 1)`,
     hilfreich,
     falsch,
     verborgenAm: knowledge.verborgenAm,
