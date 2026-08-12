@@ -48,19 +48,31 @@ export const ANLEITUNG: HilfeSektion[] = [
     key: "uebersicht",
     titel: "Übersicht (Dashboard)",
     einleitung:
-      "Der Einstieg nach dem Anmelden: was ist fällig, was ist offen — über alle deine Maschinen.",
+      "Der Einstieg nach dem Anmelden: was ist fällig, was ist offen, was ist nicht spielbereit — über alle deine Maschinen.",
     schritte: [
       {
         titel: "Kennzahlen",
-        text: "Oben stehen deine Maschinenzahl, die offenen Fehler und die fälligen bzw. bald fälligen Wartungen — jeweils über alle Maschinen, die du siehst (eigene plus Club-Maschinen).",
+        text: "Oben stehen vier Kacheln: Anzahl deiner Maschinen, wie viele davon NICHT spielbereit sind, die offenen Fehler und die anstehenden (bzw. fälligen) Wartungen — jeweils über alle Maschinen, die du siehst (eigene plus Club-Maschinen). Ein Klick auf eine Kachel springt zum passenden Abschnitt.",
+      },
+      {
+        titel: "Nach Bereich filtern",
+        text: "Bist du in mehreren Bereichen unterwegs — deine private Sammlung plus ein oder mehrere Clubs — erscheint eine Reihe Bereichs-Chips. Du kannst MEHRERE gleichzeitig aktiv lassen; Kennzahlen und Listen zeigen dann nur diese Bereiche. Sind alle aktiv, ist kein Filter gesetzt.",
+      },
+      {
+        titel: "Karten- oder Listenansicht",
+        text: "Oben rechts schaltest du die Abschnitte zwischen Kartenansicht (luftig) und kompakter Liste (dichte Zeilen) um.",
+      },
+      {
+        titel: "Nicht spielbereite Maschinen",
+        text: "Zuerst die dringendste Lage: alle Maschinen, die nicht »Spielbereit« sind (also »Eingeschränkt« oder »Außer Betrieb«) — mit Grund und direktem Sprung zur Maschine. Mehr zum Status im Abschnitt »Maschinen-Detailseite«.",
       },
       {
         titel: "Anstehende Wartung",
-        text: "Die Liste zeigt fällige und bald fällige Wartungspunkte samt Maschine. Ein Klick führt direkt in den Wartungs-Reiter der jeweiligen Maschine.",
+        text: "Fällige und bald fällige Wartungspunkte samt Maschine. Ein Klick führt direkt in den Wartungs-Reiter der jeweiligen Maschine.",
       },
       {
         titel: "Offene Fehler",
-        text: "Darunter stehen alle offenen und in Arbeit befindlichen Fehler mit Priorität — ebenfalls direkt verlinkt.",
+        text: "Alle offenen und in Arbeit befindlichen Fehler mit Priorität — ebenfalls direkt verlinkt.",
       },
     ],
   },
@@ -74,8 +86,8 @@ export const ANLEITUNG: HilfeSektion[] = [
         text: "Maschinen → »Neue Maschine«. Wähle das Modell aus dem Katalog — Hersteller, Modell, Baujahr, Generation und Foto werden übernommen; die OPDB-Suche dient als Fallback für fehlende Modelle. Ein eigenes Foto kannst du zusätzlich hochladen. Tipp: Die Modell-Auswahl verknüpft die Maschine mit dem Modell — nur damit lassen sich später Handbuch-Daten und Reparaturen teilen.",
       },
       {
-        titel: "Tabs & Ansichten",
-        text: "Über der Liste liegen Tabs: »Alle«, »Privat« und ein Tab je Club. Rechts wechselst du zwischen Kartenansicht (mit Fotos und Badges) und Tabellenansicht (kompakt, sortierbar).",
+        titel: "Filter & Ansichten",
+        text: "Über der Liste liegen Filter-Chips: »Alle«, »Privat« und einer je Club (mit Anzahl) — dieselben Chips wie auf der Übersicht. Rechts wechselst du zwischen Kartenansicht (mit Fotos und Badges) und Tabellenansicht (kompakt, sortierbar).",
       },
       {
         titel: "Suchen & sortieren",
@@ -102,6 +114,10 @@ export const ANLEITUNG: HilfeSektion[] = [
         text: "Die Detailseite öffnet mit einer Übersicht (Foto, OPDB/IPDB und Status-Karten). Darüber liegen drei Reiter: »Übersicht«, »Betrieb« (Fehler, Wartung) und »Wissensbasis« (Reparaturen, Handbuch, Guide, Tipps). Wählst du eine Gruppe, erscheint darunter eine schmale Unterreihe für ihre Bereiche. Reiter und Status-Karten tragen Zähler (z. B. offene Fehler, fällige Wartung); die Leiste bleibt beim Scrollen sichtbar.",
       },
       {
+        titel: "Betriebsstatus",
+        text: "Jede Maschine trägt einen Betriebsstatus: »Spielbereit«, »Eingeschränkt« oder »Außer Betrieb«. Normalerweise wird er automatisch aus den offenen Fehlern abgeleitet — ein offener KRITISCHER Fehler setzt die Maschine auf »Eingeschränkt«. Mit Schreibrecht lässt er sich auf der Übersicht der Maschine auch von Hand setzen (nur so gibt es »Außer Betrieb«); »Zurück auf Automatik« lässt ihn wieder den Fehlern folgen. Dieser Status steckt hinter der »nicht spielbereit«-Kennzahl der Übersicht.",
+      },
+      {
         titel: "Bearbeiten",
         text: "Über »Bearbeiten« änderst du Daten, Foto, Modell-Zuordnung oder die Club-Zuordnung.",
       },
@@ -119,7 +135,7 @@ export const ANLEITUNG: HilfeSektion[] = [
     schritte: [
       {
         titel: "Melden",
-        text: "Auf der Maschinen-Detailseite im Reiter »Fehler« auf »Neuer Fehler«. Beschreibe das Symptom und wähle optional eine Kategorie (z. B. Spule, Schalter), eine Priorität (niedrig/mittel/hoch) und den Status.",
+        text: "Auf der Maschinen-Detailseite im Reiter »Fehler« auf »Neuer Fehler«. Beschreibe das Symptom und wähle optional eine Kategorie (z. B. Spule, Schalter), eine Priorität (niedrig, mittel, hoch, kritisch) und den Status. Direkt beim Anlegen kannst du ein oder mehrere FOTOS anhängen — am Handy wahlweise mit der Kamera oder aus der Galerie; sie erscheinen später als Vorschau am Fehler. Ein offener KRITISCHER Fehler setzt die Maschine automatisch auf »Eingeschränkt« (siehe Betriebsstatus).",
       },
       {
         titel: "Status & Filter",
@@ -131,11 +147,15 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Per QR-Code melden — auch ohne Konto",
-        text: "Jede Maschine hat ein QR-Etikett (Detailseite → »QR-Code«, drucken und ans Gerät kleben). Wer den Code scannt, landet auf einer öffentlichen Melde-Seite: Angemeldete mit Zugriff kommen direkt in den Fehler-Reiter; alle anderen — auch Gäste ganz ohne Konto — beschreiben das Symptom und geben nur ihren Namen an (erscheint als »… (Gast)«). Priorität und Status vergibt anschließend der Betreiber. Ein Login ist der bevorzugte Weg, aber keine Voraussetzung.",
+        text: "Jede Maschine hat ein QR-Etikett (Detailseite → »QR-Code«, drucken und ans Gerät kleben). Wer den Code scannt, landet auf einer öffentlichen Melde-Seite: Angemeldete mit Zugriff kommen direkt in den Fehler-Reiter; alle anderen — auch Gäste ganz ohne Konto — beschreiben das Symptom, geben nur ihren Namen an (erscheint als »… (Gast)«) und können ebenfalls Fotos anhängen. Priorität und Status vergibt anschließend der Betreiber. Ein Login ist der bevorzugte Weg, aber keine Voraussetzung.",
       },
       {
-        titel: "QR-Code drucken (Etikett oder Scorecard)",
-        text: "Auf der QR-Seite lässt sich der Code maßstabsgetreu drucken: als EIGENES Etikett mit frei wählbaren Maßen (Breite×Höhe in mm, Hoch- oder Querformat) oder als SCORECARD in herstellerspezifischen Kartenmaßen — das passende Format wird anhand des Herstellers vorausgewählt, ist aber frei änderbar. Je Druck lassen sich Name, Hinweistext und (bei Club-Maschinen) das Club-Logo zuschalten sowie mehrere Kopien wählen (eine Karte pro Seite). Zusätzlich gibt es den Bild-Download (PNG/SVG) für Bildbearbeitung oder Druckereien. Tipp: im Druckdialog die Papiergröße auf die angezeigten Maße stellen und Ränder auf 0.",
+        titel: "QR-Code drucken — Druck-Studio",
+        text: "Auf der QR-Seite steht ein Druck-Studio, das den Code MASSSTABSGETREU druckt. Zwei Kartenformen: ein EIGENES Etikett mit frei wählbaren Maßen (Breite×Höhe in mm, Hoch-/Querformat) oder eine SCORECARD in herstellerspezifischen Kartenmaßen (das passende Format wird anhand des Herstellers vorgeschlagen, ist frei änderbar). Zwei Seitenmodi: exakt in Kartengröße (für Etiketten-/Kartendrucker) oder auf A4 mit SCHNITTMARKEN zum Ausschneiden (jeder Bürodrucker). Zuschaltbar sind Name, Hinweistext und — bei Club-Maschinen — das Club-Logo (oben, links oder rechts vom Code); die Schriftgröße ist regelbar. Deine Einstellungen werden gemerkt, sodass das nächste Etikett gleich so vorbelegt ist.",
+      },
+      {
+        titel: "Mehrere Karten auf eine A4-Seite",
+        text: "Im A4-Modus kannst du zusätzlich WEITERE Maschinen suchen und ihre Karten mit auf die Seite (bzw. auf Folgeseiten) drucken — praktisch, um viele Etiketten in einem Rutsch zu erzeugen. Daneben gibt es weiterhin den Bild-Download (PNG/SVG) für Bildbearbeitung oder Druckerei. Tipp: im Druckdialog die Papiergröße auf die angezeigten Maße (bzw. A4) stellen und Ränder auf 0.",
       },
     ],
   },
@@ -170,7 +190,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Standard-Wartungspläne",
-        text: "Unter Nutzer-Icon → »Wartungspläne« pflegst du deinen eigenen Standard; jeder Club kann zusätzlich einen Club-Standard haben (bearbeiten dürfen Owner/Admin, Mitglieder nutzen ihn). Beim ersten Anlegen wird eine bewährte Vorlage (20 Punkte) eingespielt, danach passt du Punkte frei an.",
+        text: "Unter Nutzer-Icon → »Wartungspläne« pflegst du deinen eigenen Standard; jeder Club kann zusätzlich einen Club-Standard haben (bearbeiten dürfen Owner/Admin, Mitglieder nutzen ihn). Hast du mehrere Standards (dein eigener plus Club-Standards), liegen sie hinter Reitern — »Mein Standard« und je Club einer. Beim ersten Anlegen wird eine bewährte Vorlage (20 Punkte) eingespielt, danach passt du Punkte frei an.",
       },
       {
         titel: "Verknüpfen oder kopieren?",
@@ -337,7 +357,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Allgemeine Tipps",
-        text: "Im Reiter »Tipps« (Maschine wie Modellseite) sammelst du frei formulierte Hinweise — z. B. Wartungskniffe oder bekannte Schwachstellen. Ein Tipp kann anders als übriges Wissen MEHRERE Modelle und/oder ganze Generationen zugleich betreffen; die Ziele wählst du beim Anlegen aus dem Katalog (das Modell der aktuellen Maschine ist vorausgewählt). Jeder Tipp zeigt »gilt für …«, trägt eine Sichtbarkeit und lässt sich wie andere Einträge bewerten, ausblenden, bearbeiten und (nur vom Autor) löschen.",
+        text: "Im Reiter »Tipps« (Maschine wie Modellseite) sammelst du frei formulierte Hinweise — z. B. Wartungskniffe oder bekannte Schwachstellen. Der Text erlaubt eine einfache FORMATIERUNG: **fett**, _kursiv_, Aufzählungen mit einem Bindestrich am Zeilenanfang und Links als [Text](URL) — reine URLs werden automatisch anklickbar. Zusätzlich lassen sich weiterführende LINKS mit optionalem Namen und kurzer Beschreibung anhängen. Ein Tipp kann anders als übriges Wissen MEHRERE Modelle und/oder ganze Generationen zugleich betreffen; die Ziele wählst du beim Anlegen aus dem Katalog (das Modell der aktuellen Maschine ist vorausgewählt). Die Tipp-Liste lässt sich zwischen Karten- und kompakter Listenansicht umschalten. Jeder Tipp zeigt »gilt für …«, trägt eine Sichtbarkeit und lässt sich wie andere Einträge bewerten, ausblenden, bearbeiten und (nur vom Autor) löschen.",
       },
     ],
   },
@@ -385,7 +405,7 @@ export const ANLEITUNG: HilfeSektion[] = [
     schritte: [
       {
         titel: "Bearbeiten",
-        text: "Unter jedem eigenen Eintrag gibt es »Bearbeiten«: Titel und Inhalt (als JSON, gleiche Struktur wie beim Import) lassen sich ändern. »Prüfen« validiert die Eingabe, erst dann ist Speichern möglich. Optional gibst du einen Kommentar zur Änderung an.",
+        text: "Unter jedem eigenen Eintrag gibt es »Bearbeiten«: bei Handbuch-Daten und Guides änderst du Titel und Inhalt als JSON (gleiche Struktur wie beim Import), »Prüfen« validiert die Eingabe, erst dann ist Speichern möglich. Tipps bearbeitest du direkt als Text samt ihrer Links. Optional gibst du einen Kommentar zur Änderung an.",
       },
       {
         titel: "Verlauf",
