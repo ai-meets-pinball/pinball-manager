@@ -22,12 +22,15 @@ export function RepairForm({
   machineId,
   faults,
   repair,
+  defaults,
   selectedFaultIds = [],
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   machineId: string;
   faults: Fault[];
   repair?: RepairValues;
+  /** Vorbelegung für eine NEUE Reparatur (z. B. KI-Vorschlag). */
+  defaults?: { diagnose?: string; massnahme?: string; teile?: string };
   /** Vorausgewählte Fehler (Bearbeiten: die verknüpften; Neu: aus ?faultId). */
   selectedFaultIds?: string[];
 }) {
@@ -85,13 +88,22 @@ export function RepairForm({
       </Field>
 
       <Field label="Diagnose">
-        <Textarea name="diagnose" defaultValue={repair?.diagnose ?? ""} />
+        <Textarea
+          name="diagnose"
+          defaultValue={repair?.diagnose ?? defaults?.diagnose ?? ""}
+        />
       </Field>
       <Field label="Maßnahme">
-        <Textarea name="massnahme" defaultValue={repair?.massnahme ?? ""} />
+        <Textarea
+          name="massnahme"
+          defaultValue={repair?.massnahme ?? defaults?.massnahme ?? ""}
+        />
       </Field>
       <Field label="Verbaute Teile">
-        <Input name="teile" defaultValue={repair?.teile ?? ""} />
+        <Input
+          name="teile"
+          defaultValue={repair?.teile ?? defaults?.teile ?? ""}
+        />
       </Field>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

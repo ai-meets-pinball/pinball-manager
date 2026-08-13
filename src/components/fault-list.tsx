@@ -3,7 +3,9 @@ import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Pencil, Trash2, Wrench } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { RepairSuggestButton } from "@/components/repair-suggest-button";
 import { deleteFault } from "@/db/actions/faults";
+import type { AiProvider } from "@/lib/ai/provider";
 
 type Fault = {
   id: string;
@@ -21,11 +23,17 @@ export function FaultList({
   faults,
   machineId,
   schreibbar = true,
+  kiProviders = [],
+  kiCentralKey = false,
 }: {
   faults: Fault[];
   machineId: string;
   /** false = nur Lesen (z. B. Supporter): keine Bearbeiten-/Lösch-/Reparatur-Aktionen. */
   schreibbar?: boolean;
+  /** Verfügbare KI-Anbieter (leer = keine → kein Vorschlags-Button). */
+  kiProviders?: AiProvider[];
+  /** Zentraler Anthropic-Key vorhanden? (sonst BYO-Feld im Vorschlag). */
+  kiCentralKey?: boolean;
 }) {
   if (faults.length === 0) {
     return <p className="text-[var(--color-muted)]">Keine Fehler erfasst.</p>;
@@ -98,6 +106,19 @@ export function FaultList({
                 </ConfirmButton>
               </form>
             </div>
+          ) : null}
+
+          {schreibbar && kiProviders.length > 0 ? (
+            <RepairSuggestButton
+              machineId={machineId}
+              fault={{
+                id: fault.id,
+                beschreibung: fault.beschreibung,
+                status: fault.status,
+              }}
+              providers={kiProviders}
+              centralKey={kiCentralKey}
+            />
           ) : null}
         </Card>
       ))}

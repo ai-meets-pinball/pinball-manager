@@ -460,6 +460,8 @@ export default async function MachineDetailPage({
             faults={machineFaults}
             machineId={machine.id}
             schreibbar={darf.bearbeiten}
+            kiProviders={kiProviders}
+            kiCentralKey={kiCentralKey}
           />
         </div>
       ) : null}
