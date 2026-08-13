@@ -7,6 +7,7 @@ import {
   getPromptOverrides,
 } from "@/db/queries";
 import { DEFAULT_PROMPTS, PROMPT_KEYS } from "@/lib/prompts";
+import { availableProviders } from "@/lib/ai/provider";
 
 /*
   KI-Prompt-Refinery (Super-Admin; Guard im admin/layout). Je Prompt: der
@@ -15,6 +16,8 @@ import { DEFAULT_PROMPTS, PROMPT_KEYS } from "@/lib/prompts";
   (prompt_overrides). Der spezifischste Override gewinnt (resolvePrompt).
 */
 export default async function PromptsPage() {
+  const providers = availableProviders();
+  const centralKey = Boolean(process.env.ANTHROPIC_API_KEY);
   const [herstellerListe, generationen] = await Promise.all([
     getHerstellerListe().catch(() => [] as string[]),
     getGenerationenListe().catch(() => [] as { id: string; name: string }[]),
@@ -64,8 +67,11 @@ export default async function PromptsPage() {
             <PromptEditor
               promptKey={key}
               label="Standard"
+              platzhalter={def.platzhalter}
               vorlage={global?.vorlage ?? def.vorlage}
               existiert={Boolean(global)}
+              providers={providers}
+              centralKey={centralKey}
             />
 
             {scoped.map((o) => (
@@ -73,11 +79,14 @@ export default async function PromptsPage() {
                 key={o.id}
                 promptKey={key}
                 label="Override"
+                platzhalter={def.platzhalter}
                 hersteller={o.hersteller ?? ""}
                 generationId={o.generationId ?? ""}
                 scopeChip={o.hersteller ?? o.generationName ?? "?"}
                 vorlage={o.vorlage}
                 existiert
+                providers={providers}
+                centralKey={centralKey}
               />
             ))}
 

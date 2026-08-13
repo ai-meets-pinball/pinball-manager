@@ -1,43 +1,58 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { FormFeedback } from "@/components/ui/form-feedback";
 import { Textarea } from "@/components/ui/input";
+import { PromptRefinery } from "@/components/prompt-refinery";
 import { resetPrompt, savePrompt } from "@/db/actions/prompts";
 import type { FormState } from "@/db/actions/form-state";
+import type { AiProvider } from "@/lib/ai/provider";
 
 /*
   Editor für EINEN Prompt-Override (global oder auf einen Hersteller/eine
   Generation begrenzt). Muster wie der E-Mail-Vorlagen-Editor: Textarea +
   Speichern; „Zurücksetzen/Löschen" nur, wenn eine Abweichung gespeichert ist.
   Platzhalter {{…}} MÜSSEN erhalten bleiben. hersteller/generationId reisen als
-  hidden inputs mit (leer = nicht beschränkt).
+  hidden inputs mit (leer = nicht beschränkt). Darunter die Refinery (testen/
+  verbessern) auf demselben Entwurf.
 */
 export function PromptEditor({
   promptKey,
   label,
+  platzhalter,
   hersteller = "",
   generationId = "",
   scopeChip = null,
   vorlage,
   existiert,
+  providers,
+  centralKey,
 }: {
   promptKey: string;
   label: string;
-  /** Hersteller-Scope ("" = global/unbeschränkt). */
+  platzhalter: string[];
   hersteller?: string;
-  /** Generation-Scope ("" = global/unbeschränkt). */
   generationId?: string;
-  /** Anzeige-Etikett des Bereichs (Hersteller-Name bzw. Generation-Name); null = global. */
   scopeChip?: string | null;
   vorlage: string;
-  /** Existiert für DIESEN Bereich bereits ein Override? (dann „zurücksetzen/löschen"). */
   existiert: boolean;
+  providers: AiProvider[];
+  centralKey: boolean;
 }) {
   const router = useRouter();
+  // Controlled, damit die Refinery-Übernahme in die Textarea schreiben kann.
+  // Ändert sich `vorlage` serverseitig (nach Speichern/Zurücksetzen), sync per
+  // „adjust state during render" (kein setState-in-effect).
+  const [text, setText] = useState(vorlage);
+  const [prevVorlage, setPrevVorlage] = useState(vorlage);
+  if (vorlage !== prevVorlage) {
+    setPrevVorlage(vorlage);
+    setText(vorlage);
+  }
+
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     async (prev, fd) => {
       const res = await savePrompt(prev, fd);
@@ -46,6 +61,10 @@ export function PromptEditor({
     },
     {},
   );
+
+  const zeigeBeispielFelder =
+    platzhalter.includes("{{hersteller}}") ||
+    platzhalter.includes("{{symptom}}");
 
   return (
     <div className="space-y-2 rounded-[var(--radius)] border border-[var(--color-border)] p-3">
@@ -73,7 +92,8 @@ export function PromptEditor({
         <input type="hidden" name="generationId" value={generationId} />
         <Textarea
           name="vorlage"
-          defaultValue={vorlage}
+          value={text}
+          onChange={(e) => setText(e.target.value)}
           rows={12}
           required
           className="font-mono text-xs"
@@ -103,6 +123,15 @@ export function PromptEditor({
           </ConfirmButton>
         </form>
       ) : null}
+
+      <PromptRefinery
+        promptKey={promptKey}
+        text={text}
+        zeigeBeispielFelder={zeigeBeispielFelder}
+        providers={providers}
+        centralKey={centralKey}
+        onApply={setText}
+      />
     </div>
   );
 }
