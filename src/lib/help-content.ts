@@ -146,6 +146,10 @@ export const ANLEITUNG: HilfeSektion[] = [
         text: "Das Symptom lebt am Fehler und wird nie an die Reparatur dupliziert — Fehler und Reparatur sind bewusst getrennt.",
       },
       {
+        titel: "KI-Reparaturvorschlag",
+        text: "Zu jedem Fehler kannst du mit Schreibrecht einen KI-Reparaturvorschlag erzeugen (»KI-Reparaturvorschlag« am Fehler aufklappen, Anbieter wählen, generieren). Die KI nutzt das Symptom, das Modell und das hinterlegte Wissen (Handbuch-Fakten, Troubleshooting-Guide) und schlägt Diagnose, Maßnahme und Teile vor — damit wird direkt eine neue Reparatur VORBEFÜLLT (der Fehler ist schon angehakt). Prüfe und passe alles an, bevor du speicherst: der Vorschlag ist ein Startpunkt und ersetzt nicht Manual und Schaltplan.",
+      },
+      {
         titel: "Per QR-Code melden — auch ohne Konto",
         text: "Jede Maschine hat ein QR-Etikett (Detailseite → »QR-Code«, drucken und ans Gerät kleben). Wer den Code scannt, landet auf einer öffentlichen Melde-Seite: Angemeldete mit Zugriff kommen direkt in den Fehler-Reiter; alle anderen — auch Gäste ganz ohne Konto — beschreiben das Symptom, geben nur ihren Namen an (erscheint als »… (Gast)«) und können ebenfalls Fotos anhängen. Priorität und Status vergibt anschließend der Betreiber. Ein Login ist der bevorzugte Weg, aber keine Voraussetzung.",
       },
@@ -465,11 +469,11 @@ export const ANLEITUNG: HilfeSektion[] = [
     schritte: [
       {
         titel: "Melden",
-        text: "Nutzer-Icon oben rechts → »Problem melden«. Typ wählen (Fehler oder Verbesserungsvorschlag), Titel und Beschreibung eintragen, optional einen Screenshot anhängen — absenden, fertig. Die Seite, deine App-Version und dein Browser werden automatisch mitgeschickt; du musst nichts davon heraussuchen.",
+        text: "Nutzer-Icon oben rechts → »Problem melden«. Die Seite hat Reiter: »Neue Meldung« (Typ Fehler oder Verbesserungsvorschlag, Titel, Beschreibung, optional Screenshot), »Meine Meldungen« und — für Supporter/Super-Admins — »Alle Meldungen«. Seite, App-Version und Browser werden automatisch mitgeschickt; du musst nichts davon heraussuchen.",
       },
       {
         titel: "Was passiert dann?",
-        text: "Die Betreiber werden benachrichtigt und sichten die Meldung. Unter »Meine Meldungen« auf derselben Seite siehst du jederzeit den Status (offen → in Arbeit → erledigt) und eine eventuelle Antwort.",
+        text: "Die Betreiber werden benachrichtigt und sichten die Meldung. Unter »Meine Meldungen« siehst du jederzeit den Status (offen → in Arbeit → erledigt, oder zurückgestellt bzw. verworfen) und eine eventuelle Antwort. Sobald deine Meldung abgeschlossen wird (erledigt/zurückgestellt/verworfen), bekommst du zusätzlich eine E-Mail mit dem Ergebnis.",
       },
       {
         titel: "Gut zu wissen",
@@ -632,7 +636,36 @@ export const ADMIN_HILFE: HilfeSektion[] = [
       },
       {
         titel: "Triage (nur Super-Admins)",
-        text: "Je Meldung lassen sich Status (offen → in Arbeit → erledigt) und eine Antwort setzen — beides sieht der Melder unter »Meine Meldungen«. Bei einer neuen Meldung geht automatisch eine E-Mail an alle Super-Admins. Erledigte oder gegenstandslose Meldungen können gelöscht werden.",
+        text: "Je Meldung lassen sich Status (offen → in Arbeit → erledigt, zusätzlich zurückgestellt und verworfen) und eine Antwort setzen — beides sieht der Melder unter »Meine Meldungen«. Wird eine Meldung ABGESCHLOSSEN (erledigt/zurückgestellt/verworfen), bekommt der Melder automatisch eine E-Mail mit dem Ergebnis. Die Liste »Alle Meldungen« lässt sich nach Status filtern (Chips). Bei einer neuen Meldung geht automatisch eine E-Mail an alle Super-Admins; erledigte oder gegenstandslose Meldungen können gelöscht werden.",
+      },
+      {
+        titel: "Versand-Protokoll",
+        text: "Unter jeder Meldung stehen die dazu verschickten Mails (wann, an wen, welcher Text). Das komplette Protokoll ALLER System-Mails (Einladungen, Passwort-Reset, Wartungs-Erinnerungen, Feedback-Benachrichtigungen) findest du unter Administration → »Mail-Protokoll«, nach Kategorie filterbar.",
+      },
+    ],
+  },
+  {
+    key: "prompts",
+    titel: "KI-Prompts (Refinery)",
+    nurSuperAdmin: true,
+    einleitung:
+      "Die Prompts der KI-Funktionen bearbeiten, testen und optimieren — ohne neuen Deploy.",
+    schritte: [
+      {
+        titel: "Wo & was",
+        text: "Administration → »Prompts«. Editierbar sind die Prompts für den Troubleshooting-Guide, die Handbuch-Extraktion, die Wartungspunkte-aus-Guide und den Reparaturvorschlag. Der Standard liegt im Code; hier speicherst du nur Abweichungen. Strukturelle Teile (die JSON-Ausgabeform, die Fakten-Spalten) bleiben bewusst fest, damit ein Edit das Auswerten der Antwort nie brechen kann.",
+      },
+      {
+        titel: "Platzhalter behalten",
+        text: "In den Prompts stehen Platzhalter wie {{hersteller}}, {{modell}}, {{symptom}} oder {{wissen}} — sie werden beim Aufruf mit den echten Gerätedaten gefüllt. Diese Platzhalter MÜSSEN erhalten bleiben, sonst fehlen dem Modell die Angaben.",
+      },
+      {
+        titel: "Global oder pro Hersteller/Generation",
+        text: "Jeder Prompt gilt global — du kannst aber zusätzlich eigene Fassungen pro Hersteller oder pro Geräte-Generation hinterlegen (»Override hinzufügen«). Beim Aufruf gewinnt die spezifischste Fassung: Generation vor Hersteller vor global, sonst der Code-Standard. Über »Override löschen« bzw. »Auf Standard zurücksetzen« geht es zurück.",
+      },
+      {
+        titel: "Testen & verbessern (Refinery)",
+        text: "Je Prompt gibt es die aufklappbare »Refinery«: ein Test-Lauf an Beispiel-Werten (der Prompt wird gerendert und durch das Modell geschickt, du siehst die Ausgabe) und »Prompt verbessern lassen« (die KI schlägt eine überarbeitete Fassung vor, die alle Platzhalter behält — mit »In den Editor übernehmen«). Beides kostet Tokens und nutzt die gewählte KI-Anbieter-Wahl.",
       },
     ],
   },

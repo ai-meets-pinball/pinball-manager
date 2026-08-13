@@ -22,6 +22,7 @@ import {
   TriangleAlert,
   UserCog,
   Users,
+  Wand2,
   Wrench,
 } from "lucide-react";
 import type { ReactNode } from "react";
@@ -63,6 +64,7 @@ const icons: Record<string, ReactNode> = {
   "clubs-verwalten": <Users size={18} className={iconClass} />,
   "modelle-generationen": <ClipboardList size={18} className={iconClass} />,
   "feedback-verwaltung": <Bug size={18} className={iconClass} />,
+  prompts: <Wand2 size={18} className={iconClass} />,
   kuratierung: <ShieldAlert size={18} className={iconClass} />,
   betrieb: <Server size={18} className={iconClass} />,
 };
