@@ -40,14 +40,34 @@ const WIRE_HEX: Record<string, string> = {
   tan: "#c9a96a",
 };
 const FULLNAME: Record<string, string> = {
-  brown: "brn", red: "red", orange: "org", yellow: "yel", green: "grn",
-  blue: "blu", violet: "vio", purple: "vio", gray: "gry", grey: "gry",
-  black: "blk", white: "wht", pink: "pnk", tan: "tan",
+  brown: "brn",
+  red: "red",
+  orange: "org",
+  yellow: "yel",
+  green: "grn",
+  blue: "blu",
+  violet: "vio",
+  purple: "vio",
+  gray: "gry",
+  grey: "gry",
+  black: "blk",
+  white: "wht",
+  pink: "pnk",
+  tan: "tan",
+};
+/* Nicht-Standard-Kürzel, wie sie in echten Handbüchern vorkommen — v. a. „Orn"
+   für Orange (statt „Org"). Ohne diese fällt ein GANZER Code wie „Yel-Orn"
+   durch parseWire und wird ohne Chip als grauer Text gezeigt. */
+const ALIAS: Record<string, string> = {
+  orn: "org", // Orange (WPC-übliche Alternative zu „Org")
+  pur: "vio", // Purple → Violett
+  prp: "vio",
 };
 function normColor(t: string): string | null {
   const k = t.trim().toLowerCase();
   if (k in WIRE_HEX) return k;
   if (k in FULLNAME) return FULLNAME[k];
+  if (k in ALIAS) return ALIAS[k];
   return null;
 }
 /** Erkennt einen Draht-Farbcode (min. 2 bekannte Bänder, „-" getrennt; ein
@@ -57,7 +77,10 @@ function parseWire(raw: string): { hexes: string[]; label: string } | null {
   if (!s) return null;
   const slash = s.indexOf("/");
   const colorPart = (slash >= 0 ? s.slice(0, slash) : s).trim();
-  const tokens = colorPart.split("-").map((t) => t.trim()).filter(Boolean);
+  const tokens = colorPart
+    .split("-")
+    .map((t) => t.trim())
+    .filter(Boolean);
   if (tokens.length < 2 || tokens.length > 3) return null;
   const keys = tokens.map(normColor);
   if (keys.some((k) => k === null)) return null;
@@ -67,7 +90,10 @@ function wireBg(hexes: string[]): string {
   if (hexes.length === 1) return hexes[0];
   const n = hexes.length;
   const stops = hexes
-    .map((h, i) => `${h} ${Math.round((i / n) * 100)}% ${Math.round(((i + 1) / n) * 100)}%`)
+    .map(
+      (h, i) =>
+        `${h} ${Math.round((i / n) * 100)}% ${Math.round(((i + 1) / n) * 100)}%`,
+    )
     .join(", ");
   return `linear-gradient(135deg, ${stops})`;
 }
@@ -113,9 +139,15 @@ const OPTO_BG = "color-mix(in srgb, var(--color-success) 12%, transparent)";
 /** Leitet aus einer Tabelle eine Matrix (Spalte×Reihe) ab. */
 function buildMatrix(table: FactTable): Matrix | null {
   const lower = table.columns.map((c) => c.toLowerCase());
-  const colIdx = lower.findIndex((c) => c === "column" || c === "col" || c === "spalte");
-  const rowIdx = lower.findIndex((c) => c === "row" || c === "reihe" || c === "zeile");
-  const typIdx = lower.findIndex((c) => c === "typ" || c === "type" || c === "art");
+  const colIdx = lower.findIndex(
+    (c) => c === "column" || c === "col" || c === "spalte",
+  );
+  const rowIdx = lower.findIndex(
+    (c) => c === "row" || c === "reihe" || c === "zeile",
+  );
+  const typIdx = lower.findIndex(
+    (c) => c === "typ" || c === "type" || c === "art",
+  );
   const idIdx = 0;
   const labelIdx = table.columns.length - 1;
 
@@ -158,8 +190,12 @@ function TableGrid({
 }) {
   // Bei Switch-/Lamp-Matrix die Column/Row-Zellen um den WPC-Draht-Farbcode ergänzen.
   const lower = columns.map((c) => c.toLowerCase());
-  const colIdx = lower.findIndex((c) => c === "column" || c === "col" || c === "spalte");
-  const rowIdx = lower.findIndex((c) => c === "row" || c === "reihe" || c === "zeile");
+  const colIdx = lower.findIndex(
+    (c) => c === "column" || c === "col" || c === "spalte",
+  );
+  const rowIdx = lower.findIndex(
+    (c) => c === "row" || c === "reihe" || c === "zeile",
+  );
   const axis = AXIS[typ];
 
   const renderCell = (cell: string, ci: number) => {
@@ -247,7 +283,9 @@ function MatrixGrid({ matrix, typ }: { matrix: Matrix; typ: FactType }) {
           <div />
           {cols.map((c) => (
             <div key={c} className="px-1.5 pb-1 text-left">
-              <div className="font-mono text-[11px] text-[var(--color-faint)]">{c}</div>
+              <div className="font-mono text-[11px] text-[var(--color-faint)]">
+                {c}
+              </div>
               {axis ? (
                 <div className="mt-0.5 font-mono text-[10px] text-[var(--color-accent)]">
                   <WireSwatch code={wire(axis.col, c)} />
@@ -258,16 +296,29 @@ function MatrixGrid({ matrix, typ }: { matrix: Matrix; typ: FactType }) {
 
           {/* Datenzeilen: Reihenkopf (Rückleitung) + Zellen */}
           {rows.map((r) => (
-            <FactTableRow key={r} r={r} cols={cols} matrix={matrix} typ={typ} axis={axis} />
+            <FactTableRow
+              key={r}
+              r={r}
+              cols={cols}
+              matrix={matrix}
+              typ={typ}
+              axis={axis}
+            />
           ))}
         </div>
       </div>
 
       {isSwitch ? (
         <div className="flex flex-wrap gap-4 font-mono text-[10px] text-[var(--color-muted)]">
-          <Legend border="var(--color-success)" bg={OPTO_BG}>opto</Legend>
-          <Legend border="var(--color-border)" bg="var(--color-surface)">mechanisch</Legend>
-          <Legend border="var(--color-border)" bg="transparent" dashed>nicht belegt</Legend>
+          <Legend border="var(--color-success)" bg={OPTO_BG}>
+            opto
+          </Legend>
+          <Legend border="var(--color-border)" bg="var(--color-surface)">
+            mechanisch
+          </Legend>
+          <Legend border="var(--color-border)" bg="transparent" dashed>
+            nicht belegt
+          </Legend>
         </div>
       ) : null}
     </div>
@@ -290,7 +341,9 @@ function FactTableRow({
   return (
     <>
       <div className="flex flex-col items-end justify-center gap-0.5 pr-1">
-        <div className="font-mono text-[11px] text-[var(--color-faint)]">{r}</div>
+        <div className="font-mono text-[11px] text-[var(--color-faint)]">
+          {r}
+        </div>
         {axis ? (
           <div className="font-mono text-[10px] text-[var(--color-muted)]">
             <WireSwatch code={wire(axis.row, r)} />
@@ -307,13 +360,16 @@ function FactTableRow({
             />
           );
         }
-        const opto = typ === "switches" && /opto/i.test(`${cell.typ} ${cell.label}`);
+        const opto =
+          typ === "switches" && /opto/i.test(`${cell.typ} ${cell.label}`);
         return (
           <div
             key={c}
             title={`${cell.num} · ${cell.label}`}
             className={`flex min-h-[52px] flex-col justify-between rounded-md border px-2.5 py-2 ${
-              opto ? "border-[var(--color-success)]" : "border-[var(--color-border)]"
+              opto
+                ? "border-[var(--color-success)]"
+                : "border-[var(--color-border)]"
             }`}
             style={{ background: opto ? OPTO_BG : "var(--color-surface)" }}
           >
@@ -345,7 +401,11 @@ function Legend({
     <span className="flex items-center gap-1.5">
       <span
         className="inline-block h-3 w-3 rounded-[3px] border"
-        style={{ borderColor: border, background: bg, borderStyle: dashed ? "dashed" : "solid" }}
+        style={{
+          borderColor: border,
+          background: bg,
+          borderStyle: dashed ? "dashed" : "solid",
+        }}
       />
       {children}
     </span>
@@ -392,17 +452,25 @@ export function FactTableView({
   onToggle: (open: boolean) => void;
 }) {
   const matrix = isMatrixType(typ) ? buildMatrix(table) : null;
-  const [view, setView] = useState<"table" | "matrix">(matrix ? "matrix" : "table");
+  const [view, setView] = useState<"table" | "matrix">(
+    matrix ? "matrix" : "table",
+  );
   const showMatrix = matrix !== null && view === "matrix";
 
   // Filter über eine Typ-Spalte (z. B. Spulen: High/Low Power/Flasher/…).
   // Platzhalter (leer, „-", „n/a") ergeben keinen sinnvollen Filter.
   const isRealValue = (v: string | undefined): v is string =>
     !!v && !/^(-+|–|—|n\/?a)$/i.test(v.trim());
-  const filterIdx = table.columns.findIndex((c) => /^(typ|type|art)$/i.test(c.trim()));
+  const filterIdx = table.columns.findIndex((c) =>
+    /^(typ|type|art)$/i.test(c.trim()),
+  );
   const filterValues =
     filterIdx >= 0
-      ? Array.from(new Set(table.rows.map((r) => r[filterIdx]?.trim()).filter(isRealValue)))
+      ? Array.from(
+          new Set(
+            table.rows.map((r) => r[filterIdx]?.trim()).filter(isRealValue),
+          ),
+        )
       : [];
   const [filter, setFilter] = useState<string | null>(null);
   const canFilter = !showMatrix && filterValues.length >= 2;
@@ -461,7 +529,11 @@ export function FactTableView({
             Alle
           </FilterPill>
           {filterValues.map((v) => (
-            <FilterPill key={v} active={filter === v} onClick={() => setFilter(v)}>
+            <FilterPill
+              key={v}
+              active={filter === v}
+              onClick={() => setFilter(v)}
+            >
               {v}
             </FilterPill>
           ))}

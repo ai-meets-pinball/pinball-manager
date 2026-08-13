@@ -32,8 +32,19 @@ import {
 
 /** Fortschritts-Events des Extraktions-Generators (an den Client gestreamt). */
 export type ExtractProgress =
-  | { type: "start"; mode: "text" | "vision"; totalPages: number; totalBatches: number }
-  | { type: "batch"; batch: number; totalBatches: number; fromPage: number; toPage: number }
+  | {
+      type: "start";
+      mode: "text" | "vision";
+      totalPages: number;
+      totalBatches: number;
+    }
+  | {
+      type: "batch";
+      batch: number;
+      totalBatches: number;
+      fromPage: number;
+      toPage: number;
+    }
   | { type: "info"; message: string }
   | { type: "done"; counts: Record<string, number> }
   | { type: "error"; error: string };
@@ -45,7 +56,10 @@ const factTableJsonSchema = {
   type: "object",
   properties: {
     columns: { type: "array", items: { type: "string" } },
-    rows: { type: "array", items: { type: "array", items: { type: "string" } } },
+    rows: {
+      type: "array",
+      items: { type: "array", items: { type: "string" } },
+    },
   },
   required: ["columns", "rows"],
   additionalProperties: false,
@@ -79,6 +93,11 @@ sie anders benennt — ordne die Werte entsprechend zu; fehlt ein Wert, gib eine
 - fuses    → ${JSON.stringify(FACT_COLUMNS.fuses)}
 - parts    → ${JSON.stringify(FACT_COLUMNS.parts)}
 - rules    → ${JSON.stringify(FACT_COLUMNS.rules)}
+
+Kabel-/Drahtfarben: Nennt das Handbuch bei Spulen oder Schaltern eine Kabel-/Drahtfarbe
+(oft ein WPC-Zweiband-Code wie "Yel-Grn" oder "Red-Orn"), extrahiere sie IMMER mit in die
+zugehörige Farb-/Kabel-Spalte — nie weglassen. Übernimm die Farbkürzel WÖRTLICH wie im
+Handbuch (Orange erscheint je nach Handbuch als "Org" ODER "Orn" — nicht vereinheitlichen).
 
 Regeln: NUR reine Fakten aus diesen Tabellen — KEINEN Fließtext, KEINE Spielregeln-Erklärungen,
 KEINE ganzen Seiten, KEINE Beschreibungen. Fehlt eine Tabelle im Handbuch, gib für sie leere
@@ -156,7 +175,10 @@ async function* durchgang(
     try {
       inhalt = await paket.laden();
     } catch (e) {
-      yield { type: "error", error: fehlertext(e, "Das PDF konnte nicht aufbereitet werden.") };
+      yield {
+        type: "error",
+        error: fehlertext(e, "Das PDF konnte nicht aufbereitet werden."),
+      };
       return "abort";
     }
 
@@ -173,7 +195,9 @@ async function* durchgang(
       // Abgeschnitten betrifft nur DIESES Paket — überspringen, damit der Rest
       // nicht verloren geht.
       if (antwort.abgeschnitten) {
-        console.error(`[manual-extract] Paket ${paket.vonSeite}-${paket.bisSeite} abgeschnitten`);
+        console.error(
+          `[manual-extract] Paket ${paket.vonSeite}-${paket.bisSeite} abgeschnitten`,
+        );
         continue;
       }
       // Dieselbe Kette wie beim eingefügten JSON: normalisieren, Zeilen
@@ -192,12 +216,18 @@ async function* durchgang(
       // Eine unbrauchbare Antwort kostet nur dieses Paket. Ein Verbindungs-
       // oder Rechteproblem betrifft den ganzen Lauf → abbrechen.
       if (e instanceof AiError && e.art === "ungueltige-antwort") {
-        console.error(`[manual-extract] Paket ${paket.vonSeite}-${paket.bisSeite}:`, e.message);
+        console.error(
+          `[manual-extract] Paket ${paket.vonSeite}-${paket.bisSeite}:`,
+          e.message,
+        );
         continue;
       }
       if (!(e instanceof AiError)) {
         // zod-Fehler: die Form stimmt nicht — auch nur dieses Paket.
-        console.error(`[manual-extract] Paket ${paket.vonSeite}-${paket.bisSeite} parse:`, (e as Error).message);
+        console.error(
+          `[manual-extract] Paket ${paket.vonSeite}-${paket.bisSeite} parse:`,
+          (e as Error).message,
+        );
         continue;
       }
       yield { type: "error", error: e.userMessage };
@@ -271,8 +301,16 @@ export async function* extractManualFactsStream(opts: {
   /** Hohe Detailstufe: Seiten hochauflösend als Bilder an Sonnet (nur Claude). */
   highDetail?: boolean;
 }): AsyncGenerator<ExtractProgress> {
-  const { userId, machine, visibility, file, attest, provider, apiKey, highDetail } =
-    opts;
+  const {
+    userId,
+    machine,
+    visibility,
+    file,
+    attest,
+    provider,
+    apiKey,
+    highDetail,
+  } = opts;
 
   if (!attest) {
     yield {
@@ -305,7 +343,10 @@ export async function* extractManualFactsStream(opts: {
     });
   } catch (e) {
     console.error("[manual-extract] prepare:", (e as Error).message);
-    yield { type: "error", error: fehlertext(e, "Das PDF konnte nicht vorbereitet werden.") };
+    yield {
+      type: "error",
+      error: fehlertext(e, "Das PDF konnte nicht vorbereitet werden."),
+    };
     return;
   }
 
@@ -332,11 +373,17 @@ export async function* extractManualFactsStream(opts: {
         teile.push(inhalt.text ?? "");
       } catch (e) {
         console.error("[manual-extract] ocr:", (e as Error).message);
-        yield { type: "error", error: fehlertext(e, "Die Seiten konnten nicht gelesen werden.") };
+        yield {
+          type: "error",
+          error: fehlertext(e, "Die Seiten konnten nicht gelesen werden."),
+        };
         return;
       }
     }
-    yield { type: "info", message: "Fakten werden aus dem erkannten Text extrahiert …" };
+    yield {
+      type: "info",
+      message: "Fakten werden aus dem erkannten Text extrahiert …",
+    };
     try {
       const antwort = await generateJson(provider, {
         prompt: paketPrompt(teile.join("\n\n")),
@@ -346,7 +393,11 @@ export async function* extractManualFactsStream(opts: {
         zweck: "Extraktion",
       });
       if (antwort.abgeschnitten) {
-        yield { type: "error", error: "Die Antwort wurde abgeschnitten. Bitte kleineres Handbuch versuchen." };
+        yield {
+          type: "error",
+          error:
+            "Die Antwort wurde abgeschnitten. Bitte kleineres Handbuch versuchen.",
+        };
         return;
       }
       const bericht = parseFacts(antwort.json);
@@ -363,7 +414,10 @@ export async function* extractManualFactsStream(opts: {
       parsed = bericht.result;
     } catch (e) {
       console.error("[manual-extract] mlx:", (e as Error).message);
-      yield { type: "error", error: fehlertext(e, "Die Extraktion ist fehlgeschlagen.") };
+      yield {
+        type: "error",
+        error: fehlertext(e, "Die Extraktion ist fehlgeschlagen."),
+      };
       return;
     }
   } else {
