@@ -3,7 +3,6 @@
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { FormFeedback } from "@/components/ui/form-feedback";
 import { Textarea } from "@/components/ui/input";
@@ -11,25 +10,32 @@ import { resetPrompt, savePrompt } from "@/db/actions/prompts";
 import type { FormState } from "@/db/actions/form-state";
 
 /*
-  Editor für EINEN KI-Prompt (globaler Standard-Override). Muster wie der
-  E-Mail-Vorlagen-Editor: Textarea + Speichern, „Zurücksetzen" nur, wenn eine
-  Abweichung vom Code-Standard gespeichert ist. Hersteller-/Generation-Overrides
-  kommen in Phase 2. Platzhalter {{…}} MÜSSEN erhalten bleiben.
+  Editor für EINEN Prompt-Override (global oder auf einen Hersteller/eine
+  Generation begrenzt). Muster wie der E-Mail-Vorlagen-Editor: Textarea +
+  Speichern; „Zurücksetzen/Löschen" nur, wenn eine Abweichung gespeichert ist.
+  Platzhalter {{…}} MÜSSEN erhalten bleiben. hersteller/generationId reisen als
+  hidden inputs mit (leer = nicht beschränkt).
 */
 export function PromptEditor({
   promptKey,
   label,
-  beschreibung,
-  platzhalter,
+  hersteller = "",
+  generationId = "",
+  scopeChip = null,
   vorlage,
-  angepasst,
+  existiert,
 }: {
   promptKey: string;
   label: string;
-  beschreibung: string;
-  platzhalter: string[];
+  /** Hersteller-Scope ("" = global/unbeschränkt). */
+  hersteller?: string;
+  /** Generation-Scope ("" = global/unbeschränkt). */
+  generationId?: string;
+  /** Anzeige-Etikett des Bereichs (Hersteller-Name bzw. Generation-Name); null = global. */
+  scopeChip?: string | null;
   vorlage: string;
-  angepasst: boolean;
+  /** Existiert für DIESEN Bereich bereits ein Override? (dann „zurücksetzen/löschen"). */
+  existiert: boolean;
 }) {
   const router = useRouter();
   const [state, formAction, pending] = useActionState<FormState, FormData>(
@@ -42,31 +48,33 @@ export function PromptEditor({
   );
 
   return (
-    <Card className="space-y-3">
+    <div className="space-y-2 rounded-[var(--radius)] border border-[var(--color-border)] p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-semibold">{label}</h3>
-        {angepasst ? (
-          <span className="rounded-full border border-[var(--color-accent)] px-2 py-0.5 text-xs text-[var(--color-accent)]">
-            angepasst
-          </span>
-        ) : (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="font-medium">{label}</span>
+          {scopeChip ? (
+            <span className="rounded-full border border-[var(--color-accent)] px-2 py-0.5 text-xs text-[var(--color-accent)]">
+              {scopeChip}
+            </span>
+          ) : (
+            <span className="rounded-full border border-[var(--color-border)] px-2 py-0.5 text-xs text-[var(--color-muted)]">
+              global
+            </span>
+          )}
+        </div>
+        {existiert ? null : (
           <span className="text-xs text-[var(--color-muted)]">Standard</span>
         )}
       </div>
-      <p className="text-sm text-[var(--color-muted)]">{beschreibung}</p>
-      {platzhalter.length > 0 ? (
-        <p className="text-xs text-[var(--color-muted)]">
-          Platzhalter (unbedingt behalten):{" "}
-          <span className="font-mono">{platzhalter.join("  ")}</span>
-        </p>
-      ) : null}
 
       <form action={formAction} className="space-y-2">
         <input type="hidden" name="key" value={promptKey} />
+        <input type="hidden" name="hersteller" value={hersteller} />
+        <input type="hidden" name="generationId" value={generationId} />
         <Textarea
           name="vorlage"
           defaultValue={vorlage}
-          rows={14}
+          rows={12}
           required
           className="font-mono text-xs"
         />
@@ -76,20 +84,25 @@ export function PromptEditor({
         </Button>
       </form>
 
-      {/* Zurücksetzen als EIGENES Server-Formular (der ConfirmButton submittet
-          das umgebende Formular — resetPrompt löscht den Override). */}
-      {angepasst ? (
+      {/* Zurücksetzen/Löschen als EIGENES Server-Formular. */}
+      {existiert ? (
         <form action={resetPrompt}>
           <input type="hidden" name="key" value={promptKey} />
+          <input type="hidden" name="hersteller" value={hersteller} />
+          <input type="hidden" name="generationId" value={generationId} />
           <ConfirmButton
-            question="Auf den Standard zurücksetzen? Der gespeicherte Prompt wird gelöscht."
-            confirmLabel="Ja, zurücksetzen"
+            question={
+              scopeChip
+                ? "Diesen Override löschen? Dann greift wieder die allgemeinere Fassung."
+                : "Auf den Standard zurücksetzen? Der gespeicherte Prompt wird gelöscht."
+            }
+            confirmLabel={scopeChip ? "Ja, löschen" : "Ja, zurücksetzen"}
             className="text-xs text-[var(--color-muted)] hover:text-[var(--color-danger)]"
           >
-            Auf Standard zurücksetzen
+            {scopeChip ? "Override löschen" : "Auf Standard zurücksetzen"}
           </ConfirmButton>
         </form>
       ) : null}
-    </Card>
+    </div>
   );
 }
