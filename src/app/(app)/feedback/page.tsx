@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Bug, ImageIcon } from "lucide-react";
 import { FeedbackBearbeiten, FeedbackForm } from "@/components/feedback-form";
 import { Card } from "@/components/ui/card";
@@ -32,15 +33,36 @@ const TYP_LABEL: Record<string, string> = {
 export default async function FeedbackPage({
   searchParams,
 }: {
-  searchParams: Promise<{ von?: string; status?: string }>;
+  searchParams: Promise<{ von?: string; status?: string; tab?: string }>;
 }) {
   const user = await requireUser();
-  const { von, status } = await searchParams;
+  const { von, status, tab: tabParam } = await searchParams;
   const darfAlleSehen = isSupporter(user) || isSuperAdmin(user);
   const darfBearbeiten = isSuperAdmin(user);
 
   const meine = await getMeinFeedback(user.id);
   const alle = darfAlleSehen ? await getAllesFeedback(user) : [];
+
+  // Drei Reiter (Zustand in der URL): Neue Meldung (Standard) · Meine Meldungen ·
+  // Alle Meldungen (nur Supporter/Super-Admin). Ungültige/gesperrte Werte → „neu".
+  const tab =
+    tabParam === "meine" || (tabParam === "alle" && darfAlleSehen)
+      ? tabParam
+      : "neu";
+  const tabHref = (key: string) => {
+    const p = new URLSearchParams();
+    if (key !== "neu") p.set("tab", key);
+    if (von) p.set("von", von); // Herkunft für das Formular erhalten
+    const qs = p.toString();
+    return `/feedback${qs ? `?${qs}` : ""}`;
+  };
+  const tabs = [
+    { key: "neu", label: "Neue Meldung", count: null as number | null },
+    { key: "meine", label: "Meine Meldungen", count: meine.length },
+    ...(darfAlleSehen
+      ? [{ key: "alle", label: "Alle Meldungen", count: alle.length }]
+      : []),
+  ];
 
   // Versand-Protokoll je Meldung (wann, an wen, welcher Text) für die Triage.
   const mailRows = darfAlleSehen
@@ -69,10 +91,10 @@ export default async function FeedbackPage({
     : alle;
   const statusHref = (key: string) => {
     const p = new URLSearchParams();
+    p.set("tab", "alle");
     if (von) p.set("von", von);
     if (key) p.set("status", key);
-    const qs = p.toString();
-    return `/feedback${qs ? `?${qs}` : ""}`;
+    return `/feedback?${p.toString()}`;
   };
   const statusOptionen = [
     {
@@ -104,47 +126,80 @@ export default async function FeedbackPage({
         </p>
       </div>
 
-      <Card>
-        <FeedbackForm von={von ?? ""} />
-      </Card>
+      <nav
+        aria-label="Bereiche"
+        className="flex flex-wrap gap-1 border-b border-[var(--color-border)]"
+      >
+        {tabs.map((t) => {
+          const aktiv = tab === t.key;
+          return (
+            <Link
+              key={t.key}
+              href={tabHref(t.key)}
+              aria-current={aktiv ? "page" : undefined}
+              className={`-mb-px border-b-2 px-3 py-2 text-sm ${
+                aktiv
+                  ? "border-[var(--color-primary)] font-medium text-[var(--color-primary)]"
+                  : "border-transparent text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+              }`}
+            >
+              {t.label}
+              {t.count != null ? (
+                <span className="ml-1 text-xs text-[var(--color-faint)]">
+                  {t.count}
+                </span>
+              ) : null}
+            </Link>
+          );
+        })}
+      </nav>
 
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">
-          Meine Meldungen ({meine.length})
-        </h2>
-        <List empty="Noch keine Meldungen.">
-          {meine.map((m) => (
-            <ListRow
-              key={m.id}
-              title={m.titel}
-              subtitle={
-                <>
-                  {TYP_LABEL[m.typ]} · {m.createdAt.toLocaleDateString("de-DE")}
-                  {m.antwort ? <> — Antwort: {m.antwort}</> : null}
-                </>
-              }
-              meta={
-                <>
-                  {m.screenshotUrl ? (
-                    <a
-                      href={m.screenshotUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      title="Screenshot ansehen"
-                      className="text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-                    >
-                      <ImageIcon size={15} />
-                    </a>
-                  ) : null}
-                  <StatusBadge value={m.status} />
-                </>
-              }
-            />
-          ))}
-        </List>
-      </section>
+      {tab === "neu" ? (
+        <Card>
+          <FeedbackForm von={von ?? ""} />
+        </Card>
+      ) : null}
 
-      {darfAlleSehen ? (
+      {tab === "meine" ? (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">
+            Meine Meldungen ({meine.length})
+          </h2>
+          <List empty="Noch keine Meldungen.">
+            {meine.map((m) => (
+              <ListRow
+                key={m.id}
+                title={m.titel}
+                subtitle={
+                  <>
+                    {TYP_LABEL[m.typ]} ·{" "}
+                    {m.createdAt.toLocaleDateString("de-DE")}
+                    {m.antwort ? <> — Antwort: {m.antwort}</> : null}
+                  </>
+                }
+                meta={
+                  <>
+                    {m.screenshotUrl ? (
+                      <a
+                        href={m.screenshotUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        title="Screenshot ansehen"
+                        className="text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+                      >
+                        <ImageIcon size={15} />
+                      </a>
+                    ) : null}
+                    <StatusBadge value={m.status} />
+                  </>
+                }
+              />
+            ))}
+          </List>
+        </section>
+      ) : null}
+
+      {tab === "alle" && darfAlleSehen ? (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">
             Alle Meldungen ({alle.length})
