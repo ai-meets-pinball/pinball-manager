@@ -1,5 +1,7 @@
-import { extractSchema, FACT_COLUMNS, FACT_TYPES } from "@/lib/validators";
+import { extractSchema, FACT_TYPES } from "@/lib/validators";
 import { upsertModelKnowledge } from "@/lib/facts-store";
+import { extractSpaltenBlock } from "@/lib/prompts";
+import { resolvePrompt } from "@/db/queries";
 import { parseFacts } from "@/lib/import-facts";
 import { SONNET_MODEL, type AiProvider } from "@/lib/ai/provider";
 import { AiError, generateJson } from "@/lib/ai/generate";
@@ -74,34 +76,9 @@ const outputJsonSchema = {
   additionalProperties: false,
 };
 
-/*
-  Die Spalten kommen aus FACT_COLUMNS, nicht als abgeschriebene Prosa. Vorher
-  standen sie hier fest verdrahtet, während der Import-Prompt sie ableitete —
-  eine Änderung an FACT_COLUMNS ließ den KI-Prompt still verrotten.
-*/
-const EXTRACT_PROMPT = `Du erhältst das Handbuch eines Flipperautomaten als PDF.
-Extrahiere AUSSCHLIESSLICH die technischen Referenztabellen, sofern im Handbuch vorhanden.
-Verwende je Tabelle GENAU diese Spaltenüberschriften (in dieser Reihenfolge), auch wenn das Handbuch
-sie anders benennt — ordne die Werte entsprechend zu; fehlt ein Wert, gib eine leere Zelle "":
-
-- coils    → ${JSON.stringify(FACT_COLUMNS.coils)}
-- switches → ${JSON.stringify(FACT_COLUMNS.switches)}
-             (Switch-Matrix: Column/Row = Rasterposition; bei nicht-Matrix-Schaltern Column/Row = "".
-              Typ = "opto" wenn es ein Opto-Schalter ist, sonst "mechanisch")
-- lamps    → ${JSON.stringify(FACT_COLUMNS.lamps)}
-             (Lampenmatrix 8×8: Lamp/No = Column×10 + Row; also Column/Row aus der Nummer ableiten)
-- fuses    → ${JSON.stringify(FACT_COLUMNS.fuses)}
-- parts    → ${JSON.stringify(FACT_COLUMNS.parts)}
-- rules    → ${JSON.stringify(FACT_COLUMNS.rules)}
-
-Kabel-/Drahtfarben: Nennt das Handbuch bei Spulen oder Schaltern eine Kabel-/Drahtfarbe
-(oft ein WPC-Zweiband-Code wie "Yel-Grn" oder "Red-Orn"), extrahiere sie IMMER mit in die
-zugehörige Farb-/Kabel-Spalte — nie weglassen. Übernimm die Farbkürzel WÖRTLICH wie im
-Handbuch (Orange erscheint je nach Handbuch als "Org" ODER "Orn" — nicht vereinheitlichen).
-
-Regeln: NUR reine Fakten aus diesen Tabellen — KEINEN Fließtext, KEINE Spielregeln-Erklärungen,
-KEINE ganzen Seiten, KEINE Beschreibungen. Fehlt eine Tabelle im Handbuch, gib für sie leere
-"columns" und "rows" zurück. Halte dich kompakt, keine Duplikate, keine Wiederholungen.`;
+/* Der Extraktions-Prompt lebt jetzt in der Registry (lib/prompts.ts, key
+   "extract") und wird per resolvePrompt aufgelöst (global oder pro Hersteller).
+   Der strukturelle Spaltenblock kommt aus extractSpaltenBlock() als {{spalten}}. */
 
 type ExtractResult = ReturnType<typeof extractSchema.parse>;
 
@@ -147,8 +124,8 @@ export function istLeer(r: ExtractResult): boolean {
 
 /** Prompt für ein Paket: der feste Extraktionsauftrag plus, falls das Paket
     Text statt eines Dokuments liefert, der Handbuchtext selbst. */
-function paketPrompt(text: string | undefined): string {
-  return text ? `${EXTRACT_PROMPT}\n\nHandbuchtext:\n${text}` : EXTRACT_PROMPT;
+function paketPrompt(basis: string, text: string | undefined): string {
+  return text ? `${basis}\n\nHandbuchtext:\n${text}` : basis;
 }
 
 /*
@@ -160,7 +137,7 @@ function paketPrompt(text: string | undefined): string {
 async function* durchgang(
   provider: AiProvider,
   aufbereitung: Aufbereitung,
-  opts: { apiKey?: string; model?: string },
+  opts: { apiKey?: string; model?: string; prompt: string },
 ): AsyncGenerator<ExtractProgress, ExtractResult[] | "abort"> {
   const teile: ExtractResult[] = [];
   const gesamt = aufbereitung.pakete.length;
@@ -184,7 +161,7 @@ async function* durchgang(
 
     try {
       const antwort = await generateJson(provider, {
-        prompt: paketPrompt(inhalt.text),
+        prompt: paketPrompt(opts.prompt, inhalt.text),
         schema: outputJsonSchema,
         dokument: inhalt.dokument,
         maxTokens: 64000,
@@ -357,6 +334,13 @@ export async function* extractManualFactsStream(opts: {
     totalBatches: aufbereitung.pakete.length,
   };
 
+  // Extraktions-Prompt einmal auflösen (Registry/Override, ggf. pro Hersteller);
+  // der {{spalten}}-Block ist strukturell fix. Bei DB-Problemen → Code-Standard.
+  const { text: extractPrompt } = await resolvePrompt("extract", {
+    hersteller: machine.hersteller,
+    vars: { spalten: extractSpaltenBlock() },
+  });
+
   // Hohe Detailstufe geht immer an Sonnet, unabhängig von der Anbieter-Wahl.
   const erstesModell = highDetail ? SONNET_MODEL() : undefined;
 
@@ -386,7 +370,7 @@ export async function* extractManualFactsStream(opts: {
     };
     try {
       const antwort = await generateJson(provider, {
-        prompt: paketPrompt(teile.join("\n\n")),
+        prompt: paketPrompt(extractPrompt, teile.join("\n\n")),
         schema: outputJsonSchema,
         maxTokens: 64000,
         apiKey,
@@ -424,6 +408,7 @@ export async function* extractManualFactsStream(opts: {
     const erste = yield* durchgang(provider, aufbereitung, {
       apiKey,
       model: erstesModell,
+      prompt: extractPrompt,
     });
     if (erste === "abort") return;
     parsed = mergeFactResults(erste);
@@ -441,6 +426,7 @@ export async function* extractManualFactsStream(opts: {
       const zweite = yield* durchgang(provider, aufbereitung, {
         apiKey,
         model: stark,
+        prompt: extractPrompt,
       });
       if (zweite === "abort") return;
       parsed = mergeFactResults(zweite);

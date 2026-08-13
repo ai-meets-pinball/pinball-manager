@@ -716,6 +716,31 @@ export const mailLog = pgTable("mail_log", {
   gesendetAm: timestamp("gesendet_am").notNull().defaultNow(),
 });
 
+/* KI-Prompt-Overrides: der STANDARD jedes Prompts liegt im Code (lib/prompts.ts),
+   hier stehen nur ABWEICHUNGEN. Scope ist exklusiv: global (hersteller +
+   generation_id beide NULL) ODER pro Hersteller ODER pro Generation. Beim Lesen
+   gewinnt der spezifischste Treffer (Generation > Hersteller > global > Code).
+   NULLS NOT DISTINCT, damit die globale Zeile je key eindeutig bleibt. */
+export const promptOverrides = pgTable(
+  "prompt_overrides",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    key: text("key").notNull(), // PromptKey aus lib/prompts.ts
+    hersteller: text("hersteller"), // NULL = nicht auf Hersteller beschränkt
+    generationId: uuid("generation_id").references(() => generations.id, {
+      onDelete: "cascade",
+    }), // NULL = nicht auf Generation beschränkt
+    vorlage: text("vorlage").notNull(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+    updatedBy: text("updated_by").references(() => user.id),
+  },
+  (t) => [
+    unique("prompt_overrides_scope_unique")
+      .on(t.key, t.hersteller, t.generationId)
+      .nullsNotDistinct(),
+  ],
+);
+
 /* Troubleshooting-Guides sind seit dem Datenmodell-Redesign (Phase 2) Modell-
    Wissen in `knowledge` (typ='troubleshooting') — die eigene Tabelle
    `troubleshooting_guides` ist entfallen. */

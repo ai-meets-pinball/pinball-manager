@@ -28,7 +28,7 @@ import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { deleteMachine } from "@/db/actions/machines";
 import { getMachineDetail } from "@/db/machine-detail";
-import { getTippZielKatalog } from "@/db/queries";
+import { getTippZielKatalog, resolvePrompt } from "@/db/queries";
 import { modellName, relativeZeit } from "@/lib/format";
 import { buildGuideImportPrompt } from "@/lib/import-guide";
 import { kannKuratieren } from "@/lib/session";
@@ -141,6 +141,26 @@ export default async function MachineDetailPage({
   // (wie availableProviders eine Formular-Zutat, kein Anzeige-Datum der Maschine).
   const tippKatalog =
     darf.bearbeiten && machine.modelId ? await getTippZielKatalog() : null;
+
+  // Kopierbarer Guide-Import-Prompt mit dem AUFGELÖSTEN System-Prompt
+  // (Registry/Override), damit die Kopiervorlage denselben Text nutzt wie die
+  // KI-Generierung. Nur für Bearbeiter (der Import-Block ist nur dort sichtbar).
+  const guideImportPrompt = darf.bearbeiten
+    ? buildGuideImportPrompt(
+        machine,
+        (
+          await resolvePrompt("guide_system", {
+            hersteller: machine.hersteller,
+            generationId: guideGeneration?.id ?? null,
+            vars: {
+              hersteller: machine.hersteller,
+              modell: machine.modell,
+              baujahr: machine.baujahr ? String(machine.baujahr) : "unbekannt",
+            },
+          })
+        ).text,
+      )
+    : null;
 
   // KI-Funktionen: welche Anbieter stehen zur Wahl? Sind beide verfügbar (lokales
   // Ollama UND Claude), darf der Nutzer je Aktion bewusst wählen. Ohne zentralen
@@ -591,7 +611,7 @@ export default async function MachineDetailPage({
             <Card className="space-y-3">
               <TroubleshootingJsonImport
                 machineId={machine.id}
-                prompt={buildGuideImportPrompt(machine)}
+                prompt={guideImportPrompt ?? ""}
                 vorhanden={eigenerGuide}
                 generation={guideGeneration}
               />

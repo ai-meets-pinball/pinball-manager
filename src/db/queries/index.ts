@@ -21,4 +21,5 @@ export * from "@/db/queries/shares";
 export * from "@/db/queries/clubs";
 export * from "@/db/queries/feedback";
 export * from "@/db/queries/mail";
+export * from "@/db/queries/prompts";
 export * from "@/db/queries/settings";

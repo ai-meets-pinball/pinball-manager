@@ -12,6 +12,7 @@ import {
   maintenanceTasks,
 } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
+import { resolvePrompt } from "@/db/queries";
 import { naechsterTermin } from "@/lib/faelligkeit";
 import { resolveProvider } from "@/lib/ai/provider";
 import { AiError, generateJson, type AiAntwort } from "@/lib/ai/generate";
@@ -24,7 +25,6 @@ import {
   troubleshootingGuideSchema,
 } from "@/lib/validators";
 import type { FormState } from "@/db/actions/form-state";
-
 
 /* Fälligkeits-Helfer liegt in lib/faelligkeit.ts (rein) — auch von
    db/actions/maintenance-plans.ts (Standard-Propagation) genutzt. */
@@ -113,7 +113,11 @@ export async function updateTask(
       intervallTyp: d.intervallTyp,
       intervallTage: d.intervallTage ?? null,
       intervallText: d.intervallText ?? null,
-      naechsteFaelligkeit: naechsterTermin(d.intervallTyp, d.intervallTage ?? null, ab),
+      naechsteFaelligkeit: naechsterTermin(
+        d.intervallTyp,
+        d.intervallTage ?? null,
+        ab,
+      ),
     })
     .where(
       and(
@@ -186,7 +190,11 @@ export async function logCompletion(
       .update(maintenanceTasks)
       .set({
         zuletztErledigt: wann,
-        naechsteFaelligkeit: naechsterTermin(task.intervallTyp, task.intervallTage, wann),
+        naechsteFaelligkeit: naechsterTermin(
+          task.intervallTyp,
+          task.intervallTage,
+          wann,
+        ),
         // Nächster Zyklus darf wieder erinnern.
         zuletztErinnert: null,
       })
@@ -228,7 +236,11 @@ export async function deleteTaskLog(formData: FormData): Promise<void> {
       .update(maintenanceTasks)
       .set({
         zuletztErledigt: letzte?.datum ?? null,
-        naechsteFaelligkeit: naechsterTermin(task.intervallTyp, task.intervallTage, ab),
+        naechsteFaelligkeit: naechsterTermin(
+          task.intervallTyp,
+          task.intervallTage,
+          ab,
+        ),
       })
       .where(eq(maintenanceTasks.id, taskId));
   }
@@ -241,7 +253,9 @@ export async function deleteTaskLog(formData: FormData): Promise<void> {
    sonst das Code-Template. Die Kopie ist danach frei editierbar (keine
    Verknüpfung; dafür gibt es linkMachineToStandard in maintenance-plans.ts). */
 
-export async function applyStandardMaintenance(formData: FormData): Promise<void> {
+export async function applyStandardMaintenance(
+  formData: FormData,
+): Promise<void> {
   const machineId = String(formData.get("machineId"));
   const { user } = await requireMachineWrite(machineId);
 
@@ -275,7 +289,11 @@ export async function applyStandardMaintenance(formData: FormData): Promise<void
       intervallTyp: e.intervallTyp,
       intervallTage: e.intervallTage,
       intervallText: e.intervallText,
-      naechsteFaelligkeit: naechsterTermin(e.intervallTyp, e.intervallTage, now),
+      naechsteFaelligkeit: naechsterTermin(
+        e.intervallTyp,
+        e.intervallTage,
+        now,
+      ),
     }));
 
   if (neu.length > 0) await db.insert(maintenanceTasks).values(neu);
@@ -303,9 +321,8 @@ function serialisiereWartungsabschnitt(
   return text.length > 0 ? text : null;
 }
 
-const IMPORT_SYSTEM = `Du bist ein erfahrener Flipper-Wartungs-Techniker. Du bekommst den Wartungsplan-Abschnitt eines Troubleshooting-Guides und wandelst ihn in strukturierte, einzelne Wartungspunkte um.
-Je Punkt: titel (kurz, prägnant), kategorie (z. B. Mechanik/Elektrik/Reinigung/Verschleiß/Elektronik/Beleuchtung), bauteil, taetigkeit (Prüfen/Reinigen/Ersetzen/Testen/Schmieren …), intervallTyp ("zeit" wenn ein Zeitintervall genannt ist, sonst "spiele" bei einer Spielzahl, sonst "bedarf"), intervallTage (Anzahl Tage NUR bei intervallTyp "zeit"; sonst 0), prioritaet, beschreibung (ein Satz).
-Nur echte, abhakbare Wartungspunkte — keine Erklärtexte, keine Sicherheitshinweise, keine Duplikate.`;
+/* Der Wartungs-Import-Systemprompt liegt jetzt in der Registry (lib/prompts.ts,
+   key "maintenance_import") und wird per resolvePrompt aufgelöst. */
 
 export async function importMaintenanceFromGuide(
   _prev: FormState,
@@ -327,12 +344,15 @@ export async function importMaintenanceFromGuide(
     ),
   });
   if (!eintrag) {
-    return { error: "Es gibt noch keinen Troubleshooting-Guide für dieses Gerät." };
+    return {
+      error: "Es gibt noch keinen Troubleshooting-Guide für dieses Gerät.",
+    };
   }
 
   const umschlag = eintrag.inhalt as { guide?: unknown };
   const guide = troubleshootingGuideSchema.safeParse(umschlag?.guide);
-  if (!guide.success) return { error: "Der Guide konnte nicht gelesen werden." };
+  if (!guide.success)
+    return { error: "Der Guide konnte nicht gelesen werden." };
 
   const abschnittText = serialisiereWartungsabschnitt(guide.data);
   if (!abschnittText) {
@@ -342,12 +362,13 @@ export async function importMaintenanceFromGuide(
   // Zwei Wege (siehe lib/ai/provider.ts): Claude (Standard) oder lokal via Ollama —
   // der Nutzer wählt je Aktion (Feld „provider"), sonst der Standard.
   const provider = resolveProvider(formData);
+  const { text: system } = await resolvePrompt("maintenance_import");
   const userPrompt = `Wandle diesen Wartungsplan-Abschnitt in strukturierte Wartungspunkte (JSON) um:\n\n${abschnittText}`;
 
   let antwort: AiAntwort;
   try {
     antwort = await generateJson(provider, {
-      system: IMPORT_SYSTEM,
+      system,
       prompt: userPrompt,
       schema: maintenanceImportJsonSchema,
       apiKey: String(formData.get("apiKey") ?? ""),
@@ -360,7 +381,9 @@ export async function importMaintenanceFromGuide(
   }
 
   if (antwort.abgeschnitten) {
-    return { error: "Die Antwort wurde abgeschnitten. Bitte erneut versuchen." };
+    return {
+      error: "Die Antwort wurde abgeschnitten. Bitte erneut versuchen.",
+    };
   }
 
   let punkte: ReturnType<typeof maintenanceImportSchema.parse>["punkte"];
@@ -368,7 +391,9 @@ export async function importMaintenanceFromGuide(
     punkte = maintenanceImportSchema.parse(antwort.json).punkte;
   } catch (e) {
     console.error("[maintenance-import] parse:", (e as Error).message);
-    return { error: "Antwort konnte nicht ausgewertet werden. Bitte erneut versuchen." };
+    return {
+      error: "Antwort konnte nicht ausgewertet werden. Bitte erneut versuchen.",
+    };
   }
 
   const vorhanden = await db.query.maintenanceTasks.findMany({
@@ -381,7 +406,10 @@ export async function importMaintenanceFromGuide(
   const neu = punkte
     .filter((p) => p.titel.trim() && !haben.has(p.titel.trim().toLowerCase()))
     .map((p) => {
-      const tage = p.intervallTyp === "zeit" && p.intervallTage > 0 ? p.intervallTage : null;
+      const tage =
+        p.intervallTyp === "zeit" && p.intervallTage > 0
+          ? p.intervallTage
+          : null;
       return {
         machineId,
         titel: p.titel.trim(),
@@ -390,7 +418,11 @@ export async function importMaintenanceFromGuide(
         taetigkeit: p.taetigkeit || null,
         beschreibung: p.beschreibung || null,
         prioritaet: p.prioritaet,
-        intervallTyp: tage ? p.intervallTyp : p.intervallTyp === "zeit" ? "bedarf" : p.intervallTyp,
+        intervallTyp: tage
+          ? p.intervallTyp
+          : p.intervallTyp === "zeit"
+            ? "bedarf"
+            : p.intervallTyp,
         intervallTage: tage,
         intervallText: null,
         naechsteFaelligkeit: naechsterTermin(p.intervallTyp, tage, now),

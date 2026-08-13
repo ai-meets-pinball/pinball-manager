@@ -5,15 +5,11 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { machines } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
-import { getModelGeneration } from "@/db/queries";
+import { getModelGeneration, resolvePrompt } from "@/db/queries";
 import { upsertTroubleshootingKnowledge } from "@/lib/facts-store";
 import { resolveProvider } from "@/lib/ai/provider";
 import { AiError, generateJson, type AiAntwort } from "@/lib/ai/generate";
-import {
-  buildGuideSystemPrompt,
-  GUIDE_OUTPUT_INSTRUCTION,
-  parseGuide,
-} from "@/lib/import-guide";
+import { GUIDE_OUTPUT_INSTRUCTION, parseGuide } from "@/lib/import-guide";
 import { troubleshootingGuideJsonSchema } from "@/lib/validators";
 
 /*
@@ -63,7 +59,21 @@ export async function generateTroubleshootingGuide(
   // degradiert damit sauber. `websuche` wird gespeichert und in der Anzeige
   // kenntlich gemacht, damit die geringere Verlässlichkeit sichtbar ist.
   const provider = resolveProvider(formData);
-  const system = buildGuideSystemPrompt(machine);
+  // Generation der Maschine — für die Prompt-Override-Auswahl UND (unten) die
+  // Speicher-Ebene. Der System-Prompt kommt aus Registry/Override (resolvePrompt),
+  // nicht mehr aus einem festen String.
+  const gen = machine.modelId
+    ? await getModelGeneration(machine.modelId)
+    : null;
+  const { text: system } = await resolvePrompt("guide_system", {
+    hersteller: machine.hersteller,
+    generationId: gen?.id ?? null,
+    vars: {
+      hersteller: machine.hersteller,
+      modell: machine.modell,
+      baujahr: machine.baujahr ? String(machine.baujahr) : "unbekannt",
+    },
+  });
 
   let antwort: AiAntwort;
   try {
@@ -91,7 +101,8 @@ export async function generateTroubleshootingGuide(
 
   if (antwort.abgeschnitten) {
     return {
-      error: "Der Guide wurde zu lang und abgeschnitten. Bitte erneut versuchen.",
+      error:
+        "Der Guide wurde zu lang und abgeschnitten. Bitte erneut versuchen.",
     };
   }
 
@@ -123,10 +134,7 @@ export async function generateTroubleshootingGuide(
   // Modell mit bekannter Generation hat — dann gilt der Guide für ALLE
   // Modelle dieser Board-/Hardware-Generation (Generation-Resolver).
   const aufGeneration = String(formData.get("ebene") ?? "") === "generation";
-  const generation =
-    aufGeneration && machine.modelId
-      ? await getModelGeneration(machine.modelId)
-      : null;
+  const generation = aufGeneration ? gen : null;
 
   await upsertTroubleshootingKnowledge({
     userId: user.id,
