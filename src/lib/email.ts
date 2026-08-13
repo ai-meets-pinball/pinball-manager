@@ -1,4 +1,6 @@
 import { Resend } from "resend";
+import { db } from "@/db";
+import { mailLog } from "@/db/schema";
 import { getTemplate } from "@/db/queries";
 import {
   escapeHtml,
@@ -8,7 +10,9 @@ import {
 import { FEEDBACK_ABSCHLUSS_SATZ } from "@/lib/feedback-status";
 
 /*
-  E-Mail-Versand über Resend. Bislang nur für „Passwort vergessen".
+  E-Mail-Versand über Resend. ALLE Sender laufen über das zentrale `sendeMail`,
+  das jeden Versuch in `mail_log` protokolliert (wann, an wen, welcher Text,
+  Erfolg/Fehler) — sichtbar unter /admin/mails und je Feedback in der Triage.
 
   RESEND_API_KEY und EMAIL_FROM kommen aus der Umgebung. Der Client wird erst
   beim Senden erzeugt, damit ein fehlender Key nicht schon beim Import knallt.
@@ -17,15 +21,63 @@ import { FEEDBACK_ABSCHLUSS_SATZ } from "@/lib/feedback-status";
 const FROM =
   process.env.EMAIL_FROM ?? "Pinball Manager <onboarding@resend.dev>";
 
-export async function sendResetPasswordEmail(to: string, url: string) {
+export type MailKategorie =
+  | "reset_password"
+  | "verify_email"
+  | "change_email"
+  | "invite_club"
+  | "invite_platform"
+  | "maintenance_reminder"
+  | "feedback_neu"
+  | "feedback_status";
+
+/* Zentraler Versand: EINE Stelle spricht Resend an UND schreibt eine
+   `mail_log`-Zeile. Das Protokollieren ist „best effort" — ein Log-Fehler
+   (oder eine noch fehlende Tabelle) darf den Mailversand nie brechen. */
+async function sendeMail(opts: {
+  kategorie: MailKategorie;
+  to: string | string[];
+  subject: string;
+  html: string;
+  /** Klartext-Zusammenfassung fürs Protokoll (Default: Betreff). */
+  logText?: string;
+  /** Verknüpfung für die Feedback-Inline-Historie. */
+  feedbackId?: string;
+}): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) throw new Error("RESEND_API_KEY ist nicht gesetzt");
 
   const resend = new Resend(apiKey);
   const { error } = await resend.emails.send({
     from: FROM,
+    to: opts.to,
+    subject: opts.subject,
+    html: opts.html,
+  });
+
+  try {
+    await db.insert(mailLog).values({
+      kategorie: opts.kategorie,
+      empfaenger: Array.isArray(opts.to) ? opts.to.join(", ") : opts.to,
+      betreff: opts.subject,
+      inhalt: opts.logText ?? null,
+      feedbackId: opts.feedbackId ?? null,
+      erfolg: !error,
+      fehler: error ? error.message : null,
+    });
+  } catch (e) {
+    console.error("[mail-log] konnte nicht schreiben:", e);
+  }
+
+  if (error) throw new Error(`E-Mail-Versand fehlgeschlagen: ${error.message}`);
+}
+
+export async function sendResetPasswordEmail(to: string, url: string) {
+  await sendeMail({
+    kategorie: "reset_password",
     to,
     subject: "Passwort zurücksetzen — Pinball Manager",
+    logText: "Link zum Zurücksetzen des Passworts",
     html: `
       <div style="font-family: sans-serif; line-height: 1.5;">
         <h2>Passwort zurücksetzen</h2>
@@ -45,23 +97,16 @@ export async function sendResetPasswordEmail(to: string, url: string) {
       </div>
     `,
   });
-
-  if (error) {
-    throw new Error(`E-Mail-Versand fehlgeschlagen: ${error.message}`);
-  }
 }
 
 /** Adressbestätigung (Better Auth `emailVerification.sendVerificationEmail`).
     Wird u. a. nach einem bestätigten E-Mail-Wechsel für die neue Adresse genutzt. */
 export async function sendVerifyEmail(to: string, url: string) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) throw new Error("RESEND_API_KEY ist nicht gesetzt");
-
-  const resend = new Resend(apiKey);
-  const { error } = await resend.emails.send({
-    from: FROM,
+  await sendeMail({
+    kategorie: "verify_email",
     to,
     subject: "E-Mail-Adresse bestätigen — Pinball Manager",
+    logText: "Bestätigungslink für die E-Mail-Adresse",
     html: `
       <div style="font-family: sans-serif; line-height: 1.5;">
         <h2>E-Mail-Adresse bestätigen</h2>
@@ -79,10 +124,6 @@ export async function sendVerifyEmail(to: string, url: string) {
       </div>
     `,
   });
-
-  if (error) {
-    throw new Error(`E-Mail-Versand fehlgeschlagen: ${error.message}`);
-  }
 }
 
 /** Bestätigung eines E-Mail-Wechsels. Der Link geht an die BISHERIGE Adresse,
@@ -92,14 +133,11 @@ export async function sendChangeEmailVerification(
   newEmail: string,
   url: string,
 ) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) throw new Error("RESEND_API_KEY ist nicht gesetzt");
-
-  const resend = new Resend(apiKey);
-  const { error } = await resend.emails.send({
-    from: FROM,
+  await sendeMail({
+    kategorie: "change_email",
     to,
     subject: "E-Mail-Adresse ändern — Pinball Manager",
+    logText: `Bestätigung des Wechsels auf ${newEmail}`,
     html: `
       <div style="font-family: sans-serif; line-height: 1.5;">
         <h2>E-Mail-Adresse ändern</h2>
@@ -118,10 +156,6 @@ export async function sendChangeEmailVerification(
       </div>
     `,
   });
-
-  if (error) {
-    throw new Error(`E-Mail-Versand fehlgeschlagen: ${error.message}`);
-  }
 }
 
 /*
@@ -172,9 +206,6 @@ export async function sendMaintenanceReminderEmail(
   geraete: { geraet: string; id: string; punkte: string[] }[],
   baseUrl: string,
 ) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) throw new Error("RESEND_API_KEY ist nicht gesetzt");
-
   const gesamt = geraete.reduce((n, g) => n + g.punkte.length, 0);
   const bloecke = geraete
     .map(
@@ -192,11 +223,11 @@ export async function sendMaintenanceReminderEmail(
     )
     .join("");
 
-  const resend = new Resend(apiKey);
-  const { error } = await resend.emails.send({
-    from: FROM,
+  await sendeMail({
+    kategorie: "maintenance_reminder",
     to,
     subject: `${gesamt} fällige Wartung${gesamt === 1 ? "" : "en"} — Pinball Manager`,
+    logText: `${gesamt} fällige Wartung(en) auf ${geraete.length} Gerät(en)`,
     html: `
       <div style="font-family: sans-serif; line-height: 1.5;">
         <h2>Fällige Wartungen</h2>
@@ -209,10 +240,6 @@ export async function sendMaintenanceReminderEmail(
       </div>
     `,
   });
-
-  if (error) {
-    throw new Error(`E-Mail-Versand fehlgeschlagen: ${error.message}`);
-  }
 }
 
 /** Plattform-Einladung (ohne Club): berechtigt zur Registrierung. */
@@ -222,17 +249,14 @@ export async function sendPlatformInvitationEmail(
   inviterName: string,
   message?: string | null,
 ) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) throw new Error("RESEND_API_KEY ist nicht gesetzt");
-
   const vorlage = await getTemplate("invite_platform");
   const vars = { einlader: inviterName };
 
-  const resend = new Resend(apiKey);
-  const { error } = await resend.emails.send({
-    from: FROM,
+  await sendeMail({
+    kategorie: "invite_platform",
     to,
     subject: renderPlaceholders(vorlage.subject, vars),
+    logText: `Plattform-Einladung von ${inviterName}`,
     html: invitationHtml({
       body: renderPlaceholders(vorlage.body, vars),
       url,
@@ -242,10 +266,6 @@ export async function sendPlatformInvitationEmail(
       message,
     }),
   });
-
-  if (error) {
-    throw new Error(`E-Mail-Versand fehlgeschlagen: ${error.message}`);
-  }
 }
 
 export async function sendInvitationEmail(
@@ -255,17 +275,14 @@ export async function sendInvitationEmail(
   inviterName: string,
   message?: string | null,
 ) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) throw new Error("RESEND_API_KEY ist nicht gesetzt");
-
   const vorlage = await getTemplate("invite_club");
   const vars = { einlader: inviterName, clubname: clubName };
 
-  const resend = new Resend(apiKey);
-  const { error } = await resend.emails.send({
-    from: FROM,
+  await sendeMail({
+    kategorie: "invite_club",
     to,
     subject: renderPlaceholders(vorlage.subject, vars),
+    logText: `Einladung zu „${clubName}" von ${inviterName}`,
     html: invitationHtml({
       body: renderPlaceholders(vorlage.body, vars),
       url,
@@ -275,10 +292,6 @@ export async function sendInvitationEmail(
       message,
     }),
   });
-
-  if (error) {
-    throw new Error(`E-Mail-Versand fehlgeschlagen: ${error.message}`);
-  }
 }
 
 /** Benachrichtigung an die Super-Admins über eine neue Feedback-Meldung.
@@ -293,19 +306,19 @@ export async function sendFeedbackNotificationEmail(
     melder: string;
     url: string;
   },
+  feedbackId?: string,
 ) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) throw new Error("RESEND_API_KEY ist nicht gesetzt");
   if (to.length === 0) return;
 
   const typLabel =
     meldung.typ === "fehler" ? "Fehlermeldung" : "Verbesserungsvorschlag";
 
-  const resend = new Resend(apiKey);
-  const { error } = await resend.emails.send({
-    from: FROM,
+  await sendeMail({
+    kategorie: "feedback_neu",
     to,
+    feedbackId,
     subject: `Neue ${typLabel}: ${meldung.titel}`,
+    logText: `Neue ${typLabel} „${meldung.titel}" von ${meldung.melder}`,
     html: `
       <div style="font-family: sans-serif; line-height: 1.5;">
         <h2>Neue ${typLabel}</h2>
@@ -315,10 +328,6 @@ export async function sendFeedbackNotificationEmail(
       </div>
     `,
   });
-
-  if (error) {
-    throw new Error(`E-Mail-Versand fehlgeschlagen: ${error.message}`);
-  }
 }
 
 /** Benachrichtigung an den MELDER, wenn seine Meldung abgeschlossen wurde
@@ -332,17 +341,18 @@ export async function sendFeedbackStatusEmail(
     antwort: string | null;
     url: string;
   },
+  feedbackId?: string,
 ) {
-  const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) throw new Error("RESEND_API_KEY ist nicht gesetzt");
-
   const satz = FEEDBACK_ABSCHLUSS_SATZ[meldung.status] ?? "wurde bearbeitet";
 
-  const resend = new Resend(apiKey);
-  const { error } = await resend.emails.send({
-    from: FROM,
+  await sendeMail({
+    kategorie: "feedback_status",
     to,
+    feedbackId,
     subject: `Deine Meldung wurde bearbeitet: ${meldung.titel}`,
+    logText: `„${meldung.titel}" ${satz}${
+      meldung.antwort ? ` — Antwort: ${meldung.antwort}` : ""
+    }`,
     html: `
       <div style="font-family: sans-serif; line-height: 1.5;">
         <p>Deine Meldung <strong>${escapeHtml(meldung.titel)}</strong> ${escapeHtml(satz)}.</p>
@@ -356,8 +366,4 @@ export async function sendFeedbackStatusEmail(
       </div>
     `,
   });
-
-  if (error) {
-    throw new Error(`E-Mail-Versand fehlgeschlagen: ${error.message}`);
-  }
 }

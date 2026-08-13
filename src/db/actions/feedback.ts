@@ -61,25 +61,32 @@ export async function submitFeedback(
     return { error: (e as Error).message };
   }
 
-  await db.insert(feedback).values({
-    ...parsed.data,
-    // Auto-Kontext — nicht vom Nutzer eingetippt:
-    seite: String(formData.get("seite") ?? "") || null,
-    appVersion: APP_VERSION,
-    userAgent: (await headers()).get("user-agent"),
-    screenshotUrl,
-    createdBy: currentUser.id,
-  });
+  const [neu] = await db
+    .insert(feedback)
+    .values({
+      ...parsed.data,
+      // Auto-Kontext — nicht vom Nutzer eingetippt:
+      seite: String(formData.get("seite") ?? "") || null,
+      appVersion: APP_VERSION,
+      userAgent: (await headers()).get("user-agent"),
+      screenshotUrl,
+      createdBy: currentUser.id,
+    })
+    .returning({ id: feedback.id });
 
   // Benachrichtigung ist „best effort": ein Mailfehler (z. B. lokal ohne
   // RESEND_API_KEY) darf die Meldung nicht verhindern.
   try {
     const baseUrl = process.env.BETTER_AUTH_URL ?? "";
-    await sendFeedbackNotificationEmail(await superAdminEmails(), {
-      ...parsed.data,
-      melder: currentUser.name ?? currentUser.email,
-      url: `${baseUrl}/feedback`,
-    });
+    await sendFeedbackNotificationEmail(
+      await superAdminEmails(),
+      {
+        ...parsed.data,
+        melder: currentUser.name ?? currentUser.email,
+        url: `${baseUrl}/feedback`,
+      },
+      neu.id,
+    );
   } catch (e) {
     console.error("[feedback] Benachrichtigung fehlgeschlagen:", e);
   }

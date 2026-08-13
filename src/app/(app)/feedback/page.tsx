@@ -6,7 +6,12 @@ import { ConfirmButton } from "@/components/ui/confirm-button";
 import { List, ListRow } from "@/components/ui/list";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { deleteFeedback } from "@/db/actions/feedback";
-import { getAllesFeedback, getMeinFeedback } from "@/db/queries";
+import {
+  getAllesFeedback,
+  getFeedbackMailLog,
+  getMeinFeedback,
+} from "@/db/queries";
+import { mailKategorieLabel } from "@/lib/mail-kategorie";
 import { isSuperAdmin, isSupporter, requireUser } from "@/lib/session";
 import { FEEDBACK_STATUS } from "@/lib/validators";
 
@@ -36,6 +41,18 @@ export default async function FeedbackPage({
 
   const meine = await getMeinFeedback(user.id);
   const alle = darfAlleSehen ? await getAllesFeedback(user) : [];
+
+  // Versand-Protokoll je Meldung (wann, an wen, welcher Text) für die Triage.
+  const mailRows = darfAlleSehen
+    ? await getFeedbackMailLog(alle.map((m) => m.id))
+    : [];
+  const mailsProFeedback = new Map<string, typeof mailRows>();
+  for (const r of mailRows) {
+    if (!r.feedbackId) continue;
+    const arr = mailsProFeedback.get(r.feedbackId) ?? [];
+    arr.push(r);
+    mailsProFeedback.set(r.feedbackId, arr);
+  }
 
   // Status-Filter der Triage-Liste (Einfachauswahl wie die Club-Auswahl auf
   // /machines): Zustand in der URL, gefiltert wird in-memory (kleine Liste).
@@ -200,6 +217,25 @@ export default async function FeedbackPage({
                     />
                   ) : m.antwort ? (
                     <p className="text-sm">Antwort: {m.antwort}</p>
+                  ) : null}
+
+                  {(mailsProFeedback.get(m.id)?.length ?? 0) > 0 ? (
+                    <div className="space-y-1 border-t border-[var(--color-border)] pt-2">
+                      <p className="text-xs font-medium text-[var(--color-muted)]">
+                        Versand-Protokoll
+                      </p>
+                      {mailsProFeedback.get(m.id)!.map((r) => (
+                        <p
+                          key={r.id}
+                          className="text-xs text-[var(--color-muted)]"
+                        >
+                          {r.gesendetAm.toLocaleString("de-DE")} ·{" "}
+                          {mailKategorieLabel(r.kategorie)} · an {r.empfaenger}
+                          {r.erfolg ? "" : " · FEHLER"}
+                          {r.inhalt ? <> — {r.inhalt}</> : null}
+                        </p>
+                      ))}
+                    </div>
                   ) : null}
                 </div>
               </ListRow>

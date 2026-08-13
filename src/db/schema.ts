@@ -696,6 +696,26 @@ export const feedback = pgTable("feedback", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+/* Versand-Protokoll ALLER System-Mails (Einladungen, Passwort-Reset,
+   Adressbestätigung, Wartungs-Erinnerungen, Feedback-Benachrichtigungen …):
+   wann, an wen, welcher Betreff/Text, Erfolg oder Fehler. Geschrieben „best
+   effort" beim Versand (sendeMail in lib/email.ts) — ein Log-Fehler darf den
+   Mailversand nie brechen. `feedback_id` verknüpft feedback-bezogene Mails für
+   die Inline-Historie in der Triage. */
+export const mailLog = pgTable("mail_log", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  kategorie: text("kategorie").notNull(),
+  empfaenger: text("empfaenger").notNull(),
+  betreff: text("betreff").notNull(),
+  inhalt: text("inhalt"), // Klartext-Zusammenfassung des Inhalts
+  feedbackId: uuid("feedback_id").references(() => feedback.id, {
+    onDelete: "set null",
+  }),
+  erfolg: boolean("erfolg").notNull().default(true),
+  fehler: text("fehler"),
+  gesendetAm: timestamp("gesendet_am").notNull().defaultNow(),
+});
+
 /* Troubleshooting-Guides sind seit dem Datenmodell-Redesign (Phase 2) Modell-
    Wissen in `knowledge` (typ='troubleshooting') — die eigene Tabelle
    `troubleshooting_guides` ist entfallen. */

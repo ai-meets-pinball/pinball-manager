@@ -102,12 +102,16 @@ export async function setzeFeedbackStatus(input: {
     // Statusänderung nicht rückgängig machen.
     try {
       const baseUrl = process.env.BETTER_AUTH_URL ?? "";
-      await sendFeedbackStatusEmail(row.melderEmail, {
-        titel: row.titel,
-        status: input.status as "erledigt" | "zurückgestellt" | "verworfen",
-        antwort: neueAntwort,
-        url: `${baseUrl}/feedback`,
-      });
+      await sendFeedbackStatusEmail(
+        row.melderEmail,
+        {
+          titel: row.titel,
+          status: input.status as "erledigt" | "zurückgestellt" | "verworfen",
+          antwort: neueAntwort,
+          url: `${baseUrl}/feedback`,
+        },
+        input.id,
+      );
       benachrichtigt = true;
     } catch (e) {
       console.error("[feedback] Melder-Benachrichtigung fehlgeschlagen:", e);
