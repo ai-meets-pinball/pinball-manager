@@ -232,6 +232,8 @@ export function FeedbackBearbeiten({
         <option value="offen">offen</option>
         <option value="in Arbeit">in Arbeit</option>
         <option value="erledigt">erledigt</option>
+        <option value="zurückgestellt">zurückgestellt</option>
+        <option value="verworfen">verworfen</option>
       </Select>
       <Input
         name="antwort"

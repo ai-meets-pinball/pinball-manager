@@ -92,6 +92,8 @@ export const feedbackStatus = pgEnum("feedback_status", [
   "offen",
   "in Arbeit",
   "erledigt",
+  "zurückgestellt",
+  "verworfen",
 ]);
 
 /* ── Clubs ────────────────────────────────────────────────────────────────── */

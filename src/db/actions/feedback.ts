@@ -5,6 +5,7 @@ import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { feedback, roleAssignments, roles, user } from "@/db/schema";
+import { setzeFeedbackStatus } from "@/db/feedback-core";
 import { sendFeedbackNotificationEmail } from "@/lib/email";
 import { isSuperAdmin, requireUser } from "@/lib/session";
 import { uploadFeedbackScreenshot } from "@/lib/storage";
@@ -104,14 +105,17 @@ export async function updateFeedback(
     return { error: "Ungültiger Status." };
   }
 
-  await db
-    .update(feedback)
-    .set({
+  // Schreiben + Melder-Benachrichtigung im gemeinsamen Kern (auch vom CLI
+  // genutzt). Der Super-Admin-Gate oben verantwortet den Zugriff.
+  try {
+    await setzeFeedbackStatus({
+      id,
       status: status as (typeof FEEDBACK_STATUS)[number],
-      antwort: antwort || null,
-      updatedAt: new Date(),
-    })
-    .where(eq(feedback.id, id));
+      antwort,
+    });
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
 
   revalidatePath("/feedback");
   return { message: "Gespeichert." };

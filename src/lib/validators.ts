@@ -66,7 +66,21 @@ export const clubSchema = z.object({
 
 /* ── Feedback / Bug-Reports ───────────────────────────────────────────────── */
 
-export const FEEDBACK_STATUS = ["offen", "in Arbeit", "erledigt"] as const;
+export const FEEDBACK_STATUS = [
+  "offen",
+  "in Arbeit",
+  "erledigt",
+  "zurückgestellt",
+  "verworfen",
+] as const;
+
+/* Status, die einen Abschluss der Meldung bedeuten — nur bei diesen wird der
+   Melder benachrichtigt (siehe feedback-core `sollBenachrichtigen`). */
+export const FEEDBACK_ABSCHLUSS_STATUS = [
+  "erledigt",
+  "zurückgestellt",
+  "verworfen",
+] as const;
 
 export const feedbackSchema = z.object({
   typ: z.enum(["fehler", "verbesserung"]),

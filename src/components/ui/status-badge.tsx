@@ -12,6 +12,9 @@ const tone: Record<string, string> = {
   behoben: "var(--color-success)",
   // Reparatur-Status
   erledigt: "var(--color-success)",
+  // Feedback-Status (zusätzlich zu offen/in Arbeit/erledigt oben)
+  zurückgestellt: "var(--color-faint)",
+  verworfen: "var(--color-danger)",
   // Priorität (Fehler: niedrig/mittel/hoch; Wartung zusätzlich sehr hoch/kritisch)
   niedrig: "var(--color-faint)",
   mittel: "var(--color-warn)",

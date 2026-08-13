@@ -288,6 +288,13 @@
       "when": 1786541075099,
       "tag": "0040_nappy_miss_america",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1786625322850,
+      "tag": "0041_thick_lady_bullseye",
+      "breakpoints": true
     }
   ]
 }

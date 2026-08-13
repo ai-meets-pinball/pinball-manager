@@ -1,6 +1,11 @@
 import { Resend } from "resend";
 import { getTemplate } from "@/db/queries";
-import { escapeHtml, renderPlaceholders, textToHtml } from "@/lib/email-templates";
+import {
+  escapeHtml,
+  renderPlaceholders,
+  textToHtml,
+} from "@/lib/email-templates";
+import { FEEDBACK_ABSCHLUSS_SATZ } from "@/lib/feedback-status";
 
 /*
   E-Mail-Versand über Resend. Bislang nur für „Passwort vergessen".
@@ -9,7 +14,8 @@ import { escapeHtml, renderPlaceholders, textToHtml } from "@/lib/email-template
   beim Senden erzeugt, damit ein fehlender Key nicht schon beim Import knallt.
 */
 
-const FROM = process.env.EMAIL_FROM ?? "Pinball Manager <onboarding@resend.dev>";
+const FROM =
+  process.env.EMAIL_FROM ?? "Pinball Manager <onboarding@resend.dev>";
 
 export async function sendResetPasswordEmail(to: string, url: string) {
   const apiKey = process.env.RESEND_API_KEY;
@@ -306,6 +312,47 @@ export async function sendFeedbackNotificationEmail(
         <p><strong>${escapeHtml(meldung.titel)}</strong> — gemeldet von ${escapeHtml(meldung.melder)}</p>
         ${textToHtml(meldung.beschreibung)}
         <p><a href="${meldung.url}">Alle Meldungen ansehen</a></p>
+      </div>
+    `,
+  });
+
+  if (error) {
+    throw new Error(`E-Mail-Versand fehlgeschlagen: ${error.message}`);
+  }
+}
+
+/** Benachrichtigung an den MELDER, wenn seine Meldung abgeschlossen wurde
+    (erledigt/zurückgestellt/verworfen). „Best effort" wie oben — der Aufrufer
+    (feedback-core) fängt Fehler ab. */
+export async function sendFeedbackStatusEmail(
+  to: string,
+  meldung: {
+    titel: string;
+    status: "erledigt" | "zurückgestellt" | "verworfen";
+    antwort: string | null;
+    url: string;
+  },
+) {
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) throw new Error("RESEND_API_KEY ist nicht gesetzt");
+
+  const satz = FEEDBACK_ABSCHLUSS_SATZ[meldung.status] ?? "wurde bearbeitet";
+
+  const resend = new Resend(apiKey);
+  const { error } = await resend.emails.send({
+    from: FROM,
+    to,
+    subject: `Deine Meldung wurde bearbeitet: ${meldung.titel}`,
+    html: `
+      <div style="font-family: sans-serif; line-height: 1.5;">
+        <p>Deine Meldung <strong>${escapeHtml(meldung.titel)}</strong> ${escapeHtml(satz)}.</p>
+        ${
+          meldung.antwort
+            ? `<p><strong>Antwort:</strong></p>${textToHtml(meldung.antwort)}`
+            : ""
+        }
+        <p>Danke für deinen Hinweis!</p>
+        <p><a href="${meldung.url}">Deine Meldungen ansehen</a></p>
       </div>
     `,
   });
