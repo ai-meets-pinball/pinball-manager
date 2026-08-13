@@ -212,7 +212,7 @@ export function MaintenancePlan({
                 <span>
                   {t.zuletztErledigt
                     ? `zuletzt: ${t.zuletztErledigt.toLocaleDateString("de-DE")}`
-                    : "noch nie erledigt"}
+                    : "noch nicht erledigt"}
                 </span>
                 {t.status !== "kein-termin" && t.naechsteFaelligkeit ? (
                   <span>
@@ -222,7 +222,9 @@ export function MaintenancePlan({
               </div>
 
               {t.beschreibung ? (
-                <p className="text-sm">{t.beschreibung}</p>
+                <p className="whitespace-pre-line break-words text-sm">
+                  {t.beschreibung}
+                </p>
               ) : null}
 
               {schreibbar ? (

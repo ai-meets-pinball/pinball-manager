@@ -70,7 +70,7 @@ export function RepairList({
           </div>
 
           {repair.diagnose ? (
-            <p>
+            <p className="whitespace-pre-line break-words">
               <span className="text-xs font-medium text-[var(--color-muted)]">
                 Diagnose:{" "}
               </span>
@@ -78,7 +78,7 @@ export function RepairList({
             </p>
           ) : null}
           {repair.massnahme ? (
-            <p>
+            <p className="whitespace-pre-line break-words">
               <span className="text-xs font-medium text-[var(--color-muted)]">
                 Maßnahme:{" "}
               </span>

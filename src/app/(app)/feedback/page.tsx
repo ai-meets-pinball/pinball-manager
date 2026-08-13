@@ -1,15 +1,14 @@
 import { Bug, ImageIcon } from "lucide-react";
-import {
-  FeedbackBearbeiten,
-  FeedbackForm,
-} from "@/components/feedback-form";
+import { FeedbackBearbeiten, FeedbackForm } from "@/components/feedback-form";
 import { Card } from "@/components/ui/card";
+import { ChipFilter } from "@/components/ui/chip-filter";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { List, ListRow } from "@/components/ui/list";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { deleteFeedback } from "@/db/actions/feedback";
 import { getAllesFeedback, getMeinFeedback } from "@/db/queries";
 import { isSuperAdmin, isSupporter, requireUser } from "@/lib/session";
+import { FEEDBACK_STATUS } from "@/lib/validators";
 
 /*
   Feedback & Fehlermeldungen — EINE Seite mit rollenabhängigen Abschnitten
@@ -28,15 +27,52 @@ const TYP_LABEL: Record<string, string> = {
 export default async function FeedbackPage({
   searchParams,
 }: {
-  searchParams: Promise<{ von?: string }>;
+  searchParams: Promise<{ von?: string; status?: string }>;
 }) {
   const user = await requireUser();
-  const { von } = await searchParams;
+  const { von, status } = await searchParams;
   const darfAlleSehen = isSupporter(user) || isSuperAdmin(user);
   const darfBearbeiten = isSuperAdmin(user);
 
   const meine = await getMeinFeedback(user.id);
   const alle = darfAlleSehen ? await getAllesFeedback(user) : [];
+
+  // Status-Filter der Triage-Liste (Einfachauswahl wie die Club-Auswahl auf
+  // /machines): Zustand in der URL, gefiltert wird in-memory (kleine Liste).
+  const proStatus = new Map<string, number>();
+  for (const m of alle)
+    proStatus.set(m.status, (proStatus.get(m.status) ?? 0) + 1);
+  const statusFilter = (FEEDBACK_STATUS as readonly string[]).includes(
+    status ?? "",
+  )
+    ? status!
+    : "";
+  const gefiltert = statusFilter
+    ? alle.filter((m) => m.status === statusFilter)
+    : alle;
+  const statusHref = (key: string) => {
+    const p = new URLSearchParams();
+    if (von) p.set("von", von);
+    if (key) p.set("status", key);
+    const qs = p.toString();
+    return `/feedback${qs ? `?${qs}` : ""}`;
+  };
+  const statusOptionen = [
+    {
+      key: "",
+      label: "Alle",
+      count: alle.length,
+      href: statusHref(""),
+      aktiv: statusFilter === "",
+    },
+    ...FEEDBACK_STATUS.map((s) => ({
+      key: s,
+      label: s,
+      count: proStatus.get(s) ?? 0,
+      href: statusHref(s),
+      aktiv: statusFilter === s,
+    })),
+  ];
 
   return (
     <div className="space-y-8">
@@ -56,7 +92,9 @@ export default async function FeedbackPage({
       </Card>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Meine Meldungen ({meine.length})</h2>
+        <h2 className="text-lg font-semibold">
+          Meine Meldungen ({meine.length})
+        </h2>
         <List empty="Noch keine Meldungen.">
           {meine.map((m) => (
             <ListRow
@@ -64,8 +102,7 @@ export default async function FeedbackPage({
               title={m.titel}
               subtitle={
                 <>
-                  {TYP_LABEL[m.typ]} ·{" "}
-                  {m.createdAt.toLocaleDateString("de-DE")}
+                  {TYP_LABEL[m.typ]} · {m.createdAt.toLocaleDateString("de-DE")}
                   {m.antwort ? <> — Antwort: {m.antwort}</> : null}
                 </>
               }
@@ -92,21 +129,27 @@ export default async function FeedbackPage({
 
       {darfAlleSehen ? (
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold">Alle Meldungen ({alle.length})</h2>
+          <h2 className="text-lg font-semibold">
+            Alle Meldungen ({alle.length})
+          </h2>
           <p className="text-sm text-[var(--color-muted)]">
             {darfBearbeiten
               ? "Status und Antwort sind für den Melder sichtbar."
               : "Nur-Lese-Ansicht — bearbeiten dürfen Super-Admins."}
           </p>
-          <List empty="Keine Meldungen.">
-            {alle.map((m) => (
+          <ChipFilter
+            label="Status:"
+            ariaLabel="Nach Status filtern"
+            options={statusOptionen}
+          />
+          <List empty="Keine Meldungen mit diesem Status.">
+            {gefiltert.map((m) => (
               <ListRow
                 key={m.id}
                 title={m.titel}
                 subtitle={
                   <>
-                    {TYP_LABEL[m.typ]} · von{" "}
-                    {m.melderName ?? m.melderEmail} ·{" "}
+                    {TYP_LABEL[m.typ]} · von {m.melderName ?? m.melderEmail} ·{" "}
                     {m.createdAt.toLocaleDateString("de-DE")}
                     {m.seite ? <> · Seite {m.seite}</> : null}
                     {m.appVersion ? <> · v{m.appVersion}</> : null}
@@ -141,7 +184,7 @@ export default async function FeedbackPage({
                 }
               >
                 <div className="space-y-2">
-                  <p className="text-sm text-[var(--color-muted)]">
+                  <p className="whitespace-pre-line break-words text-sm text-[var(--color-muted)]">
                     {m.beschreibung}
                   </p>
                   {m.userAgent ? (
