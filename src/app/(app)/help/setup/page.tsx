@@ -370,7 +370,7 @@ const abschnitte: Abschnitt[] = [
     schritte: [
       {
         titel: "Rollen als Daten, nicht als Enum",
-        text: "Ein Katalog `roles` plus Zuweisungen `role_assignments`. Ist eine Zuweisung an einen Club gebunden, IST sie die Mitgliedschaft — eine separate Mitglieder-Tabelle gibt es nicht.",
+        text: "Ein Katalog `roles` plus Zuweisungen `role_assignments`. Ist eine Zuweisung an einen Club gebunden, IST sie die Mitgliedschaft — eine separate Mitglieder-Tabelle gibt es nicht. Weil Rollen Daten sind, lassen sie sich per Migration hinzufügen UND wieder entfernen — so kam »Kurator« dazu und »Supporter« später wieder weg. Manche Katalog-Zeilen sind reine Dokumentation (»Gast« ohne Konto, »User« ohne Club): Sie benennen vorhandene Fälle, ohne je vergeben zu werden.",
       },
       {
         titel: "Das Modell als gemeinsamer Anker",
