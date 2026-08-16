@@ -1,4 +1,4 @@
-import { CLUB_ROLES, KURATOR_ROLE, SUPERADMIN_ROLE, SUPPORTER_ROLE } from "@/lib/validators";
+import { CLUB_ROLES, KURATOR_ROLE, SUPERADMIN_ROLE } from "@/lib/validators";
 
 /*
   Die Autorisierungsregeln — rein, ohne Datenbank und ohne Request-Kontext.
@@ -11,8 +11,7 @@ import { CLUB_ROLES, KURATOR_ROLE, SUPERADMIN_ROLE, SUPPORTER_ROLE } from "@/lib
   eigentliche Zweck der Entscheidung war.
 
   lib/session.ts ist der Adapter: er lädt Zeile und Rolle und ruft diese
-  Funktionen. Die Begriffe (`darf`, Club, Kurator, Supporter) stehen in
-  CONTEXT.md.
+  Funktionen. Die Begriffe (`darf`, Club, Kurator) stehen in CONTEXT.md.
 */
 
 export type ClubRolle = (typeof CLUB_ROLES)[number];
@@ -24,12 +23,6 @@ export type RechteNutzer = { id: string; roles?: string[] };
 
 export function isSuperAdmin(user: RechteNutzer | null): boolean {
   return Boolean(user?.roles?.includes(SUPERADMIN_ROLE));
-}
-
-/** Supporter = globale NUR-LESE-Rolle: Einblick in Clubs und deren Maschinen
-    (nicht in private Sammlungen), ohne jede Änderung. */
-export function isSupporter(user: RechteNutzer | null): boolean {
-  return Boolean(user?.roles?.includes(SUPPORTER_ROLE));
 }
 
 /** Kurator = globale Moderations-Rolle für die Wissensbasis. */
@@ -81,9 +74,10 @@ export type MaschinenRechte = {
 /**
  * Was jemand mit einer Maschine darf.
  *
- * Lesen und Schreiben sind getrennt, damit die Nur-Lese-Rolle Supporter
- * nichts verändern kann. Supporter sehen zudem nur CLUB-Maschinen — private
- * Sammlungen bleiben privat.
+ * Lesen und Schreiben sind bewusst getrennt (requireMachineAccess vs.
+ * requireMachineWrite), damit eine künftige Nur-Lese-Rolle nichts verändern
+ * kann. Aktuell fallen `lesen` und `bearbeiten` zusammen — es gibt derzeit
+ * keine Rolle, die sehen, aber nicht ändern darf.
  */
 export function darfMaschine(
   user: RechteNutzer,
@@ -94,11 +88,10 @@ export function darfMaschine(
   const eigentuemer = maschine.ownerId === user.id;
   const imClub = maschine.clubId !== null;
   const mitglied = imClub && clubRolle !== null;
-  const supporterLesen = imClub && isSupporter(user);
   const manager = imClub && mindestens(clubRolle, "admin");
 
   return {
-    lesen: superAdmin || eigentuemer || mitglied || supporterLesen,
+    lesen: superAdmin || eigentuemer || mitglied,
     bearbeiten: superAdmin || eigentuemer || mitglied,
     // Löschen und Teilen geben Daten preis bzw. sind endgültig — dafür reicht
     // eine einfache Mitgliedschaft nicht.
@@ -139,7 +132,7 @@ export type ClubRechte = {
 export function darfClub(user: RechteNutzer, rolle: string | null): ClubRechte {
   const superAdmin = isSuperAdmin(user);
   return {
-    lesen: superAdmin || isSupporter(user) || rolle !== null,
+    lesen: superAdmin || rolle !== null,
     verwalten: superAdmin || mindestens(rolle, "admin"),
     ownerVergeben: superAdmin || mindestens(rolle, "owner"),
   };

@@ -4,7 +4,7 @@ import { mailLog } from "@/db/schema";
 
 /* Versand-Protokoll (mail_log). Der Admin-Lesepfad ist über das admin/layout
    (Super-Admin) abgesichert; der Feedback-Inline-Pfad über die Triage-Seite
-   (Supporter/Super-Admin). */
+   (Super-Admin). */
 
 /** Seite des Protokolls (neueste zuerst) + Kategorie-Zähler für den Filter. */
 export async function getMailProtokoll(opts: {

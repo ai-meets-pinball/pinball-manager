@@ -674,8 +674,8 @@ export const knowledgeRevisions = pgTable(
   Meldungen der Nutzer über die App (Fehler oder Verbesserungsvorschlag).
   Der Auto-Kontext (seite, app_version, user_agent) wird SERVERSEITIG beim
   Absenden befüllt — der Melder muss nichts davon wissen. `antwort` ist die
-  Rückmeldung eines Super-Admins und für den Melder sichtbar. Sehen dürfen
-  alle Meldungen Super-Admins und Supporter; bearbeiten nur Super-Admins.
+  Rückmeldung eines Super-Admins und für den Melder sichtbar. Alle Meldungen
+  sehen und bearbeiten nur Super-Admins.
 */
 export const feedback = pgTable("feedback", {
   id: uuid("id").primaryKey().defaultRandom(),

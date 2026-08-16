@@ -8,13 +8,11 @@ import { requireSuperAdmin, roleIdByKey } from "@/lib/session";
 import {
   KURATOR_ROLE,
   SUPERADMIN_ROLE,
-  SUPPORTER_ROLE,
 } from "@/lib/validators";
 
 /** Vergebbare globale Rollen (per /admin). Founder o. Ä. ließen sich hier ergänzen. */
 const VERGEBBARE_GLOBALE_ROLLEN = [
   SUPERADMIN_ROLE,
-  SUPPORTER_ROLE,
   KURATOR_ROLE,
 ] as const;
 

@@ -1,24 +1,13 @@
 import Link from "next/link";
-import { Eye, Plus, Users } from "lucide-react";
+import { Plus, Users } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { getAllClubs, getUserClubs } from "@/db/queries";
-import { isSupporter, requireUser } from "@/lib/session";
+import { getUserClubs } from "@/db/queries";
+import { requireUser } from "@/lib/session";
 
 export default async function ClubsPage() {
   const user = await requireUser();
-
-  /*
-    Rollen kombinieren sich: jemand kann Owner/Mitglied in eigenen Clubs UND
-    global Supporter sein. Deshalb ist „Supporter" KEIN exklusiver Modus —
-    die eigenen Rollen und „Neuer Club" bleiben erhalten, zusätzlich sieht ein
-    Supporter alle übrigen Clubs (nur zur Einsicht).
-  */
-  const meine = await getUserClubs(user.id);
-  const eigeneRolle = new Map(meine.map((c) => [c.id, c.rolle]));
-  const supporter = isSupporter(user);
-
-  const clubs = supporter ? await getAllClubs() : meine;
+  const clubs = await getUserClubs(user.id);
 
   return (
     <div className="space-y-6">
@@ -38,27 +27,17 @@ export default async function ClubsPage() {
         </p>
       ) : (
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          {clubs.map((club) => {
-            const rolle = eigeneRolle.get(club.id) ?? null;
-            return (
-              <Link key={club.id} href={`/clubs/${club.id}`}>
-                <Card className="flex items-center justify-between transition-colors hover:border-[var(--color-primary)]">
-                  <span className="flex items-center gap-2 font-medium">
-                    <Users size={16} className="text-[var(--color-primary)]" />
-                    {club.name}
-                  </span>
-                  {rolle ? (
-                    <StatusBadge value={rolle} />
-                  ) : (
-                    // Supporter-Einsicht: kein eigenes Mitglied in diesem Club.
-                    <span className="inline-flex items-center gap-1 text-xs text-[var(--color-faint)]">
-                      <Eye size={12} /> Einsicht
-                    </span>
-                  )}
-                </Card>
-              </Link>
-            );
-          })}
+          {clubs.map((club) => (
+            <Link key={club.id} href={`/clubs/${club.id}`}>
+              <Card className="flex items-center justify-between transition-colors hover:border-[var(--color-primary)]">
+                <span className="flex items-center gap-2 font-medium">
+                  <Users size={16} className="text-[var(--color-primary)]" />
+                  {club.name}
+                </span>
+                <StatusBadge value={club.rolle} />
+              </Card>
+            </Link>
+          ))}
         </div>
       )}
     </div>

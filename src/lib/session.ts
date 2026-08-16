@@ -11,7 +11,6 @@ import {
   darfMaschine,
   darfWissen,
   isSuperAdmin,
-  isSupporter,
   mindestens,
   type ClubRechte,
   type MaschinenRechte,
@@ -109,7 +108,6 @@ export async function requireUser(): Promise<SessionUser> {
 export {
   isKurator,
   isSuperAdmin,
-  isSupporter,
   kannKuratieren,
 } from "@/lib/rechte";
 
@@ -186,14 +184,13 @@ export async function countClubOwners(clubId: string) {
 
 /**
  * LESE-Zugriff auf eine Maschine: erlaubt, wenn der Nutzer Eigentümer ist,
- * Super-Admin ist, Mitglied des zugeordneten Clubs — ODER Supporter UND die
- * Maschine gehört einem Club (Supporter sehen keine privaten Sammlungen).
- * Wirft sonst — die eine Regel, überall wiederverwendet. Fehler und Reparaturen
- * erben ihre Autorisierung hierüber (via fault.machineId).
+ * Super-Admin ist oder Mitglied des zugeordneten Clubs. Wirft sonst — die eine
+ * Regel, überall wiederverwendet. Fehler und Reparaturen erben ihre
+ * Autorisierung hierüber (via fault.machineId).
  *
- * `darf` trägt die SCHREIB-Berechtigung. Wichtig: Lesen und Schreiben sind
- * getrennt, damit die Nur-Lese-Rolle Supporter nichts verändern kann — vorher
- * gewährte requireMachineAccess implizit auch Schreibrechte.
+ * `darf` trägt zusätzlich die SCHREIB-Berechtigung. Lesen und Schreiben sind
+ * bewusst getrennt (requireMachineWrite prüft `darf.bearbeiten`), damit eine
+ * künftige Nur-Lese-Rolle nichts verändern kann.
  */
 export async function requireMachineAccess(machineId: string): Promise<{
   user: SessionUser;
@@ -252,8 +249,8 @@ export async function requireClubZugriff(clubId: string): Promise<{
 }
 
 /** SCHREIB-Zugriff auf eine Maschine erzwingen (anlegen/ändern/löschen von
-    Maschine, Fehlern, Reparaturen, Handbuch-Fakten). Lehnt Supporter ab, die
-    nur Lesezugriff haben. */
+    Maschine, Fehlern, Reparaturen, Handbuch-Fakten). Lehnt reine Lesezugriffe
+    ab (`darf.bearbeiten` = false). */
 export async function requireMachineWrite(machineId: string) {
   const res = await requireMachineAccess(machineId);
   if (!res.darf.bearbeiten) {
@@ -262,15 +259,11 @@ export async function requireMachineWrite(machineId: string) {
   return res;
 }
 
-/** Lese-Zugriff auf einen Club (für Club-Detailseiten). Super-Admin und
-    Supporter dürfen jeden Club lesen. */
+/** Lese-Zugriff auf einen Club (für Club-Detailseiten). Super-Admins dürfen
+    jeden Club lesen, sonst nur eigene Mitglieder. */
 export async function requireClubMember(clubId: string) {
   const user = await requireUser();
-  if (
-    !isSuperAdmin(user) &&
-    !isSupporter(user) &&
-    !(await isClubMember(user.id, clubId))
-  ) {
+  if (!isSuperAdmin(user) && !(await isClubMember(user.id, clubId))) {
     throw new Error("Kein Zugriff auf diesen Club");
   }
   return user;

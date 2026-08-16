@@ -9,7 +9,6 @@ import {
 } from "@/db/schema";
 import {
   isSuperAdmin,
-  isSupporter,
   type SessionUser,
 } from "@/lib/session";
 
@@ -24,10 +23,10 @@ export async function getMeinFeedback(userId: string) {
     .orderBy(desc(feedback.createdAt));
 }
 
-/** ALLE Meldungen samt Melder — für Super-Admins und Supporter (der Aufrufer
-    sichert den Zugriff ab; bearbeiten dürfen nur Super-Admins). */
+/** ALLE Meldungen samt Melder — nur für Super-Admins (der Aufrufer sichert den
+    Zugriff ebenfalls ab). */
 export async function getAllesFeedback(currentUser: SessionUser) {
-  if (!isSupporter(currentUser) && !isSuperAdmin(currentUser)) {
+  if (!isSuperAdmin(currentUser)) {
     throw new Error("Kein Zugriff auf fremde Meldungen");
   }
   return db

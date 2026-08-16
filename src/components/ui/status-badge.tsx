@@ -27,7 +27,6 @@ const tone: Record<string, string> = {
   member: "var(--color-faint)",
   // Globale Rolle
   superadmin: "var(--color-primary)",
-  supporter: "var(--color-accent)",
   kurator: "var(--color-success)",
   // Maschinen-Betriebsstatus (Dashboard)
   spielbereit: "var(--color-success)",

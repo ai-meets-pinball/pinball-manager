@@ -1,7 +1,5 @@
 import { expect, test } from "@playwright/test";
 import {
-  addMember,
-  createClub,
   createMachine,
   sql,
   userIdByEmail,
@@ -28,8 +26,6 @@ const GUIDE_JSON = JSON.stringify({
 test.describe("Troubleshooting-Guide JSON-Import", () => {
   let machineId: string;
   let modelId: string;
-  let clubMachineId: string;
-  let clubId: string;
 
   test.beforeAll(async () => {
     const ownerId = await userIdByEmail(USERS.owner);
@@ -37,20 +33,11 @@ test.describe("Troubleshooting-Guide JSON-Import", () => {
       ownerId,
       opdbRef: "E2E10-GID",
     }));
-    clubId = await createClub("E2E Guideclub", ownerId);
-    ({ machineId: clubMachineId } = await createMachine({
-      ownerId,
-      clubId,
-      opdbRef: "E2E10-GID2",
-    }));
-    const memberId = await userIdByEmail(USERS.member);
-    await addMember(clubId, memberId, "member");
   });
 
   test.afterAll(async () => {
     await sql`DELETE FROM knowledge WHERE model_id IN (${modelId})`;
-    await sql`DELETE FROM machines WHERE id IN (${machineId}, ${clubMachineId})`;
-    await sql`DELETE FROM clubs WHERE id = ${clubId}`;
+    await sql`DELETE FROM machines WHERE id = ${machineId}`;
   });
 
   test("ungültiges JSON: Prüfen meldet Fehler, Import bleibt gesperrt", async ({
@@ -88,13 +75,5 @@ test.describe("Troubleshooting-Guide JSON-Import", () => {
     await expect(
       page.getByText(/Importiert \(extern erstellt\)/),
     ).toBeVisible();
-  });
-
-  test("Supporter (nur Lesen) bekommt keinen Import", async ({ page }) => {
-    await loginAs(page, USERS.supporter);
-    await page.goto(`/machines/${clubMachineId}?bereich=guide`);
-    await expect(
-      page.getByRole("button", { name: "Guide importieren" }),
-    ).toHaveCount(0);
   });
 });

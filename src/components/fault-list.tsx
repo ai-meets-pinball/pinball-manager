@@ -28,7 +28,7 @@ export function FaultList({
 }: {
   faults: Fault[];
   machineId: string;
-  /** false = nur Lesen (z. B. Supporter): keine Bearbeiten-/Lösch-/Reparatur-Aktionen. */
+  /** false = nur Lesen: keine Bearbeiten-/Lösch-/Reparatur-Aktionen. */
   schreibbar?: boolean;
   /** Verfügbare KI-Anbieter (leer = keine → kein Vorschlags-Button). */
   kiProviders?: AiProvider[];

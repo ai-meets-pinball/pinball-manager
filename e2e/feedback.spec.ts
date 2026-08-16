@@ -5,8 +5,8 @@ import { loginAs, USERS } from "./helpers/auth";
 /*
   Feedback-/Bug-Report-System: Nutzer melden Fehler/Wünsche zur APP; der
   Auto-Kontext (Seite, Version, Browser) wird serverseitig erfasst. Eigene
-  Meldungen samt Status sieht jeder Melder; ALLE Meldungen sehen Supporter
-  (nur lesend) und Super-Admins (Triage: Status + Antwort, Löschen).
+  Meldungen samt Status sieht jeder Melder; ALLE Meldungen sehen nur
+  Super-Admins (Triage: Status + Antwort, Löschen).
 */
 test.describe("Feedback & Fehlermeldungen", () => {
   test.afterAll(async () => {
@@ -47,18 +47,6 @@ test.describe("Feedback & Fehlermeldungen", () => {
     await page.goto("/feedback");
     await expect(page.getByText("E2E Testmeldung")).toHaveCount(0);
     await expect(page.getByText("Alle Meldungen")).toHaveCount(0);
-  });
-
-  test("Supporter sieht alle Meldungen — aber nur lesend", async ({ page }) => {
-    await loginAs(page, USERS.supporter);
-    await page.goto("/feedback");
-    const zeile = page
-      .getByRole("listitem")
-      .filter({ hasText: "E2E Testmeldung" });
-    await expect(zeile).toBeVisible();
-    await expect(page.getByText(/Nur-Lese-Ansicht/)).toBeVisible();
-    await expect(zeile.getByRole("button", { name: "Speichern" })).toHaveCount(0);
-    await expect(zeile.getByRole("button", { name: "Löschen" })).toHaveCount(0);
   });
 
   test("Super-Admin triagiert: Status + Antwort — der Melder sieht beides", async ({

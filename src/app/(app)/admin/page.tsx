@@ -16,8 +16,15 @@ import { requireUser } from "@/lib/session";
 import {
   KURATOR_ROLE,
   SUPERADMIN_ROLE,
-  SUPPORTER_ROLE,
 } from "@/lib/validators";
+
+/* Anzeige-Label für den `scope` im Rollen-Katalog. „basis" markiert die reinen
+   Doku-Rollen (Gast/User), die nirgends zugewiesen werden. */
+const SCOPE_LABEL: Record<string, string> = {
+  basis: "Basis",
+  club: "Club",
+  global: "Global",
+};
 
 /* Nutzer & Rollen (Super-Admin). Guard + Rahmen/Navigation im admin/layout.tsx. */
 export default async function AdminPage() {
@@ -122,7 +129,6 @@ export default async function AdminPage() {
           {users.map((u) => {
             const meineRollen = rolesByUser.get(u.id) ?? [];
             const istSuper = meineRollen.includes(SUPERADMIN_ROLE);
-            const istSupporter = meineRollen.includes(SUPPORTER_ROLE);
             const istKurator = meineRollen.includes(KURATOR_ROLE);
             return (
               <ListRow
@@ -141,9 +147,8 @@ export default async function AdminPage() {
                       <FlaskConical size={14} /> Sichtbarkeit
                     </Link>
                     {istSuper ? <StatusBadge value="superadmin" /> : null}
-                    {istSupporter ? <StatusBadge value="supporter" /> : null}
                     {istKurator ? <StatusBadge value="kurator" /> : null}
-                    {!istSuper && !istSupporter && !istKurator ? (
+                    {!istSuper && !istKurator ? (
                       <span className="text-xs text-[var(--color-faint)]">
                         keine globale Rolle
                       </span>
@@ -173,27 +178,6 @@ export default async function AdminPage() {
                         ) : (
                           <Button type="submit" variant="secondary" size="sm">
                             Zum Super-Admin
-                          </Button>
-                        )}
-                      </form>
-                      <form action={setGlobalRole}>
-                        <input type="hidden" name="userId" value={u.id} />
-                        <input type="hidden" name="rolle" value="supporter" />
-                        <input
-                          type="hidden"
-                          name="grant"
-                          value={istSupporter ? "false" : "true"}
-                        />
-                        {istSupporter ? (
-                          <ConfirmButton
-                            question="Supporter wirklich entziehen?"
-                            confirmLabel="Ja, entziehen"
-                          >
-                            Supporter entziehen
-                          </ConfirmButton>
-                        ) : (
-                          <Button type="submit" variant="secondary" size="sm">
-                            Zum Supporter
                           </Button>
                         )}
                       </form>
@@ -249,7 +233,9 @@ export default async function AdminPage() {
               subtitle={r.beschreibung ?? undefined}
               meta={
                 <span className="font-mono text-xs text-[var(--color-muted)]">
-                  {r.scope} · Rang {r.rang}
+                  {r.scope === "basis"
+                    ? SCOPE_LABEL.basis
+                    : `${SCOPE_LABEL[r.scope] ?? r.scope} · Rang ${r.rang}`}
                 </span>
               }
             />

@@ -40,7 +40,7 @@ export function RepairList({
   repairs: Repair[];
   machineId: string;
   teilen?: TeilenProps;
-  /** false = nur Lesen (z. B. Supporter): keine Bearbeiten-/Lösch-Aktionen. */
+  /** false = nur Lesen: keine Bearbeiten-/Lösch-Aktionen. */
   schreibbar?: boolean;
 }) {
   if (repairs.length === 0) {

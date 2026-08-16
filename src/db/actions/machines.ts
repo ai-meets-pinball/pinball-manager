@@ -386,7 +386,7 @@ export async function updateMachine(
   formData: FormData,
 ): Promise<FormState> {
   const id = String(formData.get("id"));
-  // Schreib-Gate: lehnt Supporter (nur Lesezugriff) ab.
+  // Schreib-Gate: lehnt reine Lesezugriffe ab.
   const { user, machine, darf } = await requireMachineWrite(id);
 
   const result = await parseMachine(user.id, formData);

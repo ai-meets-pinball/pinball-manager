@@ -20,8 +20,8 @@ import type { FormState } from "@/db/actions/form-state";
 /*
   Feedback-/Bug-Report-System: Nutzer melden Fehler oder Verbesserungswünsche
   ZUR APP (nicht zu Maschinen — das sind `faults`). Der Auto-Kontext (Seite,
-  App-Version, Browser) wird HIER serverseitig ergänzt. Sehen dürfen alle
-  Meldungen Super-Admins und Supporter (Lesepfad in queries.ts / Seite);
+  App-Version, Browser) wird HIER serverseitig ergänzt. Alle Meldungen sehen
+  nur Super-Admins (Lesepfad in queries.ts / Seite);
   Status/Antwort/Löschen sind Super-Admin-only.
 */
 

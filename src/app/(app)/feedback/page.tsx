@@ -13,16 +13,15 @@ import {
   getMeinFeedback,
 } from "@/db/queries";
 import { mailKategorieLabel } from "@/lib/mail-kategorie";
-import { isSuperAdmin, isSupporter, requireUser } from "@/lib/session";
+import { isSuperAdmin, requireUser } from "@/lib/session";
 import { FEEDBACK_STATUS } from "@/lib/validators";
 
 /*
   Feedback & Fehlermeldungen — EINE Seite mit rollenabhängigen Abschnitten
-  (bewusst nicht unter /admin, weil auch Supporter die Meldungen sehen sollen;
+  (bewusst nicht unter /admin, damit jeder angemeldete Nutzer melden kann;
   Muster wie /kuratierung: der Guard steht lesbar hier):
   - alle Nutzer: Meldung absenden + „Meine Meldungen" (mit Status und Antwort),
-  - Supporter + Super-Admins: „Alle Meldungen",
-  - nur Super-Admins: Status/Antwort setzen, löschen.
+  - nur Super-Admins: „Alle Meldungen" + Status/Antwort setzen, löschen.
 */
 
 const TYP_LABEL: Record<string, string> = {
@@ -37,14 +36,15 @@ export default async function FeedbackPage({
 }) {
   const user = await requireUser();
   const { von, status, tab: tabParam } = await searchParams;
-  const darfAlleSehen = isSupporter(user) || isSuperAdmin(user);
+  // Alle Meldungen sehen und bearbeiten fallen zusammen: nur Super-Admins.
+  const darfAlleSehen = isSuperAdmin(user);
   const darfBearbeiten = isSuperAdmin(user);
 
   const meine = await getMeinFeedback(user.id);
   const alle = darfAlleSehen ? await getAllesFeedback(user) : [];
 
   // Drei Reiter (Zustand in der URL): Neue Meldung (Standard) · Meine Meldungen ·
-  // Alle Meldungen (nur Supporter/Super-Admin). Ungültige/gesperrte Werte → „neu".
+  // Alle Meldungen (nur Super-Admin). Ungültige/gesperrte Werte → „neu".
   const tab =
     tabParam === "meine" || (tabParam === "alle" && darfAlleSehen)
       ? tabParam
@@ -205,9 +205,7 @@ export default async function FeedbackPage({
             Alle Meldungen ({alle.length})
           </h2>
           <p className="text-sm text-[var(--color-muted)]">
-            {darfBearbeiten
-              ? "Status und Antwort sind für den Melder sichtbar."
-              : "Nur-Lese-Ansicht — bearbeiten dürfen Super-Admins."}
+            Status und Antwort sind für den Melder sichtbar.
           </p>
           <ChipFilter
             label="Status:"

@@ -222,7 +222,7 @@ export const ANLEITUNG: HilfeSektion[] = [
     key: "clubs-rollen",
     titel: "Clubs & Rollen",
     einleitung:
-      "Clubs teilen Maschinen mit mehreren Mitgliedern. Du kannst in mehreren Clubs sein und behältst dabei deine private Sammlung.",
+      "Clubs teilen Maschinen mit mehreren Mitgliedern. Du kannst in mehreren Clubs sein und behältst dabei deine private Sammlung. Ohne Club bist du ein »User« mit deiner eigenen Sammlung; wer ganz ohne Konto per QR-Code einen Fehler an einer Maschine meldet, ist ein »Gast«.",
     schritte: [
       {
         titel: "Club erstellen",
@@ -469,7 +469,7 @@ export const ANLEITUNG: HilfeSektion[] = [
     schritte: [
       {
         titel: "Melden",
-        text: "Nutzer-Icon oben rechts → »Problem melden«. Die Seite hat Reiter: »Neue Meldung« (Typ Fehler oder Verbesserungsvorschlag, Titel, Beschreibung, optional Screenshot), »Meine Meldungen« und — für Supporter/Super-Admins — »Alle Meldungen«. Seite, App-Version und Browser werden automatisch mitgeschickt; du musst nichts davon heraussuchen.",
+        text: "Nutzer-Icon oben rechts → »Problem melden«. Die Seite hat Reiter: »Neue Meldung« (Typ Fehler oder Verbesserungsvorschlag, Titel, Beschreibung, optional Screenshot), »Meine Meldungen« und — für Super-Admins — »Alle Meldungen«. Seite, App-Version und Browser werden automatisch mitgeschickt; du musst nichts davon heraussuchen.",
       },
       {
         titel: "Was passiert dann?",
@@ -510,15 +510,15 @@ export const ADMIN_HILFE: HilfeSektion[] = [
     titel: "Nutzer & globale Rollen",
     nurSuperAdmin: true,
     einleitung:
-      "Wer darf was auf Plattform-Ebene — Super-Admin, Supporter, Kurator.",
+      "Wer darf was auf Plattform-Ebene — Super-Admin und Kurator (plus die Grundrollen Gast und User).",
     schritte: [
       {
         titel: "Zugang",
         text: "Super-Admins finden »Administration« im Nutzer-Menü oben rechts. Die ersten Super-Admins werden über die Umgebungsvariable SUPER_ADMIN_EMAILS festgelegt; weitere lassen sich danach in der Admin-Oberfläche ernennen. Der letzte Super-Admin bleibt geschützt und kann nicht entfernt werden.",
       },
       {
-        titel: "Supporter (globale Nur-Lese-Rolle)",
-        text: "Unter »Nutzer & Rollen« kannst du jemandem die Supporter-Rolle geben. Ein Supporter sieht zur Unterstützung alle Clubs und deren Maschinen (mit Fehlern und Reparaturen), aber KEINE privaten Sammlungen einzelner Nutzer — und kann nichts ändern, anlegen oder löschen. Rein lesend.",
+        titel: "Grundrollen: Gast & User",
+        text: "Der Rollen-Katalog nennt zwei Grundrollen, die nirgends vergeben werden, weil es sie ohnehin gibt: »Gast« ist, wer OHNE Konto per QR-Code einen Fehler an einer Maschine meldet (der Aufkleber ist das Melde-Recht). »User« ist ein angemeldetes Konto ohne Club-Rolle — besitzt und pflegt eigene (private) Maschinen und sieht keine fremden Club-Maschinen. Beide stehen nur zur Orientierung im Katalog.",
       },
       {
         titel: "Kurator (Moderation der Wissensbasis)",
@@ -628,11 +628,11 @@ export const ADMIN_HILFE: HilfeSektion[] = [
     key: "feedback-verwaltung",
     titel: "Feedback-Meldungen sichten",
     einleitung:
-      "Fehlermeldungen und Verbesserungsvorschläge der Nutzer — sichtbar für Supporter und Super-Admins.",
+      "Fehlermeldungen und Verbesserungsvorschläge der Nutzer — sichtbar für Super-Admins.",
     schritte: [
       {
         titel: "Wo",
-        text: "Nutzer-Icon → »Problem melden« führt zur Seite Feedback & Fehlermeldungen. Supporter und Super-Admins sehen dort zusätzlich »Alle Meldungen« — mit Melder, Beschreibung und dem automatisch erfassten Kontext (Seite, App-Version, Browser).",
+        text: "Nutzer-Icon → »Problem melden« führt zur Seite Feedback & Fehlermeldungen. Super-Admins sehen dort zusätzlich »Alle Meldungen« — mit Melder, Beschreibung und dem automatisch erfassten Kontext (Seite, App-Version, Browser).",
       },
       {
         titel: "Triage (nur Super-Admins)",

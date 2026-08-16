@@ -21,7 +21,6 @@ export const USERS = {
   owner: "e2e-owner@e2e.local",
   member: "e2e-member@e2e.local",
   outsider: "e2e-outsider@e2e.local",
-  supporter: "e2e-supporter@e2e.local", // globale Nur-Lese-Rolle
   kurator: "e2e-kurator@e2e.local", // globale Moderations-Rolle
 } as const;
 

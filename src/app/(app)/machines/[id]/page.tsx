@@ -358,8 +358,7 @@ export default async function MachineDetailPage({
           >
             <QrCode size={15} /> QR-Code
           </Link>
-          {/* Schreibende Bedienelemente nur, wenn der Nutzer auch schreiben darf
-              (Supporter haben nur Lesezugriff). */}
+          {/* Schreibende Bedienelemente nur, wenn der Nutzer auch schreiben darf. */}
           {darf.bearbeiten ? (
             <Link
               href={`/machines/${machine.id}/edit`}

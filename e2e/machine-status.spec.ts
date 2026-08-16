@@ -24,7 +24,7 @@ test.describe("Maschinen-Status (Dashboard)", () => {
   test.beforeAll(async () => {
     const ownerId = await userIdByEmail(USERS.owner);
     ({ machineId } = await createMachine({ ownerId, opdbRef: "E2E9-STAT" }));
-    // Club-Maschine, damit der Supporter (nur Lesen) sie einsehen kann.
+    // Club-Maschine für die Vorschau-/Wartungstests weiter unten.
     clubId = await createClub("E2E Statusclub", ownerId);
     ({ machineId: clubMachineId } = await createMachine({
       ownerId,
@@ -104,15 +104,6 @@ test.describe("Maschinen-Status (Dashboard)", () => {
     const s = await machineStatus(machineId);
     expect(s.manuell).toBe(false);
     expect(s.status).toBe("eingeschraenkt"); // der kritische Fehler ist noch offen
-  });
-
-  test("Supporter (nur Lesen) sieht keine Status-Steuerung", async ({ page }) => {
-    await loginAs(page, USERS.supporter);
-    await page.goto(`/machines/${clubMachineId}?bereich=uebersicht`);
-    await expect(page.getByText("Maschinenstatus")).toBeVisible();
-    await expect(
-      page.getByRole("button", { name: "Status manuell setzen" }),
-    ).toHaveCount(0);
   });
 
   test("Fehler-Vorschau zeigt den Melder-Namen; Letzte Wartung erscheint", async ({

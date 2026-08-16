@@ -8,17 +8,7 @@ import {
   roles,
 } from "@/db/schema";
 
-/* Clubs: Übersichten für Mitglieder und für die Supporter-Rolle. */
-
-/** Alle Clubs (für Supporter: nur-lesende Übersicht). `rolle: null`, damit die
-    Form mit getUserClubs übereinstimmt (keine eigene Rolle im fremden Club). */
-export async function getAllClubs() {
-  const rows = await db
-    .select({ id: clubs.id, name: clubs.name })
-    .from(clubs)
-    .orderBy(clubs.name);
-  return rows.map((c) => ({ ...c, rolle: null as string | null }));
-}
+/* Clubs: Übersichten für Mitglieder. */
 
 /** Clubs des Nutzers (inkl. Rollen-Key). */
 export async function getUserClubs(userId: string) {

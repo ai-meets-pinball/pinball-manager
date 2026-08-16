@@ -97,8 +97,6 @@ export type ClubRole = (typeof CLUB_ROLES)[number];
 
 /** Globale Rolle mit Vollzugriff (scope "global" im Katalog). */
 export const SUPERADMIN_ROLE = "superadmin";
-/** Globale Nur-Lese-Rolle: Einblick in Club-Daten, keine Mutationen. */
-export const SUPPORTER_ROLE = "supporter";
 /** Globale Moderations-Rolle: verbirgt geteilte Wissenseinträge für alle. */
 export const KURATOR_ROLE = "kurator";
 

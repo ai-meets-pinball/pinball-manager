@@ -18,7 +18,6 @@ const nutzer = (id: string, ...roles: string[]) => ({ id, roles });
 const ich = nutzer("u1");
 const fremder = nutzer("u2");
 const superAdmin = nutzer("u3", "superadmin");
-const supporter = nutzer("u4", "supporter");
 const kurator = nutzer("u5", "kurator");
 
 const privat = { ownerId: "u1", clubId: null };
@@ -54,18 +53,6 @@ describe("darfMaschine", () => {
   it("gibt Club-Admins und -Owners auch das Löschen", () => {
     expect(darfMaschine(fremder, clubMaschine, "admin").loeschen).toBe(true);
     expect(darfMaschine(fremder, clubMaschine, "owner").loeschen).toBe(true);
-  });
-
-  it("lässt Supporter Club-Maschinen NUR lesen", () => {
-    const d = darfMaschine(supporter, clubMaschine, null);
-    expect(d.lesen).toBe(true);
-    expect(d.bearbeiten).toBe(false);
-    expect(d.loeschen).toBe(false);
-  });
-
-  it("hält Supporter von PRIVATEN Maschinen fern", () => {
-    // Die Regel, die private Sammlungen schützt: ohne Club kein Supporter-Blick.
-    expect(darfMaschine(supporter, privat, null).lesen).toBe(false);
   });
 
   it("gibt dem Super-Admin alles, auch bei fremden Privatmaschinen", () => {
@@ -117,14 +104,6 @@ describe("darfClub", () => {
       lesen: true,
       verwalten: true,
       ownerVergeben: true,
-    });
-  });
-
-  it("lässt Supporter lesen, aber nicht verwalten", () => {
-    expect(darfClub(supporter, null)).toEqual({
-      lesen: true,
-      verwalten: false,
-      ownerVergeben: false,
     });
   });
 
