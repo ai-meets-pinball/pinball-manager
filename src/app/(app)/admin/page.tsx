@@ -5,7 +5,7 @@ import { AdminClubRoles } from "@/components/admin-club-roles";
 import { InviteUserForm } from "@/components/invite-user-form";
 import { RoleInfo } from "@/components/role-info";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Card, cardSurface } from "@/components/ui/card";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { List, ListRow } from "@/components/ui/list";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -38,7 +38,7 @@ const ACHSEN: { scope: string; titel: string; hinweis: string }[] = [
     scope: "club",
     titel: "Club-Rollen",
     hinweis:
-      "Gelten immer in genau einem Club. Ein Nutzer kann je Club eine Rolle haben — und in mehreren Clubs verschiedene.",
+      "Gelten immer in genau einem Club. Ein Nutzer kann in mehreren Clubs Rollen haben — z. B. Mitglied in mehreren Clubs und Owner in einem anderen.",
   },
   {
     scope: "global",
@@ -309,29 +309,35 @@ export default async function AdminPage() {
                     {achse.hinweis}
                   </p>
                 </div>
-                <List empty="—">
+                {/* Eigene Zeilen statt ListRow: die Beschreibung soll voll
+                    umbrechen, nicht in einer Zeile trunkiert werden. */}
+                <ul className="space-y-2">
                   {zeilen.map((r) => (
-                    <ListRow
+                    <li
                       key={r.id}
-                      title={
-                        <>
+                      className={`${cardSurface} flex flex-wrap items-start justify-between gap-3`}
+                    >
+                      <div className="min-w-0">
+                        <p className="font-medium">
                           {r.label}{" "}
                           <span className="font-mono text-xs text-[var(--color-faint)]">
                             {r.key}
                           </span>
-                        </>
-                      }
-                      subtitle={r.beschreibung ?? undefined}
-                      meta={
-                        <span className="font-mono text-xs text-[var(--color-muted)]">
-                          {r.scope === "basis"
-                            ? SCOPE_LABEL.basis
-                            : `${SCOPE_LABEL[r.scope] ?? r.scope} · Rang ${r.rang}`}
-                        </span>
-                      }
-                    />
+                        </p>
+                        {r.beschreibung ? (
+                          <p className="mt-0.5 text-sm text-[var(--color-muted)]">
+                            {r.beschreibung}
+                          </p>
+                        ) : null}
+                      </div>
+                      <span className="flex-none font-mono text-xs text-[var(--color-muted)]">
+                        {r.scope === "basis"
+                          ? SCOPE_LABEL.basis
+                          : `${SCOPE_LABEL[r.scope] ?? r.scope} · Rang ${r.rang}`}
+                      </span>
+                    </li>
                   ))}
-                </List>
+                </ul>
               </div>
             );
           })}
