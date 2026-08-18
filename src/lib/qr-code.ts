@@ -12,12 +12,18 @@ export function baseUrl(): string {
   );
 }
 
-/** Melde-SVG für einen QR-Token (führt auf /m/<token>). */
-export async function erzeugeQrSvg(token: string): Promise<string> {
-  return QRCode.toString(`${baseUrl()}/m/${token}`, {
+/** QR-SVG für eine beliebige URL (Vektor, keine externen Dienste) — z. B. für
+    Beispiel-Etiketten auf der öffentlichen Log-Seite. */
+export async function erzeugeQrSvgFuerUrl(url: string): Promise<string> {
+  return QRCode.toString(url, {
     type: "svg",
     margin: 1,
     width: 480,
     errorCorrectionLevel: "M",
   });
+}
+
+/** Melde-SVG für einen QR-Token (führt auf /m/<token>). */
+export async function erzeugeQrSvg(token: string): Promise<string> {
+  return erzeugeQrSvgFuerUrl(`${baseUrl()}/m/${token}`);
 }
