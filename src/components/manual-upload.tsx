@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FileText, Loader2 } from "lucide-react";
+import { ChevronDown, FileText, Loader2 } from "lucide-react";
 import { AiProviderField } from "@/components/ui/ai-provider-field";
 import { Button } from "@/components/ui/button";
 import { VisibilityField } from "@/components/ui/visibility-field";
@@ -176,18 +176,36 @@ export function ManualUpload({
         </span>
       </label>
 
-      <AiProviderField providers={providers} centralKey={centralKey} />
+      {/* Fortgeschrittene Optionen eingeklappt — Standard-Pfad ist nur Datei +
+          Bestätigung + Auswerten. Die Felder bleiben im geschlossenen <details>
+          im DOM und werden ganz normal mitgeschickt (Standard-Anbieter etc.). */}
+      <details className="group rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)]">
+        <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-sm font-medium hover:bg-[var(--color-inset)] [&::-webkit-details-marker]:hidden">
+          Erweiterte Optionen
+          <ChevronDown
+            size={16}
+            className="text-[var(--color-muted)] transition-transform group-open:rotate-180"
+          />
+        </summary>
+        <div className="flex flex-col gap-3 border-t border-[var(--color-border)] px-3 py-3">
+          <AiProviderField providers={providers} centralKey={centralKey} />
 
-      <label className="flex items-start gap-2 text-sm text-[var(--color-muted)]">
-        <input type="checkbox" name="highDetail" className="mt-0.5 accent-[var(--color-accent)]" />
-        <span>
-          Hohe Detailstufe (nur Claude): Seiten werden hochauflösend an Sonnet
-          geschickt — für schwer lesbare Scans, bei denen die normale Auswertung
-          leer bleibt. Langsamer und teurer.
-        </span>
-      </label>
+          <label className="flex items-start gap-2 text-sm text-[var(--color-muted)]">
+            <input
+              type="checkbox"
+              name="highDetail"
+              className="mt-0.5 accent-[var(--color-accent)]"
+            />
+            <span>
+              Hohe Detailstufe (nur Claude): Seiten werden hochauflösend an Sonnet
+              geschickt — für schwer lesbare Scans, bei denen die normale Auswertung
+              leer bleibt. Langsamer und teurer.
+            </span>
+          </label>
 
-      <VisibilityField />
+          <VisibilityField />
+        </div>
+      </details>
 
       {zuGross ? (
         <p className="text-sm text-[var(--color-danger)]">

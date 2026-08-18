@@ -15,8 +15,7 @@ import {
 } from "@/components/machine-overview";
 import { MachineTabs, type MachineTab } from "@/components/machine-tabs";
 import { MaintenancePlan } from "@/components/maintenance-plan";
-import { ManualJsonImport } from "@/components/manual-json-import";
-import { ManualUpload } from "@/components/manual-upload";
+import { ManualExtract } from "@/components/manual-extract";
 import { RepairList } from "@/components/repair-list";
 import { SharedRepairs } from "@/components/shared-repairs";
 import { StatusSeit } from "@/components/status-seit";
@@ -24,6 +23,7 @@ import { StatusSteuerung } from "@/components/status-steuerung";
 import { TroubleshootingGenerate } from "@/components/troubleshooting-generate";
 import { TroubleshootingJsonImport } from "@/components/troubleshooting-json-import";
 import { Card } from "@/components/ui/card";
+import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { deleteMachine } from "@/db/actions/machines";
 import { getMachineDetail } from "@/db/machine-detail";
@@ -580,27 +580,16 @@ export default async function MachineDetailPage({
               kannKuratieren={kannKuratieren(currentUser)}
             />
 
+            {/* Beide Wege sind KI-Extraktion aus dem Handbuch (App-intern ODER
+                mit eigenem ChatGPT-/Claude-Abo) — ein Bereich, standardmäßig zu. */}
             {darf.bearbeiten ? (
-              <Card className="space-y-3">
-                <p className="text-sm text-[var(--color-muted)]">
-                  Lade dein eigenes Handbuch hoch, um Referenztabellen (Spulen,
-                  Lampen-/Schalter-Matrix, Sicherungen, Teile, Regeln) zu
-                  extrahieren. Das PDF wird dabei nicht gespeichert — nur die
-                  extrahierten Fakten.
-                </p>
-                <ManualUpload
+              <CollapsibleSection title="Handbuch per KI auswerten">
+                <ManualExtract
                   machineId={machine.id}
                   providers={kiProviders}
                   centralKey={kiCentralKey}
                 />
-              </Card>
-            ) : null}
-
-            {/* Alternative ohne KI-Verarbeitung: fertiges Fakten-JSON importieren. */}
-            {darf.bearbeiten ? (
-              <Card className="space-y-3">
-                <ManualJsonImport machineId={machine.id} />
-              </Card>
+              </CollapsibleSection>
             ) : null}
           </div>
         </section>

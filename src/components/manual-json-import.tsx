@@ -50,16 +50,10 @@ export function ManualJsonImport({ machineId }: { machineId: string }) {
 
   return (
     <div className="space-y-3">
-      <div>
-        <p className="flex items-center gap-2 font-medium">
-          <FileJson size={16} className="text-[var(--color-primary)]" />
-          Ohne Verarbeitung: aus ChatGPT-JSON importieren
-        </p>
-        <p className="mt-1 text-sm text-[var(--color-muted)]">
-          Mit ChatGPT-Abo: Handbuch dort hochladen, den Prompt einfügen und die
-          JSON-Ausgabe hier einsetzen — spart die KI-Verarbeitung in der App.
-        </p>
-      </div>
+      <p className="text-sm text-[var(--color-muted)]">
+        Mit ChatGPT-Abo: Handbuch dort hochladen, den Prompt einfügen und die
+        JSON-Ausgabe hier einsetzen — spart die KI-Verarbeitung in der App.
+      </p>
 
       <Button
         type="button"
