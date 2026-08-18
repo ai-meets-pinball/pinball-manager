@@ -2,6 +2,9 @@ import Link from "next/link";
 import { MarketingFooter, MarketingNav } from "@/components/site-chrome";
 import { baseUrl, erzeugeQrSvgFuerUrl } from "@/lib/qr-code";
 import { DEFAULT_PROMPTS, PROMPT_KEYS, type PromptKey } from "@/lib/prompts";
+import { ilike } from "drizzle-orm";
+import { db } from "@/db";
+import { clubs } from "@/db/schema";
 
 /*
   Öffentliche „Log"-Seite (Änderungsprotokoll) — bewusst NICHT in der Navigation
@@ -123,6 +126,21 @@ export default async function LogPage() {
     ].map(async (b) => ({ ...b, svg: await erzeugeQrSvgFuerUrl(b.url) })),
   );
 
+  // Beispiel-Scorecard mit dem echten Vereinslogo (falls vorhanden). Defensiv:
+  // schlägt die DB-Abfrage fehl oder fehlt das Logo, bleibt es leer — die
+  // öffentliche Log-Seite darf daran nie scheitern.
+  let clubLogo: string | null = null;
+  try {
+    const club = await db.query.clubs.findFirst({
+      where: ilike(clubs.name, "%FlipperFreunde Fellbach%"),
+      columns: { logoUrl: true },
+    });
+    clubLogo = club?.logoUrl ?? null;
+  } catch {
+    clubLogo = null;
+  }
+  const qrScorecard = await erzeugeQrSvgFuerUrl(baseUrl());
+
   return (
     <div className="min-h-screen">
       <MarketingNav />
@@ -182,6 +200,47 @@ export default async function LogPage() {
           Beispiel-Etiketten — diese Codes führen auf unsere Website. Am echten
           Gerät zeigt der Code direkt auf die Melde-Seite der Maschine.
         </p>
+
+        {/* Beispiel: Scorecard im Querformat mit integriertem Vereinslogo. Die
+            Karte ist bewusst auf weißem Grund (wie gedruckt) — in beiden Themes. */}
+        <div className="mt-8">
+          <div className="mb-3 font-mono text-[11px] uppercase tracking-[1px] text-[var(--color-faint)]">
+            Beispiel · Scorecard mit Vereinslogo
+          </div>
+          <div className="mx-auto flex max-w-[560px] items-center gap-5 rounded-[12px] border border-[var(--color-border)] bg-white p-5 shadow-[0_10px_30px_rgba(30,28,26,0.06)]">
+            {clubLogo ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={clubLogo}
+                alt="Logo FlipperFreunde Fellbach"
+                className="h-20 w-20 flex-none rounded-lg object-contain"
+              />
+            ) : (
+              <div className="flex h-20 w-20 flex-none items-center justify-center rounded-lg bg-neutral-100 text-center font-mono text-[9px] uppercase leading-tight text-neutral-400">
+                Vereins-
+                <br />
+                logo
+              </div>
+            )}
+            <div className="min-w-0 flex-1 text-[#1e1c1a]">
+              <div className="text-[15px] font-bold">FlipperFreunde Fellbach</div>
+              <div className="text-[13px] text-neutral-600">
+                Godzilla (Pro) · Stern
+              </div>
+              <div className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.5px] text-neutral-500">
+                Problem am Automaten? Hier melden →
+              </div>
+            </div>
+            <div
+              className="aspect-square w-[92px] flex-none [&>svg]:h-full [&>svg]:w-full"
+              dangerouslySetInnerHTML={{ __html: qrScorecard }}
+            />
+          </div>
+          <p className="mt-3 font-mono text-[10px] text-[var(--color-faint)]">
+            So sieht eine Scorecard mit integriertem Vereinslogo aus — der
+            Beispiel-Code führt zur Startseite.
+          </p>
+        </div>
 
         <div className={`mt-8 grid grid-cols-1 sm:grid-cols-3 ${hairlineGrid}`}>
           {qrFeatures.map((f) => (
