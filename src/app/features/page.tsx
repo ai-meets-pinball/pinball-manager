@@ -1,5 +1,6 @@
 import { MarketingFooter, MarketingNav } from "@/components/site-chrome";
 import { STAMMTISCH_URL } from "@/lib/links";
+import { baseUrl, erzeugeQrSvgFuerUrl } from "@/lib/qr-code";
 
 /*
   Öffentliche Funktionen-Seite — editorial Rebrand (Handoff v2). Texte wie im
@@ -26,14 +27,27 @@ const deepFeatures = [
     points: ["Teile- und Kostenerfassung", "Durchsuchbare Historie", "Hinweise bei wiederkehrenden Fehlern"],
   },
   {
+    tag: "Handbuch-Daten per KI", roadmap: false,
+    title: "Handbücher werden zu Referenztabellen.",
+    desc: "Ein PDF-Handbuch wird per KI in durchsuchbare Tabellen umgewandelt — Spulen, Schalter, Lampen, Sicherungen, Teile, Regeln. Das PDF wird dabei nicht gespeichert, nur die Fakten.",
+    points: ["PDF per KI auswerten oder JSON importieren", "Troubleshooting-Guides je Modell", "Wissen privat, im Club oder öffentlich teilen"],
+  },
+  {
+    tag: "Betrieb & Wartung", roadmap: false,
+    title: "Was spielbereit ist — und was ansteht.",
+    desc: "Jede Maschine trägt einen Betriebsstatus (automatisch aus offenen Fehlern oder manuell gesetzt), dazu Wartungspläne mit Fälligkeiten und Erinnerungen.",
+    points: ["Status: spielbereit / eingeschränkt / außer Betrieb", "Wartungsplan mit Fälligkeiten und Erinnerungen", "Überblick über nicht spielbereite Geräte"],
+  },
+  {
     tag: "KI-Diagnose", roadmap: true,
-    title: "Geplante Diagnoseunterstützung.",
-    desc: "Auf Basis von Handbüchern und dokumentierten Reparaturen sollen wahrscheinliche Ursachen zu einem beschriebenen Symptom vorgeschlagen werden.",
-    points: ["Trainiert auf Handbücher und Reparatur-Historie", "Rangfolge wahrscheinlicher Ursachen", "Verweise auf passende Ersatzteile"],
+    title: "Diagnose-Unterstützung.",
+    desc: "Erste KI-Reparaturvorschläge zu einem gemeldeten Fehler gibt es bereits (Diagnose, Maßnahme, Teile) — aus dem vorhandenen Maschinen-Wissen. Als Nächstes: Bauteil-Erkennung per Foto.",
+    points: ["Reparaturvorschlag aus Symptom + Wissen", "Bild-Erkennung von Bauteilen (in Arbeit)", "Verweise auf passende Ersatzteile"],
   },
 ];
 
-export default function FeaturesPage() {
+export default async function FeaturesPage() {
+  const qrBeispiel = await erzeugeQrSvgFuerUrl(baseUrl());
   return (
     <div className="min-h-screen">
       <MarketingNav />
@@ -51,6 +65,54 @@ export default function FeaturesPage() {
             der Anwendung ausmachen.
           </p>
         </div>
+
+        {/* Highlight: Fehler melden per QR — der neue Melde-Vorgang am Gerät. */}
+        <section className="mb-4 grid grid-cols-1 items-center gap-8 rounded-[12px] border border-[var(--color-accent)]/40 bg-[var(--color-surface-2)] p-7 sm:p-9 md:grid-cols-[1.15fr_0.85fr]">
+          <div>
+            <div className="mb-3 font-mono text-xs uppercase tracking-[1px] text-[var(--color-accent)]">
+              Neu · Fehler melden per QR
+            </div>
+            <h2 className="mb-3.5 text-[24px] font-bold leading-[1.25] sm:text-[27px]">
+              Ein Scan am Gerät — und der Fehler ist gemeldet.
+            </h2>
+            <p className="mb-5 text-[14px] leading-[1.7] text-[var(--color-muted)]">
+              Jede Maschine bekommt ein QR-Etikett. Wer den Code scannt, landet auf
+              einer öffentlichen Melde-Seite — auch ohne Konto. Symptom beschreiben,
+              Namen angeben, fertig. Priorität und Status vergibt der Betreiber.
+            </p>
+            <ol className="flex flex-col gap-2.5">
+              {[
+                ["01 · Scannen", "QR-Etikett am Gerät scannen."],
+                ["02 · Melden", "Symptom + Name — Login optional."],
+                ["03 · Triage", "Der Betreiber priorisiert und behebt."],
+              ].map(([k, v]) => (
+                <li key={k} className="flex gap-3 text-[13px]">
+                  <span className="whitespace-nowrap font-mono text-[11px] font-bold text-[var(--color-accent)]">
+                    {k}
+                  </span>
+                  <span className="text-[var(--color-muted)]">{v}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+          <div className="flex justify-center">
+            <div className="flex w-[220px] max-w-full flex-col items-center gap-3 rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
+              <div
+                className="aspect-square w-40 rounded-lg bg-white p-3 [&>svg]:h-full [&>svg]:w-full"
+                dangerouslySetInnerHTML={{ __html: qrBeispiel }}
+              />
+              <div className="text-center">
+                <div className="text-sm font-bold">Godzilla (Pro)</div>
+                <div className="font-mono text-[11px] uppercase tracking-[0.5px] text-[var(--color-faint)]">
+                  Fehler melden
+                </div>
+              </div>
+              <p className="text-center font-mono text-[10px] leading-[1.5] text-[var(--color-faint)]">
+                Beispiel — führt zur Startseite.
+              </p>
+            </div>
+          </div>
+        </section>
 
         {deepFeatures.map((df) => (
           <div

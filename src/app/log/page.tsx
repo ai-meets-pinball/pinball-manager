@@ -65,6 +65,52 @@ const updates = [
   },
 ];
 
+const roadmap = [
+  {
+    titel: "KI-Fehlerdiagnose",
+    text: "Aus Symptom, Handbuch-Fakten und Reparatur-Historie wahrscheinliche Ursachen und passende Teile vorschlagen.",
+  },
+  {
+    titel: "Bauteil per Foto erkennen",
+    text: "Foto eines Bauteils hochladen → Identifikation und Hinweis auf passenden Ersatz.",
+  },
+  {
+    titel: "Mehr Club-Funktionen",
+    text: "Gemeinsame Abläufe, feinere Rollen und Benachrichtigungen für Vereine.",
+  },
+  {
+    titel: "Mobiler Feinschliff",
+    text: "Noch flüssiger direkt am Automaten — dort, wo tatsächlich repariert wird.",
+  },
+];
+
+// Dummy: der aktuelle Reparaturvorschlag-Prompt (Entwurf) — steht öffentlich, damit
+// der Stammtisch beim Verbessern mithelfen kann. Nicht der Endstand.
+const REPARATUR_PROMPT_DUMMY = `Du bist ein erfahrener Flipper-Reparatur-Techniker. Für den folgenden
+gemeldeten Fehler sollst du einen konkreten, praxisnahen Reparaturvorschlag
+erstellen — vom wahrscheinlichsten, einfachsten Ansatz zum komplexeren.
+
+Gerät:
+- Hersteller: {{hersteller}}
+- Modell: {{modell}}
+- Baujahr: {{baujahr}}
+
+Gemeldeter Fehler:
+- Kategorie: {{kategorie}}
+- Symptom: {{symptom}}
+
+Vorhandenes Wissen zu diesem Gerät (Handbuch-Fakten, Guide; kann leer sein):
+{{wissen}}
+
+Erstelle den Vorschlag mit:
+- diagnose: wahrscheinliche Ursache(n) und wie man sie eingrenzt (Messpunkte,
+  Tests), vom Naheliegenden zum Selteneren.
+- massnahme: konkrete Reparaturschritte in sinnvoller Reihenfolge; kennzeichne
+  gefährliche Arbeiten (Netzspannung/HV) mit Warnhinweis.
+- teile: wahrscheinlich benötigte Teile — leer lassen, wenn keins nötig ist.
+- hinweis: kurzer Sicherheitshinweis. Erfinde keine Sollwerte, wenn sie nicht
+  belastbar bekannt sind.`;
+
 export default async function LogPage() {
   const beispiele = await Promise.all(
     [
@@ -174,6 +220,58 @@ export default async function LogPage() {
                   </li>
                 ))}
               </ul>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ===== TO-DO / ROADMAP (Dummy) ===== */}
+      <section className="mx-auto max-w-[1200px] border-t border-[var(--color-border)] px-5 py-[60px] sm:px-12">
+        <div className="mb-10 max-w-[640px]">
+          <div className="mb-3 font-mono text-xs uppercase tracking-[1px] text-[var(--color-faint)]">
+            To-Do · Entwurf
+          </div>
+          <h2 className="text-[26px] font-bold tracking-[-0.3px] sm:text-[30px]">
+            Was als Nächstes drankommt.
+          </h2>
+          <p className="mt-3 text-[15px] leading-[1.65] text-[var(--color-muted)]">
+            Eine offene Liste, gemeinsam mit dem Stammtisch priorisiert — Dummy-Stand,
+            wird noch verfeinert.
+          </p>
+        </div>
+
+        {/* Highlight: die richtigen Prompts */}
+        <div className="mb-4 rounded-[12px] border border-[var(--color-accent)]/40 bg-[var(--color-surface-2)] p-6 sm:p-8">
+          <div className="mb-2 font-mono text-xs uppercase tracking-[1px] text-[var(--color-accent)]">
+            Highlight
+          </div>
+          <h3 className="mb-2.5 text-[20px] font-bold">
+            Die richtigen KI-Prompts finden &amp; definieren.
+          </h3>
+          <p className="mb-5 max-w-[660px] text-[14px] leading-[1.7] text-[var(--color-muted)]">
+            Die KI-Funktionen (Handbuch auswerten, Reparaturvorschlag,
+            Troubleshooting-Guides) sind nur so gut wie die Anweisungen dahinter.
+            Genau daran feilen wir — hilf mit. Der Prompt unten ist der aktuelle
+            Stand: ein Entwurf, kein Endstand.
+          </p>
+          <div className="rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+            <div className="mb-2 font-mono text-[10px] uppercase tracking-[1px] text-[var(--color-faint)]">
+              Aktueller Prompt · Reparaturvorschlag (Entwurf)
+            </div>
+            <pre className="max-h-72 overflow-auto whitespace-pre-wrap font-mono text-[12px] leading-[1.6] text-[var(--color-muted)]">
+{REPARATUR_PROMPT_DUMMY}
+            </pre>
+          </div>
+        </div>
+
+        {/* Weitere To-Dos */}
+        <div className={`grid grid-cols-1 sm:grid-cols-2 ${hairlineGrid}`}>
+          {roadmap.map((r) => (
+            <div key={r.titel} className="bg-[var(--color-surface)] p-6">
+              <h3 className="mb-1.5 text-base font-bold">{r.titel}</h3>
+              <p className="text-[13px] leading-[1.6] text-[var(--color-muted)]">
+                {r.text}
+              </p>
             </div>
           ))}
         </div>
