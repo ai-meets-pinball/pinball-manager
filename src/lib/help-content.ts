@@ -238,7 +238,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Rollen",
-        text: "Owner: volle Kontrolle — Mitglieder & Einladungen verwalten, zum Owner befördern, Club löschen. Admin: Mitglieder & Einladungen verwalten, aber nicht zum Owner befördern oder den Club löschen. Mitglied: sieht und pflegt die Club-Maschinen. Das Info-Icon neben »Mitglieder« zeigt die Erklärung jederzeit direkt im Club.",
+        text: "Owner: volle Kontrolle — Mitglieder & Einladungen verwalten, zum Owner befördern, Club löschen. Admin: Mitglieder & Einladungen verwalten, aber nicht zum Owner befördern oder den Club löschen. Mitglied: sieht und pflegt die Club-Maschinen. Diese Rollen gelten immer für GENAU DIESEN Club — du kannst in mehreren Clubs sein und dort jeweils eine andere Rolle haben (und zusätzlich eine globale wie Kurator). Das Info-Icon neben »Mitglieder« zeigt die Erklärung jederzeit direkt im Club.",
       },
       {
         titel: "Rolle ändern",
@@ -510,11 +510,15 @@ export const ADMIN_HILFE: HilfeSektion[] = [
     titel: "Nutzer & globale Rollen",
     nurSuperAdmin: true,
     einleitung:
-      "Wer darf was auf Plattform-Ebene — Super-Admin und Kurator (plus die Grundrollen Gast und User).",
+      "Zwei Achsen: globale Rollen (Super-Admin, Kurator) und Club-Rollen (immer in einem Club) — eine Person kann mehrere halten. Dazu die Grundstufen Gast und User.",
     schritte: [
       {
         titel: "Zugang",
         text: "Super-Admins finden »Administration« im Nutzer-Menü oben rechts. Die ersten Super-Admins werden über die Umgebungsvariable SUPER_ADMIN_EMAILS festgelegt; weitere lassen sich danach in der Admin-Oberfläche ernennen. Der letzte Super-Admin bleibt geschützt und kann nicht entfernt werden.",
+      },
+      {
+        titel: "Rollen je Nutzer verwalten",
+        text: "Es gibt zwei Achsen: GLOBALE Rollen (Super-Admin, Kurator — plattformweit) und CLUB-Rollen (Owner/Admin/Mitglied — immer in genau einem Club). Eine Person kann mehrere halten: verschiedene Rollen in verschiedenen Clubs plus globale. In der Nutzerliste zeigt jede Person ihre Rollen; unter »Rollen verwalten« vergibst/änderst/entziehst du beides — bei einer Club-Rolle wählst du immer den Club dazu. (Club-Rollen lassen sich weiterhin auch direkt im jeweiligen Club vergeben.)",
       },
       {
         titel: "Grundrollen: Gast & User",
@@ -526,7 +530,7 @@ export const ADMIN_HILFE: HilfeSektion[] = [
       },
       {
         titel: "Rollen-Katalog",
-        text: "Unten auf der Nutzer-Seite steht der Rollen-Katalog mit allen Rollen und ihrer Bedeutung. Rollen sind Daten (kein fester Code) — das Info-Icon neben Vergabe-Stellen zeigt die Beschreibungen überall in der App.",
+        text: "Unten auf der Nutzer-Seite steht der Rollen-Katalog, nach Achsen gegliedert: Grundstufen (Gast/User, nicht zuweisbar), Club-Rollen (immer in einem Club) und Globale Rollen. Rollen sind Daten (kein fester Code) — das Info-Icon neben Vergabe-Stellen zeigt die Beschreibungen überall in der App.",
       },
       {
         titel: "Sichtbarkeits-Debug",

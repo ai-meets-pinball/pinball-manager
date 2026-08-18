@@ -1,6 +1,7 @@
-import { and, count, desc, eq, gte, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
 import Link from "next/link";
-import { FlaskConical } from "lucide-react";
+import { ChevronDown, FlaskConical } from "lucide-react";
+import { AdminClubRoles } from "@/components/admin-club-roles";
 import { InviteUserForm } from "@/components/invite-user-form";
 import { RoleInfo } from "@/components/role-info";
 import { Button } from "@/components/ui/button";
@@ -10,21 +11,41 @@ import { List, ListRow } from "@/components/ui/list";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { setGlobalRole } from "@/db/actions/admin";
 import { revokePlatformInvitation } from "@/db/actions/invitations";
+import { getAllClubsBasic, getClubRolesByUser } from "@/db/queries";
 import { db } from "@/db";
 import { invitations, roleAssignments, roles, user } from "@/db/schema";
 import { requireUser } from "@/lib/session";
-import {
-  KURATOR_ROLE,
-  SUPERADMIN_ROLE,
-} from "@/lib/validators";
+import { KURATOR_ROLE, SUPERADMIN_ROLE } from "@/lib/validators";
 
-/* Anzeige-Label für den `scope` im Rollen-Katalog. „basis" markiert die reinen
-   Doku-Rollen (Gast/User), die nirgends zugewiesen werden. */
+/* Anzeige-Label für den `scope` im Rollen-Katalog. */
 const SCOPE_LABEL: Record<string, string> = {
   basis: "Basis",
   club: "Club",
   global: "Global",
 };
+
+/* Der Katalog wird nach diesen Achsen gruppiert dargestellt — so wird klar,
+   dass Club-Rollen immer an einem Club hängen und Grundstufen nicht zuweisbar
+   sind. Reihenfolge = Reihenfolge der Blöcke. */
+const ACHSEN: { scope: string; titel: string; hinweis: string }[] = [
+  {
+    scope: "basis",
+    titel: "Grundstufen",
+    hinweis:
+      "Nicht zuweisbar — sie benennen nur vorhandene Zustände (kein Konto bzw. Konto ohne Club-Rolle).",
+  },
+  {
+    scope: "club",
+    titel: "Club-Rollen",
+    hinweis:
+      "Gelten immer in genau einem Club. Ein Nutzer kann je Club eine Rolle haben — und in mehreren Clubs verschiedene.",
+  },
+  {
+    scope: "global",
+    titel: "Globale Rollen",
+    hinweis: "Gelten plattformweit, unabhängig von Clubs. Frei mit Club-Rollen kombinierbar.",
+  },
+];
 
 /* Nutzer & Rollen (Super-Admin). Guard + Rahmen/Navigation im admin/layout.tsx. */
 export default async function AdminPage() {
@@ -46,14 +67,23 @@ export default async function AdminPage() {
     rolesByUser.set(r.userId, [...(rolesByUser.get(r.userId) ?? []), r.key]);
   }
 
-  // Rollen-Katalog (Daten statt Enum) — zur Orientierung.
-  const katalog = await db.select().from(roles).orderBy(roles.scope, roles.rang);
+  // Club-Rollen je Nutzer (club-bezogene Zuweisungen samt Club-Name) + Katalog
+  // aller Clubs für die Auswahlfelder der Vergabe.
+  const clubRoleRows = await getClubRolesByUser();
+  const clubRolesByUser = new Map<
+    string,
+    { clubId: string; clubName: string; rolle: string }[]
+  >();
+  for (const r of clubRoleRows) {
+    clubRolesByUser.set(r.userId, [
+      ...(clubRolesByUser.get(r.userId) ?? []),
+      { clubId: r.clubId, clubName: r.clubName, rolle: r.rolle },
+    ]);
+  }
+  const allClubs = await getAllClubsBasic();
 
-  // Anzahl Club-Zuweisungen gesamt (nur informativ).
-  const [{ value: clubAssignments } = { value: 0 }] = await db
-    .select({ value: count(roleAssignments.id) })
-    .from(roleAssignments)
-    .where(isNotNull(roleAssignments.clubId));
+  // Rollen-Katalog (Daten statt Enum) — zur Orientierung, nach Achsen gruppiert.
+  const katalog = await db.select().from(roles).orderBy(roles.scope, roles.rang);
 
   // Offene Plattform-Einladungen (ohne Club), noch nicht abgelaufen.
   const offeneEinladungen = await db
@@ -122,14 +152,18 @@ export default async function AdminPage() {
           />
         </h2>
         <p className="text-sm text-[var(--color-muted)]">
-          &bdquo;Sichtbarkeit&ldquo; ist ein temporäres Debug-Werkzeug (zeigt,
-          welche Maschinen ein Nutzer sehen kann) und wird später wieder entfernt.
+          Jede Person kann mehrere Rollen halten: globale (Kurator/Super-Admin)
+          und je Club eine Club-Rolle. Verwalten über „Rollen verwalten".
+          &bdquo;Sichtbarkeit&ldquo; ist ein temporäres Debug-Werkzeug.
         </p>
         <List empty="Noch keine Nutzer.">
           {users.map((u) => {
             const meineRollen = rolesByUser.get(u.id) ?? [];
             const istSuper = meineRollen.includes(SUPERADMIN_ROLE);
             const istKurator = meineRollen.includes(KURATOR_ROLE);
+            const meineClubRollen = clubRolesByUser.get(u.id) ?? [];
+            const hatKeineRolle =
+              !istSuper && !istKurator && meineClubRollen.length === 0;
             return (
               <ListRow
                 key={u.id}
@@ -148,64 +182,109 @@ export default async function AdminPage() {
                     </Link>
                     {istSuper ? <StatusBadge value="superadmin" /> : null}
                     {istKurator ? <StatusBadge value="kurator" /> : null}
-                    {!istSuper && !istKurator ? (
+                    {meineClubRollen.map((c) => (
+                      <span
+                        key={c.clubId}
+                        className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)]"
+                      >
+                        {c.clubName} <StatusBadge value={c.rolle} />
+                      </span>
+                    ))}
+                    {hatKeineRolle ? (
                       <span className="text-xs text-[var(--color-faint)]">
-                        keine globale Rolle
+                        keine Rolle
                       </span>
                     ) : null}
                   </>
                 }
-                actions={
-                  u.id !== me.id ? (
-                    <>
-                      {/* Regel: VERGEBEN ist reversibel → normaler Button;
-                          ENTZIEHEN nimmt Rechte weg → ConfirmButton. */}
-                      <form action={setGlobalRole}>
-                        <input type="hidden" name="userId" value={u.id} />
-                        <input type="hidden" name="rolle" value="superadmin" />
-                        <input
-                          type="hidden"
-                          name="grant"
-                          value={istSuper ? "false" : "true"}
-                        />
-                        {istSuper ? (
-                          <ConfirmButton
-                            question="Super-Admin wirklich entziehen?"
-                            confirmLabel="Ja, entziehen"
-                          >
-                            Super-Admin entziehen
-                          </ConfirmButton>
-                        ) : (
-                          <Button type="submit" variant="secondary" size="sm">
-                            Zum Super-Admin
-                          </Button>
-                        )}
-                      </form>
-                      <form action={setGlobalRole}>
-                        <input type="hidden" name="userId" value={u.id} />
-                        <input type="hidden" name="rolle" value="kurator" />
-                        <input
-                          type="hidden"
-                          name="grant"
-                          value={istKurator ? "false" : "true"}
-                        />
-                        {istKurator ? (
-                          <ConfirmButton
-                            question="Kurator wirklich entziehen?"
-                            confirmLabel="Ja, entziehen"
-                          >
-                            Kurator entziehen
-                          </ConfirmButton>
-                        ) : (
-                          <Button type="submit" variant="secondary" size="sm">
-                            Zum Kurator
-                          </Button>
-                        )}
-                      </form>
-                    </>
-                  ) : null
-                }
-              />
+              >
+                {/* Verwaltung, eingeklappt: globale Rollen + Club-Rollen. */}
+                <details className="group mt-1 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)]">
+                  <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-sm font-medium hover:bg-[var(--color-inset)] [&::-webkit-details-marker]:hidden">
+                    Rollen verwalten
+                    <ChevronDown
+                      size={16}
+                      className="text-[var(--color-muted)] transition-transform group-open:rotate-180"
+                    />
+                  </summary>
+                  <div className="space-y-3 border-t border-[var(--color-border)] px-3 py-3">
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-[var(--color-faint)]">
+                        Globale Rollen
+                      </p>
+                      {u.id !== me.id ? (
+                        <div className="flex flex-wrap items-center gap-2">
+                          {/* VERGEBEN ist reversibel → Button; ENTZIEHEN → ConfirmButton. */}
+                          <form action={setGlobalRole}>
+                            <input type="hidden" name="userId" value={u.id} />
+                            <input
+                              type="hidden"
+                              name="rolle"
+                              value="superadmin"
+                            />
+                            <input
+                              type="hidden"
+                              name="grant"
+                              value={istSuper ? "false" : "true"}
+                            />
+                            {istSuper ? (
+                              <ConfirmButton
+                                question="Super-Admin wirklich entziehen?"
+                                confirmLabel="Ja, entziehen"
+                              >
+                                Super-Admin entziehen
+                              </ConfirmButton>
+                            ) : (
+                              <Button type="submit" variant="secondary" size="sm">
+                                Zum Super-Admin
+                              </Button>
+                            )}
+                          </form>
+                          <form action={setGlobalRole}>
+                            <input type="hidden" name="userId" value={u.id} />
+                            <input type="hidden" name="rolle" value="kurator" />
+                            <input
+                              type="hidden"
+                              name="grant"
+                              value={istKurator ? "false" : "true"}
+                            />
+                            {istKurator ? (
+                              <ConfirmButton
+                                question="Kurator wirklich entziehen?"
+                                confirmLabel="Ja, entziehen"
+                              >
+                                Kurator entziehen
+                              </ConfirmButton>
+                            ) : (
+                              <Button type="submit" variant="secondary" size="sm">
+                                Zum Kurator
+                              </Button>
+                            )}
+                          </form>
+                        </div>
+                      ) : (
+                        <p className="text-xs text-[var(--color-faint)]">
+                          Die eigene globale Rolle lässt sich hier nicht ändern.
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <p className="text-xs font-medium text-[var(--color-faint)]">
+                        Club-Rollen{" "}
+                        <span className="font-normal">
+                          (immer in genau einem Club)
+                        </span>
+                      </p>
+                      <AdminClubRoles
+                        userId={u.id}
+                        clubRoles={meineClubRollen}
+                        allClubs={allClubs}
+                      />
+                    </div>
+                  </div>
+                </details>
+              </ListRow>
             );
           })}
         </List>
@@ -216,31 +295,47 @@ export default async function AdminPage() {
         <p className="text-sm text-[var(--color-muted)]">
           Rollen sind Daten (Tabelle <code>roles</code>), keine Enum-Werte.
           Zuweisungen liegen in <code>role_assignments</code> — global (ohne Club)
-          oder je Club ({clubAssignments} Club-Zuweisungen).
+          oder club-bezogen (ein Eintrag je Club = die Mitgliedschaft).
         </p>
-        <List empty="Kein Rollen-Katalog — Migration 0004 fehlt?">
-          {katalog.map((r) => (
-            <ListRow
-              key={r.id}
-              title={
-                <>
-                  {r.label}{" "}
-                  <span className="font-mono text-xs text-[var(--color-faint)]">
-                    {r.key}
-                  </span>
-                </>
-              }
-              subtitle={r.beschreibung ?? undefined}
-              meta={
-                <span className="font-mono text-xs text-[var(--color-muted)]">
-                  {r.scope === "basis"
-                    ? SCOPE_LABEL.basis
-                    : `${SCOPE_LABEL[r.scope] ?? r.scope} · Rang ${r.rang}`}
-                </span>
-              }
-            />
-          ))}
-        </List>
+        <div className="space-y-4">
+          {ACHSEN.map((achse) => {
+            const zeilen = katalog.filter((r) => r.scope === achse.scope);
+            if (zeilen.length === 0) return null;
+            return (
+              <div key={achse.scope} className="space-y-2">
+                <div>
+                  <p className="text-sm font-semibold">{achse.titel}</p>
+                  <p className="text-xs text-[var(--color-muted)]">
+                    {achse.hinweis}
+                  </p>
+                </div>
+                <List empty="—">
+                  {zeilen.map((r) => (
+                    <ListRow
+                      key={r.id}
+                      title={
+                        <>
+                          {r.label}{" "}
+                          <span className="font-mono text-xs text-[var(--color-faint)]">
+                            {r.key}
+                          </span>
+                        </>
+                      }
+                      subtitle={r.beschreibung ?? undefined}
+                      meta={
+                        <span className="font-mono text-xs text-[var(--color-muted)]">
+                          {r.scope === "basis"
+                            ? SCOPE_LABEL.basis
+                            : `${SCOPE_LABEL[r.scope] ?? r.scope} · Rang ${r.rang}`}
+                        </span>
+                      }
+                    />
+                  ))}
+                </List>
+              </div>
+            );
+          })}
+        </div>
       </section>
     </div>
   );
