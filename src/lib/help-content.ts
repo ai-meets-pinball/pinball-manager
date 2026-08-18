@@ -110,8 +110,8 @@ export const ANLEITUNG: HilfeSektion[] = [
       "Alles zu einer Maschine — gegliedert in drei Reiter-Gruppen mit Zählern.",
     schritte: [
       {
-        titel: "Übersicht & Reiter",
-        text: "Die Detailseite öffnet mit einer Übersicht (Foto, OPDB/IPDB und Status-Karten). Darüber liegen drei Reiter: »Übersicht«, »Betrieb« (Fehler, Wartung) und »Wissensbasis« (Reparaturen, Handbuch, Guide, Tipps). Wählst du eine Gruppe, erscheint darunter eine schmale Unterreihe für ihre Bereiche. Reiter und Status-Karten tragen Zähler (z. B. offene Fehler, fällige Wartung); die Leiste bleibt beim Scrollen sichtbar.",
+        titel: "Kopf, Übersicht & Reiter",
+        text: "Ganz oben steht der Kopf mit Foto, Name, Betriebsstatus, den Datenbank-Kennungen (OPDB/IPDB) sowie Club und Besitzern — dazu QR-Code, Bearbeiten und Löschen; er bleibt immer sichtbar. Darunter öffnet die Detailseite mit der Übersicht: einem Status-Dashboard aus Kennzahl-Karten. Über der Übersicht liegen drei Reiter: »Übersicht«, »Betrieb« (Fehler, Wartung) und »Wissensbasis« (Reparaturen, Handbuch, Guide, Tipps). Wählst du eine Gruppe, erscheint darunter eine schmale Unterreihe für ihre Bereiche. Reiter und Kennzahl-Karten tragen Zähler (z. B. offene Fehler, fällige Wartung); die Leiste bleibt beim Scrollen sichtbar.",
       },
       {
         titel: "Betriebsstatus",
@@ -285,7 +285,7 @@ export const ANLEITUNG: HilfeSektion[] = [
     schritte: [
       {
         titel: "Hochladen",
-        text: "Auf der Maschinen-Detailseite im Reiter »Handbuch« bestätigst du, dass du das Handbuch besitzt bzw. die Rechte hast, wählst das PDF und startest die Auswertung.",
+        text: "Auf der Maschinen-Detailseite im Reiter »Handbuch« öffnest du »Handbuch per KI auswerten«. Standardweg ist »In der App«: bestätigen, dass du das Handbuch besitzt bzw. die Rechte hast, das PDF wählen und auswerten. Anbieter, Detailstufe und Sichtbarkeit liegen unter »Erweiterte Optionen« — für den Normalfall musst du sie nicht anfassen.",
       },
       {
         titel: "Was passiert",
@@ -293,11 +293,11 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Alternative ohne KI: JSON-Import",
-        text: "Hast du ein ChatGPT-Abo, geht es auch ohne die KI-Verarbeitung in der App: Im Reiter »Handbuch« den vorbereiteten Prompt kopieren, in ChatGPT zusammen mit dem Handbuch nutzen und die JSON-Ausgabe hier einfügen. »Prüfen« zeigt eine Vorschau samt Warnungen, erst dann wird importiert.",
+        text: "Hast du ein ChatGPT- oder Claude-Abo, geht es auch ohne KI-Verarbeitung in der App: In »Handbuch per KI auswerten« auf »Eigenes ChatGPT-/Claude-Abo« umschalten, den vorbereiteten Prompt kopieren, dort zusammen mit dem Handbuch nutzen und die JSON-Ausgabe einfügen. »Prüfen« zeigt eine Vorschau samt Warnungen, erst dann wird importiert.",
       },
       {
         titel: "KI-Schlüssel (falls nötig)",
-        text: "Die KI-Funktionen (Handbuch auswerten, Troubleshooting-Guide, Wartungspunkte aus dem Guide) laufen über Claude (Anthropic). Ist zentral kein Schlüssel hinterlegt, erscheint ein Feld für deinen eigenen Anthropic-API-Schlüssel: Er wird nur für die jeweilige Aktion genutzt und NICHT gespeichert. Einen Schlüssel legst du unter console.anthropic.com an; lade dort etwas Guthaben auf und setze ein monatliches Ausgabenlimit, damit keine unerwarteten Kosten entstehen. Selbst gehostete Installationen können die KI-Funktionen alternativ über ein lokales Modell (Ollama oder MLX) betreiben.",
+        text: "Die KI-Funktionen (Handbuch auswerten, Troubleshooting-Guide, Wartungspunkte aus dem Guide) laufen über Claude (Anthropic). Ist zentral kein Schlüssel hinterlegt, erscheint (unter »Erweiterte Optionen«) ein Feld für deinen eigenen Anthropic-API-Schlüssel: Er wird nur für die jeweilige Aktion genutzt und NICHT gespeichert. Einen Schlüssel legst du unter console.anthropic.com an; lade dort etwas Guthaben auf und setze ein monatliches Ausgabenlimit, damit keine unerwarteten Kosten entstehen. Selbst gehostete Installationen können die KI-Funktionen alternativ über ein lokales Modell (Ollama oder MLX) betreiben.",
       },
       {
         titel: "Ansehen",
