@@ -3,24 +3,31 @@ import Link from "next/link";
 /** Umschalter zwischen Anleitung, Techstack, der Admin-Hilfe (Kuratoren +
     Super-Admins) und (nur Super-Admins) der Aufbau-Dokumentation. */
 const tabs = [
-  { href: "/help", key: "anleitung", label: "Anleitung", nurAdmin: false, nurKurator: false },
-  { href: "/help/techstack", key: "techstack", label: "Techstack", nurAdmin: false, nurKurator: false },
-  { href: "/help/admin", key: "admin", label: "Administration", nurAdmin: false, nurKurator: true },
-  { href: "/help/setup", key: "setup", label: "Aufbau & Betrieb", nurAdmin: true, nurKurator: false },
+  { href: "/help", key: "anleitung", label: "Anleitung", nurAdmin: false, nurKurator: false, nurEingeloggt: false },
+  { href: "/help/techstack", key: "techstack", label: "Techstack", nurAdmin: false, nurKurator: false, nurEingeloggt: true },
+  { href: "/help/admin", key: "admin", label: "Administration", nurAdmin: false, nurKurator: true, nurEingeloggt: false },
+  { href: "/help/setup", key: "setup", label: "Aufbau & Betrieb", nurAdmin: true, nurKurator: false, nurEingeloggt: false },
 ] as const;
 
 export function HelpTabs({
   active,
   istSuperAdmin = false,
   darfKuratieren = false,
+  eingeloggt = true,
 }: {
   active: "anleitung" | "techstack" | "admin" | "setup";
   istSuperAdmin?: boolean;
   /** Kurator ODER Super-Admin — zeigt den Tab „Administration". */
   darfKuratieren?: boolean;
+  /** Angemeldet? Nur dann erscheint der Techstack-Tab — die Anleitung ist
+      öffentlich, die übrigen Tabs hängen ohnehin an einer Rolle. */
+  eingeloggt?: boolean;
 }) {
   const sichtbar = tabs.filter(
-    (t) => (!t.nurAdmin || istSuperAdmin) && (!t.nurKurator || darfKuratieren),
+    (t) =>
+      (!t.nurAdmin || istSuperAdmin) &&
+      (!t.nurKurator || darfKuratieren) &&
+      (!t.nurEingeloggt || eingeloggt),
   );
 
   return (

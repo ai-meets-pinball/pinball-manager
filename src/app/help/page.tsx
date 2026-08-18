@@ -5,7 +5,7 @@ import {
 } from "@/components/help-sections";
 import { HelpTabs } from "@/components/help-tabs";
 import { ANLEITUNG } from "@/lib/help-content";
-import { isSuperAdmin, kannKuratieren, requireUser } from "@/lib/session";
+import { getCurrentUser, isSuperAdmin, kannKuratieren } from "@/lib/session";
 
 /*
   Anleitung / How-To — die benutzerorientierte Hilfe (was kann ich wie tun?).
@@ -15,15 +15,17 @@ import { isSuperAdmin, kannKuratieren, requireUser } from "@/lib/session";
   Architektur-Übersicht liegt unter /help/techstack.
 */
 export default async function HelpPage() {
-  // Die Tabs „Administration" (Kuratoren/Super-Admins) und „Aufbau & Betrieb"
-  // (nur Super-Admins) hängen an den Rollen des Nutzers.
-  const user = await requireUser();
+  // Die Anleitung ist ÖFFENTLICH (kein requireUser). Die Tabs „Techstack",
+  // „Administration" und „Aufbau & Betrieb" erscheinen nur für Angemeldete
+  // bzw. die passende Rolle — Gäste sehen nur die Anleitung.
+  const user = await getCurrentUser();
   return (
     <div className="space-y-8">
       <HelpTabs
         active="anleitung"
         istSuperAdmin={isSuperAdmin(user)}
         darfKuratieren={kannKuratieren(user)}
+        eingeloggt={Boolean(user)}
       />
 
       <div className="flex flex-wrap items-start justify-between gap-3">

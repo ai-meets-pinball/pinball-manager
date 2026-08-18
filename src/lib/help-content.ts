@@ -514,7 +514,7 @@ export const ADMIN_HILFE: HilfeSektion[] = [
     schritte: [
       {
         titel: "Zugang",
-        text: "Super-Admins finden »Administration« im Nutzer-Menü oben rechts. Die ersten Super-Admins werden über die Umgebungsvariable SUPER_ADMIN_EMAILS festgelegt; weitere lassen sich danach in der Admin-Oberfläche ernennen. Der letzte Super-Admin bleibt geschützt und kann nicht entfernt werden.",
+        text: "Super-Admins finden »Administration« im Nutzer-Menü oben rechts. Weitere Super-Admins lassen sich dort ernennen; der letzte Super-Admin bleibt geschützt und kann nicht entfernt werden.",
       },
       {
         titel: "Rollen je Nutzer verwalten",

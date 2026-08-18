@@ -6,15 +6,14 @@ import { APP_VERSION } from "@/lib/version";
 /*
   Handbuch-Download (/help/manual): baut das PDF bei jedem Abruf frisch aus dem
   Hilfe-Inhalt (lib/help-content.ts) — es kann also nie von der Hilfe abweichen.
-  Nur angemeldet (401 statt Redirect: das hier ist ein Datei-Endpunkt, keine
-  Seite). Kuratoren/Super-Admins bekommen zusätzlich die Admin-Kapitel — in der
-  gleichen Filterung wie auf /help/admin.
+  ÖFFENTLICH wie die Anleitung: auch ohne Login gibt es das PDF (dann nur die
+  Anleitung). Kuratoren/Super-Admins bekommen zusätzlich die Admin-Kapitel — in
+  der gleichen Filterung wie auf /help/admin.
 */
 export async function GET(): Promise<Response> {
   const user = await getCurrentUser();
-  if (!user) return new Response("Nicht angemeldet", { status: 401 });
 
-  const admin = kannKuratieren(user);
+  const admin = user ? kannKuratieren(user) : false;
   const kapitel = admin
     ? [
         ...ANLEITUNG,

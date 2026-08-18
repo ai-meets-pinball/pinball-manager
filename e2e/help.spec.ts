@@ -73,13 +73,31 @@ test.describe("Hilfe & Handbuch", () => {
     expect(body.subarray(0, 5).toString()).toBe("%PDF-");
   });
 
-  test("Handbuch-Download ohne Anmeldung: 401", async () => {
+  test("Handbuch-Download ohne Anmeldung: öffentlich (nur Anleitung)", async () => {
     const ctx = await request.newContext({ baseURL: BASE_URL });
     try {
       const res = await ctx.get("/help/manual");
-      expect(res.status()).toBe(401);
+      expect(res.status()).toBe(200);
+      expect(res.headers()["content-type"]).toContain("application/pdf");
+      const body = await res.body();
+      expect(body.subarray(0, 5).toString()).toBe("%PDF-");
     } finally {
       await ctx.dispose();
     }
+  });
+
+  test("Anleitung ist öffentlich (ohne Login); interne Tabs fehlen", async ({
+    page,
+  }) => {
+    // Frischer, NICHT angemeldeter Kontext (kein loginAs).
+    await page.goto("/help");
+    await expect(
+      page.getByRole("heading", { name: "Anleitung & How-To" }),
+    ).toBeVisible();
+    // Gäste sehen weder den Techstack- noch die Admin-/Betriebs-Tabs.
+    await expect(page.getByRole("link", { name: "Techstack" })).toHaveCount(0);
+    await expect(
+      page.getByRole("link", { name: "Administration" }),
+    ).toHaveCount(0);
   });
 });

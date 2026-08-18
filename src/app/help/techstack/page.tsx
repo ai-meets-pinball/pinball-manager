@@ -234,7 +234,7 @@ const sections: StackSection[] = [
         version: "Muster",
         beschreibung:
           "Der Hilfe-Inhalt liegt als reine Daten in lib/help-content.ts und speist die Seiten /help und /help/admin UND den PDF-Generator (pdf-lib, kleine eigene Layout-Engine mit klickbarem Inhaltsverzeichnis). Download unter /help/manual — das Handbuch kann dadurch nie von der Online-Hilfe abweichen.",
-        imCode: "src/lib/help-content.ts, src/lib/manual-pdf.ts, src/app/(app)/help/manual/route.ts",
+        imCode: "src/lib/help-content.ts, src/lib/manual-pdf.ts, src/app/help/manual/route.ts",
       },
       {
         name: "KI-Anbieter umschaltbar (Claude ⇆ Ollama)",
