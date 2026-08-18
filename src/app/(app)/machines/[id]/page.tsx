@@ -1,14 +1,13 @@
 import type { ReactNode } from "react";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import Link from "next/link";
-import { Boxes, Pencil, Plus, QrCode, Trash2, Users } from "lucide-react";
+import { Boxes, ExternalLink, Pencil, Plus, QrCode, Trash2, Users } from "lucide-react";
 import { BesitzerZeile } from "@/components/besitzer-zeile";
 import { FaultList } from "@/components/fault-list";
 import { KnowledgeFacts } from "@/components/knowledge-facts";
 import { KnowledgeGuides } from "@/components/knowledge-guides";
 import { KnowledgeTipps } from "@/components/knowledge-tipps";
 import { TippForm } from "@/components/tipp-form";
-import { LiveClock } from "@/components/live-clock";
 import { MachineFaultsPreview } from "@/components/machine-faults-preview";
 import {
   MachineOverview,
@@ -332,24 +331,64 @@ export default async function MachineDetailPage({
     <div className="space-y-6">
       {/* Kopf: Identität der Maschine + schreibende Aktionen — immer sichtbar. */}
       <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-2xl font-bold">{modellName(machine)}</h1>
-            <StatusBadge value={machine.status} />
-          </div>
-          <p className="text-[var(--color-muted)]">
-            {machine.baujahr ?? "Baujahr unbekannt"}
-          </p>
-          {machine.club ? (
-            <p className="mt-1 flex items-center gap-1 text-sm text-[var(--color-muted)]">
-              <Users size={14} /> {machine.club.name}
-            </p>
+        <div className="flex items-start gap-4">
+          {/* Foto als Teil der Identität mit in den Kopf (Klick öffnet es groß). */}
+          {machine.fotoUrl ? (
+            <a
+              href={machine.fotoUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-none"
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={machine.fotoUrl}
+                alt={modellName(machine)}
+                className="h-24 w-40 rounded-[var(--radius)] border border-[var(--color-border)] object-cover sm:h-36 sm:w-56"
+              />
+            </a>
           ) : null}
-          {/* Tatsächliche Besitzer (rein informativ) + ggf. Club-Einladung. */}
-          <BesitzerZeile machineId={machine.id} besitzer={besitzer} />
+          <div>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-2xl font-bold">{modellName(machine)}</h1>
+              <StatusBadge value={machine.status} />
+            </div>
+            <p className="text-[var(--color-muted)]">
+              {machine.baujahr ?? "Baujahr unbekannt"}
+            </p>
+            {/* Datenbank-Kennungen: Teil der Maschinen-Identität, darum im Kopf. */}
+            {machine.opdbRef || machine.ipdbRef ? (
+              <p className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-0.5 text-sm text-[var(--color-muted)]">
+                {machine.opdbRef ? (
+                  <span>
+                    <span className="text-[var(--color-faint)]">OPDB</span>{" "}
+                    {machine.opdbRef}
+                  </span>
+                ) : null}
+                {machine.ipdbRef ? (
+                  <a
+                    href={`https://www.ipdb.org/machine.cgi?id=${encodeURIComponent(machine.ipdbRef)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 hover:text-[var(--color-fg)] hover:underline"
+                  >
+                    <span className="text-[var(--color-faint)]">IPDB</span>{" "}
+                    {machine.ipdbRef}
+                    <ExternalLink size={12} />
+                  </a>
+                ) : null}
+              </p>
+            ) : null}
+            {machine.club ? (
+              <p className="mt-1 flex items-center gap-1 text-sm text-[var(--color-muted)]">
+                <Users size={14} /> {machine.club.name}
+              </p>
+            ) : null}
+            {/* Tatsächliche Besitzer (rein informativ) + ggf. Club-Einladung. */}
+            <BesitzerZeile machineId={machine.id} besitzer={besitzer} />
+          </div>
         </div>
         <div className="flex items-center gap-4">
-          <LiveClock />
           {/* QR-Etikett: führt zur öffentlichen Melde-Seite dieser Maschine —
               lesen/drucken darf jeder mit Zugriff. */}
           <Link
@@ -388,7 +427,7 @@ export default async function MachineDetailPage({
       {/* Reiterleiste (klebt unter dem Header). Der aktive Bereich steht in der URL. */}
       <MachineTabs primary={primary} secondary={secondary} />
 
-      {/* ── Übersicht: Foto, OPDB/IPDB und Status-Dashboard ──────────────────── */}
+      {/* ── Übersicht: Foto und Status-Dashboard ─────────────────────────────── */}
       {active === "uebersicht" ? (
         <div className="space-y-4">
           {darf.bearbeiten ? (
@@ -403,11 +442,6 @@ export default async function MachineDetailPage({
             </p>
           ) : null}
           <MachineOverview
-            machineId={machine.id}
-            fotoUrl={machine.fotoUrl}
-            fotoAlt={modellName(machine)}
-            opdbRef={machine.opdbRef}
-            ipdbRef={machine.ipdbRef}
             kpis={kpis}
             faultsPreview={
               <MachineFaultsPreview

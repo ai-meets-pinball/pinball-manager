@@ -56,8 +56,12 @@ function EinBesitzer({
     <span className="inline-flex items-center gap-1.5">
       {besitzer.name}
       {besitzer.userId ? (
-        <span className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] px-2 py-0.5 text-xs">
-          <BadgeCheck size={12} /> auf der Plattform
+        <span
+          title="auf der Plattform"
+          aria-label="auf der Plattform"
+          className="inline-flex items-center text-[var(--color-success)]"
+        >
+          <BadgeCheck size={14} />
         </span>
       ) : besitzer.einladbar ? (
         <form action={formAction} className="inline-flex items-center gap-2">
