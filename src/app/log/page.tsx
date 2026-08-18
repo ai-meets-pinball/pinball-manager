@@ -205,40 +205,40 @@ export default async function LogPage() {
             Karte ist bewusst auf weißem Grund (wie gedruckt) — in beiden Themes. */}
         <div className="mt-8">
           <div className="mb-3 font-mono text-[11px] uppercase tracking-[1px] text-[var(--color-faint)]">
-            Beispiel · Scorecard mit Vereinslogo
+            Beispiel · Scorecard im Stern-Format (140 × 75 mm, Querformat)
           </div>
-          <div className="mx-auto flex max-w-[560px] items-center gap-5 rounded-[12px] border border-[var(--color-border)] bg-white p-5 shadow-[0_10px_30px_rgba(30,28,26,0.06)]">
-            {clubLogo ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={clubLogo}
-                alt="Logo FlipperFreunde Fellbach"
-                className="h-20 w-20 flex-none rounded-lg object-contain"
+          {/* Aufbau wie im echten Druck-Studio (kartenInhalt in qr-print.tsx):
+              zentrierte SPALTE — Name oben, Mitte QR + Vereinslogo (je eine
+              Hälfte, wie „Logo links"), Melde-Hinweis unten. Stern quer 140×75.
+              Weißer „gedruckter" Grund, damit der QR in beiden Themes scannt. */}
+          <div className="mx-auto flex aspect-[140/75] w-[420px] max-w-full flex-col items-center gap-2 rounded-[10px] border border-[var(--color-border)] bg-white p-3 text-black shadow-[0_12px_34px_rgba(30,28,26,0.12)]">
+            <p className="flex-none text-center text-[13px] font-bold leading-tight">
+              Godzilla (Pro) | Stern
+            </p>
+            <div className="flex min-h-0 w-full flex-1 items-center justify-center gap-2">
+              {clubLogo ? (
+                <div className="flex h-full flex-1 items-center justify-center">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={clubLogo}
+                    alt="Logo FlipperFreunde Fellbach"
+                    className="max-h-full max-w-[90%] object-contain"
+                  />
+                </div>
+              ) : null}
+              <div
+                className="flex h-full flex-1 items-center justify-center [&>svg]:h-full [&>svg]:w-full"
+                dangerouslySetInnerHTML={{ __html: qrScorecard }}
               />
-            ) : (
-              <div className="flex h-20 w-20 flex-none items-center justify-center rounded-lg bg-neutral-100 text-center font-mono text-[9px] uppercase leading-tight text-neutral-400">
-                Vereins-
-                <br />
-                logo
-              </div>
-            )}
-            <div className="min-w-0 flex-1 text-[#1e1c1a]">
-              <div className="text-[15px] font-bold">FlipperFreunde Fellbach</div>
-              <div className="text-[13px] text-neutral-600">
-                Godzilla (Pro) · Stern
-              </div>
-              <div className="mt-1.5 font-mono text-[11px] uppercase tracking-[0.5px] text-neutral-500">
-                Problem am Automaten? Hier melden →
-              </div>
             </div>
-            <div
-              className="aspect-square w-[92px] flex-none [&>svg]:h-full [&>svg]:w-full"
-              dangerouslySetInnerHTML={{ __html: qrScorecard }}
-            />
+            <p className="flex-none text-center text-[9px] leading-tight text-black">
+              Defekt? QR scannen &amp; Fehler melden — auch ohne Konto.
+            </p>
           </div>
           <p className="mt-3 font-mono text-[10px] text-[var(--color-faint)]">
-            So sieht eine Scorecard mit integriertem Vereinslogo aus — der
-            Beispiel-Code führt zur Startseite.
+            So druckt das Druck-Studio die Scorecard (Name oben, QR + Vereinslogo
+            mittig, Melde-Hinweis unten) — echtes Stern-Format, Beispiel-Code
+            führt zur Startseite.
           </p>
         </div>
 
