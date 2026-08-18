@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { MarketingFooter, MarketingNav } from "@/components/site-chrome";
 import { baseUrl, erzeugeQrSvgFuerUrl } from "@/lib/qr-code";
+import { DEFAULT_PROMPTS, PROMPT_KEYS, type PromptKey } from "@/lib/prompts";
 
 /*
   Öffentliche „Log"-Seite (Änderungsprotokoll) — bewusst NICHT in der Navigation
@@ -84,32 +85,34 @@ const roadmap = [
   },
 ];
 
-// Dummy: der aktuelle Reparaturvorschlag-Prompt (Entwurf) — steht öffentlich, damit
-// der Stammtisch beim Verbessern mithelfen kann. Nicht der Endstand.
-const REPARATUR_PROMPT_DUMMY = `Du bist ein erfahrener Flipper-Reparatur-Techniker. Für den folgenden
-gemeldeten Fehler sollst du einen konkreten, praxisnahen Reparaturvorschlag
-erstellen — vom wahrscheinlichsten, einfachsten Ansatz zum komplexeren.
-
-Gerät:
-- Hersteller: {{hersteller}}
-- Modell: {{modell}}
-- Baujahr: {{baujahr}}
-
-Gemeldeter Fehler:
-- Kategorie: {{kategorie}}
-- Symptom: {{symptom}}
-
-Vorhandenes Wissen zu diesem Gerät (Handbuch-Fakten, Guide; kann leer sein):
-{{wissen}}
-
-Erstelle den Vorschlag mit:
-- diagnose: wahrscheinliche Ursache(n) und wie man sie eingrenzt (Messpunkte,
-  Tests), vom Naheliegenden zum Selteneren.
-- massnahme: konkrete Reparaturschritte in sinnvoller Reihenfolge; kennzeichne
-  gefährliche Arbeiten (Netzspannung/HV) mit Warnhinweis.
-- teile: wahrscheinlich benötigte Teile — leer lassen, wenn keins nötig ist.
-- hinweis: kurzer Sicherheitshinweis. Erfinde keine Sollwerte, wenn sie nicht
-  belastbar bekannt sind.`;
+/* Eine Prompt-„Karte": der ECHTE aktuelle Standard-Prompt aus der Registry
+   (kein hartkodierter Dummy) samt Override-Reichweiten. lib/prompts.ts ist
+   bewusst DB-frei, darum hier direkt nutzbar. */
+function PromptKarte({ pk }: { pk: PromptKey }) {
+  const p = DEFAULT_PROMPTS[pk];
+  const scopes = [
+    "global",
+    ...(p.herstellerScoped ? ["Hersteller"] : []),
+    ...(p.generationScoped ? ["Generation"] : []),
+  ];
+  return (
+    <div className="rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
+      <div className="mb-1 flex flex-wrap items-baseline gap-2">
+        <span className="text-[13px] font-bold">{p.label}</span>
+        <span className="font-mono text-[10px] text-[var(--color-faint)]">{pk}</span>
+      </div>
+      <p className="mb-2 text-[12px] leading-[1.55] text-[var(--color-muted)]">
+        {p.beschreibung}
+      </p>
+      <div className="mb-2.5 font-mono text-[10px] text-[var(--color-faint)]">
+        Überschreibbar: {scopes.join(" · ")}
+      </div>
+      <pre className="max-h-80 overflow-auto whitespace-pre-wrap rounded-[6px] bg-[var(--color-surface-2)] p-3 font-mono text-[11.5px] leading-[1.55] text-[var(--color-muted)]">
+{p.vorlage}
+      </pre>
+    </div>
+  );
+}
 
 export default async function LogPage() {
   const beispiele = await Promise.all(
@@ -248,20 +251,38 @@ export default async function LogPage() {
           <h3 className="mb-2.5 text-[20px] font-bold">
             Die richtigen KI-Prompts finden &amp; definieren.
           </h3>
-          <p className="mb-5 max-w-[660px] text-[14px] leading-[1.7] text-[var(--color-muted)]">
+          <p className="mb-4 max-w-[660px] text-[14px] leading-[1.7] text-[var(--color-muted)]">
             Die KI-Funktionen (Handbuch auswerten, Reparaturvorschlag,
             Troubleshooting-Guides) sind nur so gut wie die Anweisungen dahinter.
-            Genau daran feilen wir — hilf mit. Der Prompt unten ist der aktuelle
-            Stand: ein Entwurf, kein Endstand.
+            Genau daran feilen wir — hilf mit. Die Prompts unten sind der aktuelle
+            Stand: Entwürfe, kein Endstand.
           </p>
-          <div className="rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4">
-            <div className="mb-2 font-mono text-[10px] uppercase tracking-[1px] text-[var(--color-faint)]">
-              Aktueller Prompt · Reparaturvorschlag (Entwurf)
+          <p className="mb-5 max-w-[660px] rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-[13px] leading-[1.6] text-[var(--color-muted)]">
+            <strong className="text-[var(--color-fg)]">Override-Funktion:</strong>{" "}
+            Der Standard jedes Prompts steht im Code; Abweichungen liegen als Daten
+            in der App — <em>global</em>, <em>pro Hersteller</em> oder{" "}
+            <em>pro Generation</em>. Der spezifischste Treffer gewinnt, sonst der
+            Standard. So lässt sich ein Prompt gezielt schärfen (z. B. für
+            „Bally/Williams WPC"), ohne die anderen zu berühren.
+          </p>
+
+          {/* Featured: Reparaturvorschlag */}
+          <PromptKarte pk="repair_suggestion" />
+
+          {/* Expandable: die weiteren Prompts (echter Stand aus der Registry) */}
+          <details className="group mt-3 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)]">
+            <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-4 py-3 text-[13px] font-semibold hover:bg-[var(--color-inset)] [&::-webkit-details-marker]:hidden">
+              Weitere Prompts ansehen ({PROMPT_KEYS.length - 1})
+              <span className="font-mono text-[15px] text-[var(--color-muted)] transition-transform group-open:rotate-90">
+                ›
+              </span>
+            </summary>
+            <div className="space-y-3 border-t border-[var(--color-border)] p-4">
+              {PROMPT_KEYS.filter((pk) => pk !== "repair_suggestion").map((pk) => (
+                <PromptKarte key={pk} pk={pk} />
+              ))}
             </div>
-            <pre className="max-h-72 overflow-auto whitespace-pre-wrap font-mono text-[12px] leading-[1.6] text-[var(--color-muted)]">
-{REPARATUR_PROMPT_DUMMY}
-            </pre>
-          </div>
+          </details>
         </div>
 
         {/* Weitere To-Dos */}
