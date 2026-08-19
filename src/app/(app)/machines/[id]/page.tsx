@@ -3,6 +3,7 @@ import { ConfirmButton } from "@/components/ui/confirm-button";
 import Link from "next/link";
 import { Boxes, ExternalLink, Pencil, Plus, QrCode, Trash2, Users } from "lucide-react";
 import { BesitzerZeile } from "@/components/besitzer-zeile";
+import { AusstattungListe } from "@/components/ausstattung-liste";
 import { FaultList } from "@/components/fault-list";
 import { KnowledgeFacts } from "@/components/knowledge-facts";
 import { KnowledgeGuides } from "@/components/knowledge-guides";
@@ -97,6 +98,7 @@ export default async function MachineDetailPage({
     darf,
     machine,
     besitzer,
+    ausstattung,
     fehler,
     wartung,
     wissen,
@@ -386,6 +388,12 @@ export default async function MachineDetailPage({
             ) : null}
             {/* Tatsächliche Besitzer (rein informativ) + ggf. Club-Einladung. */}
             <BesitzerZeile machineId={machine.id} besitzer={besitzer} />
+            {/* Ausstattung/Add-ons dieses Geräts (rein informativ). */}
+            <AusstattungListe
+              machineId={machine.id}
+              ausstattung={ausstattung}
+              darfBearbeiten={darf.bearbeiten}
+            />
           </div>
         </div>
         <div className="flex items-center gap-4">

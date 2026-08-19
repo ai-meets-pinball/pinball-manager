@@ -294,6 +294,23 @@ export const machineBesitzerZuordnung = pgTable(
   ],
 );
 
+/*
+  Ausstattung/Add-ons EINER Maschine (1:n): frei benannte Einträge, was an genau
+  diesem Gerät zusätzlich verbaut oder dabei ist (Shaker, Topper, farbige LEDs,
+  Ersatz-Gummisatz …). Bewusst schlicht — Name + optionale Notiz, KEINE
+  Kategorie, kein Katalog wie bei den Besitzern. Löschen der Maschine räumt die
+  Einträge mit ab.
+*/
+export const machineAusstattung = pgTable("machine_ausstattung", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  machineId: uuid("machine_id")
+    .notNull()
+    .references(() => machines.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  notiz: text("notiz"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 /* ── Maschinen ────────────────────────────────────────────────────────────── */
 
 export const machines = pgTable("machines", {

@@ -125,6 +125,10 @@ export const ANLEITUNG: HilfeSektion[] = [
         titel: "Besitzer",
         text: "Jede Maschine kann BESITZER tragen — die Personen, denen das Gerät tatsächlich gehört (nicht zwingend, wer es angelegt hat); auch mehrere, z. B. bei gemeinsam angeschafften Geräten. Das ist rein informativ und vergibt keine Rechte. Zur Auswahl stehen bisherige Besitzer-Namen (je Club bzw. privat — einmal angelegt, wieder wählbar), die MITGLIEDER des Clubs (ist der Besitzer schon Nutzer, wird sein Konto direkt verknüpft) oder ein neuer Name mit optionaler E-Mail. Hat ein Besitzer eine E-Mail und noch kein Konto, können Club-Owner/-Admins ihn direkt von der Detailseite in den Club einladen; nimmt er an, wird sein Konto automatisch mit dem Besitzer-Eintrag verknüpft.",
       },
+      {
+        titel: "Ausstattung",
+        text: "Neben den Besitzern kannst du je Gerät festhalten, was zusätzlich verbaut oder dabei ist — Shaker, Topper, farbige LEDs, Ersatz-Gummisatz und dergleichen. Jeder Eintrag hat einen Namen und optional eine kurze Notiz (keine Kategorie). Mit Schreibrecht hängst du die Einträge direkt im Kopf der Detailseite an und ab; die Liste ist rein informativ und vergibt keine Rechte.",
+      },
     ],
   },
   {

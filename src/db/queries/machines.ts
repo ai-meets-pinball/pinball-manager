@@ -17,6 +17,7 @@ import {
   faultImages,
   faults,
   generations,
+  machineAusstattung,
   machineBesitzer,
   machineBesitzerZuordnung,
   machineModels,
@@ -149,6 +150,19 @@ export async function getMachineBesitzer(machineId: string) {
     )
     .where(eq(machineBesitzerZuordnung.machineId, machineId))
     .orderBy(machineBesitzer.name);
+}
+
+/** Die Ausstattung/Add-ons EINER Maschine (1:n), in Anlage-Reihenfolge. */
+export async function getMachineAusstattung(machineId: string) {
+  return db
+    .select({
+      id: machineAusstattung.id,
+      name: machineAusstattung.name,
+      notiz: machineAusstattung.notiz,
+    })
+    .from(machineAusstattung)
+    .where(eq(machineAusstattung.machineId, machineId))
+    .orderBy(machineAusstattung.createdAt);
 }
 
 /*

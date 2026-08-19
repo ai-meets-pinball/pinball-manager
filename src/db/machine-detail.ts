@@ -2,6 +2,7 @@ import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
   getLetzteWartung,
+  getMachineAusstattung,
   getMachineBesitzer,
   getMachineFaults,
   getMachineGuides,
@@ -68,6 +69,7 @@ export async function getMachineDetail(id: string) {
     meineClubs,
     shareDefaults,
     repairShares,
+    ausstattung,
   ] = await Promise.all([
     // requireMachineAccess lädt die Maschine bereits; hier fehlt nur der
     // Club-Name, und den auch nur für Club-Maschinen.
@@ -123,6 +125,7 @@ export async function getMachineDetail(id: string) {
     getUserClubs(user.id),
     getShareDefaults(machine),
     getRepairShares(id),
+    getMachineAusstattung(id),
   ]);
 
   const offene = alleFehler.filter((f) => f.status !== "behoben");
@@ -144,6 +147,7 @@ export async function getMachineDetail(id: string) {
         darfClub(user, clubRolle).verwalten,
       ),
     })),
+    ausstattung,
     fehler: {
       alle: alleFehler,
       offen: offene,
