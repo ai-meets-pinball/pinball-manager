@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
+import { FormLeaveGuard } from "@/components/ui/form-leave-guard";
 import type { FormState } from "@/db/actions/form-state";
 
 type TaskValues = {
@@ -113,9 +114,12 @@ export function MaintenanceTaskForm({
         <p className="text-sm text-[var(--color-danger)]">{state.error}</p>
       ) : null}
 
-      <Button type="submit" disabled={pending}>
-        {pending ? "Speichern…" : "Speichern"}
-      </Button>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="submit" disabled={pending}>
+          {pending ? "Speichern…" : "Speichern"}
+        </Button>
+        <FormLeaveGuard backHref={`/machines/${machineId}?bereich=wartung`} />
+      </div>
     </form>
   );
 }

@@ -28,6 +28,7 @@ export default async function EditMachinePage({
       <h1 className="text-2xl font-bold">{modellName(machine)} bearbeiten</h1>
       <MachineForm
         action={updateMachine}
+        backHref={`/machines/${machine.id}`}
         clubs={clubs}
         besitzerKatalog={besitzerKatalog}
         mitglieder={mitglieder}

@@ -18,6 +18,7 @@ export default async function NewMachinePage() {
       <h1 className="text-2xl font-bold">Neue Maschine</h1>
       <MachineForm
         action={createMachine}
+        backHref="/machines"
         clubs={clubs}
         besitzerKatalog={besitzerKatalog}
         mitglieder={mitglieder}

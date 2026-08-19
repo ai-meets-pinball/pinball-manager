@@ -5,6 +5,7 @@ import { ModelSearch } from "@/components/model-search";
 import { OpdbSearch } from "@/components/opdb-search";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/input";
+import { FormLeaveGuard } from "@/components/ui/form-leave-guard";
 import { modellName } from "@/lib/format";
 import type { FormState } from "@/db/actions/form-state";
 
@@ -69,6 +70,7 @@ type Auswahl = {
 */
 export function MachineForm({
   action,
+  backHref,
   clubs,
   besitzerKatalog,
   mitglieder,
@@ -76,6 +78,8 @@ export function MachineForm({
   machine,
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
+  /** Ziel bei „Abbrechen" (Detailseite bzw. Maschinenliste). */
+  backHref: string;
   clubs: Club[];
   besitzerKatalog: BesitzerEintrag[];
   /** Club-Mitglieder als wählbare Besitzer (der Besitzer ist oft schon Nutzer). */
@@ -691,9 +695,12 @@ export function MachineForm({
         <p className="text-sm text-[var(--color-danger)]">{state.error}</p>
       ) : null}
 
-      <Button type="submit" disabled={pending || !bereit}>
-        {pending ? "Speichern…" : "Speichern"}
-      </Button>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="submit" disabled={pending || !bereit}>
+          {pending ? "Speichern…" : "Speichern"}
+        </Button>
+        <FormLeaveGuard backHref={backHref} />
+      </div>
     </form>
   );
 }

@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
+import { FormLeaveGuard } from "@/components/ui/form-leave-guard";
 import type { FormState } from "@/db/actions/form-state";
 
 export function ClubForm({
@@ -30,9 +31,12 @@ export function ClubForm({
       {state.error ? (
         <p className="text-sm text-[var(--color-danger)]">{state.error}</p>
       ) : null}
-      <Button type="submit" disabled={pending}>
-        {pending ? "Erstellen…" : "Club erstellen"}
-      </Button>
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="submit" disabled={pending}>
+          {pending ? "Erstellen…" : "Club erstellen"}
+        </Button>
+        <FormLeaveGuard backHref="/clubs" />
+      </div>
     </form>
   );
 }
