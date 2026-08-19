@@ -3,6 +3,7 @@ import { updateMachine } from "@/db/actions/machines";
 import {
   getBesitzerKatalog,
   getBesitzerNutzerKatalog,
+  getMachineAusstattung,
   getMachineBesitzer,
   getUserClubs,
 } from "@/db/queries";
@@ -20,6 +21,7 @@ export default async function EditMachinePage({
   const besitzerKatalog = await getBesitzerKatalog(user);
   const mitglieder = await getBesitzerNutzerKatalog(user);
   const besitzer = await getMachineBesitzer(id);
+  const ausstattung = await getMachineAusstattung(id);
 
   return (
     <div className="space-y-6">
@@ -30,7 +32,7 @@ export default async function EditMachinePage({
         besitzerKatalog={besitzerKatalog}
         mitglieder={mitglieder}
         aktuellerNutzer={{ id: user.id, name: user.name }}
-        machine={{ ...machine, besitzer }}
+        machine={{ ...machine, besitzer, ausstattung }}
       />
     </div>
   );

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import {
+  machineAusstattung,
   machineBesitzer,
   machineBesitzerZuordnung,
   machineModels,
@@ -337,6 +338,42 @@ async function schreibeBesitzerZuordnung(
   }
 }
 
+/* Ausstattung/Add-ons aus dem Formular: Name+Notiz-Paare in DOM-Reihenfolge
+   (Hidden-Inputs ausstattungName / ausstattungNotiz). Leere Namen fallen weg,
+   Längen werden geklemmt. Kein Katalog, keine Kategorie. */
+function ausstattungAusFormular(
+  formData: FormData,
+): { name: string; notiz: string | null }[] {
+  const namen = formData.getAll("ausstattungName").map(String);
+  const notizen = formData.getAll("ausstattungNotiz").map(String);
+  const out: { name: string; notiz: string | null }[] = [];
+  for (let i = 0; i < namen.length; i++) {
+    const name = namen[i].trim().slice(0, 120);
+    if (!name) continue;
+    const notiz = (notizen[i] ?? "").trim().slice(0, 300);
+    out.push({ name, notiz: notiz ? notiz : null });
+  }
+  return out;
+}
+
+/** Die Ausstattung einer Maschine auf den Formular-Stand setzen (Formular =
+    Wahrheit) — wie schreibeBesitzerZuordnung: alte Einträge weg, neue rein. */
+async function schreibeAusstattung(
+  machineId: string,
+  eintraege: { name: string; notiz: string | null }[],
+): Promise<void> {
+  await db
+    .delete(machineAusstattung)
+    .where(eq(machineAusstattung.machineId, machineId));
+  if (eintraege.length > 0) {
+    await db
+      .insert(machineAusstattung)
+      .values(
+        eintraege.map((e) => ({ machineId, name: e.name, notiz: e.notiz })),
+      );
+  }
+}
+
 export async function createMachine(
   _prev: FormState,
   formData: FormData,
@@ -376,6 +413,7 @@ export async function createMachine(
     .returning({ id: machines.id });
 
   await schreibeBesitzerZuordnung(created.id, besitzer.besitzerIds);
+  await schreibeAusstattung(created.id, ausstattungAusFormular(formData));
 
   revalidatePath("/machines");
   redirect(`/machines/${created.id}`);
@@ -439,6 +477,7 @@ export async function updateMachine(
     .where(eq(machines.id, id));
 
   await schreibeBesitzerZuordnung(id, besitzer.besitzerIds);
+  await schreibeAusstattung(id, ausstattungAusFormular(formData));
 
   revalidatePath("/machines");
   revalidatePath(`/machines/${id}`);

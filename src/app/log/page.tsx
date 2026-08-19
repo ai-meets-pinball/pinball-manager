@@ -39,7 +39,7 @@ const updates = [
   {
     eyebrow: "Handbuch & Wissen",
     items: [
-      "Handbuch (PDF) per KI in Referenztabellen umwandeln — Spulen, Schalter, Lampen, Sicherungen, Teile, Regeln. Das PDF wird dabei nicht gespeichert.",
+      "Handbuch (PDF) per KI in Referenztabellen umwandeln — Spulen, Schalter, Lampen, Sicherungen, Teile, Regeln, Schrauben, Gummi, Elektronik. Das PDF wird dabei nicht gespeichert.",
       "Alternative ganz ohne KI: fertiges JSON aus dem eigenen ChatGPT-/Claude-Abo einfügen.",
       "Troubleshooting-Guides je Modell; Wissen privat, im Club oder öffentlich teilen.",
     ],
@@ -64,6 +64,8 @@ const updates = [
     items: [
       "Feedback und Fehlermeldungen direkt in der App.",
       "Aufgeräumte Maschinen-Detailseite und kompaktere Übersicht.",
+      "Ausstattung/Add-ons je Gerät im Bearbeiten-Formular pflegen — Shaker, Topper, farbige LEDs und dergleichen (Name + optionale Notiz); auf der Detailseite nur angezeigt.",
+      "Beim Bearbeiten bleibt ein gewähltes Modell sichtbar statt es erneut suchen zu müssen.",
       "Sicherheits-Review mit gehärteten Uploads und Zugriffsprüfungen.",
     ],
   },
@@ -148,7 +150,7 @@ export default async function LogPage() {
       {/* ===== HERO ===== */}
       <section className="mx-auto max-w-[1000px] px-5 pb-12 pt-16 sm:px-12 md:pt-[88px]">
         <div className="mb-[22px] font-mono text-xs uppercase tracking-[1px] text-[var(--color-faint)]">
-          Änderungsprotokoll · 4.–18. August 2026
+          Änderungsprotokoll · 4.–19. August 2026
         </div>
         <h1 className="mb-[22px] text-[34px] font-bold leading-[1.18] tracking-[-0.5px] sm:text-[46px]">
           Neu in den letzten zwei Wochen.

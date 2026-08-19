@@ -388,12 +388,9 @@ export default async function MachineDetailPage({
             ) : null}
             {/* Tatsächliche Besitzer (rein informativ) + ggf. Club-Einladung. */}
             <BesitzerZeile machineId={machine.id} besitzer={besitzer} />
-            {/* Ausstattung/Add-ons dieses Geräts (rein informativ). */}
-            <AusstattungListe
-              machineId={machine.id}
-              ausstattung={ausstattung}
-              darfBearbeiten={darf.bearbeiten}
-            />
+            {/* Ausstattung/Add-ons dieses Geräts — reine Anzeige; Pflege im
+                Bearbeiten-Formular. */}
+            <AusstattungListe ausstattung={ausstattung} />
           </div>
         </div>
         <div className="flex items-center gap-4">

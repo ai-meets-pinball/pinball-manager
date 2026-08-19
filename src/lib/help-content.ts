@@ -119,7 +119,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Bearbeiten",
-        text: "Über »Bearbeiten« änderst du Daten, Foto, Modell-Zuordnung oder die Club-Zuordnung.",
+        text: "Über »Bearbeiten« änderst du Daten, Foto, Modell- und Club-Zuordnung sowie Besitzer und Ausstattung. Ein bereits gewähltes Modell wird dabei nur angezeigt (keine erneute Suche) — über »Anderes Modell wählen« oder »Manuell anpassen« änderst du es bei Bedarf.",
       },
       {
         titel: "Besitzer",
@@ -127,7 +127,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Ausstattung",
-        text: "Neben den Besitzern kannst du je Gerät festhalten, was zusätzlich verbaut oder dabei ist — Shaker, Topper, farbige LEDs, Ersatz-Gummisatz und dergleichen. Jeder Eintrag hat einen Namen und optional eine kurze Notiz (keine Kategorie). Mit Schreibrecht hängst du die Einträge direkt im Kopf der Detailseite an und ab; die Liste ist rein informativ und vergibt keine Rechte.",
+        text: "Neben den Besitzern kannst du je Gerät festhalten, was zusätzlich verbaut oder dabei ist — Shaker, Topper, farbige LEDs, Ersatz-Gummisatz und dergleichen. Jeder Eintrag hat einen Namen und optional eine kurze Notiz (keine Kategorie). Gepflegt wird die Ausstattung beim Anlegen oder Bearbeiten der Maschine (im Formular, wie die Besitzer); im Kopf der Detailseite wird sie nur angezeigt. Rein informativ — vergibt keine Rechte.",
       },
     ],
   },
@@ -293,7 +293,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Was passiert",
-        text: "Claude liest das PDF und extrahiert ausschließlich Faktentabellen (Spulen, Schalter-/Lampen-Matrix, Sicherungen, Teile, Regeln). Das PDF wird dabei NIE gespeichert — nur die Fakten landen in der Datenbank, als Wissenseintrag am Modell.",
+        text: "Claude liest das PDF und extrahiert ausschließlich Faktentabellen (Spulen, Schalter-/Lampen-Matrix, Sicherungen, Teile, Regeln, Schrauben, Gummiteile, Elektronik-Bauteile). Das PDF wird dabei NIE gespeichert — nur die Fakten landen in der Datenbank, als Wissenseintrag am Modell.",
       },
       {
         titel: "Alternative ohne KI: JSON-Import",

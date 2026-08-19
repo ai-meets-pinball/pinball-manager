@@ -29,6 +29,8 @@ type MachineValues = {
   clubId: string | null;
   /** Bereits eingetragene Besitzer (n:m) — für die Chip-Vorbelegung. */
   besitzer: { id: string; name: string }[];
+  /** Bereits eingetragene Ausstattung/Add-ons — für die Chip-Vorbelegung. */
+  ausstattung: { name: string; notiz: string | null }[];
 };
 
 /*
@@ -161,6 +163,31 @@ export function MachineForm({
     setPickerSel("");
   }
 
+  /*
+    Ausstattung/Add-ons (1:n je Gerät) — anders als die Besitzer eine reine
+    Liste aus Name + optionaler Notiz, kein Katalog, keine Kategorie. Auch hier
+    lebt die Auswahl als Chips und geht als Hidden-Input-Paare mit; der Server
+    ersetzt den Stand komplett (Formular = Wahrheit). Vorbelegt aus der Maschine.
+  */
+  const [ausstattungChips, setAusstattungChips] = useState<
+    { name: string; notiz: string }[]
+  >(() =>
+    (machine?.ausstattung ?? []).map((a) => ({
+      name: a.name,
+      notiz: a.notiz ?? "",
+    })),
+  );
+  const [ausName, setAusName] = useState("");
+  const [ausNotiz, setAusNotiz] = useState("");
+
+  function ausstattungHinzufuegen() {
+    const name = ausName.trim();
+    if (!name) return;
+    setAusstattungChips((alt) => [...alt, { name, notiz: ausNotiz.trim() }]);
+    setAusName("");
+    setAusNotiz("");
+  }
+
   const [vals, setVals] = useState({
     hersteller: machine?.hersteller ?? "",
     modell: machine?.modell ?? "",
@@ -171,17 +198,30 @@ export function MachineForm({
   const set = (key: keyof typeof vals) => (value: string) =>
     setVals((v) => ({ ...v, [key]: value }));
 
-  // Gewählter Modell (Anzeige-Panel + Hidden-Inputs).
+  // Frisch gewähltes Modell (Anzeige-Panel + Hidden-Inputs).
   const [auswahl, setAuswahl] = useState<Auswahl | null>(null);
-  // Manueller Modus: editierbare Felder. Beim Bearbeiten von Anfang an an.
-  const [manuell, setManuell] = useState(Boolean(machine));
-  // Ohne Auswahl und ohne manuellen Modus gibt es nichts zu speichern.
-  const bereit = Boolean(auswahl) || manuell;
+  // Manueller Modus: editierbare Felder (Handeintrag / „Manuell anpassen").
+  const [manuell, setManuell] = useState(false);
+  /*
+    Modell-WAHL zeigen (Katalog-Suche + OPDB)? Beim Anlegen sofort — man muss
+    ein Modell wählen. Beim Bearbeiten NICHT: das Modell ist schon definiert und
+    wird read-only angezeigt; „Anderes Modell wählen" blendet die Suche ein.
+  */
+  const [zeigeWahl, setZeigeWahl] = useState(!machine);
+  // Beim Bearbeiten liegt immer ein gültiges Modell vor (read-only-Panel),
+  // solange nicht gerade neu gewählt wird.
+  const bereit =
+    Boolean(auswahl) || manuell || (Boolean(machine) && !zeigeWahl);
 
   return (
     <form action={formAction} className="flex max-w-lg flex-col gap-4">
       {machine ? <input type="hidden" name="id" value={machine.id} /> : null}
 
+      {/* Modell-Wahl (Katalog-Suche + OPDB). Beim Anlegen sofort sichtbar; beim
+          Bearbeiten erst nach „Anderes Modell wählen" — ein definiertes Modell
+          wird read-only angezeigt (kein erneutes Suchen nötig). */}
+      {zeigeWahl ? (
+        <>
       {/* Primär: der EIGENE Katalog (inkl. Generation + Bild). Das Modell
           wird serverseitig über die OPDB-Referenz aufgelöst (ensureMachineModel). */}
       <ModelSearch
@@ -203,6 +243,7 @@ export function MachineForm({
             quelle: "katalog",
           });
           setManuell(false);
+          setZeigeWahl(false);
         }}
       />
 
@@ -232,10 +273,13 @@ export function MachineForm({
                 quelle: "opdb",
               });
               setManuell(false);
+              setZeigeWahl(false);
             }}
           />
         </div>
       </details>
+        </>
+      ) : null}
 
       {auswahl && !manuell ? (
         /* ── Anzeige-Panel: das gewählte Modell (KEIN Eingabeformular). ── */
@@ -286,6 +330,7 @@ export function MachineForm({
               type="button"
               onClick={() => {
                 setAuswahl(null);
+                setZeigeWahl(true);
               }}
               className="text-[var(--color-muted)] underline hover:text-[var(--color-fg)]"
             >
@@ -347,6 +392,50 @@ export function MachineForm({
             <input type="hidden" name="opdbImageUrl" value={auswahl.imageUrl} />
           ) : null}
         </>
+      ) : machine && !zeigeWahl ? (
+        /* ── Bearbeiten: das bereits definierte Modell — read-only. Kein
+             erneutes Suchen nötig; „Anderes Modell wählen" öffnet die Suche,
+             „Manuell anpassen" macht die Felder editierbar. ── */
+        <div className="rounded-[var(--radius)] border border-[var(--color-border)] p-3">
+          <input type="hidden" name="hersteller" value={vals.hersteller} />
+          <input type="hidden" name="modell" value={vals.modell} />
+          <input type="hidden" name="baujahr" value={vals.baujahr} />
+          <input type="hidden" name="opdbRef" value={vals.opdbRef} />
+          <input type="hidden" name="ipdbRef" value={vals.ipdbRef} />
+          <div className="flex items-start gap-3">
+            <div className="min-w-0 flex-1 space-y-0.5 text-sm">
+              <p className="font-medium">
+                {modellName({
+                  hersteller: vals.hersteller,
+                  modell: vals.modell,
+                })}
+              </p>
+              <p className="text-[var(--color-muted)]">
+                {vals.baujahr || "Baujahr unbekannt"}
+              </p>
+              <p className="font-mono text-xs text-[var(--color-faint)]">
+                {vals.opdbRef || "ohne OPDB-Referenz"}
+                {vals.ipdbRef ? ` · IPDB ${vals.ipdbRef}` : ""}
+              </p>
+            </div>
+            <div className="ml-auto flex shrink-0 flex-col items-end gap-1 text-xs">
+              <button
+                type="button"
+                onClick={() => setZeigeWahl(true)}
+                className="text-[var(--color-muted)] underline hover:text-[var(--color-fg)]"
+              >
+                Anderes Modell wählen
+              </button>
+              <button
+                type="button"
+                onClick={() => setManuell(true)}
+                className="text-[var(--color-muted)] underline hover:text-[var(--color-fg)]"
+              >
+                Manuell anpassen
+              </button>
+            </div>
+          </div>
+        </div>
       ) : (
         /* ── Noch nichts gewählt: Hinweis + Weg in den manuellen Modus. ── */
         <p className="text-sm text-[var(--color-muted)]">
@@ -503,6 +592,87 @@ export function MachineForm({
               />
             </div>
           ) : null}
+        </div>
+      </Field>
+
+      <Field
+        label={`Ausstattung (${ausstattungChips.length})`}
+        hint="Was ist an genau diesem Gerät zusätzlich verbaut oder dabei (Shaker, Topper, farbige LEDs …)? Name + optionale Notiz, keine Kategorie. Rein informativ — auf der Detailseite wird die Liste nur angezeigt."
+      >
+        <div className="space-y-2">
+          {/* Je Chip ein Hidden-Input-Paar (Name + Notiz) in DOM-Reihenfolge —
+              der Server (schreibeAusstattung) ersetzt den Stand komplett. */}
+          {ausstattungChips.map((c, i) => (
+            <span key={`${c.name}:${i}`}>
+              <input type="hidden" name="ausstattungName" value={c.name} />
+              <input type="hidden" name="ausstattungNotiz" value={c.notiz} />
+            </span>
+          ))}
+
+          {ausstattungChips.length > 0 ? (
+            <div className="flex flex-wrap gap-1.5">
+              {ausstattungChips.map((c, i) => (
+                <span
+                  key={`${c.name}:${i}`}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-border)] px-2.5 py-1 text-sm"
+                >
+                  {c.name}
+                  {c.notiz ? (
+                    <span className="text-xs text-[var(--color-muted)]">
+                      {c.notiz}
+                    </span>
+                  ) : null}
+                  <button
+                    type="button"
+                    aria-label={`${c.name} entfernen`}
+                    onClick={() =>
+                      setAusstattungChips((alt) =>
+                        alt.filter((_, j) => j !== i),
+                      )
+                    }
+                    className="text-[var(--color-muted)] hover:text-[var(--color-danger)]"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+          ) : null}
+
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_auto]">
+            <Input
+              value={ausName}
+              onChange={(e) => setAusName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  ausstattungHinzufuegen();
+                }
+              }}
+              placeholder="z. B. Shaker"
+              maxLength={120}
+            />
+            <Input
+              value={ausNotiz}
+              onChange={(e) => setAusNotiz(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  ausstattungHinzufuegen();
+                }
+              }}
+              placeholder="Notiz (optional)"
+              maxLength={300}
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={ausstattungHinzufuegen}
+              disabled={!ausName.trim()}
+            >
+              Hinzufügen
+            </Button>
+          </div>
         </div>
       </Field>
 
