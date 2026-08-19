@@ -57,6 +57,9 @@ const LABEL: Record<FactType, string> = {
   fuses: "Sicherungen",
   parts: "Teileliste",
   rules: "Regeln / Adjustments",
+  screws: "Schrauben",
+  rubbers: "Gummiteile",
+  electronics: "Elektronik-Bauteile",
 };
 
 // Beispiel-Objekt aus den kanonischen Spalten (immer in Sync mit FACT_COLUMNS).
@@ -84,8 +87,14 @@ Handbuch sie anders benennt; ordne die Werte zu, fehlende Werte = "":
 - fuses    → ${JSON.stringify(FACT_COLUMNS.fuses)}
 - parts    → ${JSON.stringify(FACT_COLUMNS.parts)}
 - rules    → ${JSON.stringify(FACT_COLUMNS.rules)}
+- screws   → ${JSON.stringify(FACT_COLUMNS.screws)}
+             Schrauben-/Befestigungsliste (Größe/Gewinde, Anzahl, Einbauort), wenn vorhanden.
+- rubbers  → ${JSON.stringify(FACT_COLUMNS.rubbers)}
+             Gummiliste/Ring-Kit (Größe, Anzahl, Einbauort), wenn vorhanden.
+- electronics → ${JSON.stringify(FACT_COLUMNS.electronics)}
+             Nur diskrete Bauteile mit Wert/Bezeichnung; keine kompletten Schaltpläne.
 
-Ausgabe — GENAU dieses Objekt mit allen sechs Schlüsseln. Jede Tabelle ist
+Ausgabe — GENAU dieses Objekt mit allen neun Schlüsseln. Jede Tabelle ist
 {"columns":[...],"rows":[[...],...]}; eine Zeile ist ein Array von Zellen (alle als String,
 positionsgleich zu columns). Fehlt eine Tabelle, gib leere "rows" ([]) zurück:
 

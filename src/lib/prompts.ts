@@ -47,7 +47,13 @@ export function extractSpaltenBlock(): string {
              (Lampenmatrix 8×8: Lamp/No = Column×10 + Row; also Column/Row aus der Nummer ableiten)
 - fuses    → ${j("fuses")}
 - parts    → ${j("parts")}
-- rules    → ${j("rules")}`;
+- rules    → ${j("rules")}
+- screws   → ${j("screws")}
+             (Schrauben-/Befestigungsliste: Größe/Gewinde, Anzahl, Einbauort — wenn im Handbuch vorhanden)
+- rubbers  → ${j("rubbers")}
+             (Gummiliste/Ring-Kit: Größe, Anzahl, Einbauort)
+- electronics → ${j("electronics")}
+             (nur diskrete Bauteile mit Wert/Bezeichnung — KEINE kompletten Schaltpläne)`;
 }
 
 export const DEFAULT_PROMPTS: Record<PromptKey, PromptDefinition> = {

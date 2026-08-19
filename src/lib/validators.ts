@@ -150,6 +150,9 @@ export const FACT_TYPES = [
   "fuses",
   "parts",
   "rules",
+  "screws",
+  "rubbers",
+  "electronics",
 ] as const;
 export type FactType = (typeof FACT_TYPES)[number];
 
@@ -170,6 +173,9 @@ export const extractSchema = z.object({
   fuses: factTableSchema,
   parts: factTableSchema,
   rules: factTableSchema,
+  screws: factTableSchema,
+  rubbers: factTableSchema,
+  electronics: factTableSchema,
 });
 
 /** Kanonische Spaltenüberschriften je Faktentyp — die EINE Quelle für den
@@ -183,6 +189,9 @@ export const FACT_COLUMNS: Record<FactType, string[]> = {
   fuses: ["Board", "Fuse", "Rating", "Schützt"],
   parts: ["Part No", "Beschreibung"],
   rules: ["Adj/No", "Beschreibung", "Bereich/Standard"],
+  screws: ["Schraube", "Größe/Gewinde", "Anzahl", "Einbauort"],
+  rubbers: ["Gummi", "Größe", "Anzahl", "Einbauort"],
+  electronics: ["Bauteil", "Wert/Typ", "Position", "Hinweis"],
 };
 
 /*

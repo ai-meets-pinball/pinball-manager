@@ -27,6 +27,9 @@ const LABELS: Record<string, string> = {
   fuses: "Sicherungen",
   parts: "Teileliste",
   rules: "Regeln / Adjustments",
+  screws: "Schrauben",
+  rubbers: "Gummiteile",
+  electronics: "Elektronik-Bauteile",
 };
 
 export function ManualJsonImport({ machineId }: { machineId: string }) {

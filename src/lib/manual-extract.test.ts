@@ -21,6 +21,9 @@ function ergebnis(
     fuses: leer(),
     parts: leer(),
     rules: leer(),
+    screws: leer(),
+    rubbers: leer(),
+    electronics: leer(),
     ...teil,
   };
 }

@@ -17,9 +17,22 @@ const LABELS: Record<FactType, string> = {
   fuses: "Sicherungen",
   parts: "Teileliste",
   rules: "Regeln / Adjustments",
+  screws: "Schrauben",
+  rubbers: "Gummiteile",
+  electronics: "Elektronik-Bauteile",
 };
 
-const ORDER: FactType[] = ["coils", "switches", "lamps", "fuses", "parts", "rules"];
+const ORDER: FactType[] = [
+  "coils",
+  "switches",
+  "lamps",
+  "fuses",
+  "parts",
+  "rules",
+  "screws",
+  "rubbers",
+  "electronics",
+];
 
 type Row = { typ: string; daten: unknown };
 

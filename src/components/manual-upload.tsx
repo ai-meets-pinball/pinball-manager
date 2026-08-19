@@ -22,6 +22,9 @@ const LABELS: Record<string, string> = {
   fuses: "Sicherungen",
   parts: "Teile",
   rules: "Regeln",
+  screws: "Schrauben",
+  rubbers: "Gummi",
+  electronics: "Elektronik",
 };
 
 function summary(counts: Record<string, number>): string {
@@ -172,7 +175,8 @@ export function ManualUpload({
         <span>
           Ich bestätige, dass ich dieses Handbuch besitze bzw. die Rechte habe, es
           zu verarbeiten. Es wird nicht gespeichert — nur die extrahierten
-          Faktentabellen (Spulen, Lampen, Schalter, Sicherungen, Teile, Regeln).
+          Faktentabellen (Spulen, Lampen, Schalter, Sicherungen, Teile, Regeln,
+          Schrauben, Gummi, Elektronik).
         </span>
       </label>
 

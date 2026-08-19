@@ -49,6 +49,9 @@ const mitSpulen = (rows: string[][]) => ({
   fuses: leer,
   parts: leer,
   rules: leer,
+  screws: leer,
+  rubbers: leer,
+  electronics: leer,
 });
 
 const antwort = (json: unknown, extra: Record<string, unknown> = {}) => ({
