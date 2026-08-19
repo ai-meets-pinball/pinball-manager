@@ -239,7 +239,7 @@ export default async function DashboardPage({
             <ListRow
               key={m.id}
               kompakt={kompakt}
-              href={`/machines/${m.id}`}
+              href={`/machines/${m.id}#status`}
               title={modellName(m)}
               subtitle={
                 m.statusGrund ?? (m.club ? m.club.name : "Private Sammlung")

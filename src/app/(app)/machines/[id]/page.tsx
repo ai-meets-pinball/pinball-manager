@@ -258,10 +258,11 @@ export default async function MachineDetailPage({
       : undefined;
 
   // KPI-Karten der Übersicht (Dashboard). Verlinkte öffnen den Reiter; die
-  // Status-Karte ist kein Link (Steuerung liegt unten in der Übersicht).
+  // Status-Karte springt per #status zur Betriebsstatus-Steuerung oben.
   const kpis: MachineKpi[] = [
     {
       key: "status",
+      href: "#status",
       zahl: <StatusBadge value={machine.status} />,
       label: "Maschinenstatus",
       tone: "neutral",
@@ -353,7 +354,15 @@ export default async function MachineDetailPage({
           <div>
             <div className="flex flex-wrap items-center gap-3">
               <h1 className="text-2xl font-bold">{modellName(machine)}</h1>
-              <StatusBadge value={machine.status} />
+              {/* Der hervorgehobene Status ist ein Link auf sein „Fenster":
+                  öffnet die Übersicht und scrollt zur Betriebsstatus-Steuerung. */}
+              <Link
+                href={`/machines/${machine.id}?bereich=uebersicht#status`}
+                className="rounded-full transition-opacity hover:opacity-80"
+                title="Betriebsstatus einsehen/ändern"
+              >
+                <StatusBadge value={machine.status} />
+              </Link>
             </div>
             <p className="text-[var(--color-muted)]">
               {machine.baujahr ?? "Baujahr unbekannt"}
@@ -435,17 +444,21 @@ export default async function MachineDetailPage({
       {/* ── Übersicht: Foto und Status-Dashboard ─────────────────────────────── */}
       {active === "uebersicht" ? (
         <div className="space-y-4">
-          {darf.bearbeiten ? (
-            <StatusSteuerung
-              machineId={machine.id}
-              status={machine.status}
-              manuell={machine.statusManuell}
-            />
-          ) : machine.statusManuell && machine.statusGrund ? (
-            <p className="text-sm text-[var(--color-muted)]">
-              Status manuell gesetzt: {machine.statusGrund}
-            </p>
-          ) : null}
+          {/* Anker „Status-Fenster": Ziel der Status-Links (Kopf-Badge, KPI-Karte,
+              Dashboard). empty:hidden lässt keine Lücke, wenn nichts zu steuern ist. */}
+          <div id="status" className="scroll-mt-24 empty:hidden">
+            {darf.bearbeiten ? (
+              <StatusSteuerung
+                machineId={machine.id}
+                status={machine.status}
+                manuell={machine.statusManuell}
+              />
+            ) : machine.statusManuell && machine.statusGrund ? (
+              <p className="text-sm text-[var(--color-muted)]">
+                Status manuell gesetzt: {machine.statusGrund}
+              </p>
+            ) : null}
+          </div>
           <MachineOverview
             kpis={kpis}
             faultsPreview={
