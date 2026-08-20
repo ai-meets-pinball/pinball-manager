@@ -13,16 +13,25 @@ export function AusstattungListe({ ausstattung }: { ausstattung: Eintrag[] }) {
   if (ausstattung.length === 0) return null;
 
   return (
-    <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-[var(--color-muted)]">
+    <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-[var(--color-muted)]">
       <span className="inline-flex items-center gap-1">
         <Package size={14} /> Ausstattung:
       </span>
-      {ausstattung.map((a) => (
-        <span key={a.id} className="inline-flex items-center gap-1.5">
-          <span className="text-[var(--color-fg)]">{a.name}</span>
-          {a.notiz ? <span>· {a.notiz}</span> : null}
-        </span>
-      ))}
+      {/* Einträge mit | getrennt (wie „Modell | Hersteller"), Notiz in Klammern
+          — Feedback: nur Leerzeichen war schwer lesbar (Averell, c2b8a536). */}
+      <span className="text-[var(--color-fg)]">
+        {ausstattung.map((a, i) => (
+          <span key={a.id}>
+            {i > 0 ? (
+              <span className="text-[var(--color-faint)]"> | </span>
+            ) : null}
+            {a.name}
+            {a.notiz ? (
+              <span className="text-[var(--color-muted)]"> ({a.notiz})</span>
+            ) : null}
+          </span>
+        ))}
+      </span>
     </div>
   );
 }
