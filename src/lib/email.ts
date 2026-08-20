@@ -37,6 +37,8 @@ export type MailKategorie =
 async function sendeMail(opts: {
   kategorie: MailKategorie;
   to: string | string[];
+  /** Kopie-Empfänger (z. B. Super-Admins bei Feedback-Antworten). */
+  cc?: string | string[];
   subject: string;
   html: string;
   /** Klartext-Zusammenfassung fürs Protokoll (Default: Betreff). */
@@ -51,14 +53,21 @@ async function sendeMail(opts: {
   const { error } = await resend.emails.send({
     from: FROM,
     to: opts.to,
+    cc: opts.cc,
     subject: opts.subject,
     html: opts.html,
   });
 
+  const alsListe = (v: string | string[]) =>
+    Array.isArray(v) ? v.join(", ") : v;
+  const ccVorhanden =
+    opts.cc != null && (Array.isArray(opts.cc) ? opts.cc.length > 0 : true);
   try {
     await db.insert(mailLog).values({
       kategorie: opts.kategorie,
-      empfaenger: Array.isArray(opts.to) ? opts.to.join(", ") : opts.to,
+      empfaenger: ccVorhanden
+        ? `${alsListe(opts.to)} · CC: ${alsListe(opts.cc!)}`
+        : alsListe(opts.to),
       betreff: opts.subject,
       inhalt: opts.logText ?? null,
       feedbackId: opts.feedbackId ?? null,
@@ -342,12 +351,18 @@ export async function sendFeedbackStatusEmail(
     url: string;
   },
   feedbackId?: string,
+  /** Super-Admins in CC (der Melder selbst wird herausgefiltert). */
+  cc?: string[],
 ) {
   const satz = FEEDBACK_ABSCHLUSS_SATZ[meldung.status] ?? "wurde bearbeitet";
+  const ccGefiltert = (cc ?? []).filter(
+    (e) => e && e.toLowerCase() !== to.toLowerCase(),
+  );
 
   await sendeMail({
     kategorie: "feedback_status",
     to,
+    cc: ccGefiltert.length > 0 ? ccGefiltert : undefined,
     feedbackId,
     subject: `Deine Meldung wurde bearbeitet: ${meldung.titel}`,
     logText: `„${meldung.titel}" ${satz}${

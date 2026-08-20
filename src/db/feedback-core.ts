@@ -1,9 +1,9 @@
-import { asc, eq, inArray, not, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, not, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { feedback, user } from "@/db/schema";
+import { feedback, roleAssignments, roles, user } from "@/db/schema";
 import { sendFeedbackStatusEmail } from "@/lib/email";
 import { sollBenachrichtigen } from "@/lib/feedback-status";
-import { FEEDBACK_STATUS } from "@/lib/validators";
+import { FEEDBACK_STATUS, SUPERADMIN_ROLE } from "@/lib/validators";
 
 /*
   Kern der Feedback-Triage OHNE Gate — bewusst NICHT `"use server"` (Muster
@@ -56,6 +56,19 @@ export async function findeFeedbackPraefix(praefix: string) {
     .from(feedback)
     .where(sql`${feedback.id}::text like ${praefix.toLowerCase() + "%"}`)
     .limit(5);
+}
+
+/** E-Mails aller globalen Super-Admins (für Benachrichtigungen und CC). Gate-los
+    — der schreibende Aufrufer verantwortet den Zugriff (bewusst kein "use
+    server", damit daraus kein offener Endpoint wird, siehe use-server-Gate-Regel). */
+export async function superAdminEmails(): Promise<string[]> {
+  const rows = await db
+    .select({ email: user.email })
+    .from(roleAssignments)
+    .innerJoin(roles, eq(roleAssignments.roleId, roles.id))
+    .innerJoin(user, eq(user.id, roleAssignments.userId))
+    .where(and(eq(roles.key, SUPERADMIN_ROLE), isNull(roleAssignments.clubId)));
+  return rows.map((r) => r.email);
 }
 
 /**
@@ -111,6 +124,8 @@ export async function setzeFeedbackStatus(input: {
           url: `${baseUrl}/feedback`,
         },
         input.id,
+        // Super-Admins bei jeder Melder-Benachrichtigung in CC.
+        await superAdminEmails(),
       );
       benachrichtigt = true;
     } catch (e) {

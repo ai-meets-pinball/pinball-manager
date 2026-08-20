@@ -1,19 +1,15 @@
 "use server";
 
-import { and, eq, isNull } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
-import { feedback, roleAssignments, roles, user } from "@/db/schema";
-import { setzeFeedbackStatus } from "@/db/feedback-core";
+import { feedback } from "@/db/schema";
+import { setzeFeedbackStatus, superAdminEmails } from "@/db/feedback-core";
 import { sendFeedbackNotificationEmail } from "@/lib/email";
 import { isSuperAdmin, requireUser } from "@/lib/session";
 import { uploadFeedbackScreenshot } from "@/lib/storage";
-import {
-  FEEDBACK_STATUS,
-  feedbackSchema,
-  SUPERADMIN_ROLE,
-} from "@/lib/validators";
+import { FEEDBACK_STATUS, feedbackSchema } from "@/lib/validators";
 import { APP_VERSION } from "@/lib/version";
 import type { FormState } from "@/db/actions/form-state";
 
@@ -24,17 +20,6 @@ import type { FormState } from "@/db/actions/form-state";
   nur Super-Admins (Lesepfad in queries.ts / Seite);
   Status/Antwort/Löschen sind Super-Admin-only.
 */
-
-/** E-Mails aller globalen Super-Admins (für die Benachrichtigung). */
-async function superAdminEmails(): Promise<string[]> {
-  const rows = await db
-    .select({ email: user.email })
-    .from(roleAssignments)
-    .innerJoin(roles, eq(roleAssignments.roleId, roles.id))
-    .innerJoin(user, eq(user.id, roleAssignments.userId))
-    .where(and(eq(roles.key, SUPERADMIN_ROLE), isNull(roleAssignments.clubId)));
-  return rows.map((r) => r.email);
-}
 
 export async function submitFeedback(
   _prev: FormState,
