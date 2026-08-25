@@ -22,10 +22,14 @@ export function StatusSteuerung({
   machineId,
   status,
   manuell,
+  grund,
 }: {
   machineId: string;
   status: string;
   manuell: boolean;
+  /** Aktueller Grund — belegt das Feld vor, damit ein erneutes Setzen ihn
+      nicht versehentlich leert. */
+  grund?: string | null;
 }) {
   const router = useRouter();
   const [offen, setOffen] = useState(false);
@@ -88,7 +92,11 @@ export function StatusSteuerung({
           </Select>
         </Field>
         <Field label="Begründung (optional)">
-          <Input name="grund" placeholder="z. B. Netzteil defekt, Teil bestellt" />
+          <Input
+            name="grund"
+            placeholder="z. B. Netzteil defekt, Teil bestellt"
+            defaultValue={grund ?? ""}
+          />
         </Field>
       </div>
       <p className="text-xs text-[var(--color-muted)]">

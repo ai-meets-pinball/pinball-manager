@@ -446,17 +446,41 @@ export default async function MachineDetailPage({
         <div className="space-y-4">
           {/* Anker „Status-Fenster": Ziel der Status-Links (Kopf-Badge, KPI-Karte,
               Dashboard). empty:hidden lässt keine Lücke, wenn nichts zu steuern ist. */}
-          <div id="status" className="scroll-mt-24 empty:hidden">
+          <div id="status" className="scroll-mt-24 empty:hidden space-y-2">
+            {/* WARUM ist die Maschine nicht spielbereit? Grund für ALLE sichtbar
+                — manuell gepinnter Grund oder (automatisch) der kritische Fehler. */}
+            {machine.status !== "spielbereit" ? (
+              machine.statusManuell && machine.statusGrund ? (
+                <p className="text-sm text-[var(--color-muted)]">
+                  <span className="font-medium text-[var(--color-fg)]">
+                    Grund:
+                  </span>{" "}
+                  {machine.statusGrund}
+                </p>
+              ) : !machine.statusManuell && fehler.anzahlKritischOffen > 0 ? (
+                <p className="text-sm text-[var(--color-muted)]">
+                  Automatisch eingeschränkt wegen{" "}
+                  <Link
+                    href={`/machines/${machine.id}?bereich=fehler`}
+                    className="underline hover:text-[var(--color-fg)]"
+                  >
+                    offenem kritischen Fehler
+                  </Link>
+                  {fehler.anzahlKritischOffen > 1
+                    ? ` (${fehler.anzahlKritischOffen})`
+                    : ""}
+                  .
+                </p>
+              ) : null
+            ) : null}
+
             {darf.bearbeiten ? (
               <StatusSteuerung
                 machineId={machine.id}
                 status={machine.status}
                 manuell={machine.statusManuell}
+                grund={machine.statusGrund}
               />
-            ) : machine.statusManuell && machine.statusGrund ? (
-              <p className="text-sm text-[var(--color-muted)]">
-                Status manuell gesetzt: {machine.statusGrund}
-              </p>
             ) : null}
           </div>
           <MachineOverview

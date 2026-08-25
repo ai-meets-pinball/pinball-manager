@@ -115,7 +115,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Betriebsstatus",
-        text: "Jede Maschine trägt einen Betriebsstatus: »Spielbereit«, »Eingeschränkt« oder »Außer Betrieb«. Normalerweise wird er automatisch aus den offenen Fehlern abgeleitet — ein offener KRITISCHER Fehler setzt die Maschine auf »Eingeschränkt«. Mit Schreibrecht lässt er sich auf der Übersicht der Maschine auch von Hand setzen (nur so gibt es »Außer Betrieb«); »Zurück auf Automatik« lässt ihn wieder den Fehlern folgen. Der Status-Badge im Seitenkopf und die »Maschinenstatus«-Karte verlinken direkt auf diese Steuerung. Dieser Status steckt hinter der »nicht spielbereit«-Kennzahl der Übersicht.",
+        text: "Jede Maschine trägt einen Betriebsstatus: »Spielbereit«, »Eingeschränkt« oder »Außer Betrieb«. Normalerweise wird er automatisch aus den offenen Fehlern abgeleitet — ein offener KRITISCHER Fehler setzt die Maschine auf »Eingeschränkt«. Mit Schreibrecht lässt er sich auf der Übersicht der Maschine auch von Hand setzen (nur so gibt es »Außer Betrieb«); »Zurück auf Automatik« lässt ihn wieder den Fehlern folgen. Der Status-Badge im Seitenkopf und die »Maschinenstatus«-Karte verlinken direkt auf diese Steuerung. Der Grund einer Einschränkung wird auf der Geräteseite angezeigt — bei manueller Pinnung der eingetragene Grund, bei automatischer Einschränkung der auslösende kritische Fehler (verlinkt). Dieser Status steckt hinter der »nicht spielbereit«-Kennzahl der Übersicht.",
       },
       {
         titel: "Bearbeiten",
