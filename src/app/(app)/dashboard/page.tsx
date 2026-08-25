@@ -15,9 +15,13 @@ import {
   getDueMaintenanceForMachines,
   getOpenFaultsForMachines,
   getMeineMaschinen,
+  getUserClubs,
 } from "@/db/queries";
+import { toggleTurniermodus } from "@/db/actions/clubs";
+import { AutoRefresh } from "@/components/auto-refresh";
 import { schwerster, type Betriebsstatus } from "@/lib/betriebsstatus";
 import { modellName } from "@/lib/format";
+import { mindestens } from "@/lib/rechte";
 import { requireUser } from "@/lib/session";
 
 /*
@@ -35,10 +39,26 @@ export default async function DashboardPage({
   const alleMaschinen = await getMeineMaschinen(user);
   const ids = alleMaschinen.map((m) => m.id);
 
-  const [wartungenAlle, fehlerAlle] = await Promise.all([
+  const [wartungenAlle, fehlerAlle, meineClubs] = await Promise.all([
     getDueMaintenanceForMachines(user, ids),
     getOpenFaultsForMachines(user, ids),
+    getUserClubs(user.id),
   ]);
+
+  // Turniermodus (pro Club, geteilt): Alarm, solange ein OFFENER (unquittierter)
+  // Fehler an einer Maschine eines Turnier-Clubs steht — bewusst UNABHÄNGIG vom
+  // Bereichsfilter, damit man den Alarm nicht wegfiltert.
+  const clubVonMaschine = new Map(alleMaschinen.map((m) => [m.id, m.clubId]));
+  const turnierClubIds = new Set(
+    meineClubs.filter((c) => c.turniermodus).map((c) => c.id),
+  );
+  const alarmFehler = fehlerAlle.filter(
+    (f) =>
+      f.status === "offen" &&
+      turnierClubIds.has(clubVonMaschine.get(f.machineId) ?? ""),
+  );
+  const turnierAktiv = turnierClubIds.size > 0;
+  const managedClubs = meineClubs.filter((c) => mindestens(c.rolle, "admin"));
 
   // Bereiche (Scopes), über die der Nutzer verfügt: „Privat" (Maschinen ohne
   // Club) plus jeder Club mit sichtbaren Maschinen. Nur wenn es MEHRERE gibt,
@@ -198,6 +218,55 @@ export default async function DashboardPage({
           </Link>
         </div>
       </div>
+
+      {/* Turniermodus-Umschalter (nur für Owner/Admin der eigenen Clubs). */}
+      {managedClubs.length > 0 ? (
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span className="text-[var(--color-muted)]">Turniermodus:</span>
+          {managedClubs.map((c) => (
+            <form key={c.id} action={toggleTurniermodus}>
+              <input type="hidden" name="clubId" value={c.id} />
+              <button
+                type="submit"
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 ${
+                  c.turniermodus
+                    ? "border-[var(--color-danger)] font-semibold text-[var(--color-danger)]"
+                    : "border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+                }`}
+              >
+                {c.name}: {c.turniermodus ? "AN" : "aus"}
+              </button>
+            </form>
+          ))}
+        </div>
+      ) : null}
+
+      {/* Alarm: unquittierte (offene) Fehler an Turnier-Maschinen. */}
+      {alarmFehler.length > 0 ? (
+        <div
+          className="flex items-center gap-3 rounded-[var(--radius)] border-2 border-[var(--color-danger)] px-4 py-3"
+          style={{
+            background: "color-mix(in srgb, var(--color-danger) 12%, transparent)",
+          }}
+        >
+          <AlertTriangle
+            size={22}
+            className="shrink-0 text-[var(--color-danger)]"
+          />
+          <div>
+            <p className="font-bold text-[var(--color-danger)]">
+              Turniermodus — {alarmFehler.length} unbestätigte(r) Fehler
+            </p>
+            <p className="text-sm text-[var(--color-muted)]">
+              Neue, noch nicht quittierte Fehler an Turnier-Maschinen. Öffne den
+              Fehler und setze ihn auf „quittiert" — dann verstummt der Alarm.
+            </p>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Im Turniermodus live nachladen, damit neue Fehler den Alarm auslösen. */}
+      {turnierAktiv ? <AutoRefresh intervalMs={25000} /> : null}
 
       {/* Bereichs-Filter (nur bei mehreren Optionen): mehrere Bereiche lassen
           sich gleichzeitig aktivieren. Alle aktiv = kein Filter. */}

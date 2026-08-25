@@ -104,6 +104,10 @@ export const clubs = pgTable("clubs", {
   name: text("name").notNull(),
   // Vereins-Logo (JPG/PNG/SVG, Supabase Storage club-logos/) — optional.
   logoUrl: text("logo_url"),
+  // Turniermodus (geteilt): AN → das Dashboard schlägt Alarm, solange ein
+  // OFFENER (unquittierter) Fehler an einer Club-Maschine steht. Owner/Admin
+  // schalten ihn; alle Mitglieder sehen den Alarm.
+  turniermodus: boolean("turniermodus").notNull().default(false),
   createdBy: text("created_by")
     .notNull()
     .references(() => user.id),

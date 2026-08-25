@@ -72,7 +72,11 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Offene Fehler",
-        text: "Alle offenen und in Arbeit befindlichen Fehler mit Priorität — ebenfalls direkt verlinkt.",
+        text: "Alle noch nicht behobenen Fehler (offen, quittiert, in Arbeit) mit Priorität — ebenfalls direkt verlinkt.",
+      },
+      {
+        titel: "Turniermodus (Club)",
+        text: "Für Turniere: Owner/Admin eines Clubs schalten oben den »Turniermodus« an. Ist er aktiv und steht an einer Club-Maschine ein NEUER, noch nicht quittierter Fehler (Status »offen«), schlägt das Dashboard sichtbar Alarm. Sobald jeder betroffene Fehler mindestens auf »quittiert« gesetzt ist, verstummt der Alarm. Im Turniermodus lädt das Dashboard automatisch nach (~25 Sekunden), damit ein neuer Fehler den Alarm auch ohne Neuladen auslöst.",
       },
     ],
   },

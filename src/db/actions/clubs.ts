@@ -20,6 +20,24 @@ import type { FormState } from "@/db/actions/form-state";
 // Hinweis: Mitglieder werden per Einladung hinzugefügt — siehe actions/invitations.ts.
 // Eine club-bezogene Rollenzuweisung IST die Mitgliedschaft (keine memberships-Tabelle).
 
+/** Turniermodus eines Clubs an/aus schalten (nur Owner/Admin). Geteilt — alle
+    Mitglieder sehen den Dashboard-Alarm. */
+export async function toggleTurniermodus(formData: FormData): Promise<void> {
+  const clubId = String(formData.get("clubId") ?? "");
+  await requireClubManager(clubId);
+  const club = await db.query.clubs.findFirst({
+    where: eq(clubs.id, clubId),
+    columns: { turniermodus: true },
+  });
+  if (!club) return;
+  await db
+    .update(clubs)
+    .set({ turniermodus: !club.turniermodus })
+    .where(eq(clubs.id, clubId));
+  revalidatePath("/dashboard");
+  revalidatePath(`/clubs/${clubId}`);
+}
+
 export async function createClub(
   _prev: FormState,
   formData: FormData,

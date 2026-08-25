@@ -17,6 +17,7 @@ export async function getUserClubs(userId: string) {
       id: clubs.id,
       name: clubs.name,
       rolle: roles.key,
+      turniermodus: clubs.turniermodus,
     })
     .from(roleAssignments)
     .innerJoin(clubs, eq(roleAssignments.clubId, clubs.id))
