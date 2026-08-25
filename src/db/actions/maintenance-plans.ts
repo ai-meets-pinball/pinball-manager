@@ -2,10 +2,8 @@
 
 import { and, eq, notExists } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
-import { z } from "zod";
 import { db } from "@/db";
 import {
-  clubs,
   machines,
   maintenanceLog,
   maintenancePlanItems,
@@ -78,47 +76,79 @@ async function seedItems(planId: string) {
   );
 }
 
-/** Eigenen Standard (Nutzer) holen oder aus dem Template anlegen. */
-export async function ensureUserStandard(): Promise<string> {
+/** Neuen benannten Wartungsplan anlegen (privat oder für einen Club, den ich
+    manage). Optional aus dem Code-Template befüllen. */
+export async function createPlan(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
   const me = await requireUser();
-  const vorhanden = await db.query.maintenancePlans.findFirst({
-    where: eq(maintenancePlans.userId, me.id),
-  });
-  if (vorhanden) return vorhanden.id;
-  const [plan] = await db
-    .insert(maintenancePlans)
-    .values({ name: "Mein Standard", userId: me.id })
-    .returning({ id: maintenancePlans.id });
-  await seedItems(plan.id);
-  revalidatePath("/wartungsplaene");
-  return plan.id;
-}
-
-/** Club-Standard holen oder anlegen (nur Club-Manager). */
-export async function ensureClubStandard(clubId: string): Promise<string> {
-  const me = await requireUser();
-  if (!(await isClubManager(me.id, clubId))) {
-    throw new Error("Nur Club-Manager dürfen den Club-Standard anlegen");
+  const name = String(formData.get("name") ?? "").trim();
+  const clubId = String(formData.get("clubId") ?? "") || null;
+  const ausVorlage = formData.get("ausVorlage") != null;
+  if (!name) return { error: "Name fehlt." };
+  if (name.length > 80) return { error: "Name ist zu lang." };
+  if (clubId && !(await isClubManager(me.id, clubId))) {
+    return { error: "Nur Club-Manager dürfen einen Club-Plan anlegen." };
   }
-  const vorhanden = await db.query.maintenancePlans.findFirst({
-    where: eq(maintenancePlans.clubId, clubId),
-  });
-  if (vorhanden) return vorhanden.id;
-  const club = await db.query.clubs.findFirst({ where: eq(clubs.id, clubId) });
-  const [plan] = await db
-    .insert(maintenancePlans)
-    .values({ name: `Standard ${club?.name ?? "Club"}`, clubId })
-    .returning({ id: maintenancePlans.id });
-  await seedItems(plan.id);
+
+  try {
+    const [plan] = await db
+      .insert(maintenancePlans)
+      .values(clubId ? { name, clubId } : { name, userId: me.id })
+      .returning({ id: maintenancePlans.id });
+    if (ausVorlage) await seedItems(plan.id);
+  } catch (e) {
+    if ((e as { code?: string }).code === "23505") {
+      return { error: "Ein Plan mit diesem Namen existiert bereits." };
+    }
+    throw e;
+  }
+
   revalidatePath("/wartungsplaene");
-  return plan.id;
+  return { message: "Plan angelegt." };
 }
 
-/** Formular-Wrapper: Standard anlegen (Nutzer oder Club). */
-export async function createStandard(formData: FormData): Promise<void> {
-  const clubId = String(formData.get("clubId") ?? "");
-  if (clubId) await ensureClubStandard(clubId);
-  else await ensureUserStandard();
+/** Plan umbenennen (Eigentümer bzw. Club-Manager). */
+export async function renamePlan(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const me = await requireUser();
+  const planId = String(formData.get("planId") ?? "");
+  const name = String(formData.get("name") ?? "").trim();
+  if (!name) return { error: "Name fehlt." };
+  const plan = await planOderFehler(planId);
+  if (!(await darfPlanBearbeiten(me, plan))) {
+    return { error: "Keine Berechtigung für diesen Plan." };
+  }
+  try {
+    await db
+      .update(maintenancePlans)
+      .set({ name, updatedAt: new Date() })
+      .where(eq(maintenancePlans.id, planId));
+  } catch (e) {
+    if ((e as { code?: string }).code === "23505") {
+      return { error: "Ein Plan mit diesem Namen existiert bereits." };
+    }
+    throw e;
+  }
+  revalidatePath("/wartungsplaene");
+  return { message: "Umbenannt." };
+}
+
+/** Plan löschen. Verknüpfte Maschinen werden per FK entkoppelt
+    (maintenance_plan_id → NULL, deren Tasks planItemId → NULL = eigene Kopien;
+    Historie bleibt). */
+export async function deletePlan(formData: FormData): Promise<void> {
+  const me = await requireUser();
+  const planId = String(formData.get("planId") ?? "");
+  const plan = await planOderFehler(planId);
+  if (!(await darfPlanBearbeiten(me, plan))) {
+    throw new Error("Nur Eigentümer bzw. Club-Manager dürfen den Plan löschen");
+  }
+  await db.delete(maintenancePlans).where(eq(maintenancePlans.id, planId));
+  revalidatePath("/wartungsplaene");
 }
 
 /* ── Punkte: CRUD mit Propagation ─────────────────────────────────────────── */
@@ -306,12 +336,10 @@ export async function deletePlanItem(formData: FormData): Promise<void> {
 
 /* ── Maschine ↔ Standard ──────────────────────────────────────────────────── */
 
-const zielSchema = z.union([z.literal("user"), z.string().uuid()]);
-
-/** Maschine mit einem Standard verknüpfen ("user" = mein Standard, sonst
-    Club-id — nur Clubs, in denen ich Mitglied bin). Bestehende Punkte mit
-    gleichem Titel werden an den Standard gekoppelt (Historie bleibt), fehlende
-    ergänzt; zusätzliche eigene Punkte bleiben eigene Punkte. */
+/** Maschine mit einem konkreten Standard-Plan verknüpfen (per planId). Erlaubt,
+    wem der Plan gehört ODER wer Mitglied des zugehörigen Clubs ist. Bestehende
+    Punkte mit gleichem Titel werden an den Standard gekoppelt (Historie bleibt),
+    fehlende ergänzt; zusätzliche eigene Punkte bleiben eigene Punkte. */
 export async function linkMachineToStandard(
   _prev: FormState,
   formData: FormData,
@@ -319,28 +347,15 @@ export async function linkMachineToStandard(
   const machineId = String(formData.get("machineId"));
   const { user: me } = await requireMachineWrite(machineId);
 
-  const ziel = zielSchema.safeParse(formData.get("ziel"));
-  if (!ziel.success) return { error: "Ungültiges Ziel." };
-
-  let planId: string;
-  if (ziel.data === "user") {
-    planId = await ensureUserStandard();
-  } else {
-    if (!(await isClubMember(me.id, ziel.data))) {
-      return { error: "Du bist kein Mitglied dieses Clubs." };
-    }
-    // Mitglieder dürfen verknüpfen; anlegen darf nur der Manager.
-    const vorhanden = await db.query.maintenancePlans.findFirst({
-      where: eq(maintenancePlans.clubId, ziel.data),
-    });
-    if (vorhanden) planId = vorhanden.id;
-    else if (await isClubManager(me.id, ziel.data))
-      planId = await ensureClubStandard(ziel.data);
-    else
-      return {
-        error: "Dieser Club hat noch keinen Standard — ein Club-Manager muss ihn anlegen.",
-      };
-  }
+  const planId = String(formData.get("planId") ?? "");
+  const plan = await db.query.maintenancePlans.findFirst({
+    where: eq(maintenancePlans.id, planId),
+  });
+  if (!plan) return { error: "Wartungsplan nicht gefunden." };
+  const erlaubt =
+    plan.userId === me.id ||
+    (plan.clubId ? await isClubMember(me.id, plan.clubId) : false);
+  if (!erlaubt) return { error: "Kein Zugriff auf diesen Plan." };
 
   const items = await db.query.maintenancePlanItems.findMany({
     where: eq(maintenancePlanItems.planId, planId),

@@ -593,7 +593,7 @@ export default async function MachineDetailPage({
           providers={kiProviders}
           centralKey={kiCentralKey}
           verknuepfterPlan={wartungsStandard}
-          clubs={meineClubs.map((c) => ({ id: c.id, name: c.name }))}
+          plans={wartung.plaene}
         />
       ) : null}
 

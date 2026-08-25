@@ -5,7 +5,6 @@ import { MaintenanceGuideImport } from "@/components/maintenance-guide-import";
 import { MaintenanceTasks, type Task } from "@/components/maintenance-tasks";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import type { AiProvider } from "@/lib/ai/provider";
-import { applyStandardMaintenance } from "@/db/actions/maintenance";
 import { unlinkMachineFromStandard } from "@/db/actions/maintenance-plans";
 
 /*
@@ -21,7 +20,7 @@ export function MaintenancePlan({
   providers,
   centralKey,
   verknuepfterPlan,
-  clubs,
+  plans,
 }: {
   tasks: Task[];
   machineId: string;
@@ -33,8 +32,8 @@ export function MaintenancePlan({
   centralKey: boolean;
   /** Verknüpfter Standard (oder null = eigener Plan / Kopie). */
   verknuepfterPlan: { name: string } | null;
-  /** Clubs des Nutzers — Ziele fürs Verknüpfen. */
-  clubs: { id: string; name: string }[];
+  /** Verknüpfbare Standard-Pläne (eigene + Club-Pläne), fürs Picker-Dropdown. */
+  plans: { id: string; name: string; gruppe: string }[];
 }) {
   return (
     <div className="space-y-3">
@@ -65,18 +64,7 @@ export function MaintenancePlan({
             </form>
           </div>
         ) : (
-          <div className="flex flex-wrap items-center gap-3">
-            <LinkStandardForm machineId={machineId} clubs={clubs} />
-            <form action={applyStandardMaintenance}>
-              <input type="hidden" name="machineId" value={machineId} />
-              <button
-                type="submit"
-                className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 text-sm hover:bg-[var(--color-border)]/40"
-              >
-                <ListChecks size={15} /> Standard als Kopie übernehmen
-              </button>
-            </form>
-          </div>
+          <LinkStandardForm machineId={machineId} plans={plans} />
         )
       ) : null}
 

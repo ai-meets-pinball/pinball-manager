@@ -10,6 +10,7 @@ import { db } from "@/db";
 import {
   machines,
   maintenanceLog,
+  maintenancePlans,
   maintenanceTasks,
 } from "@/db/schema";
 import {
@@ -44,6 +45,24 @@ const STATUS_RANG: Record<FaelligkeitsStatus, number> = {
 
 /** Wartungspunkte einer Maschine samt Historie und berechnetem Fälligkeits-
     Status, sortiert nach Dringlichkeit → Priorität → Titel. */
+/** Alle Wartungspläne eines Nutzers (privat), alphabetisch. */
+export async function getUserPlans(userId: string) {
+  return db
+    .select({ id: maintenancePlans.id, name: maintenancePlans.name })
+    .from(maintenancePlans)
+    .where(eq(maintenancePlans.userId, userId))
+    .orderBy(maintenancePlans.name);
+}
+
+/** Alle Wartungspläne eines Clubs, alphabetisch. */
+export async function getClubPlans(clubId: string) {
+  return db
+    .select({ id: maintenancePlans.id, name: maintenancePlans.name })
+    .from(maintenancePlans)
+    .where(eq(maintenancePlans.clubId, clubId))
+    .orderBy(maintenancePlans.name);
+}
+
 export async function getMaintenanceTasks(machineId: string) {
   const tasks = await db.query.maintenanceTasks.findMany({
     where: eq(maintenanceTasks.machineId, machineId),

@@ -194,11 +194,11 @@ export const ANLEITUNG: HilfeSektion[] = [
     schritte: [
       {
         titel: "Punkte anlegen",
-        text: "Auf der Maschinen-Detailseite im Reiter »Wartung«: die Maschine mit einem Standard-Wartungsplan verknüpfen, »Standard als Kopie übernehmen«, »Aus Guide übernehmen« (zieht Punkte aus dem Troubleshooting-Guide) oder »Neuer Wartungspunkt« für eigene Einträge.",
+        text: "Auf der Maschinen-Detailseite im Reiter »Wartung«: die Maschine mit einem Standard-Wartungsplan verknüpfen (aus deinen Plänen und den Plänen deiner Clubs im Dropdown wählen — »Verknüpfen« folgt dem Standard, »Als Kopie übernehmen« macht daraus eigene Punkte), »Aus Guide übernehmen« (zieht Punkte aus dem Troubleshooting-Guide) oder »Neuer Wartungspunkt« für eigene Einträge. Erledigte Wartung trägst du je Punkt mit Datum ein — oder über »Mehrere erledigen« gleich mehrere Punkte auf einmal (Datum heute vorbelegt).",
       },
       {
         titel: "Standard-Wartungspläne",
-        text: "Unter Nutzer-Icon → »Wartungspläne« pflegst du deinen eigenen Standard; jeder Club kann zusätzlich einen Club-Standard haben (bearbeiten dürfen Owner/Admin, Mitglieder nutzen ihn). Hast du mehrere Standards (dein eigener plus Club-Standards), liegen sie hinter Reitern — »Mein Standard« und je Club einer. Beim ersten Anlegen wird eine bewährte Vorlage (20 Punkte) eingespielt, danach passt du Punkte frei an.",
+        text: "Unter Nutzer-Icon → »Wartungspläne« legst du BELIEBIG VIELE benannte Pläne an — eigene (privat) und je Club, den du managst (Owner/Admin bearbeiten, Mitglieder nutzen sie). Beim Anlegen gibst du einen Namen an und wählst optional »aus Standard-Vorlage« (spielt eine bewährte 20-Punkte-Liste ein); danach passt du die Punkte frei an, benennst den Plan um oder löschst ihn (verknüpfte Maschinen werden dabei entkoppelt — ihre Punkte werden eigene Kopien, die Historie bleibt). Die Pläne liegen hinter Reitern.",
       },
       {
         titel: "Verknüpfen oder kopieren?",

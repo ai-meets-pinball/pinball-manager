@@ -1,6 +1,7 @@
 import { desc, eq } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  getClubPlans,
   getLetzteWartung,
   getMachineAusstattung,
   getMachineBesitzer,
@@ -17,6 +18,7 @@ import {
   getShareDefaults,
   getSharedRepairsForModel,
   getUserClubs,
+  getUserPlans,
 } from "@/db/queries";
 import {
   clubs as clubsTable,
@@ -130,6 +132,25 @@ export async function getMachineDetail(id: string) {
 
   const offene = alleFehler.filter((f) => f.status !== "behoben");
 
+  // Verknüpfbare Wartungspläne fürs Picker-Dropdown: eigene + die der Clubs des
+  // Nutzers, gruppiert (Mehrfach-Pläne je Besitzer).
+  const linkbarePlaene = [
+    ...(await getUserPlans(user.id)).map((p) => ({
+      ...p,
+      gruppe: "Meine Pläne",
+    })),
+    ...(
+      await Promise.all(
+        meineClubs.map(async (c) =>
+          (await getClubPlans(c.id)).map((p) => ({
+            ...p,
+            gruppe: `Standard ${c.name}`,
+          })),
+        ),
+      )
+    ).flat(),
+  ];
+
   return {
     user,
     darf,
@@ -163,6 +184,7 @@ export async function getMachineDetail(id: string) {
       letzte: letzteWartung,
       anzahlFaellig: wartungsTasks.filter((t) => t.status === "faellig").length,
       anzahlBald: wartungsTasks.filter((t) => t.status === "bald").length,
+      plaene: linkbarePlaene,
     },
     wissen: {
       fakten,

@@ -765,8 +765,9 @@ export const promptOverrides = pgTable(
 /* ── Standard-Wartungspläne (Vorlagen je Nutzer / je Club) ────────────────── */
 /*
   Der Code-Katalog (lib/maintenance-catalog.ts) ist nur das TEMPLATE. Darüber
-  liegen editierbare Standards: genau EINER je Nutzer (userId) bzw. je Club
-  (clubId) — beim Anlegen aus dem Template geseedet. Maschinen können einen
+  liegen editierbare Standards: MEHRERE benannte Pläne je Nutzer (userId) bzw.
+  je Club (clubId) — der Name ist je Besitzer eindeutig; optional aus dem
+  Template geseedet. Maschinen können einen
   Standard VERKNÜPFEN (machines.maintenance_plan_id): Änderungen am Standard
   propagieren auf die verknüpften Maschinen-Tasks (siehe
   db/actions/maintenance-plans.ts) — der per-Maschine-ZUSTAND (Fälligkeit,
@@ -778,7 +779,8 @@ export const maintenancePlans = pgTable(
   {
     id: uuid("id").primaryKey().defaultRandom(),
     name: text("name").notNull(),
-    // Genau EIN Besitzer: Nutzer ODER Club (Check unten), je Besitzer EIN Plan.
+    // Genau EIN Besitzer je Plan (Check unten): Nutzer ODER Club. Mehrere
+    // Pläne je Besitzer sind erlaubt (Name eindeutig, Indizes unten).
     userId: text("user_id").references(() => user.id, { onDelete: "cascade" }),
     clubId: uuid("club_id").references(() => clubs.id, { onDelete: "cascade" }),
     createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -789,8 +791,14 @@ export const maintenancePlans = pgTable(
       "maintenance_plans_genau_ein_besitzer",
       sql`num_nonnulls(${t.userId}, ${t.clubId}) = 1`,
     ),
-    unique("maintenance_plans_user_unique").on(t.userId),
-    unique("maintenance_plans_club_unique").on(t.clubId),
+    // Mehrere Pläne je Besitzer erlaubt — nur der NAME ist je Besitzer
+    // eindeutig (case-insensitiv), Muster wie machine_besitzer.
+    uniqueIndex("maintenance_plans_user_name_unique")
+      .on(t.userId, sql`lower(${t.name})`)
+      .where(sql`user_id IS NOT NULL`),
+    uniqueIndex("maintenance_plans_club_name_unique")
+      .on(t.clubId, sql`lower(${t.name})`)
+      .where(sql`club_id IS NOT NULL`),
   ],
 );
 

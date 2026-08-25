@@ -11,12 +11,11 @@ import {
   maintenancePlans,
   maintenanceTasks,
 } from "@/db/schema";
-import { requireMachineWrite } from "@/lib/session";
+import { isClubMember, requireMachineWrite } from "@/lib/session";
 import { resolvePrompt } from "@/db/queries";
 import { naechsterTermin } from "@/lib/faelligkeit";
 import { resolveProvider } from "@/lib/ai/provider";
 import { AiError, generateJson, type AiAntwort } from "@/lib/ai/generate";
-import { MAINTENANCE_STANDARD } from "@/lib/maintenance-catalog";
 import {
   maintenanceImportJsonSchema,
   maintenanceImportSchema,
@@ -318,6 +317,22 @@ export async function applyStandardMaintenance(
 ): Promise<void> {
   const machineId = String(formData.get("machineId"));
   const { user } = await requireMachineWrite(machineId);
+  const planId = String(formData.get("planId") ?? "");
+
+  // Quelle = der GEWÄHLTE Plan (autorisiert: eigener Plan oder Club-Mitglied).
+  const plan = planId
+    ? await db.query.maintenancePlans.findFirst({
+        where: eq(maintenancePlans.id, planId),
+      })
+    : null;
+  const erlaubt =
+    plan != null &&
+    (plan.userId === user.id ||
+      (plan.clubId ? await isClubMember(user.id, plan.clubId) : false));
+  if (!erlaubt) {
+    revalidatePath(`/machines/${machineId}`);
+    return;
+  }
 
   const vorhanden = await db.query.maintenanceTasks.findMany({
     where: eq(maintenanceTasks.machineId, machineId),
@@ -325,15 +340,9 @@ export async function applyStandardMaintenance(
   });
   const haben = new Set(vorhanden.map((t) => t.titel.trim().toLowerCase()));
 
-  // Eigener Standard als Quelle, sonst das Code-Template.
-  const eigenerPlan = await db.query.maintenancePlans.findFirst({
-    where: eq(maintenancePlans.userId, user.id),
+  const quelle = await db.query.maintenancePlanItems.findMany({
+    where: eq(maintenancePlanItems.planId, planId),
   });
-  const quelle = eigenerPlan
-    ? await db.query.maintenancePlanItems.findMany({
-        where: eq(maintenancePlanItems.planId, eigenerPlan.id),
-      })
-    : MAINTENANCE_STANDARD;
 
   const now = new Date();
   const neu = quelle
