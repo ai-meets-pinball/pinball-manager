@@ -4,6 +4,7 @@ import { and, count, eq, gte, isNotNull, ne } from "drizzle-orm";
 import { db } from "@/db";
 import { faultImages, faults } from "@/db/schema";
 import { mitStatusNachzug } from "@/db/machine-status-core";
+import { benachrichtigeUeberNeuenFehler } from "@/db/whatsapp-benachrichtigung";
 import { getMachineByQrToken } from "@/db/queries";
 import { getCurrentUser } from "@/lib/session";
 import { MAX_FAULT_IMAGES, uploadFaultImages } from "@/lib/storage";
@@ -142,6 +143,19 @@ export async function meldeFehlerPerQr(
     await db
       .insert(faultImages)
       .values(urls.map((url) => ({ faultId: neu.id, url })));
+  }
+
+  // Best-effort: Opt-in-Owner/Admins des Clubs per WhatsApp informieren — auch
+  // Gast-Meldungen lösen aus. Neue QR-Meldungen sind immer „offen".
+  try {
+    await benachrichtigeUeberNeuenFehler({
+      id: neu.id,
+      machineId: machine.id,
+      beschreibung,
+      status: "offen",
+    });
+  } catch (e) {
+    console.error("[whatsapp] Benachrichtigung fehlgeschlagen:", e);
   }
 
   return {

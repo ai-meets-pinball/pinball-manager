@@ -7,6 +7,7 @@ import {
   Building2,
   Layers,
   Mail,
+  MessageCircle,
   Send,
   Users,
   Wand2,
@@ -26,6 +27,12 @@ const TABS = [
     exact: false,
   },
   { href: "/admin/mails", label: "Mail-Protokoll", icon: Send, exact: false },
+  {
+    href: "/admin/whatsapp",
+    label: "WhatsApp",
+    icon: MessageCircle,
+    exact: false,
+  },
   { href: "/admin/prompts", label: "Prompts", icon: Wand2, exact: false },
   { href: "/admin/modelle", label: "Modelle", icon: Boxes, exact: false },
   {

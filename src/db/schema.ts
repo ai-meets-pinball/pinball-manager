@@ -8,6 +8,7 @@ import {
   numeric,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -507,6 +508,10 @@ export const userSettings = pgTable("user_settings", {
     .primaryKey()
     .references(() => user.id, { onDelete: "cascade" }),
   ...shareDefaultSpalten,
+  // Globale WhatsApp-Nummer im E.164-Format (z. B. +49151…) für die
+  // Fehler-Benachrichtigung. NULL = keine hinterlegt → es geht nichts raus,
+  // egal welche Club-Opt-ins (whatsapp_optin) gesetzt sind.
+  whatsappNummer: text("whatsapp_nummer"),
 });
 
 export const clubSettings = pgTable("club_settings", {
@@ -731,6 +736,46 @@ export const mailLog = pgTable("mail_log", {
   betreff: text("betreff").notNull(),
   inhalt: text("inhalt"), // Klartext-Zusammenfassung des Inhalts
   feedbackId: uuid("feedback_id").references(() => feedback.id, {
+    onDelete: "set null",
+  }),
+  erfolg: boolean("erfolg").notNull().default(true),
+  fehler: text("fehler"),
+  gesendetAm: timestamp("gesendet_am").notNull().defaultNow(),
+});
+
+/* ── WhatsApp-Benachrichtigung (Opt-in pro Club) ──────────────────────────── */
+/*
+  Owner/Admins eines Clubs können sich PRO CLUB dafür entscheiden, bei jedem
+  NEUEN (offenen) Fehler an einer Club-Maschine sofort eine WhatsApp zu bekommen.
+  Die Nummer liegt global am Nutzer (user_settings.whatsapp_nummer); hier steht
+  nur, FÜR WELCHE Clubs das Opt-in aktiv ist — eine Zeile je (Nutzer, Club),
+  `aktiv=false` pausiert ohne die Zeile zu verlieren. Empfänger-Auflösung +
+  Trigger: db/whatsapp-benachrichtigung.ts; Versand-Seam: lib/whatsapp/. */
+export const whatsappOptin = pgTable(
+  "whatsapp_optin",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    clubId: uuid("club_id")
+      .notNull()
+      .references(() => clubs.id, { onDelete: "cascade" }),
+    aktiv: boolean("aktiv").notNull().default(true),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.clubId] })],
+);
+
+/* Versand-Protokoll ALLER WhatsApp-Nachrichten (spiegelt mail_log): wann, an
+   welche Nummer, welcher Anlass/Text, Erfolg oder Fehler. Best effort beim
+   Versand (sendeWhatsapp in lib/whatsapp/send.ts) — ein Log-Fehler darf den
+   Versand nie brechen. `fault_id` verknüpft die auslösende Fehlermeldung. */
+export const whatsappLog = pgTable("whatsapp_log", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  empfaenger: text("empfaenger").notNull(), // E.164
+  anlass: text("anlass").notNull(),
+  inhalt: text("inhalt"), // Klartext der gesendeten Nachricht
+  faultId: uuid("fault_id").references(() => faults.id, {
     onDelete: "set null",
   }),
   erfolg: boolean("erfolg").notNull().default(true),

@@ -7,6 +7,7 @@ import { db } from "@/db";
 import { faultImages, faults } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
 import { mitStatusNachzug } from "@/db/machine-status-core";
+import { benachrichtigeUeberNeuenFehler } from "@/db/whatsapp-benachrichtigung";
 import { MAX_FAULT_IMAGES, uploadFaultImages } from "@/lib/storage";
 import { faultSchema } from "@/lib/validators";
 import type { FormState } from "@/db/actions/form-state";
@@ -57,6 +58,19 @@ export async function createFault(
     await db
       .insert(faultImages)
       .values(urls.map((url) => ({ faultId: neu.id, url })));
+  }
+
+  // Best-effort: Opt-in-Owner/Admins des Clubs per WhatsApp informieren. Darf die
+  // Meldung nie zurückrollen (deshalb try/catch, vor dem redirect).
+  try {
+    await benachrichtigeUeberNeuenFehler({
+      id: neu.id,
+      machineId,
+      beschreibung: parsed.data.beschreibung,
+      status: parsed.data.status,
+    });
+  } catch (e) {
+    console.error("[whatsapp] Benachrichtigung fehlgeschlagen:", e);
   }
 
   revalidatePath(`/machines/${machineId}`);

@@ -111,6 +111,23 @@ export const roleChangeSchema = z.object({
   rolle: z.enum(CLUB_ROLES),
 });
 
+/* ── WhatsApp-Benachrichtigung ────────────────────────────────────────────── */
+
+/** Globale WhatsApp-Nummer im E.164-Format (internationale Vorwahl, 8–15
+    Ziffern). Leerer Wert = Nummer löschen (globales Opt-out). Leerzeichen und
+    übliche Trenner werden toleriert und entfernt; der Regex ist bewusst simpel —
+    Twilio validiert beim Versand endgültig, ungültige Nummern landen sichtbar im
+    whatsapp_log. */
+export const whatsappNummerSchema = z.object({
+  nummer: z
+    .string()
+    .trim()
+    .transform((v) => v.replace(/[\s\-()/.]/g, ""))
+    .refine((v) => v === "" || /^\+[1-9]\d{7,14}$/.test(v), {
+      message: "Bitte im Format +49151… angeben (mit internationaler Vorwahl).",
+    }),
+});
+
 /* ── Passwort-Policy (eine Quelle der Wahrheit, client + server) ───────────── */
 
 export const PASSWORD_MIN = 8;

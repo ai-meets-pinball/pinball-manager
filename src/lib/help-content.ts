@@ -456,6 +456,10 @@ export const ANLEITUNG: HilfeSektion[] = [
         text: "Unter »Meine Clubs« siehst du deine Clubs samt Rolle und kannst sie über »Verlassen« verlassen. Bist du letzter Owner, musst du vorher jemanden zum Owner befördern — dann steht dort statt des Buttons ein Hinweis.",
       },
       {
+        titel: "WhatsApp bei neuen Fehlern",
+        text: "Unter »WhatsApp-Benachrichtigung« hinterlegst du deine Nummer (Format +49151…) und aktivierst die Benachrichtigung PRO CLUB. Danach bekommst du eine WhatsApp, sobald an einer Maschine dieses Clubs ein neuer Fehler gemeldet wird — auch bei Gast-Meldungen per QR-Code. Nur Owner/Admins eines Clubs können das aktivieren; ohne hinterlegte Nummer geht trotz aktivem Schalter nichts raus.",
+      },
+      {
         titel: "Passwort ändern",
         text: "Unter »Sicherheit« den Bereich »Passwort ändern« aufklappen: aktuelles Passwort, neues Passwort und Wiederholung — gleiche Regeln, mit Anzeigen/Verbergen.",
       },
@@ -652,7 +656,7 @@ export const ADMIN_HILFE: HilfeSektion[] = [
       },
       {
         titel: "Versand-Protokoll",
-        text: "Unter jeder Meldung stehen die dazu verschickten Mails (wann, an wen, welcher Text). Das komplette Protokoll ALLER System-Mails (Einladungen, Passwort-Reset, Wartungs-Erinnerungen, Feedback-Benachrichtigungen) findest du unter Administration → »Mail-Protokoll«, nach Kategorie filterbar.",
+        text: "Unter jeder Meldung stehen die dazu verschickten Mails (wann, an wen, welcher Text). Das komplette Protokoll ALLER System-Mails (Einladungen, Passwort-Reset, Wartungs-Erinnerungen, Feedback-Benachrichtigungen) findest du unter Administration → »Mail-Protokoll«, nach Kategorie filterbar. Unter Administration → »WhatsApp« liegt entsprechend das Protokoll der WhatsApp-Fehler-Benachrichtigungen; oben steht, ob der echte Versand aktiv ist oder nur mitprotokolliert wird.",
       },
     ],
   },
