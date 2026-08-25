@@ -1,6 +1,6 @@
 "use server";
 
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray, isNull } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
@@ -199,6 +199,66 @@ export async function logCompletion(
         zuletztErinnert: null,
       })
       .where(eq(maintenanceTasks.id, taskId));
+  });
+
+  revalidatePath(`/machines/${machineId}`);
+  return { ok: true };
+}
+
+/** Mehrere Wartungspunkte auf einmal erledigen (ein Datum/Notiz für alle) —
+    dieselbe Log+Fälligkeits-Logik wie logCompletion, in EINER Transaktion über
+    die maschinen-scoped Auswahl. */
+export async function logCompletionBulk(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const machineId = String(formData.get("machineId"));
+  const { user } = await requireMachineWrite(machineId);
+
+  const taskIds = formData.getAll("taskIds").map(String).filter(Boolean);
+  if (taskIds.length === 0) {
+    return { error: "Keine Wartungspunkte ausgewählt." };
+  }
+
+  const parsed = maintenanceLogSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
+  }
+  const d = parsed.data;
+  const datum = d.datum ? new Date(d.datum) : new Date();
+  const wann = Number.isNaN(datum.getTime()) ? new Date() : datum;
+
+  // Nur Punkte DIESER Maschine (Scope + wehrt fremde IDs ab).
+  const tasks = await db.query.maintenanceTasks.findMany({
+    where: and(
+      eq(maintenanceTasks.machineId, machineId),
+      inArray(maintenanceTasks.id, taskIds),
+    ),
+  });
+  if (tasks.length === 0) return { error: "Wartungspunkt nicht gefunden." };
+
+  await db.transaction(async (tx) => {
+    for (const task of tasks) {
+      await tx.insert(maintenanceLog).values({
+        taskId: task.id,
+        machineId,
+        datum: wann,
+        erledigtVon: user.id,
+        notiz: d.notiz ?? null,
+      });
+      await tx
+        .update(maintenanceTasks)
+        .set({
+          zuletztErledigt: wann,
+          naechsteFaelligkeit: naechsterTermin(
+            task.intervallTyp,
+            task.intervallTage,
+            wann,
+          ),
+          zuletztErinnert: null,
+        })
+        .where(eq(maintenanceTasks.id, task.id));
+    }
   });
 
   revalidatePath(`/machines/${machineId}`);
