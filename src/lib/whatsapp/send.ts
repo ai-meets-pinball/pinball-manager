@@ -50,10 +50,14 @@ export async function sendeWhatsapp(
   const protokoll = opts.protokoll ?? schreibeInDb;
 
   let ergebnis: WhatsappErgebnis | undefined;
+  let hatFehler = false;
   let fehler: unknown;
   try {
     ergebnis = await adapter(nachricht);
   } catch (e) {
+    // Boolean-Flag statt Truthiness von `fehler`: ein (theoretisch) falsy
+    // geworfener Wert dürfte nicht als Erfolg durchgehen.
+    hatFehler = true;
     fehler = e;
   }
 
@@ -63,14 +67,14 @@ export async function sendeWhatsapp(
       anlass: nachricht.anlass,
       inhalt: nachricht.text,
       faultId: nachricht.faultId ?? null,
-      erfolg: !fehler,
-      fehler: fehler ? fehlerText(fehler) : null,
+      erfolg: !hatFehler,
+      fehler: hatFehler ? fehlerText(fehler) : null,
     });
   } catch (e) {
     console.error("[whatsapp-log] konnte nicht schreiben:", e);
   }
 
-  if (fehler) {
+  if (hatFehler) {
     throw fehler instanceof WhatsappError
       ? fehler
       : new WhatsappError("sonstiges", "WhatsApp-Versand fehlgeschlagen.", fehler);

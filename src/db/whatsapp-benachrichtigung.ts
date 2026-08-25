@@ -5,7 +5,6 @@ import {
   machines,
   roleAssignments,
   roles,
-  user,
   userSettings,
   whatsappOptin,
 } from "@/db/schema";
@@ -29,7 +28,9 @@ export async function benachrichtigeUeberNeuenFehler(fault: {
   beschreibung: string;
   status: string;
 }): Promise<void> {
-  // Nur NEUE offene Fehler lösen aus (Schutz; neue Fehler sind ohnehin „offen").
+  // Nur OFFENE Fehler alarmieren. createFault lässt zwar jeden Status zu (der
+  // Editor kann einen Fehler direkt als „behoben"/„in Arbeit" anlegen — dann kein
+  // Alarm); QR-Meldungen sind ohnehin immer „offen".
   if (fault.status !== "offen") return;
 
   // Maschine → Club. Private Maschinen (ohne Club) haben keine Empfänger.
@@ -49,7 +50,7 @@ export async function benachrichtigeUeberNeuenFehler(fault: {
   // Opt-in-Owner/Admins dieses Clubs MIT hinterlegter Nummer. Der Join gegen
   // role_assignments stellt sicher, dass die Person NOCH Owner/Admin ist.
   const empfaenger = await db
-    .select({ nummer: userSettings.whatsappNummer, name: user.name })
+    .select({ nummer: userSettings.whatsappNummer })
     .from(whatsappOptin)
     .innerJoin(
       roleAssignments,
@@ -59,7 +60,6 @@ export async function benachrichtigeUeberNeuenFehler(fault: {
       ),
     )
     .innerJoin(roles, eq(roles.id, roleAssignments.roleId))
-    .innerJoin(user, eq(user.id, whatsappOptin.userId))
     .innerJoin(userSettings, eq(userSettings.userId, whatsappOptin.userId))
     .where(
       and(
@@ -78,17 +78,14 @@ export async function benachrichtigeUeberNeuenFehler(fault: {
     url: `${baseUrl()}/machines/${fault.machineId}?bereich=fehler`,
   });
 
-  for (const e of empfaenger) {
-    if (!e.nummer) continue;
-    try {
-      await sendeWhatsapp({ an: e.nummer, faultId: fault.id, ...inhalt });
-    } catch (err) {
-      // Der Fehler steht bereits in whatsapp_log; hier nur best-effort schlucken,
-      // damit ein schlechter Empfänger die übrigen nicht blockiert.
-      console.error(
-        "[whatsapp] Versand an einen Empfänger fehlgeschlagen:",
-        err instanceof Error ? err.message : err,
-      );
-    }
-  }
+  // Parallel senden — je Empfänger ein Twilio-Round-Trip; seriell würde den
+  // (auch öffentlichen QR-) Melde-Request unnötig lange blockieren. Jeder Fehler
+  // steht bereits im whatsapp_log; allSettled schluckt Ablehnungen best-effort,
+  // damit ein schlechter Empfänger die übrigen nicht blockiert.
+  const nummern = empfaenger
+    .map((e) => e.nummer)
+    .filter((n): n is string => Boolean(n));
+  await Promise.allSettled(
+    nummern.map((an) => sendeWhatsapp({ an, faultId: fault.id, ...inhalt })),
+  );
 }
