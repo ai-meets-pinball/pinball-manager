@@ -23,6 +23,7 @@ export * from "./auth-schema";
 
 export const faultStatus = pgEnum("fault_status", [
   "offen",
+  "quittiert",
   "in Arbeit",
   "behoben",
 ]);

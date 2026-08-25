@@ -143,7 +143,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Status & Filter",
-        text: "Der Status durchläuft offen → in Arbeit → behoben. Über die Chips oben lässt sich die Fehlerliste nach Status filtern.",
+        text: "Der Status durchläuft offen → quittiert → in Arbeit → behoben (»quittiert« = zur Kenntnis genommen, aber noch nicht behoben; zählt weiterhin als offener Fehler). Über die Chips oben lässt sich die Fehlerliste nach Status filtern.",
       },
       {
         titel: "Gut zu wissen",

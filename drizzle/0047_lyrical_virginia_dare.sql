@@ -1,0 +1,1 @@
+ALTER TYPE "public"."fault_status" ADD VALUE 'quittiert' BEFORE 'in Arbeit';

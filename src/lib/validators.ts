@@ -40,7 +40,7 @@ export const faultSchema = z.object({
   beschreibung: z.string().trim().min(1, "Beschreibung ist erforderlich"),
   kategorie: optionalString,
   prioritaet: z.enum(["niedrig", "mittel", "hoch", "kritisch"]),
-  status: z.enum(["offen", "in Arbeit", "behoben"]),
+  status: z.enum(["offen", "quittiert", "in Arbeit", "behoben"]),
 });
 
 /** Maschinen-Betriebsstatus manuell setzen (Dashboard). Die Werte kommen aus

@@ -40,7 +40,7 @@ import { availableProviders } from "@/lib/ai/provider";
 // API-Route /api/machines/[id]/extract-manual.
 export const maxDuration = 300;
 
-const FAULT_FILTER = ["alle", "offen", "in Arbeit", "behoben"] as const;
+const FAULT_FILTER = ["alle", "offen", "quittiert", "in Arbeit", "behoben"] as const;
 
 // Die Detailseite ist in Reiter (?bereich=<Blatt>) gegliedert statt in einen langen
 // Panel-Stapel — server-gerendert wie die Fehler-Status-Pills, also deep-linkbar und

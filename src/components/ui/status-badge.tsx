@@ -8,6 +8,7 @@ import { STATUS_LABEL } from "@/lib/betriebsstatus";
 const tone: Record<string, string> = {
   // Fehler-Status
   offen: "var(--color-warn)",
+  quittiert: "var(--color-faint)",
   "in Arbeit": "var(--color-accent)",
   behoben: "var(--color-success)",
   // Reparatur-Status

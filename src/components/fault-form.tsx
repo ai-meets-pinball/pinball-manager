@@ -14,7 +14,7 @@ type FaultValues = {
   beschreibung: string;
   kategorie: string | null;
   prioritaet: "niedrig" | "mittel" | "hoch" | "kritisch";
-  status: "offen" | "in Arbeit" | "behoben";
+  status: "offen" | "quittiert" | "in Arbeit" | "behoben";
 };
 
 export function FaultForm({
@@ -71,6 +71,7 @@ export function FaultForm({
         <Field label="Status">
           <Select name="status" defaultValue={fault?.status ?? "offen"}>
             <option value="offen">offen</option>
+            <option value="quittiert">quittiert</option>
             <option value="in Arbeit">in Arbeit</option>
             <option value="behoben">behoben</option>
           </Select>

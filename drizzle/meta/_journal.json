@@ -330,6 +330,13 @@
       "when": 1787680185472,
       "tag": "0046_fresh_whistler",
       "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1787682470584,
+      "tag": "0047_lyrical_virginia_dare",
+      "breakpoints": true
     }
   ]
 }
