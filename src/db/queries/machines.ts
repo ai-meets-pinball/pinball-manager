@@ -1,3 +1,4 @@
+import { randomBytes } from "node:crypto";
 import {
   and,
   count,
@@ -14,6 +15,7 @@ import {
 } from "drizzle-orm";
 import { db } from "@/db";
 import {
+  clubs,
   faultImages,
   faults,
   generations,
@@ -25,6 +27,7 @@ import {
   maintenanceLog,
   roleAssignments,
   user,
+  userSettings,
 } from "@/db/schema";
 import { getUserClubIds, isSuperAdmin, type SessionUser } from "@/lib/session";
 
@@ -134,6 +137,106 @@ export async function getMachineByQrToken(token: string) {
   });
 }
 
+/* ── Sammlung (Club oder private Sammlung einer Person) über den Sammel-QR ──── */
+
+export type SammlungMaschine = {
+  id: string;
+  hersteller: string;
+  modell: string;
+  baujahr: number | null;
+  fotoUrl: string | null;
+  status: string;
+};
+
+export type Sammlung = {
+  typ: "club" | "user";
+  id: string; // clubId bzw. userId
+  name: string;
+  logoUrl: string | null;
+  maschinen: SammlungMaschine[];
+};
+
+async function sammlungMaschinen(where: SQL): Promise<SammlungMaschine[]> {
+  return db
+    .select({
+      id: machines.id,
+      hersteller: machines.hersteller,
+      modell: machines.modell,
+      baujahr: machines.baujahr,
+      fotoUrl: machines.fotoUrl,
+      status: machines.status,
+    })
+    .from(machines)
+    .where(where)
+    .orderBy(machines.hersteller, machines.modell);
+}
+
+/** Sammlung über ihren öffentlichen Sammel-QR-Token auflösen (erst Club, dann
+    private Nutzer-Sammlung). Öffentlich (kein Gate) — der Token IST die Hürde,
+    genau wie bei getMachineByQrToken. */
+export async function getSammlungByToken(
+  code: string,
+): Promise<Sammlung | null> {
+  const club = await db.query.clubs.findFirst({
+    where: eq(clubs.qrToken, code),
+    columns: { id: true, name: true, logoUrl: true },
+  });
+  if (club) {
+    return {
+      typ: "club",
+      id: club.id,
+      name: club.name,
+      logoUrl: club.logoUrl,
+      maschinen: await sammlungMaschinen(eq(machines.clubId, club.id)),
+    };
+  }
+
+  const settings = await db.query.userSettings.findFirst({
+    where: eq(userSettings.qrToken, code),
+    columns: { userId: true, logoUrl: true },
+  });
+  if (settings) {
+    const owner = await db.query.user.findFirst({
+      where: eq(user.id, settings.userId),
+      columns: { name: true },
+    });
+    return {
+      typ: "user",
+      id: settings.userId,
+      name: owner?.name ?? "Private Sammlung",
+      logoUrl: settings.logoUrl,
+      maschinen: await sammlungMaschinen(
+        and(eq(machines.ownerId, settings.userId), isNull(machines.clubId))!,
+      ),
+    };
+  }
+  return null;
+}
+
+/** Sammel-QR-Token der privaten Sammlung sicherstellen (bei Erstaufruf erzeugen).
+    Idempotent + race-fest: ein bereits gesetzter Token bleibt erhalten. */
+export async function ensureUserSammlungToken(userId: string): Promise<string> {
+  const row = await db.query.userSettings.findFirst({
+    where: eq(userSettings.userId, userId),
+    columns: { qrToken: true },
+  });
+  if (row?.qrToken) return row.qrToken;
+
+  const token = randomBytes(6).toString("hex"); // 12 Hex, wie machines.qr_token
+  await db
+    .insert(userSettings)
+    .values({ userId, qrToken: token })
+    .onConflictDoUpdate({
+      target: userSettings.userId,
+      set: { qrToken: sql`coalesce(${userSettings.qrToken}, ${token})` },
+    });
+  const nachher = await db.query.userSettings.findFirst({
+    where: eq(userSettings.userId, userId),
+    columns: { qrToken: true },
+  });
+  return nachher?.qrToken ?? token;
+}
+
 /** Die eingetragenen Besitzer EINER Maschine (n:m), alphabetisch. */
 export async function getMachineBesitzer(machineId: string) {
   return db
@@ -226,6 +329,7 @@ export async function getOpenFaultsForMachines(
       beschreibung: faults.beschreibung,
       prioritaet: faults.prioritaet,
       status: faults.status,
+      quelle: faults.quelle,
       datum: faults.datum,
       hersteller: machines.hersteller,
       modell: machines.modell,
@@ -255,6 +359,7 @@ export async function getMachineFaults(
       kategorie: faults.kategorie,
       prioritaet: faults.prioritaet,
       status: faults.status,
+      quelle: faults.quelle,
       datum: faults.datum,
       // Konto-Name — oder der Gast-Name aus der QR-Meldung, gekennzeichnet.
       melderName: sql<

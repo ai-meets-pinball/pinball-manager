@@ -9,9 +9,10 @@ import {
 } from "@/components/account-forms";
 import { ShareSettingsForm } from "@/components/share-settings-form";
 import { WhatsappSettingsForm } from "@/components/whatsapp-settings-form";
+import { UserLogoForm } from "@/components/user-logo-form";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { getSettingsFor } from "@/db/queries";
+import { getSettingsFor, getUserLogoUrl } from "@/db/queries";
 import { getWhatsappStatus } from "@/db/queries/whatsapp";
 import { leaveClub } from "@/db/actions/clubs";
 import { toggleWhatsappOptin } from "@/db/actions/whatsapp";
@@ -39,6 +40,8 @@ export default async function AccountPage() {
   // WhatsApp: globale Nummer + Clubs, für die das Opt-in aktiv ist.
   const waStatus = await getWhatsappStatus(user.id);
   const aktiveClubs = new Set(waStatus.aktiveClubIds);
+  // Persönliches Logo (für QR-Etiketten der privaten Sammlung/Maschinen).
+  const logoUrl = await getUserLogoUrl(user.id);
 
   // Clubs des Nutzers inkl. Owner-Anzahl — damit der letzte Owner nicht
   // versehentlich austritt (die Action würde es ohnehin ablehnen).
@@ -105,6 +108,35 @@ export default async function AccountPage() {
             name={user.name}
             email={user.email}
           />
+        </Card>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Logo &amp; Sammel-QR</h2>
+        <Card className="space-y-3">
+          <p className="text-sm text-[var(--color-muted)]">
+            Dein persönliches Logo erscheint auf den QR-Etiketten deiner privaten
+            Maschinen und deiner Sammlung. JPG, PNG oder SVG.
+          </p>
+          {logoUrl ? (
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={logoUrl}
+                alt="Dein Logo"
+                className="h-12 w-12 rounded-[var(--radius)] border border-[var(--color-border)] object-contain"
+              />
+            </>
+          ) : null}
+          <UserLogoForm hatLogo={!!logoUrl} />
+          <div className="border-t border-[var(--color-border)] pt-3">
+            <Link
+              href="/account/qr"
+              className="inline-flex items-center gap-1 text-sm text-[var(--color-primary)] hover:underline"
+            >
+              Sammel-QR deiner privaten Sammlung drucken →
+            </Link>
+          </div>
         </Card>
       </section>
 

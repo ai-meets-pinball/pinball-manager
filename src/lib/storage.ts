@@ -182,8 +182,11 @@ export function svgVerletzung(text: string): RegExp | null {
   return SVG_VERBOTEN.find((re) => re.test(text)) ?? null;
 }
 
-export async function uploadClubLogo(
+/* Generischer Logo-Upload (JPG/PNG/SVG) in einen Ordner — Kern für Club- UND
+   Nutzer-Logos. JPG/PNG per Magic Bytes; SVG als Text mit svgVerletzung-Prüfung. */
+async function uploadLogo(
   file: File | null,
+  ordner: string,
   userId: string,
 ): Promise<string | null> {
   if (!file || file.size === 0) return null;
@@ -192,7 +195,7 @@ export async function uploadClubLogo(
   const kopf = new Uint8Array(await file.slice(0, 16).arrayBuffer());
   const rasterTyp = erkenneBildtyp(kopf);
   if (rasterTyp === "image/jpeg" || rasterTyp === "image/png") {
-    return uploadBild(file, "club-logos/", userId);
+    return uploadBild(file, ordner, userId);
   }
 
   // SVG-Zweig: als Text prüfen, dann mit festem Content-Type hochladen.
@@ -210,7 +213,7 @@ export async function uploadClubLogo(
   }
 
   const supabase = storageClient();
-  const path = `club-logos/${userId}/${crypto.randomUUID()}.svg`;
+  const path = `${ordner}${userId}/${crypto.randomUUID()}.svg`;
   const { error } = await supabase.storage
     .from(bucket)
     .upload(path, new Blob([text], { type: "image/svg+xml" }), {
@@ -222,4 +225,20 @@ export async function uploadClubLogo(
   }
   const { data } = supabase.storage.from(bucket).getPublicUrl(path);
   return data.publicUrl;
+}
+
+/** Vereins-Logo (Ordner club-logos/). */
+export async function uploadClubLogo(
+  file: File | null,
+  userId: string,
+): Promise<string | null> {
+  return uploadLogo(file, "club-logos/", userId);
+}
+
+/** Persönliches Logo einer Einzelperson (Ordner user-logos/). */
+export async function uploadUserLogo(
+  file: File | null,
+  userId: string,
+): Promise<string | null> {
+  return uploadLogo(file, "user-logos/", userId);
 }

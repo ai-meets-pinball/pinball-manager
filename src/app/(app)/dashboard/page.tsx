@@ -11,6 +11,7 @@ import { Card } from "@/components/ui/card";
 import { ChipFilter } from "@/components/ui/chip-filter";
 import { List, ListRow } from "@/components/ui/list";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { QuelleBadge } from "@/components/ui/quelle-badge";
 import {
   getDueMaintenanceForMachines,
   getOpenFaultsForMachines,
@@ -372,6 +373,7 @@ export default async function DashboardPage({
                 <>
                   <StatusBadge value={f.status} />
                   <StatusBadge value={f.prioritaet} />
+                  <QuelleBadge quelle={f.quelle} />
                 </>
               }
             />

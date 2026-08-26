@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ChevronRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { QuelleBadge } from "@/components/ui/quelle-badge";
 
 /*
   Kompakte „Offene Fehler"-Vorschau auf dem Übersichts-Reiter (Dashboard-Optik):
@@ -15,6 +16,7 @@ type Zeile = {
   status: string;
   datum: Date;
   melderName: string | null;
+  quelle?: string | null;
 };
 
 export function MachineFaultsPreview({
@@ -67,7 +69,10 @@ export function MachineFaultsPreview({
                     {f.datum.toLocaleDateString("de-DE")}
                   </td>
                   <td className="py-2 whitespace-nowrap text-[var(--color-muted)]">
-                    {f.melderName ?? "—"}
+                    <span className="inline-flex items-center gap-1.5">
+                      {f.melderName ?? "—"}
+                      <QuelleBadge quelle={f.quelle} />
+                    </span>
                   </td>
                 </tr>
               ))}

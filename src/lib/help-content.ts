@@ -162,8 +162,12 @@ export const ANLEITUNG: HilfeSektion[] = [
         text: "Jede Maschine hat ein QR-Etikett (Detailseite → »QR-Code«, drucken und ans Gerät kleben). Wer den Code scannt, landet auf einer öffentlichen Melde-Seite: Angemeldete mit Zugriff kommen direkt in den Fehler-Reiter; alle anderen — auch Gäste ganz ohne Konto — beschreiben das Symptom, geben nur ihren Namen an (erscheint als »… (Gast)«) und können ebenfalls Fotos anhängen. Priorität und Status vergibt anschließend der Betreiber. Ein Login ist der bevorzugte Weg, aber keine Voraussetzung.",
       },
       {
+        titel: "Sammel-QR — ein Code für eine ganze Sammlung",
+        text: "Statt (oder zusätzlich zu) einem Etikett je Gerät gibt es einen Sammel-QR für eine ganze Sammlung: für einen Club (Club-Seite → »Sammel-QR«) und für deine private Sammlung (Konto → »Logo & Sammel-QR«). Wer diesen Code scannt, wählt zuerst das Gerät aus einer Liste und meldet dann dafür. Weil hier NICHT der Code direkt am Gerät gescannt wurde, trägt so eine Meldung das Kennzeichen »Sammel-QR« — ein Hinweis, dass der Melder das Gerät aus einer Liste gewählt hat und evtl. nicht davorstand.",
+      },
+      {
         titel: "QR-Code drucken — Druck-Studio",
-        text: "Auf der QR-Seite steht ein Druck-Studio, das den Code MASSSTABSGETREU druckt. Zwei Kartenformen: ein EIGENES Etikett mit frei wählbaren Maßen (Breite×Höhe in mm, Hoch-/Querformat) oder eine SCORECARD in herstellerspezifischen Kartenmaßen (das passende Format wird anhand des Herstellers vorgeschlagen, ist frei änderbar). Zwei Seitenmodi: exakt in Kartengröße (für Etiketten-/Kartendrucker) oder auf A4 mit SCHNITTMARKEN zum Ausschneiden (jeder Bürodrucker). Zuschaltbar sind Name, Hinweistext und — bei Club-Maschinen — das Club-Logo (oben, links oder rechts vom Code); die Schriftgröße ist regelbar. Deine Einstellungen werden gemerkt, sodass das nächste Etikett gleich so vorbelegt ist.",
+        text: "Auf der QR-Seite steht ein Druck-Studio, das den Code MASSSTABSGETREU druckt. Zwei Kartenformen: ein EIGENES Etikett mit frei wählbaren Maßen (Breite×Höhe in mm, Hoch-/Querformat) oder eine SCORECARD in herstellerspezifischen Kartenmaßen (das passende Format wird anhand des Herstellers vorgeschlagen, ist frei änderbar). Zwei Seitenmodi: exakt in Kartengröße (für Etiketten-/Kartendrucker) oder auf A4 mit SCHNITTMARKEN zum Ausschneiden (jeder Bürodrucker). Zuschaltbar sind Name, Hinweistext und ein Logo (oben, links oder rechts vom Code) — bei Club-Maschinen das Club-Logo, bei privaten Maschinen dein persönliches Logo (Konto → »Logo & Sammel-QR«); die Schriftgröße ist regelbar. Deine Einstellungen werden gemerkt, sodass das nächste Etikett gleich so vorbelegt ist.",
       },
       {
         titel: "Mehrere Karten auf eine A4-Seite",
@@ -458,6 +462,10 @@ export const ANLEITUNG: HilfeSektion[] = [
       {
         titel: "Clubs verlassen",
         text: "Unter »Meine Clubs« siehst du deine Clubs samt Rolle und kannst sie über »Verlassen« verlassen. Bist du letzter Owner, musst du vorher jemanden zum Owner befördern — dann steht dort statt des Buttons ein Hinweis.",
+      },
+      {
+        titel: "Logo & Sammel-QR (private Sammlung)",
+        text: "Unter »Logo & Sammel-QR« hinterlegst du ein persönliches Logo (JPG, PNG oder SVG) — es erscheint auf den QR-Etiketten deiner privaten Maschinen und deiner Sammlung. Darunter führt ein Link zum druckbaren Sammel-QR deiner privaten Sammlung: ein Code, über den man (auch ohne Konto) eines deiner privaten Geräte aus einer Liste wählt und dafür einen Fehler meldet.",
       },
       {
         titel: "WhatsApp bei neuen Fehlern",

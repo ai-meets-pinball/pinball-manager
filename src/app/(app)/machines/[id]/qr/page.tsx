@@ -7,7 +7,13 @@ import { QrPrint } from "@/components/qr-print";
 import { db } from "@/db";
 import { clubs } from "@/db/schema";
 import { requireMachineAccess } from "@/lib/session";
-import { baseUrl, erzeugeQrSvg } from "@/lib/qr-code";
+import { getUserLogoUrl } from "@/db/queries";
+import {
+  baseUrl,
+  dateiname,
+  erzeugeQrSvg,
+  logoAlsDataUrl,
+} from "@/lib/qr-code";
 import { modellName } from "@/lib/format";
 
 /*
@@ -21,33 +27,6 @@ import { modellName } from "@/lib/format";
   skalierbar, ideal für Druckereien). Beim Drucken blendet `print:hidden`
   alles außer dem Etikett aus (App-Header siehe Layout).
 */
-/** Dateiname-tauglicher Maschinenname (qr-godzilla-premium.png). */
-function dateiname(name: string): string {
-  return name
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
-/*
-  Das Club-Logo als Data-URL zum Client geben: die Download-Komposition läuft
-  im Browser (Canvas/SVG), und eine Data-URL umgeht CORS-/Taint-Fragen des
-  Storage komplett. Größenwache, damit keine Riesendatei in die Seite wandert.
-*/
-async function logoAlsDataUrl(url: string | null): Promise<string | null> {
-  if (!url) return null;
-  try {
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const bytes = Buffer.from(await res.arrayBuffer());
-    if (bytes.byteLength > 5 * 1024 * 1024) return null;
-    const typ = res.headers.get("content-type") ?? "image/png";
-    return `data:${typ};base64,${bytes.toString("base64")}`;
-  } catch {
-    return null;
-  }
-}
-
 export default async function MachineQrPage({
   params,
 }: {
@@ -68,15 +47,18 @@ export default async function MachineQrPage({
   });
   const basisname = `qr-${dateiname(modellName(machine))}`;
 
-  // Club-Logo (falls Club-Maschine mit Logo) für die Download-Varianten
-  // „Logo links/rechts" — siehe QrDownload.
+  // Logo fürs Etikett (Download-Varianten „Logo links/rechts"): Club-Maschine →
+  // Club-Logo; private Maschine → das persönliche Logo des Eigentümers.
   const club = machine.clubId
     ? await db.query.clubs.findFirst({
         where: eq(clubs.id, machine.clubId),
         columns: { logoUrl: true },
       })
     : null;
-  const logoDataUrl = await logoAlsDataUrl(club?.logoUrl ?? null);
+  const logoUrl = machine.clubId
+    ? (club?.logoUrl ?? null)
+    : await getUserLogoUrl(machine.ownerId);
+  const logoDataUrl = await logoAlsDataUrl(logoUrl);
 
   return (
     <div className="space-y-8">

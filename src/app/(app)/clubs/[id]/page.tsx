@@ -1,7 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import Link from "next/link";
-import { Trash2, X } from "lucide-react";
+import { QrCode, Trash2, X } from "lucide-react";
 import { AddMemberForm } from "@/components/add-member-form";
 import { ClubLogoForm } from "@/components/club-logo-form";
 import { MachineCard } from "@/components/machine-card";
@@ -100,18 +100,26 @@ export default async function ClubDetailPage({
           ) : null}
           <h1 className="text-2xl font-bold">{club.name}</h1>
         </div>
-        {owner ? (
-          <form action={deleteClub}>
-            <input type="hidden" name="clubId" value={club.id} />
-            <ConfirmButton
-              question="Club endgültig löschen? Maschinen bleiben beim Eigentümer, alle Mitgliedschaften und Einladungen entfallen."
-              confirmLabel="Ja, Club löschen"
-              className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-danger)]/40 px-3 py-2 text-sm text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10"
-            >
-              <Trash2 size={15} /> Club löschen
-            </ConfirmButton>
-          </form>
-        ) : null}
+        <div className="flex items-center gap-2">
+          <Link
+            href={`/clubs/${club.id}/qr`}
+            className="inline-flex items-center gap-1.5 rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+          >
+            <QrCode size={15} /> Sammel-QR
+          </Link>
+          {owner ? (
+            <form action={deleteClub}>
+              <input type="hidden" name="clubId" value={club.id} />
+              <ConfirmButton
+                question="Club endgültig löschen? Maschinen bleiben beim Eigentümer, alle Mitgliedschaften und Einladungen entfallen."
+                confirmLabel="Ja, Club löschen"
+                className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-danger)]/40 px-3 py-2 text-sm text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10"
+              >
+                <Trash2 size={15} /> Club löschen
+              </ConfirmButton>
+            </form>
+          ) : null}
+        </div>
       </div>
 
       {/* Mitglieder */}

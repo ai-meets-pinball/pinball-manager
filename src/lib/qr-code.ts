@@ -27,3 +27,33 @@ export async function erzeugeQrSvgFuerUrl(url: string): Promise<string> {
 export async function erzeugeQrSvg(token: string): Promise<string> {
   return erzeugeQrSvgFuerUrl(`${baseUrl()}/m/${token}`);
 }
+
+/*
+  Ein (Logo-)Bild von einer URL als Data-URL — für die CLIENT-seitige QR-
+  Komposition (Canvas/SVG in QrDownload), die so CORS-/Taint-Fragen des Storage
+  komplett umgeht. Größenwache, damit keine Riesendatei in die Seite wandert.
+  Server-only (Buffer/fetch). Geteilt von allen QR-Seiten (Maschine, Club, privat).
+*/
+export async function logoAlsDataUrl(
+  url: string | null,
+): Promise<string | null> {
+  if (!url) return null;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const bytes = Buffer.from(await res.arrayBuffer());
+    if (bytes.byteLength > 5 * 1024 * 1024) return null;
+    const typ = res.headers.get("content-type") ?? "image/png";
+    return `data:${typ};base64,${bytes.toString("base64")}`;
+  } catch {
+    return null;
+  }
+}
+
+/** Dateiname-tauglicher Slug für Download-Basisnamen (qr-godzilla-premium). */
+export function dateiname(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}

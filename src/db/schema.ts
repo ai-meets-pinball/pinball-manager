@@ -42,6 +42,16 @@ export const faultPrioritaet = pgEnum("fault_prioritaet", [
   "kritisch",
 ]);
 
+/* Wie ein Fehler gemeldet wurde — für ein Vertrauens-Kennzeichen in der Anzeige:
+   geraet_qr = direkt am Gerät gescannt (/m/<token>); sammel_qr = über den
+   Sammlungs-QR ein Gerät AUS EINER LISTE gewählt (der Melder stand evtl. nicht
+   am Gerät); app = in der App angelegt. */
+export const faultSource = pgEnum("fault_source", [
+  "geraet_qr",
+  "sammel_qr",
+  "app",
+]);
+
 /* Betriebsstatus einer Maschine. Die Werte sind hier als DB-Enum verankert; die
    REGEL dahinter (abgeleitet vs. manuell gepinnt) liegt in lib/betriebsstatus.ts,
    und lib/validators.ts leitet sein Schema von dort ab. Wer hier Werte ändert,
@@ -109,6 +119,12 @@ export const clubs = pgTable("clubs", {
   // OFFENER (unquittierter) Fehler an einer Club-Maschine steht. Owner/Admin
   // schalten ihn; alle Mitglieder sehen den Alarm.
   turniermodus: boolean("turniermodus").notNull().default(false),
+  // Sammel-QR-Token (öffentliche Route /s/<token> → Geräteauswahl → melden).
+  // Wie machines.qr_token: 12 Hex, eindeutig, DB-seitig erzeugt.
+  qrToken: text("qr_token")
+    .notNull()
+    .unique()
+    .default(sql`substr(md5(gen_random_uuid()::text), 1, 12)`),
   createdBy: text("created_by")
     .notNull()
     .references(() => user.id),
@@ -381,6 +397,9 @@ export const faults = pgTable("faults", {
   // Gast-Meldung über den QR-Code: nur ein angegebener Name, kein Konto
   // (dann ist gemeldetVon NULL). Anzeige als „<Name> (Gast)".
   gemeldetVonName: text("gemeldet_von_name"),
+  // Meldeweg (siehe faultSource). Default „app" (In-App-Anlage); der Geräte-QR
+  // setzt „geraet_qr", der Sammlungs-QR „sammel_qr".
+  quelle: faultSource("quelle").notNull().default("app"),
 });
 
 /*
@@ -512,6 +531,12 @@ export const userSettings = pgTable("user_settings", {
   // Fehler-Benachrichtigung. NULL = keine hinterlegt → es geht nichts raus,
   // egal welche Club-Opt-ins (whatsapp_optin) gesetzt sind.
   whatsappNummer: text("whatsapp_nummer"),
+  // Persönliches Logo (JPG/PNG/SVG) für QR-Etiketten der privaten Sammlung und
+  // der eigenen privaten Maschinen. Getrennt vom Avatar (user.image).
+  logoUrl: text("logo_url"),
+  // Sammel-QR-Token der PRIVATEN Sammlung (Route /s/<token>). Nullbar: wird bei
+  // Erstaufruf der Sammel-QR-Seite erzeugt (user_settings-Zeilen sind sparse).
+  qrToken: text("qr_token").unique(),
 });
 
 export const clubSettings = pgTable("club_settings", {

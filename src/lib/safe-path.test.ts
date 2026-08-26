@@ -6,6 +6,7 @@ describe("istSichererPfad", () => {
   it("erlaubt interne Pfade", () => {
     expect(istSichererPfad("/machines/123?bereich=fehler")).toBe(true);
     expect(istSichererPfad("/m/abc")).toBe(true);
+    expect(istSichererPfad("/s/abc123/def")).toBe(true); // Sammel-QR-Deep-Link
   });
 
   it("lehnt externe/protokoll-relative Ziele ab", () => {

@@ -5,7 +5,7 @@ import { db } from "@/db";
 import { faultImages, faults } from "@/db/schema";
 import { mitStatusNachzug } from "@/db/machine-status-core";
 import { benachrichtigeUeberNeuenFehler } from "@/db/whatsapp-benachrichtigung";
-import { getMachineByQrToken } from "@/db/queries";
+import { getMachineByQrToken, getSammlungByToken } from "@/db/queries";
 import { getCurrentUser } from "@/lib/session";
 import { MAX_FAULT_IMAGES, uploadFaultImages } from "@/lib/storage";
 import type { FormState } from "@/db/actions/form-state";
@@ -75,17 +75,23 @@ async function gastDuplikat(
 // Kurzer Melde-Code (12 Hex-Zeichen; großzügig 8–32 zugelassen).
 const CODE_RE = /^[0-9a-f]{8,32}$/i;
 
-export async function meldeFehlerPerQr(
-  _prev: FormState,
-  formData: FormData,
-): Promise<FormState> {
-  const token = String(formData.get("token") ?? "").trim();
-  const beschreibung = String(formData.get("beschreibung") ?? "").trim();
-  const name = String(formData.get("name") ?? "").trim();
-
-  if (!CODE_RE.test(token)) return { error: "Ungültiger QR-Code." };
-  const machine = await getMachineByQrToken(token);
-  if (!machine) return { error: "Ungültiger QR-Code." };
+/*
+  Gemeinsamer Melde-Kern beider QR-Wege (bewusst NICHT exportiert → kein offener
+  Endpunkt; nur die beiden Actions unten sind erreichbar, siehe
+  use-server-Gate-Regel). Ab hier ist die Maschine bereits über einen Token
+  autorisiert (Geräte-Token bzw. Sammlungs-Token + Zugehörigkeitsprüfung). `quelle`
+  hält fest, WIE gemeldet wurde (geraet_qr = direkt gescannt; sammel_qr = aus der
+  Sammlungsliste gewählt) — sichtbar als Kennzeichen am Fehler.
+*/
+async function meldeFehlerKern(eingabe: {
+  machineId: string;
+  beschreibung: string;
+  name: string;
+  bilder: File[];
+  quelle: "geraet_qr" | "sammel_qr";
+}): Promise<FormState> {
+  const beschreibung = eingabe.beschreibung.trim();
+  const name = eingabe.name.trim();
 
   if (!beschreibung) return { error: "Bitte beschreibe den Fehler." };
   if (beschreibung.length > 2000) {
@@ -98,12 +104,12 @@ export async function meldeFehlerPerQr(
     if (name.length > 100) return { error: "Der Name ist zu lang." };
     // Nur Gäste bremsen (Token-Besitz ist die einzige Hürde); angemeldete
     // Meldungen sind über das Konto zurechenbar und bleiben unbegrenzt.
-    if (await gastDuplikat(machine.id, beschreibung)) {
+    if (await gastDuplikat(eingabe.machineId, beschreibung)) {
       // Als Erfolg quittieren — der Melder soll nicht raten, ob es geklappt
       // hat, aber es entsteht keine doppelte Zeile.
       return { message: "Danke! Dieser Fehler wurde bereits gemeldet." };
     }
-    if ((await gastMeldungenImFenster(machine.id)) >= GAST_MAX_IM_FENSTER) {
+    if ((await gastMeldungenImFenster(eingabe.machineId)) >= GAST_MAX_IM_FENSTER) {
       return {
         error:
           "Gerade gehen viele Meldungen zu diesem Gerät ein. Bitte in ein paar Minuten erneut versuchen.",
@@ -113,29 +119,29 @@ export async function meldeFehlerPerQr(
 
   // Fotos ZUERST hochladen (Prüfung greift für Gäste wie Angemeldete); scheitert
   // es, wird kein Fehler angelegt. Gäste laden unter dem Segment „gast".
-  const bilder = formData.getAll("bilder") as File[];
   if (
-    bilder.filter((f) => f instanceof File && f.size > 0).length >
+    eingabe.bilder.filter((f) => f instanceof File && f.size > 0).length >
     MAX_FAULT_IMAGES
   ) {
     return { error: `Höchstens ${MAX_FAULT_IMAGES} Bilder.` };
   }
   let urls: string[];
   try {
-    urls = await uploadFaultImages(bilder, currentUser?.id ?? "gast");
+    urls = await uploadFaultImages(eingabe.bilder, currentUser?.id ?? "gast");
   } catch (e) {
     return { error: (e as Error).message };
   }
 
   // Wie jede Fehler-Mutation: Anlegen + Betriebsstatus-Nachzug in EINEM Vorgang.
-  const [neu] = await mitStatusNachzug(machine.id, (tx) =>
+  const [neu] = await mitStatusNachzug(eingabe.machineId, (tx) =>
     tx
       .insert(faults)
       .values({
-        machineId: machine.id,
+        machineId: eingabe.machineId,
         beschreibung,
         gemeldetVon: currentUser?.id ?? null,
         gemeldetVonName: currentUser ? null : name,
+        quelle: eingabe.quelle,
       })
       .returning({ id: faults.id }),
   );
@@ -150,7 +156,7 @@ export async function meldeFehlerPerQr(
   try {
     await benachrichtigeUeberNeuenFehler({
       id: neu.id,
-      machineId: machine.id,
+      machineId: eingabe.machineId,
       beschreibung,
       status: "offen",
     });
@@ -158,7 +164,51 @@ export async function meldeFehlerPerQr(
     console.error("[whatsapp] Benachrichtigung fehlgeschlagen:", e);
   }
 
-  return {
-    message: "Danke! Der Fehler ist gemeldet und wird geprüft.",
-  };
+  return { message: "Danke! Der Fehler ist gemeldet und wird geprüft." };
+}
+
+/** Melden über den GERÄTE-QR (/m/<token>): direkt am Gerät gescannt. */
+export async function meldeFehlerPerQr(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const token = String(formData.get("token") ?? "").trim();
+  if (!CODE_RE.test(token)) return { error: "Ungültiger QR-Code." };
+  const machine = await getMachineByQrToken(token);
+  if (!machine) return { error: "Ungültiger QR-Code." };
+
+  return meldeFehlerKern({
+    machineId: machine.id,
+    beschreibung: String(formData.get("beschreibung") ?? ""),
+    name: String(formData.get("name") ?? ""),
+    bilder: formData.getAll("bilder") as File[],
+    quelle: "geraet_qr",
+  });
+}
+
+/** Melden über den SAMMEL-QR (/s/<token>): ein Gerät wurde aus der Sammlungs-
+    liste gewählt. Der Sammlungs-Token autorisiert NUR die Geräte dieser Sammlung
+    — die gewählte machineId muss dazugehören (sonst könnte ein Gast eine fremde
+    id unterschieben). Der Fehler wird als „sammel_qr" gekennzeichnet. */
+export async function meldeFehlerPerSammelQr(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const code = String(formData.get("code") ?? "").trim();
+  const machineId = String(formData.get("machineId") ?? "").trim();
+
+  if (!CODE_RE.test(code)) return { error: "Ungültiger QR-Code." };
+  const sammlung = await getSammlungByToken(code);
+  if (!sammlung) return { error: "Ungültiger QR-Code." };
+  if (!sammlung.maschinen.some((m) => m.id === machineId)) {
+    return { error: "Diese Maschine gehört nicht zur Sammlung." };
+  }
+
+  return meldeFehlerKern({
+    machineId,
+    beschreibung: String(formData.get("beschreibung") ?? ""),
+    name: String(formData.get("name") ?? ""),
+    bilder: formData.getAll("bilder") as File[],
+    quelle: "sammel_qr",
+  });
 }

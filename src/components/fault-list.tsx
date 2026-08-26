@@ -3,6 +3,7 @@ import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Pencil, Trash2, Wrench } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { QuelleBadge } from "@/components/ui/quelle-badge";
 import { RepairSuggestButton } from "@/components/repair-suggest-button";
 import { deleteFault } from "@/db/actions/faults";
 import type { AiProvider } from "@/lib/ai/provider";
@@ -14,6 +15,8 @@ type Fault = {
   prioritaet: string;
   status: string;
   datum: Date;
+  /** Meldeweg (faultSource); "sammel_qr" bekommt ein Kennzeichen. */
+  quelle?: string | null;
   melderName?: string | null;
   /** Angehängte Fotos (URLs). */
   bilder?: string[];
@@ -46,6 +49,7 @@ export function FaultList({
           <div className="flex flex-wrap items-center gap-2">
             <StatusBadge value={fault.status} />
             <StatusBadge value={fault.prioritaet} />
+            <QuelleBadge quelle={fault.quelle} />
             {fault.kategorie ? (
               <span className="text-xs text-[var(--color-muted)]">
                 {fault.kategorie}

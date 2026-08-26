@@ -30,6 +30,21 @@ export async function getTemplate(
   return { subject: std.subject, body: std.body, angepasst: false };
 }
 
+/** Persönliches Logo eines Nutzers (oder null). Schema-Drift-fest wie
+    getSettingsFor (siehe 1.06): eine fehlende Spalte kippt keine Seite. */
+export async function getUserLogoUrl(userId: string): Promise<string | null> {
+  try {
+    const row = await db.query.userSettings.findFirst({
+      where: eq(userSettings.userId, userId),
+      columns: { logoUrl: true },
+    });
+    return row?.logoUrl ?? null;
+  } catch (e) {
+    console.error("[settings] Logo nicht ladbar:", e);
+    return null;
+  }
+}
+
 /** Gespeicherte Einstellungen eines Nutzers bzw. Clubs (oder der Standard). */
 export async function getSettingsFor(
   art: "user" | "club",

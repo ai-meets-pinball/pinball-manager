@@ -7,6 +7,7 @@ import { db } from "@/db";
 import { clubSettings, userSettings } from "@/db/schema";
 import { requireClubManager, requireUser } from "@/lib/session";
 import { SHARE_SCOPES } from "@/lib/sharing";
+import { uploadUserLogo } from "@/lib/storage";
 import type { FormState } from "@/db/actions/form-state";
 
 /*
@@ -73,4 +74,40 @@ export async function resetShareSettings(formData: FormData): Promise<void> {
   const currentUser = await requireUser();
   await db.delete(userSettings).where(eq(userSettings.userId, currentUser.id));
   revalidatePath("/account");
+}
+
+/*
+  Persönliches Logo speichern/entfernen (Einzelperson) — Upsert in user_settings.
+  Datei-basiert wie setClubLogo; `entfernen === "true"` löscht die URL.
+*/
+export async function setUserLogo(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const currentUser = await requireUser();
+  const entfernen = String(formData.get("entfernen") ?? "") === "true";
+
+  let logoUrl: string | null = null;
+  if (!entfernen) {
+    const datei = formData.get("logo");
+    if (!(datei instanceof File) || datei.size === 0) {
+      return { error: "Bitte eine Logo-Datei wählen." };
+    }
+    try {
+      logoUrl = await uploadUserLogo(datei, currentUser.id);
+    } catch (e) {
+      return { error: (e as Error).message };
+    }
+  }
+
+  await db
+    .insert(userSettings)
+    .values({ userId: currentUser.id, logoUrl })
+    .onConflictDoUpdate({
+      target: userSettings.userId,
+      set: { logoUrl, updatedAt: new Date() },
+    });
+
+  revalidatePath("/account");
+  return { message: entfernen ? "Logo entfernt." : "Logo gespeichert." };
 }
