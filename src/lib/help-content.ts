@@ -276,6 +276,10 @@ export const ANLEITUNG: HilfeSektion[] = [
         text: "Auf der Maschinenliste »Mehrere einem Club zuweisen« → Karten antippen (oder »Alle auswählen«), Ziel-Club wählen und »Zuweisen«. Praktisch, wenn Geräte vor dem Club angelegt wurden. Maschinen, die schon im gewählten Club sind, werden als »bereits zugewiesen« markiert. Umhängen darf nur, wer die Maschine auch löschen dürfte (Eigentümer, Club-Owner/-Admin); andere werden übersprungen.",
       },
       {
+        titel: "Mehrere auf einmal löschen",
+        text: "Auf der Maschinenliste »Mehrere löschen« → Karten antippen (oder »Alle auswählen«) und »Löschen«; eine Rückfrage bestätigt. Achtung: Das löscht die Maschinen samt allen Fehlern, Reparaturen und Wartungen endgültig. Löschen darf nur, wer es auch einzeln dürfte (Eigentümer, Club-Owner/-Admin); andere werden übersprungen.",
+      },
+      {
         titel: "Sichtbarkeit",
         text: "Du siehst deine eigenen Maschinen plus die aller Clubs, in denen du Mitglied bist.",
       },

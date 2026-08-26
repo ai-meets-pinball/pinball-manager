@@ -554,3 +554,40 @@ export async function deleteMachine(formData: FormData): Promise<void> {
   revalidatePath("/machines");
   redirect("/machines");
 }
+
+/*
+  Mehrere Maschinen auf einmal löschen. Spiegelt die Einzel-Regel aus
+  deleteMachine je Maschine (darfMaschine(...).loeschen — Eigentümer, Club-
+  Owner/-Admin, Super-Admin); nicht erlaubte werden übersprungen und gezählt.
+  Das Löschen kaskadiert (Fehler, Reparaturen, Wartungen …) wie beim Einzelfall.
+*/
+export async function deleteMachines(
+  _prev: BulkAssignState,
+  formData: FormData,
+): Promise<BulkAssignState> {
+  const user = await requireUser();
+
+  const ids = formData.getAll("machineIds").map(String).filter(Boolean);
+  if (ids.length === 0) return { error: "Keine Maschinen ausgewählt." };
+
+  const selected = await db.query.machines.findMany({
+    where: inArray(machines.id, ids),
+    columns: { id: true, ownerId: true, clubId: true },
+  });
+
+  const erlaubt: string[] = [];
+  for (const m of selected) {
+    const rolle = m.clubId ? await getClubRole(user.id, m.clubId) : null;
+    if (darfMaschine(user, m, rolle).loeschen) erlaubt.push(m.id);
+  }
+
+  if (erlaubt.length > 0) {
+    await db.delete(machines).where(inArray(machines.id, erlaubt));
+    revalidatePath("/machines");
+  }
+
+  return {
+    anzahl: erlaubt.length,
+    uebersprungen: selected.length - erlaubt.length,
+  };
+}

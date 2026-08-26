@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useActionState, useState } from "react";
-import { CheckSquare } from "lucide-react";
+import { CheckSquare, Trash2 } from "lucide-react";
 import { MachineCard } from "@/components/machine-card";
 import { Button } from "@/components/ui/button";
+import { ConfirmButton } from "@/components/ui/confirm-button";
 import {
   assignMachinesToClub,
+  deleteMachines,
   type BulkAssignState,
 } from "@/db/actions/machines";
 import { modellName } from "@/lib/format";
@@ -116,6 +118,72 @@ function BulkAssignBar({
   );
 }
 
+/* Die Lösch-Leiste — dieselbe Auswahl-Mechanik wie beim Zuweisen, aber mit
+   Pflicht-Bestätigung (ConfirmButton) und danger-Rahmen. Serverseitig wird je
+   Maschine geprüft; nicht erlaubte werden übersprungen. */
+function BulkDeleteBar({
+  ids,
+  alleAusgewaehlt,
+  onAlleUmschalten,
+  onDone,
+}: {
+  ids: string[];
+  alleAusgewaehlt: boolean;
+  onAlleUmschalten: () => void;
+  onDone: () => void;
+}) {
+  const [state, formAction, pending] = useActionState<BulkAssignState, FormData>(
+    deleteMachines,
+    {},
+  );
+
+  return (
+    <form
+      action={formAction}
+      className="flex flex-wrap items-center gap-3 rounded-[var(--radius)] border border-[var(--color-danger)] bg-[var(--color-surface-2)] p-3"
+    >
+      {ids.map((id) => (
+        <input key={id} type="hidden" name="machineIds" value={id} />
+      ))}
+      <button
+        type="button"
+        onClick={onAlleUmschalten}
+        className="text-sm text-[var(--color-primary)] hover:underline"
+      >
+        {alleAusgewaehlt ? "Alle abwählen" : "Alle auswählen"}
+      </button>
+      <span className="text-sm font-medium">{ids.length} ausgewählt</span>
+      <ConfirmButton
+        question={`${ids.length} Maschine(n) endgültig löschen? Alle zugehörigen Fehler, Reparaturen und Wartungen werden mitgelöscht — das lässt sich nicht rückgängig machen.`}
+        confirmLabel="Endgültig löschen"
+        disabled={pending || ids.length === 0}
+        className="inline-flex items-center gap-1 rounded-[var(--radius)] border border-[var(--color-danger)] px-3 py-1.5 text-sm font-medium text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 disabled:opacity-50"
+      >
+        <Trash2 size={14} /> {pending ? "Löschen…" : "Löschen"}
+      </ConfirmButton>
+      <button
+        type="button"
+        onClick={onDone}
+        className="text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+      >
+        Fertig
+      </button>
+      {state.error ? (
+        <span className="text-sm text-[var(--color-danger)]">{state.error}</span>
+      ) : null}
+      {state.anzahl != null ? (
+        <span className="text-sm text-[var(--color-success)]">
+          {state.anzahl} gelöscht
+          {state.uebersprungen
+            ? `, ${state.uebersprungen} übersprungen (keine Berechtigung)`
+            : ""}
+          .
+        </span>
+      ) : null}
+    </form>
+  );
+}
+
 export function MachinesBoard({
   machines,
   clubs,
@@ -127,6 +195,7 @@ export function MachinesBoard({
   ansicht?: "karten" | "tabelle";
 }) {
   const [auswahlModus, setAuswahlModus] = useState(false);
+  const [aktion, setAktion] = useState<"zuweisen" | "loeschen">("zuweisen");
   const [auswahl, setAuswahl] = useState<Set<string>>(new Set());
   const [zielClub, setZielClub] = useState("");
   // Wird bei jedem Start eines Auswahldurchgangs erhöht → frischer Action-State.
@@ -141,7 +210,8 @@ export function MachinesBoard({
     });
   }
 
-  function starten() {
+  function starten(a: "zuweisen" | "loeschen") {
+    setAktion(a);
     setAuswahl(new Set());
     setZielClub("");
     setSitzung((k) => k + 1);
@@ -162,9 +232,10 @@ export function MachinesBoard({
 
   return (
     <div className="space-y-4">
-      {/* Zuweisen ist nur sinnvoll, wenn der Nutzer überhaupt in einem Club ist. */}
-      {clubs.length > 0 ? (
-        auswahlModus ? (
+      {/* Sammelaktionen — bewusst leise (Text-Links): seltene Verwaltung soll die
+         Liste nicht dominieren. Die Rechte werden serverseitig je Maschine geprüft. */}
+      {auswahlModus ? (
+        aktion === "zuweisen" ? (
           <BulkAssignBar
             key={sitzung}
             clubs={clubs}
@@ -176,17 +247,35 @@ export function MachinesBoard({
             onDone={beenden}
           />
         ) : (
-          /* Bewusst leise (Text-Link): eine seltene Verwaltungsaktion soll die
-             Liste nicht dominieren. */
+          <BulkDeleteBar
+            key={sitzung}
+            ids={[...auswahl]}
+            alleAusgewaehlt={alleAusgewaehlt}
+            onAlleUmschalten={alleUmschalten}
+            onDone={beenden}
+          />
+        )
+      ) : (
+        <div className="flex flex-wrap items-center gap-4">
+          {/* Zuweisen nur sinnvoll, wenn der Nutzer überhaupt in einem Club ist. */}
+          {clubs.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => starten("zuweisen")}
+              className="inline-flex items-center gap-1.5 text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+            >
+              <CheckSquare size={13} /> Mehrere einem Club zuweisen
+            </button>
+          ) : null}
           <button
             type="button"
-            onClick={starten}
-            className="inline-flex items-center gap-1.5 text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+            onClick={() => starten("loeschen")}
+            className="inline-flex items-center gap-1.5 text-xs text-[var(--color-muted)] hover:text-[var(--color-danger)]"
           >
-            <CheckSquare size={13} /> Mehrere einem Club zuweisen
+            <Trash2 size={13} /> Mehrere löschen
           </button>
-        )
-      ) : null}
+        </div>
+      )}
 
       {ansicht === "tabelle" ? (
         /* Kompakte Tabellen-Ansicht (ohne Bilder) — schnelles Scannen; die
