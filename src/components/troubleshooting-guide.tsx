@@ -155,12 +155,17 @@ export function TroubleshootingGuideView({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <LifeBuoy size={16} className="text-[var(--color-primary)]" />
-        <span className="text-sm font-medium">Plattform:</span>
-        <span className="rounded-full border border-[var(--color-primary)] px-2.5 py-0.5 text-sm text-[var(--color-primary)]">
-          {guide.plattform}
-        </span>
+      {/* Plattform als umbrechender Fließtext (KEINE rounded-full-Pille): das
+          Feld ist oft ein kurzer Name, kann aber — je nach KI/Import — ein
+          ganzer Absatz sein; als Pille würde ein langer Text zur Ellipse. */}
+      <div className="flex items-start gap-2">
+        <LifeBuoy
+          size={16}
+          className="mt-0.5 flex-none text-[var(--color-primary)]"
+        />
+        <p className="text-sm leading-relaxed text-[var(--color-fg)]">
+          <span className="font-medium">Plattform:</span> {guide.plattform}
+        </p>
       </div>
 
       {/* Ohne Websuche (lokales Modell) prominent kennzeichnen: der Guide stammt
