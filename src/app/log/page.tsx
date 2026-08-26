@@ -23,7 +23,7 @@ const hairlineGrid =
 const qrFeatures = [
   {
     titel: "Druck-Studio",
-    text: "Eigene Etikettenmaße, herstellerspezifische Scorecards, A4 mit Schnittmarken und optional das Vereins-Logo.",
+    text: "Eigene Etikettenmaße, herstellerspezifische Scorecards, A4 mit Schnittmarken und optional ein Logo — Vereins- oder persönliches.",
   },
   {
     titel: "Fotos anhängen",
@@ -33,9 +33,22 @@ const qrFeatures = [
     titel: "Ohne Konto",
     text: "Gäste melden mit Namen und Symptom. Ein Login ist bevorzugt, aber keine Voraussetzung.",
   },
+  {
+    titel: "Sammel-QR",
+    text: "Ein Code für eine ganze Sammlung (Club oder privat): erst Gerät aus einer Liste wählen, dann melden — gekennzeichnet als »aus Liste gewählt«.",
+  },
 ];
 
 const updates = [
+  {
+    eyebrow: "Melden per QR",
+    items: [
+      "Sammel-QR für eine ganze Sammlung — für einen Club oder die eigene private Sammlung: Der Code führt zuerst auf eine Geräteauswahl, dann wird gemeldet.",
+      "Fehlermeldungen tragen jetzt ein Kennzeichen, WIE sie kamen — direkt am Gerät gescannt oder aus der Sammlungsliste gewählt.",
+      "Persönliches Logo für Einzelpersonen: erscheint auf den QR-Etiketten der eigenen Maschinen und der Sammlung (bisher nur Vereine).",
+      "Mehrere Maschinen auf einmal löschen (Sammel-Auswahl in der Maschinenliste, mit Rückfrage).",
+    ],
+  },
   {
     eyebrow: "Handbuch & Wissen",
     items: [

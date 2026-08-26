@@ -94,6 +94,14 @@ export default async function FeaturesPage() {
                 </li>
               ))}
             </ol>
+            <p className="mt-5 text-[13px] leading-[1.7] text-[var(--color-muted)]">
+              Kein Etikett je Gerät nötig: Ein{" "}
+              <span className="font-medium text-[var(--color-fg)]">Sammel-QR</span>{" "}
+              für einen Club oder deine private Sammlung zeigt zuerst eine
+              Geräteauswahl — solche Meldungen sind klar als „aus der Liste
+              gewählt" gekennzeichnet. Auf die Etiketten kommt dein Vereins- oder
+              persönliches Logo.
+            </p>
           </div>
           <div className="flex justify-center">
             <div className="flex w-[220px] max-w-full flex-col items-center gap-3 rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface)] p-6">
