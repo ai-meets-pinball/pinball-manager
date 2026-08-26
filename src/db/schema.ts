@@ -778,6 +778,16 @@ export const whatsappLog = pgTable("whatsapp_log", {
   faultId: uuid("fault_id").references(() => faults.id, {
     onDelete: "set null",
   }),
+  // Denormalisiert für den Wiederhol-Schutz: der Cooldown je (Maschine,
+  // Empfänger) und das Tageslimit werden aus diesen Zeilen berechnet — ohne
+  // eigene Tabelle. Beide nullbar (set null), damit gelöschte Maschinen/Konten
+  // die Audit-Zeile nicht mitreißen.
+  machineId: uuid("machine_id").references(() => machines.id, {
+    onDelete: "set null",
+  }),
+  recipientUserId: text("recipient_user_id").references(() => user.id, {
+    onDelete: "set null",
+  }),
   erfolg: boolean("erfolg").notNull().default(true),
   fehler: text("fehler"),
   gesendetAm: timestamp("gesendet_am").notNull().defaultNow(),

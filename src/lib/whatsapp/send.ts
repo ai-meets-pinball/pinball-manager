@@ -25,6 +25,8 @@ export type WhatsappLogZeile = {
   anlass: string;
   inhalt: string;
   faultId: string | null;
+  machineId: string | null;
+  recipientUserId: string | null;
   erfolg: boolean;
   fehler: string | null;
 };
@@ -67,6 +69,8 @@ export async function sendeWhatsapp(
       anlass: nachricht.anlass,
       inhalt: nachricht.text,
       faultId: nachricht.faultId ?? null,
+      machineId: nachricht.machineId ?? null,
+      recipientUserId: nachricht.recipientUserId ?? null,
       erfolg: !hatFehler,
       fehler: hatFehler ? fehlerText(fehler) : null,
     });

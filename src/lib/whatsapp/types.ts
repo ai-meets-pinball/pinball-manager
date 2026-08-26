@@ -20,6 +20,10 @@ export type WhatsappNachricht = WhatsappInhalt & {
   an: string;
   /** Auslösende Fehlermeldung (fürs Protokoll), falls vorhanden. */
   faultId?: string;
+  /** Betroffene Maschine (fürs Protokoll + Cooldown), falls vorhanden. */
+  machineId?: string;
+  /** Empfänger-Konto (fürs Protokoll + Cooldown), falls vorhanden. */
+  recipientUserId?: string;
 };
 
 export type WhatsappErgebnis = {

@@ -457,7 +457,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "WhatsApp bei neuen Fehlern",
-        text: "Unter »WhatsApp-Benachrichtigung« hinterlegst du deine Nummer (Format +49151…) und aktivierst die Benachrichtigung PRO CLUB. Danach bekommst du eine WhatsApp, sobald an einer Maschine dieses Clubs ein neuer Fehler gemeldet wird — auch bei Gast-Meldungen per QR-Code. Nur Owner/Admins eines Clubs können das aktivieren; ohne hinterlegte Nummer geht trotz aktivem Schalter nichts raus.",
+        text: "Unter »WhatsApp-Benachrichtigung« hinterlegst du deine Nummer (Format +49151…) und aktivierst die Benachrichtigung PRO CLUB. Danach bekommst du eine WhatsApp, sobald an einer Maschine dieses Clubs ein neuer Fehler gemeldet wird — auch bei Gast-Meldungen per QR-Code. Nur Owner/Admins eines Clubs können das aktivieren; ohne hinterlegte Nummer geht trotz aktivem Schalter nichts raus. Damit es nicht spammt, wird je Maschine höchstens alle 30 Minuten eine Nachricht geschickt.",
       },
       {
         titel: "Passwort ändern",
