@@ -35,23 +35,31 @@ export async function getSettingsFor(
   art: "user" | "club",
   id: string,
 ): Promise<{ werte: ShareDefaults; angepasst: boolean }> {
-  const row =
-    art === "user"
-      ? await db.query.userSettings.findFirst({
-          where: eq(userSettings.userId, id),
-        })
-      : await db.query.clubSettings.findFirst({
-          where: eq(clubSettings.clubId, id),
-        });
-  if (!row) return { werte: SHARE_DEFAULTS, angepasst: false };
-  return {
-    werte: {
-      defaultScope: row.defaultScope as ShareDefaults["defaultScope"],
-      defaultAnonym: row.defaultAnonym,
-      defaultZeigeKosten: row.defaultZeigeKosten,
-      autoShareFacts: row.autoShareFacts,
-      autoShareRepairs: row.autoShareRepairs,
-    },
-    angepasst: true,
-  };
+  try {
+    const row =
+      art === "user"
+        ? await db.query.userSettings.findFirst({
+            where: eq(userSettings.userId, id),
+          })
+        : await db.query.clubSettings.findFirst({
+            where: eq(clubSettings.clubId, id),
+          });
+    if (!row) return { werte: SHARE_DEFAULTS, angepasst: false };
+    return {
+      werte: {
+        defaultScope: row.defaultScope as ShareDefaults["defaultScope"],
+        defaultAnonym: row.defaultAnonym,
+        defaultZeigeKosten: row.defaultZeigeKosten,
+        autoShareFacts: row.autoShareFacts,
+        autoShareRepairs: row.autoShareRepairs,
+      },
+      angepasst: true,
+    };
+  } catch (e) {
+    // Robust gegen Schema-Drift (z. B. eine neue Spalte, deren Migration noch
+    // nicht auf der DB ist): lieber die Standard-Voreinstellungen zurückgeben
+    // als eine ganze Seite mit 500 kippen. Der Fehler bleibt im Server-Log.
+    console.error("[settings] Einstellungen nicht ladbar, nutze Standard:", e);
+    return { werte: SHARE_DEFAULTS, angepasst: false };
+  }
 }

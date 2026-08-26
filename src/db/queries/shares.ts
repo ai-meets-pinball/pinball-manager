@@ -150,20 +150,26 @@ export async function getShareDefaults(machine: {
   ownerId: string;
   clubId: string | null;
 }): Promise<ShareDefaults> {
-  const row = machine.clubId
-    ? await db.query.clubSettings.findFirst({
-        where: eq(clubSettings.clubId, machine.clubId),
-      })
-    : await db.query.userSettings.findFirst({
-        where: eq(userSettings.userId, machine.ownerId),
-      });
+  try {
+    const row = machine.clubId
+      ? await db.query.clubSettings.findFirst({
+          where: eq(clubSettings.clubId, machine.clubId),
+        })
+      : await db.query.userSettings.findFirst({
+          where: eq(userSettings.userId, machine.ownerId),
+        });
 
-  if (!row) return SHARE_DEFAULTS;
-  return {
-    defaultScope: row.defaultScope as ShareDefaults["defaultScope"],
-    defaultAnonym: row.defaultAnonym,
-    defaultZeigeKosten: row.defaultZeigeKosten,
-    autoShareFacts: row.autoShareFacts,
-    autoShareRepairs: row.autoShareRepairs,
-  };
+    if (!row) return SHARE_DEFAULTS;
+    return {
+      defaultScope: row.defaultScope as ShareDefaults["defaultScope"],
+      defaultAnonym: row.defaultAnonym,
+      defaultZeigeKosten: row.defaultZeigeKosten,
+      autoShareFacts: row.autoShareFacts,
+      autoShareRepairs: row.autoShareRepairs,
+    };
+  } catch (e) {
+    // Schema-Drift-fest (siehe getSettingsFor): Standard statt 500.
+    console.error("[shares] Voreinstellungen nicht ladbar, nutze Standard:", e);
+    return SHARE_DEFAULTS;
+  }
 }
