@@ -21,6 +21,7 @@ import { RepairList } from "@/components/repair-list";
 import { SharedRepairs } from "@/components/shared-repairs";
 import { StatusSeit } from "@/components/status-seit";
 import { StatusSteuerung } from "@/components/status-steuerung";
+import { TerminListe } from "@/components/termin-liste";
 import { TroubleshootingGenerate } from "@/components/troubleshooting-generate";
 import { TroubleshootingJsonImport } from "@/components/troubleshooting-json-import";
 import { Card } from "@/components/ui/card";
@@ -30,6 +31,7 @@ import { deleteMachine } from "@/db/actions/machines";
 import { getMachineDetail } from "@/db/machine-detail";
 import { getTippZielKatalog, resolvePrompt } from "@/db/queries";
 import { modellName, relativeZeit } from "@/lib/format";
+import { tageDazwischen } from "@/lib/faelligkeit";
 import { buildGuideImportPrompt } from "@/lib/import-guide";
 import { kannKuratieren } from "@/lib/session";
 import { availableProviders } from "@/lib/ai/provider";
@@ -50,6 +52,7 @@ const LEAF_LABEL = {
   uebersicht: "Übersicht",
   fehler: "Fehler",
   wartung: "Wartung",
+  termine: "Termine",
   reparaturen: "Reparaturen",
   handbuch: "Handbuch",
   guide: "Guide",
@@ -101,6 +104,7 @@ export default async function MachineDetailPage({
     ausstattung,
     fehler,
     wartung,
+    termine,
     wissen,
     reparaturen,
     teilen,
@@ -128,6 +132,10 @@ export default async function MachineDetailPage({
   const repairShares = reparaturen.shares;
   const meineClubs = teilen.meineClubs;
   const shareDefaults = teilen.defaults;
+  // Termine: Anzahl fälliger/überfälliger (heute oder früher) fürs Reiter-Badge.
+  const termineFaellig = termine.filter(
+    (t) => tageDazwischen(new Date(), t.datum) <= 0,
+  ).length;
 
   // Optionaler Statusfilter für Fehler (PRD §4.2: „offene Fehler je Maschine").
   // Die angezeigte Liste wird in-memory gefiltert, damit die Zähler oben
@@ -182,7 +190,11 @@ export default async function MachineDetailPage({
   // bleibt das einzelne Blatt (deep-linkbar); die Gruppe leitet sich daraus ab.
   const gruppen: { key: string; label: string; leaves: Leaf[] }[] = [
     { key: "uebersicht", label: "Übersicht", leaves: ["uebersicht"] },
-    { key: "betrieb", label: "Betrieb", leaves: ["fehler", "wartung"] },
+    {
+      key: "betrieb",
+      label: "Betrieb",
+      leaves: ["fehler", "wartung", "termine"],
+    },
     {
       key: "wissen",
       label: "Wissensbasis",
@@ -216,6 +228,12 @@ export default async function MachineDetailPage({
       ) : wartungBald > 0 ? (
         <CountPill n={wartungBald} tone="warn" />
       ) : undefined,
+    termine:
+      termineFaellig > 0 ? (
+        <CountPill n={termineFaellig} tone="danger" />
+      ) : termine.length > 0 ? (
+        <CountPill n={termine.length} />
+      ) : undefined,
     // Wissensbasis-Blätter zeigen ihre Bestandszahl immer — auch die 0, damit
     // man ohne Klick sieht, wo (noch) nichts liegt.
     reparaturen: <CountPill n={machineRepairs.length} />,
@@ -229,8 +247,8 @@ export default async function MachineDetailPage({
   const gruppeBadge: Record<string, ReactNode> = {
     uebersicht: undefined,
     betrieb:
-      wartungFaellig > 0 ? (
-        <CountPill n={wartungFaellig} tone="danger" />
+      wartungFaellig + termineFaellig > 0 ? (
+        <CountPill n={wartungFaellig + termineFaellig} tone="danger" />
       ) : fehlerOffen > 0 ? (
         <CountPill n={fehlerOffen} tone="warn" />
       ) : undefined,
@@ -605,6 +623,14 @@ export default async function MachineDetailPage({
           centralKey={kiCentralKey}
           verknuepfterPlan={wartungsStandard}
           plans={wartung.plaene}
+        />
+      ) : null}
+
+      {active === "termine" ? (
+        <TerminListe
+          termine={termine}
+          machineId={machine.id}
+          schreibbar={darf.bearbeiten}
         />
       ) : null}
 

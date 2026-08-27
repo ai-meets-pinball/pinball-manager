@@ -7,6 +7,7 @@ export const MAIL_KATEGORIE_LABEL: Record<string, string> = {
   invite_club: "Club-Einladung",
   invite_platform: "Plattform-Einladung",
   maintenance_reminder: "Wartungs-Erinnerung",
+  termin_erinnerung: "Termin-Erinnerung",
   feedback_neu: "Neue Meldung (an Admins)",
   feedback_status: "Melder-Benachrichtigung",
 };

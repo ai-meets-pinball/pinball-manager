@@ -6,6 +6,7 @@ import {
   BookOpen,
   Boxes,
   Bug,
+  CalendarClock,
   Globe,
   LayoutDashboard,
   Wrench,
@@ -19,6 +20,7 @@ import { UserMenu } from "@/components/user-menu";
 const links = [
   { href: "/dashboard", label: "Übersicht", icon: LayoutDashboard },
   { href: "/machines", label: "Maschinen", icon: Wrench },
+  { href: "/termine", label: "Termine", icon: CalendarClock },
   { href: "/modelle", label: "Wissensbasis", icon: Boxes },
   { href: "/help", label: "Hilfe", icon: BookOpen },
 ];

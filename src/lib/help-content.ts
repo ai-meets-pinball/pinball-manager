@@ -231,6 +231,34 @@ export const ANLEITUNG: HilfeSektion[] = [
     ],
   },
   {
+    key: "termine",
+    titel: "Termine",
+    einleitung:
+      "Datierte Ereignisse je Gerät — einmalig oder wiederkehrend — mit E-Mail-Erinnerung im Vorlauf. Für alles mit einem Datum, das kein wiederkehrender Wartungs-Check ist: Batteriewechsel, TÜV/Prüfung, Rückgabetermin, Garantieende.",
+    schritte: [
+      {
+        titel: "Anlegen",
+        text: "Auf der Maschinen-Detailseite im Reiter »Termine« → »Neuer Termin«. Du gibst einen Titel (z. B. »Batterie wechseln«), ein Datum und optional eine Notiz an. Der Termin gehört zum Gerät und taucht dort sowie in der globalen Agenda auf.",
+      },
+      {
+        titel: "Einmalig oder wiederkehrend",
+        text: "Lässt du »Wiederholen« leer, ist der Termin einmalig. Trägst du eine Monatszahl ein (z. B. 24), wiederholt er sich alle N Monate — nach »Erledigt« rückt das Datum automatisch um das Intervall weiter, statt zu verschwinden. Fällt der Zieltag auf einen kürzeren Monat, wird auf dessen letzten Tag geklemmt (31.01. + 1 Monat → 28./29.02.).",
+      },
+      {
+        titel: "Erinnerung (Vorlauf)",
+        text: "Je Termin legst du fest, wie viele Tage im Voraus erinnert wird (Standard 7). Sobald »Datum minus Vorlauf« erreicht ist, verschickt die App eine E-Mail an den Eigentümer — gebündelt pro Gerät. Ein erneuter Lauf am selben Termin schickt nichts nach (kein Spam).",
+      },
+      {
+        titel: "Erledigt",
+        text: "»Erledigt« schließt einen einmaligen Termin ab (er verschwindet aus der Liste). Bei einem wiederkehrenden Termin rückt das Datum stattdessen um das Intervall weiter und der Termin bleibt offen.",
+      },
+      {
+        titel: "Fälligkeit & Agenda",
+        text: "Termine zeigen »heute fällig«, »überfällig seit N Tagen« oder »in N Tagen« (tageweise gezählt, Europe/Berlin). Der Menüpunkt »Termine« listet alle anstehenden Termine über deine Geräte chronologisch, nächster zuerst; die Übersicht zeigt sie zusätzlich als eigenen Abschnitt und als Kennzahl (fällige rot).",
+      },
+    ],
+  },
+  {
     key: "clubs-rollen",
     titel: "Clubs & Rollen",
     einleitung:

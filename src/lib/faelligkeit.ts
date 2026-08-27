@@ -100,6 +100,23 @@ export function naechsterTermin(
     : null;
 }
 
+/** Datum plus `monate` Monate — für wiederkehrende Termine (z. B. Batterie alle
+    24 Monate). Rollt NICHT in den Folgemonat, wenn der Zieltag kürzer ist:
+    31.01. + 1 Monat → 28./29.02. Uhrzeit bleibt erhalten. */
+export function naechsterMonatsTermin(ab: Date, monate: number): Date {
+  const d = new Date(ab);
+  const zielTag = d.getDate();
+  d.setDate(1); // erst auf den 1., damit setMonth nicht in den Folgemonat rollt
+  d.setMonth(d.getMonth() + monate);
+  const letzterTagImMonat = new Date(
+    d.getFullYear(),
+    d.getMonth() + 1,
+    0,
+  ).getDate();
+  d.setDate(Math.min(zielTag, letzterTagImMonat));
+  return d;
+}
+
 /** Einstufung eines Wartungspunktes zum Zeitpunkt `jetzt`. */
 export function faelligkeit(
   punkt: { intervallTyp: string; naechsteFaelligkeit: Date | null },

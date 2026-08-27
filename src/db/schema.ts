@@ -963,6 +963,32 @@ export const maintenanceLog = pgTable("maintenance_log", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+/* ── Termine (datierte Ereignisse je Gerät, mit E-Mail-Erinnerung) ─────────── */
+/*
+  Einmalige oder wiederkehrende DATIERTE Termine an einem Gerät (z. B. „Batterie
+  wechseln, fällig am …") — ergänzt den Wartungsplan (wiederkehrende Checklisten)
+  um konkrete Einzeltermine. E-Mail-Erinnerung mit Vorlauf je Termin über einen
+  eigenen Cron (api/cron/termin-reminders), analog zur Wartungs-Erinnerung.
+  `zuletztErinnert` = Cron-Dedup; `erledigtAm` gesetzt = einmaliger Termin
+  erledigt; wiederkehrende rücken beim Erledigen ihr `datum` weiter
+  (wiederholenMonate) und bleiben offen.
+*/
+export const termine = pgTable("termine", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  machineId: uuid("machine_id")
+    .notNull()
+    .references(() => machines.id, { onDelete: "cascade" }),
+  titel: text("titel").notNull(),
+  notiz: text("notiz"),
+  datum: timestamp("datum").notNull(), // Fälligkeit/Termin
+  erinnerungTageVorher: integer("erinnerung_tage_vorher").notNull().default(7),
+  wiederholenMonate: integer("wiederholen_monate"), // NULL = einmalig; N = alle N Monate
+  erledigtAm: timestamp("erledigt_am"), // gesetzt = einmaliger Termin erledigt
+  zuletztErinnert: timestamp("zuletzt_erinnert"), // Cron-Dedup
+  createdBy: text("created_by").references(() => user.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 /* ── Relations (für db.query-Eager-Loading) ───────────────────────────────── */
 
 export const clubsRelations = relations(clubs, ({ many }) => ({

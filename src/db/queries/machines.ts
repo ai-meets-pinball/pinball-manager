@@ -26,6 +26,7 @@ import {
   machines,
   maintenanceLog,
   roleAssignments,
+  termine,
   user,
   userSettings,
 } from "@/db/schema";
@@ -117,6 +118,48 @@ export async function getBesitzerKatalog(currentUser: SessionUser) {
     .from(machineBesitzer)
     .where(or(...bedingungen))
     .orderBy(machineBesitzer.name);
+}
+
+/* ── Termine (datierte Ereignisse) ────────────────────────────────────────── */
+
+/** Offene Termine EINES Geräts (erledigtAm null), nächster zuerst. */
+export async function getMachineTermine(machineId: string) {
+  return db
+    .select({
+      id: termine.id,
+      titel: termine.titel,
+      notiz: termine.notiz,
+      datum: termine.datum,
+      erinnerungTageVorher: termine.erinnerungTageVorher,
+      wiederholenMonate: termine.wiederholenMonate,
+    })
+    .from(termine)
+    .where(and(eq(termine.machineId, machineId), isNull(termine.erledigtAm)))
+    .orderBy(termine.datum);
+}
+
+/** Offene Termine über ALLE sichtbaren Geräte (globale Agenda / Dashboard),
+    nächster zuerst. */
+export async function getKommendeTermine(
+  currentUser: SessionUser,
+  limit?: number,
+) {
+  const sichtbar = await sichtbareMaschinenFilter(currentUser.id);
+  const q = db
+    .select({
+      id: termine.id,
+      machineId: termine.machineId,
+      titel: termine.titel,
+      datum: termine.datum,
+      wiederholenMonate: termine.wiederholenMonate,
+      hersteller: machines.hersteller,
+      modell: machines.modell,
+    })
+    .from(termine)
+    .innerJoin(machines, eq(machines.id, termine.machineId))
+    .where(and(isNull(termine.erledigtAm), sichtbar))
+    .orderBy(termine.datum);
+  return limit ? q.limit(limit) : q;
 }
 
 /** Maschine über ihren kurzen QR-Melde-Code (öffentliche Melde-Seite /m) —

@@ -28,6 +28,7 @@ export type MailKategorie =
   | "invite_club"
   | "invite_platform"
   | "maintenance_reminder"
+  | "termin_erinnerung"
   | "feedback_neu"
   | "feedback_status";
 
@@ -245,6 +246,49 @@ export async function sendMaintenanceReminderEmail(
         <p style="color:#71717a;font-size:13px;margin-top:16px;">
           Trag die erledigten Punkte im Wartungsplan des jeweiligen Geräts ein —
           dann verschiebt sich die nächste Fälligkeit automatisch.
+        </p>
+      </div>
+    `,
+  });
+}
+
+/** Termin-Erinnerung: Digest anstehender Termine je Gerät an den Eigentümer.
+    Wird vom täglichen Cron (app/api/cron/termin-reminders) verschickt. */
+export async function sendTerminReminderEmail(
+  to: string,
+  geraete: { geraet: string; id: string; punkte: string[] }[],
+  baseUrl: string,
+) {
+  const gesamt = geraete.reduce((n, g) => n + g.punkte.length, 0);
+  const bloecke = geraete
+    .map(
+      (g) => `
+        <p style="margin:14px 0 4px;font-weight:600;">
+          ${escapeHtml(g.geraet)}${
+            baseUrl
+              ? ` — <a href="${baseUrl}/machines/${g.id}?bereich=termine">Termine öffnen</a>`
+              : ""
+          }
+        </p>
+        <ul style="margin:0 0 0 18px;padding:0;color:#333;">
+          ${g.punkte.map((p) => `<li>${escapeHtml(p)}</li>`).join("")}
+        </ul>`,
+    )
+    .join("");
+
+  await sendeMail({
+    kategorie: "termin_erinnerung",
+    to,
+    subject: `${gesamt} anstehende${gesamt === 1 ? "r Termin" : " Termine"} — Pinball Manager`,
+    logText: `${gesamt} anstehende Termin(e) auf ${geraete.length} Gerät(en)`,
+    html: `
+      <div style="font-family: sans-serif; line-height: 1.5;">
+        <h2>Anstehende Termine</h2>
+        <p>Für diese Geräte stehen Termine an:</p>
+        ${bloecke}
+        <p style="color:#71717a;font-size:13px;margin-top:16px;">
+          Erledigte Termine im jeweiligen Gerät unter „Termine" abhaken —
+          wiederkehrende rücken dann automatisch weiter.
         </p>
       </div>
     `,

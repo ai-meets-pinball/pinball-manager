@@ -336,6 +336,19 @@ export const maintenanceLogSchema = z.object({
   notiz: optionalString,
 });
 
+/* ── Termine (datierte Ereignisse je Gerät, mit E-Mail-Erinnerung) ─────────── */
+
+/** Ein Termin/Ereignis: Pflicht-Titel + Datum (yyyy-mm-dd aus dem Date-Input,
+    in der Action zu Date geparst). `erinnerungTageVorher` (Vorlauf; Default 7 in
+    der Action) und `wiederholenMonate` (leer = einmalig) sind optional. */
+export const terminSchema = z.object({
+  titel: z.string().trim().min(1, "Titel ist erforderlich"),
+  datum: z.string().trim().min(1, "Datum ist erforderlich"),
+  notiz: optionalString,
+  erinnerungTageVorher: optionalInt,
+  wiederholenMonate: optionalInt,
+});
+
 /* JSON-Schema für den KI-Import aus dem Troubleshooting-Guide (Structured
    Output erzwingt gültige Enum-Werte; `intervallTage` 0 = kein Zeitintervall,
    weil nullable-Typen im Schema unnötig Komplexität brächten). */

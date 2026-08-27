@@ -1,6 +1,7 @@
 import Link from "next/link";
 import {
   AlertTriangle,
+  CalendarClock,
   Joystick,
   LayoutGrid,
   List as ListIcon,
@@ -14,6 +15,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { QuelleBadge } from "@/components/ui/quelle-badge";
 import {
   getDueMaintenanceForMachines,
+  getKommendeTermine,
   getOpenFaultsForMachines,
   getMeineMaschinen,
   getUserClubs,
@@ -22,6 +24,7 @@ import { toggleTurniermodus } from "@/db/actions/clubs";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { schwerster, type Betriebsstatus } from "@/lib/betriebsstatus";
 import { modellName } from "@/lib/format";
+import { tageDazwischen } from "@/lib/faelligkeit";
 import { mindestens } from "@/lib/rechte";
 import { requireUser } from "@/lib/session";
 
@@ -40,11 +43,13 @@ export default async function DashboardPage({
   const alleMaschinen = await getMeineMaschinen(user);
   const ids = alleMaschinen.map((m) => m.id);
 
-  const [wartungenAlle, fehlerAlle, meineClubs] = await Promise.all([
-    getDueMaintenanceForMachines(user, ids),
-    getOpenFaultsForMachines(user, ids),
-    getUserClubs(user.id),
-  ]);
+  const [wartungenAlle, fehlerAlle, meineClubs, termineAlle] =
+    await Promise.all([
+      getDueMaintenanceForMachines(user, ids),
+      getOpenFaultsForMachines(user, ids),
+      getUserClubs(user.id),
+      getKommendeTermine(user),
+    ]);
 
   // Turniermodus (pro Club, geteilt): Alarm, solange ein OFFENER (unquittierter)
   // Fehler an einer Maschine eines Turnier-Clubs steht — bewusst UNABHÄNGIG vom
@@ -117,6 +122,10 @@ export default async function DashboardPage({
   const erlaubteIds = new Set(machines.map((m) => m.id));
   const wartungen = wartungenAlle.filter((w) => erlaubteIds.has(w.machineId));
   const fehler = fehlerAlle.filter((f) => erlaubteIds.has(f.machineId));
+  const termine = termineAlle.filter((t) => erlaubteIds.has(t.machineId));
+  const termineFaellig = termine.filter(
+    (t) => tageDazwischen(new Date(), t.datum) <= 0,
+  ).length;
 
   // Bereich-Toggle: schaltet EINEN Bereich in der Auswahl an/aus.
   const toggleHref = (key: string) => {
@@ -192,6 +201,16 @@ export default async function DashboardPage({
           ? `Wartungen (${faellige.length} fällig)`
           : "anstehende Wartungen",
       tone: faellige.length > 0 ? "text-[var(--color-danger)]" : "",
+    },
+    {
+      href: "#termine",
+      icon: CalendarClock,
+      wert: termine.length,
+      label:
+        termineFaellig > 0
+          ? `Termine (${termineFaellig} fällig)`
+          : "anstehende Termine",
+      tone: termineFaellig > 0 ? "text-[var(--color-danger)]" : "",
     },
   ] as const;
 
@@ -354,6 +373,41 @@ export default async function DashboardPage({
               }
             />
           ))}
+        </List>
+      </section>
+
+      <section id="termine" className="scroll-mt-20 space-y-3">
+        <h2 className="text-lg font-semibold">
+          Anstehende Termine ({termine.length})
+        </h2>
+        <List empty="Keine anstehenden Termine." kompakt={kompakt}>
+          {termine.map((t) => {
+            const tage = tageDazwischen(new Date(), t.datum);
+            return (
+              <ListRow
+                key={t.id}
+                kompakt={kompakt}
+                href={`/machines/${t.machineId}?bereich=termine`}
+                title={t.titel}
+                subtitle={`${modellName(t)} · ${t.datum.toLocaleDateString("de-DE")}`}
+                meta={
+                  <span
+                    className={`whitespace-nowrap text-xs ${
+                      tage <= 0
+                        ? "font-semibold text-[var(--color-danger)]"
+                        : "text-[var(--color-muted)]"
+                    }`}
+                  >
+                    {tage < 0
+                      ? `überfällig seit ${-tage} Tag(en)`
+                      : tage === 0
+                        ? "heute fällig"
+                        : `in ${tage} Tag(en)`}
+                  </span>
+                }
+              />
+            );
+          })}
         </List>
       </section>
 

@@ -4,6 +4,7 @@ import {
   faelligBis,
   faelligkeit,
   intervallLabel,
+  naechsterMonatsTermin,
   naechsterTermin,
 } from "@/lib/faelligkeit";
 
@@ -92,6 +93,39 @@ describe("naechsterTermin", () => {
     expect(naechsterTermin("bedarf", 30, ab)).toBeNull();
     expect(naechsterTermin("zeit", null, ab)).toBeNull();
     expect(naechsterTermin("zeit", 0, ab)).toBeNull();
+  });
+});
+
+describe("naechsterMonatsTermin", () => {
+  // Ortszeit-Konstruktor, damit der Kalendertag unabhängig von der Zeitzone
+  // stimmt (naechsterMonatsTermin rechnet in lokalen Kalendertagen).
+  const tag = (jahr: number, monat1: number, tag: number, stunde = 9) =>
+    new Date(jahr, monat1 - 1, tag, stunde);
+  const iso = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+      d.getDate(),
+    ).padStart(2, "0")}`;
+
+  it("addiert glatte Monate", () => {
+    expect(iso(naechsterMonatsTermin(tag(2026, 8, 27), 24))).toBe("2028-08-27");
+    expect(iso(naechsterMonatsTermin(tag(2026, 1, 15), 1))).toBe("2026-02-15");
+  });
+
+  it("klemmt auf den Monatsletzten, wenn der Zieltag fehlt", () => {
+    // 31.01. + 1 Monat gibt es nicht — nicht in den März rollen lassen.
+    expect(iso(naechsterMonatsTermin(tag(2026, 1, 31), 1))).toBe("2026-02-28");
+    // Schaltjahr: 2028 hat den 29.02.
+    expect(iso(naechsterMonatsTermin(tag(2028, 1, 31), 1))).toBe("2028-02-29");
+    // 31.08. + 6 Monate → Februar, wieder geklemmt.
+    expect(iso(naechsterMonatsTermin(tag(2026, 8, 31), 6))).toBe("2027-02-28");
+  });
+
+  it("rollt sauber über den Jahreswechsel", () => {
+    expect(iso(naechsterMonatsTermin(tag(2026, 11, 10), 3))).toBe("2027-02-10");
+  });
+
+  it("erhält die Uhrzeit", () => {
+    expect(naechsterMonatsTermin(tag(2026, 8, 27, 14), 12).getHours()).toBe(14);
   });
 });
 
