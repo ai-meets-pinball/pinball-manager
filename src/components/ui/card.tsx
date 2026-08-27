@@ -8,9 +8,16 @@ export const cardSurface =
 export function Card({
   children,
   className = "",
+  id,
 }: {
   children: ReactNode;
   className?: string;
+  /** Optionaler Anker, z. B. als Ziel eines #-Sprungs. */
+  id?: string;
 }) {
-  return <div className={`${cardSurface} ${className}`}>{children}</div>;
+  return (
+    <div id={id} className={`${cardSurface} ${className}`}>
+      {children}
+    </div>
+  );
 }

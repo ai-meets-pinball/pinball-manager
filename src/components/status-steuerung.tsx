@@ -51,7 +51,7 @@ export function StatusSteuerung({
         <button
           type="button"
           onClick={() => setOffen(true)}
-          className="inline-flex items-center gap-1.5 text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+          className="inline-flex items-center gap-1.5 rounded-[var(--radius)] border border-[var(--color-border)] px-2.5 py-1 text-xs text-[var(--color-muted)] transition-colors hover:border-[var(--color-primary)] hover:text-[var(--color-fg)]"
         >
           <SlidersHorizontal size={13} /> Status manuell setzen
         </button>
@@ -65,7 +65,7 @@ export function StatusSteuerung({
             <input type="hidden" name="machineId" value={machineId} />
             <button
               type="submit"
-              className="inline-flex items-center gap-1.5 text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+              className="inline-flex items-center gap-1.5 rounded-[var(--radius)] border border-[var(--color-border)] px-2.5 py-1 text-xs text-[var(--color-muted)] transition-colors hover:border-[var(--color-primary)] hover:text-[var(--color-fg)]"
             >
               <RotateCcw size={13} /> Zurück auf Automatik
             </button>

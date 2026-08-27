@@ -93,3 +93,14 @@ body {
   background: var(--color-accent);
   color: var(--color-bg);
 }
+
+@layer base {
+  /* Klickbare Elemente kriegen den Hand-Cursor. Tailwinds v4-Preflight setzt
+     cursor:pointer NICHT mehr für Buttons — ohne das zeigen native <button>
+     den Default-Pfeil und wirken nicht klickbar. In @layer base, damit eine
+     explizite cursor-*-Utility (z. B. disabled:cursor-not-allowed) gewinnt. */
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]) {
+    cursor: pointer;
+  }
+}

@@ -257,17 +257,10 @@ export default async function MachineDetailPage({
         }))
       : undefined;
 
-  // KPI-Karten der Übersicht (Dashboard). Verlinkte öffnen den Reiter; die
-  // Status-Karte springt per #status zur Betriebsstatus-Steuerung oben.
+  // KPI-Karten der Übersicht (Dashboard). Verlinkte öffnen den jeweiligen Reiter.
+  // Der Betriebsstatus hat eine EIGENE Karte oben (Status + Grund + Steuerung
+  // an EINER Stelle) — bewusst keine separate KPI-Kachel mehr.
   const kpis: MachineKpi[] = [
-    {
-      key: "status",
-      href: "#status",
-      zahl: <StatusBadge value={machine.status} />,
-      label: "Maschinenstatus",
-      tone: "neutral",
-      sub: <StatusSeit seit={machine.statusSeit.toISOString()} />,
-    },
     {
       key: "fehler-offen",
       href: `/machines/${machine.id}?bereich=fehler`,
@@ -444,9 +437,19 @@ export default async function MachineDetailPage({
       {/* ── Übersicht: Foto und Status-Dashboard ─────────────────────────────── */}
       {active === "uebersicht" ? (
         <div className="space-y-4">
-          {/* Anker „Status-Fenster": Ziel der Status-Links (Kopf-Badge, KPI-Karte,
-              Dashboard). empty:hidden lässt keine Lücke, wenn nichts zu steuern ist. */}
-          <div id="status" className="scroll-mt-24 empty:hidden space-y-2">
+          {/* Betriebsstatus an EINER Stelle: Status + „seit" + Grund + Steuerung
+              in einer betitelten Karte. Ziel der Status-Links (Kopf-Badge,
+              Dashboard) per #status — so landet der Sprung auf einem in sich
+              geschlossenen Block, nicht auf losen Steuer-Elementen. */}
+          <Card id="status" className="scroll-mt-24 space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="font-semibold">Betriebsstatus</h3>
+              <div className="flex items-center gap-2">
+                <StatusBadge value={machine.status} />
+                <StatusSeit seit={machine.statusSeit.toISOString()} />
+              </div>
+            </div>
+
             {/* WARUM ist die Maschine nicht spielbereit? Grund für ALLE sichtbar
                 — manuell gepinnter Grund oder (automatisch) der kritische Fehler. */}
             {machine.status !== "spielbereit" ? (
@@ -471,8 +474,16 @@ export default async function MachineDetailPage({
                     : ""}
                   .
                 </p>
-              ) : null
-            ) : null}
+              ) : (
+                <p className="text-sm text-[var(--color-muted)]">
+                  Manuell gesetzt.
+                </p>
+              )
+            ) : (
+              <p className="text-sm text-[var(--color-muted)]">
+                Spielbereit — keine Einschränkung.
+              </p>
+            )}
 
             {darf.bearbeiten ? (
               <StatusSteuerung
@@ -482,7 +493,7 @@ export default async function MachineDetailPage({
                 grund={machine.statusGrund}
               />
             ) : null}
-          </div>
+          </Card>
           <MachineOverview
             kpis={kpis}
             faultsPreview={
