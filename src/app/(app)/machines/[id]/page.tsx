@@ -22,6 +22,7 @@ import { SharedRepairs } from "@/components/shared-repairs";
 import { StatusSeit } from "@/components/status-seit";
 import { StatusSteuerung } from "@/components/status-steuerung";
 import { TerminListe } from "@/components/termin-liste";
+import { DokumenteListe } from "@/components/dokumente-liste";
 import { TroubleshootingGenerate } from "@/components/troubleshooting-generate";
 import { TroubleshootingJsonImport } from "@/components/troubleshooting-json-import";
 import { Card } from "@/components/ui/card";
@@ -57,6 +58,7 @@ const LEAF_LABEL = {
   handbuch: "Handbuch",
   guide: "Guide",
   tipps: "Tipps",
+  dokumente: "Dokumente",
 } as const;
 type Leaf = keyof typeof LEAF_LABEL;
 
@@ -105,6 +107,7 @@ export default async function MachineDetailPage({
     fehler,
     wartung,
     termine,
+    dokumente,
     wissen,
     reparaturen,
     teilen,
@@ -199,8 +202,8 @@ export default async function MachineDetailPage({
       key: "wissen",
       label: "Wissensbasis",
       leaves: guideSichtbar
-        ? ["reparaturen", "handbuch", "guide", "tipps"]
-        : ["reparaturen", "handbuch", "tipps"],
+        ? ["reparaturen", "handbuch", "guide", "tipps", "dokumente"]
+        : ["reparaturen", "handbuch", "tipps", "dokumente"],
     },
   ];
 
@@ -240,6 +243,7 @@ export default async function MachineDetailPage({
     handbuch: <CountPill n={knowledgeFacts.length} />,
     guide: <CountPill n={guides.length} />,
     tipps: <CountPill n={tipps.length} />,
+    dokumente: <CountPill n={dokumente.length} />,
   };
 
   // Haupt-Gruppen: Badge zeigt die dringendste Lage der enthaltenen Blätter,
@@ -629,6 +633,14 @@ export default async function MachineDetailPage({
       {active === "termine" ? (
         <TerminListe
           termine={termine}
+          machineId={machine.id}
+          schreibbar={darf.bearbeiten}
+        />
+      ) : null}
+
+      {active === "dokumente" ? (
+        <DokumenteListe
+          dokumente={dokumente}
           machineId={machine.id}
           schreibbar={darf.bearbeiten}
         />

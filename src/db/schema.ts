@@ -989,6 +989,31 @@ export const termine = pgTable("termine", {
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
+/*
+  Dokumente je Gerät — Nachschlage-/Belegmaterial an der Maschine. Eine Tabelle,
+  drei Arten über `typ` unterschieden (Text + Zod statt pg-Enum, Haus-Stil):
+  - 'link'  → externe URL (`url`), z. B. OPDB-Eintrag, Video, Datenblatt-Link
+  - 'notiz' → freier Text (`notiz`)
+  - 'datei' → hochgeladene Datei; `url` = öffentliche Storage-URL, `dateiname` =
+              Originalname für Anzeige/Download.
+  `notiz` ist bei Notizen der Inhalt, bei Link/Datei eine optionale Beschreibung.
+  WICHTIG (Copyright, CLAUDE.md §3): Dies ist für EIGENE Unterlagen des Nutzers —
+  Handbücher laufen weiter über den Handbuch-/Guide-Weg (nicht hier gespeichert).
+*/
+export const machineDokumente = pgTable("machine_dokumente", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  machineId: uuid("machine_id")
+    .notNull()
+    .references(() => machines.id, { onDelete: "cascade" }),
+  typ: text("typ").notNull(), // 'link' | 'notiz' | 'datei'
+  titel: text("titel").notNull(),
+  notiz: text("notiz"),
+  url: text("url"), // Link-Ziel (typ=link) ODER Storage-Public-URL (typ=datei)
+  dateiname: text("dateiname"), // Originalname (typ=datei)
+  createdBy: text("created_by").references(() => user.id),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
 /* ── Relations (für db.query-Eager-Loading) ───────────────────────────────── */
 
 export const clubsRelations = relations(clubs, ({ many }) => ({

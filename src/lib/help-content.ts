@@ -259,6 +259,34 @@ export const ANLEITUNG: HilfeSektion[] = [
     ],
   },
   {
+    key: "dokumente",
+    titel: "Dokumente",
+    einleitung:
+      "Links, Notizen und Dateien je Gerät — Nachschlage- und Belegmaterial direkt an der Maschine (Datenblätter, Rechnungen, Fotos vom Innenleben, eigene Service-Notizen).",
+    schritte: [
+      {
+        titel: "Anlegen",
+        text: "Auf der Maschinen-Detailseite unter »Wissensbasis« → Reiter »Dokumente« → »Hinzufügen«. Dann die Art wählen: Link, Notiz oder Datei. Titel ist immer Pflicht; eine Notiz kann bei Link und Datei zusätzlich als Beschreibung dienen.",
+      },
+      {
+        titel: "Links & Notizen",
+        text: "Ein Link speichert Titel + Web-Adresse (z. B. OPDB-Eintrag, ein Video oder Datenblatt) und öffnet in einem neuen Tab. Fehlt bei der Adresse das »https://«, wird es automatisch ergänzt. Eine Notiz ist freier Text — für alles, was man sich zum Gerät merken will.",
+      },
+      {
+        titel: "Dateien hochladen",
+        text: "Erlaubt sind PDF, Bilder (JPG/PNG/WebP/GIF/AVIF) sowie DOCX/XLSX/PPTX und TXT/CSV, bis 25 MB je Datei. Der Dateityp wird an den echten Dateibytes geprüft, nicht am Namen. Vor dem Hochladen bestätigst du, dass du die Datei speichern darfst. Hinweis: Handbücher gehören nicht hierher — die liest du über »Handbuch«/»Guide« ein (sie werden dort nicht als Datei abgelegt, sondern nur die extrahierten Fakten).",
+      },
+      {
+        titel: "Bearbeiten & Löschen",
+        text: "Titel und Notiz lassen sich jederzeit ändern; die Art (Link/Notiz/Datei) bleibt fix. Bei einer Datei kannst du optional eine neue Datei hochladen — die alte wird dabei ersetzt. »Löschen« entfernt den Eintrag, und bei Dateien wird die Datei auch wirklich aus dem Speicher gelöscht.",
+      },
+      {
+        titel: "Wer sieht die Dokumente?",
+        text: "Dokumente gehören zum Gerät: Wer Zugriff auf die Maschine hat, sieht sie (auch bei geteilten Maschinen). Hinzufügen, Bearbeiten und Löschen können nur Personen mit Schreibrecht — bei einer reinen Freigabe zum Lesen erscheinen die Knöpfe nicht.",
+      },
+    ],
+  },
+  {
     key: "clubs-rollen",
     titel: "Clubs & Rollen",
     einleitung:

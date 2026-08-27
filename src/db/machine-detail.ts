@@ -5,6 +5,7 @@ import {
   getLetzteWartung,
   getMachineAusstattung,
   getMachineBesitzer,
+  getMachineDokumente,
   getMachineFaults,
   getMachineGuides,
   getMachineKnowledge,
@@ -74,6 +75,7 @@ export async function getMachineDetail(id: string) {
     repairShares,
     ausstattung,
     geraeteTermine,
+    geraeteDokumente,
   ] = await Promise.all([
     // requireMachineAccess lädt die Maschine bereits; hier fehlt nur der
     // Club-Name, und den auch nur für Club-Maschinen.
@@ -131,6 +133,7 @@ export async function getMachineDetail(id: string) {
     getRepairShares(id),
     getMachineAusstattung(id),
     getMachineTermine(id),
+    getMachineDokumente(id),
   ]);
 
   const offene = alleFehler.filter((f) => f.status !== "behoben");
@@ -173,6 +176,7 @@ export async function getMachineDetail(id: string) {
     })),
     ausstattung,
     termine: geraeteTermine,
+    dokumente: geraeteDokumente,
     fehler: {
       alle: alleFehler,
       offen: offene,

@@ -22,6 +22,7 @@ import {
   machineAusstattung,
   machineBesitzer,
   machineBesitzerZuordnung,
+  machineDokumente,
   machineModels,
   machines,
   maintenanceLog,
@@ -160,6 +161,25 @@ export async function getKommendeTermine(
     .where(and(isNull(termine.erledigtAm), sichtbar))
     .orderBy(termine.datum);
   return limit ? q.limit(limit) : q;
+}
+
+/* ── Dokumente (Links / Notizen / Dateien je Gerät) ───────────────────────── */
+
+/** Alle Dokumente EINES Geräts (ältestes zuerst — Reihenfolge des Anlegens). */
+export async function getMachineDokumente(machineId: string) {
+  return db
+    .select({
+      id: machineDokumente.id,
+      typ: machineDokumente.typ,
+      titel: machineDokumente.titel,
+      notiz: machineDokumente.notiz,
+      url: machineDokumente.url,
+      dateiname: machineDokumente.dateiname,
+      createdAt: machineDokumente.createdAt,
+    })
+    .from(machineDokumente)
+    .where(eq(machineDokumente.machineId, machineId))
+    .orderBy(machineDokumente.createdAt);
 }
 
 /** Maschine über ihren kurzen QR-Melde-Code (öffentliche Melde-Seite /m) —

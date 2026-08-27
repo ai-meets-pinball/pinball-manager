@@ -227,6 +227,124 @@ async function uploadLogo(
   return data.publicUrl;
 }
 
+/*
+  Dokumente je Gerät (Ordner machine-docs/). Anders als bei Bildern/Logos sind
+  hier PDF, Bilder und Office/Text erlaubt. Wo eine verlässliche Signatur
+  existiert (PDF, Bilder, ZIP-basierte Office-Formate), wird sie geprüft; bei
+  reinem Text (txt/csv) gibt es keine Signatur — dort entscheiden Endung + der
+  gemeldete text/*-MIME (bewusst schwächer, mit dem Nutzer so abgestimmt). Der
+  Content-Type wird für ausführbare Formate NICHT vom Client übernommen: Office
+  und Text bekommen einen festen, nicht im Browser ausführbaren Content-Type.
+*/
+const DOKUMENT_MAX_BYTES = 25 * 1024 * 1024; // 25 MB
+
+// Endung → fester Content-Type für die Nicht-Bild-Formate (ZIP-basiert / Text).
+const OFFICE_TYPEN = {
+  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+} as const;
+const TEXT_TYPEN = {
+  txt: "text/plain; charset=utf-8",
+  csv: "text/csv; charset=utf-8",
+} as const;
+
+/** Endung (klein, ohne Punkt) aus einem Dateinamen. */
+function endung(name: string): string {
+  const m = /\.([a-z0-9]+)$/i.exec(name.trim());
+  return m ? m[1].toLowerCase() : "";
+}
+
+/** Prüft die ersten Bytes auf PDF- bzw. ZIP-Signatur (Office = ZIP-Container). */
+function istPdf(b: Uint8Array): boolean {
+  return b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46; // %PDF
+}
+function istZip(b: Uint8Array): boolean {
+  return b[0] === 0x50 && b[1] === 0x4b && b[2] === 0x03 && b[3] === 0x04; // PK\x03\x04
+}
+
+/*
+  Lädt eine Dokument-Datei hoch und liefert öffentliche URL + bereinigten
+  Originalnamen (für Anzeige/Download). Entscheidungsreihenfolge:
+  1. Bild? → derselbe Magic-Byte-Weg wie Fotos (Content-Type aus den Bytes).
+  2. PDF?  → Signatur %PDF, Content-Type application/pdf.
+  3. ZIP-Signatur + Endung docx/xlsx/pptx → Office (fester Content-Type).
+  4. keine Signatur + Endung txt/csv + text/*-MIME → Text (fester Content-Type).
+  Alles andere wird abgelehnt.
+*/
+export async function uploadDocument(
+  file: File,
+  userId: string,
+): Promise<{ url: string; dateiname: string }> {
+  if (!file || file.size === 0) throw new Error("Keine Datei ausgewählt.");
+  if (file.size > DOKUMENT_MAX_BYTES) {
+    throw new Error("Datei zu groß (maximal 25 MB).");
+  }
+
+  const dateiname = file.name.trim().slice(0, 200) || "dokument";
+  const ext = endung(dateiname);
+  const kopf = new Uint8Array(await file.slice(0, 16).arrayBuffer());
+
+  // 1) Bild — Content-Type aus den echten Bytes (wie uploadBild).
+  const bildTyp = erkenneBildtyp(kopf);
+  let contentType: string;
+  let zielExt: string;
+  if (bildTyp) {
+    contentType = bildTyp;
+    zielExt = ERLAUBTE_BILDTYPEN[bildTyp];
+  } else if (istPdf(kopf)) {
+    contentType = "application/pdf";
+    zielExt = "pdf";
+  } else if (istZip(kopf) && ext in OFFICE_TYPEN) {
+    contentType = OFFICE_TYPEN[ext as keyof typeof OFFICE_TYPEN];
+    zielExt = ext;
+  } else if (
+    ext in TEXT_TYPEN &&
+    (file.type.startsWith("text/") || file.type === "")
+  ) {
+    contentType = TEXT_TYPEN[ext as keyof typeof TEXT_TYPEN];
+    zielExt = ext;
+  } else {
+    throw new Error(
+      "Erlaubt sind PDF, Bilder (JPG/PNG/WebP/GIF/AVIF) sowie DOCX/XLSX/PPTX/TXT/CSV.",
+    );
+  }
+
+  const supabase = storageClient();
+  const path = `machine-docs/${userId}/${crypto.randomUUID()}.${zielExt}`;
+  const { error } = await supabase.storage
+    .from(bucket)
+    .upload(path, file, { contentType, upsert: false });
+  if (error) {
+    throw new Error(`Datei-Upload fehlgeschlagen: ${error.message}`);
+  }
+  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
+  return { url: data.publicUrl, dateiname };
+}
+
+/*
+  Löscht ein Storage-Objekt anhand seiner öffentlichen URL — der EINZIGE Ort im
+  Projekt, der aktiv aus dem Bucket löscht (Fotos/Logos bleiben bewusst liegen;
+  Dokumente sollen beim Löschen wirklich verschwinden). Best-effort: schlägt es
+  fehl (URL fremd, Objekt schon weg), wird nur geloggt — das Löschen der
+  Datenbankzeile darf daran nicht scheitern.
+*/
+export async function deleteStorageObject(url: string | null): Promise<void> {
+  if (!url) return;
+  try {
+    const marker = `/object/public/${bucket}/`;
+    const i = url.indexOf(marker);
+    if (i === -1) return; // keine URL aus unserem öffentlichen Bucket
+    const path = decodeURIComponent(url.slice(i + marker.length));
+    if (!path) return;
+    const supabase = storageClient();
+    const { error } = await supabase.storage.from(bucket).remove([path]);
+    if (error) console.error("Storage-Löschen fehlgeschlagen:", error.message);
+  } catch (e) {
+    console.error("Storage-Löschen fehlgeschlagen:", e);
+  }
+}
+
 /** Vereins-Logo (Ordner club-logos/). */
 export async function uploadClubLogo(
   file: File | null,

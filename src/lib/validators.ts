@@ -349,6 +349,41 @@ export const terminSchema = z.object({
   wiederholenMonate: optionalInt,
 });
 
+/*
+  Ein Dokument je Gerät: Link, Notiz oder Datei (typ). `titel` ist immer Pflicht.
+  Bei einem Link ist `url` Pflicht und muss eine http(s)-URL sein (fehlt das
+  Schema, stellt die Action `https://` voran, bevor validiert wird). Bei einer
+  Notiz ist `notiz` Pflicht. Die Datei selbst steckt nicht in FormData-Text und
+  wird in der Action geprüft (uploadDocument).
+*/
+export const dokumentSchema = z
+  .object({
+    typ: z.enum(["link", "notiz", "datei"]),
+    titel: z.string().trim().min(1, "Titel ist erforderlich"),
+    notiz: optionalString,
+    url: optionalString,
+  })
+  .superRefine((d, ctx) => {
+    if (d.typ === "link") {
+      const ok =
+        !!d.url && /^https?:\/\/[^\s.]+\.[^\s]+/i.test(d.url);
+      if (!ok) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["url"],
+          message: "Bitte eine gültige Web-Adresse (URL) angeben.",
+        });
+      }
+    }
+    if (d.typ === "notiz" && !d.notiz) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["notiz"],
+        message: "Bitte einen Notiztext eingeben.",
+      });
+    }
+  });
+
 /* JSON-Schema für den KI-Import aus dem Troubleshooting-Guide (Structured
    Output erzwingt gültige Enum-Werte; `intervallTage` 0 = kein Zeitintervall,
    weil nullable-Typen im Schema unnötig Komplexität brächten). */
