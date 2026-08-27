@@ -8,7 +8,7 @@ import Link from "next/link";
   Mobile-Phase auf ≥44px angehoben — hier zunächst wie gehabt (36px).
 */
 const base =
-  "inline-flex h-9 w-9 items-center justify-center rounded-full border transition-colors";
+  "inline-flex h-10 w-10 items-center justify-center rounded-full border transition-colors";
 const ruhig =
   "border-[var(--color-border)] text-[var(--color-fg)] hover:bg-[var(--color-overlay)]";
 const aktivRing =
