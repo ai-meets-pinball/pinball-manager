@@ -401,7 +401,7 @@ export default async function MachineDetailPage({
             <AusstattungListe ausstattung={ausstattung} />
           </div>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex flex-wrap items-center gap-2">
           {/* QR-Etikett: führt zur öffentlichen Melde-Seite dieser Maschine —
               lesen/drucken darf jeder mit Zugriff. */}
           <Link
