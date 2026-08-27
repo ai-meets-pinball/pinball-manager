@@ -5,6 +5,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { ChipFilter } from "@/components/ui/chip-filter";
 import { PageHeader } from "@/components/ui/page-header";
 import { SearchToolbar } from "@/components/ui/search-toolbar";
+import { ViewToggle } from "@/components/ui/view-toggle";
 import {
   getDueMaintenanceCountByMachine,
   getUserClubs,
@@ -147,12 +148,6 @@ export default async function MachinesPage({
       {sort === key ? (dir === "auf" ? " ↑" : " ↓") : ""}
     </Link>
   );
-  const ansichtStil = (aktiv: boolean) =>
-    `rounded-[var(--radius)] border p-1.5 ${
-      aktiv
-        ? "border-[var(--color-primary)] text-[var(--color-primary)]"
-        : "border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-    }`;
 
   return (
     <div className="space-y-6">
@@ -180,24 +175,22 @@ export default async function MachinesPage({
           resetHref="/machines"
           aktiv={Boolean(q)}
         />
-        <div className="flex items-center gap-1" aria-label="Ansicht">
-          <Link
-            href={href({ ansicht: "karten" })}
-            aria-label="Kartenansicht"
-            title="Kartenansicht"
-            className={ansichtStil(ansicht === "karten")}
-          >
-            <LayoutGrid size={16} />
-          </Link>
-          <Link
-            href={href({ ansicht: "tabelle" })}
-            aria-label="Tabellenansicht"
-            title="Tabellenansicht"
-            className={ansichtStil(ansicht === "tabelle")}
-          >
-            <Table2 size={16} />
-          </Link>
-        </div>
+        <ViewToggle
+          options={[
+            {
+              href: href({ ansicht: "karten" }),
+              label: "Kartenansicht",
+              icon: <LayoutGrid size={16} />,
+              active: ansicht === "karten",
+            },
+            {
+              href: href({ ansicht: "tabelle" }),
+              label: "Tabellenansicht",
+              icon: <Table2 size={16} />,
+              active: ansicht === "tabelle",
+            },
+          ]}
+        />
       </div>
 
       {/* Bereichs-Filter: Alle · Privat · je Club — dieselbe Chip-Komponente

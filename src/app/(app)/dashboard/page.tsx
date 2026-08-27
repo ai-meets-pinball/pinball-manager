@@ -26,6 +26,7 @@ import { schwerster, type Betriebsstatus } from "@/lib/betriebsstatus";
 import { modellName } from "@/lib/format";
 import { tageDazwischen } from "@/lib/faelligkeit";
 import { PageHeader } from "@/components/ui/page-header";
+import { ViewToggle } from "@/components/ui/view-toggle";
 import { mindestens } from "@/lib/rechte";
 import { requireUser } from "@/lib/session";
 
@@ -150,12 +151,6 @@ export default async function DashboardPage({
     aktiv: aktiv.has(s.key),
   }));
 
-  const ansichtStil = (an: boolean) =>
-    `rounded-[var(--radius)] border p-1.5 ${
-      an
-        ? "border-[var(--color-accent)] text-[var(--color-accent)]"
-        : "border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-    }`;
 
   const faellige = wartungen.filter((w) => w.status === "faellig");
   // Betriebsstatus über die Flotte: alles außer „spielbereit" braucht Blick.
@@ -221,24 +216,22 @@ export default async function DashboardPage({
         title="Übersicht"
         actions={
           // Karten- vs. kompakte Listenansicht für die drei Abschnitte unten.
-          <div className="flex items-center gap-1" aria-label="Ansicht">
-            <Link
-              href={href({ ansicht: "karten" })}
-              aria-label="Kartenansicht"
-              title="Kartenansicht"
-              className={ansichtStil(ansicht === "karten")}
-            >
-              <LayoutGrid size={16} />
-            </Link>
-            <Link
-              href={href({ ansicht: "liste" })}
-              aria-label="Listenansicht"
-              title="Listenansicht"
-              className={ansichtStil(ansicht === "liste")}
-            >
-              <ListIcon size={16} />
-            </Link>
-          </div>
+          <ViewToggle
+            options={[
+              {
+                href: href({ ansicht: "karten" }),
+                label: "Kartenansicht",
+                icon: <LayoutGrid size={16} />,
+                active: ansicht === "karten",
+              },
+              {
+                href: href({ ansicht: "liste" }),
+                label: "Listenansicht",
+                icon: <ListIcon size={16} />,
+                active: ansicht === "liste",
+              },
+            ]}
+          />
         }
       />
 

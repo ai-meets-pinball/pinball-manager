@@ -1,6 +1,7 @@
 import { and, asc, count, desc, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import Link from "next/link";
 import { LayoutGrid, Table2 } from "lucide-react";
+import { ViewToggle } from "@/components/ui/view-toggle";
 import { ModelGenerationSelect } from "@/components/model-generation-select";
 import { AutoSubmitSelect } from "@/components/ui/auto-submit-select";
 import { List, ListRow } from "@/components/ui/list";
@@ -138,12 +139,6 @@ export default async function AdminModellePage({
     const qs = p.toString();
     return `/admin/modelle${qs ? `?${qs}` : ""}`;
   };
-  const ansichtStil = (aktiv: boolean) =>
-    `rounded-[var(--radius)] border p-1.5 ${
-      aktiv
-        ? "border-[var(--color-primary)] text-[var(--color-primary)]"
-        : "border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-    }`;
   const sortLabel = (key: "name" | "jahr", label: string) => (
     <Link
       href={sortHref(key)}
@@ -199,24 +194,22 @@ export default async function AdminModellePage({
                 ))}
               </AutoSubmitSelect>
             </SearchToolbar>
-            <div className="flex items-center gap-1" aria-label="Ansicht">
-              <Link
-                href={ansichtHref("karten")}
-                aria-label="Kartenansicht"
-                title="Kartenansicht"
-                className={ansichtStil(ansicht === "karten")}
-              >
-                <LayoutGrid size={16} />
-              </Link>
-              <Link
-                href={ansichtHref("tabelle")}
-                aria-label="Tabellenansicht"
-                title="Tabellenansicht"
-                className={ansichtStil(ansicht === "tabelle")}
-              >
-                <Table2 size={16} />
-              </Link>
-            </div>
+            <ViewToggle
+              options={[
+                {
+                  href: ansichtHref("karten"),
+                  label: "Kartenansicht",
+                  icon: <LayoutGrid size={16} />,
+                  active: ansicht === "karten",
+                },
+                {
+                  href: ansichtHref("tabelle"),
+                  label: "Tabellenansicht",
+                  icon: <Table2 size={16} />,
+                  active: ansicht === "tabelle",
+                },
+              ]}
+            />
           </div>
         </div>
 
