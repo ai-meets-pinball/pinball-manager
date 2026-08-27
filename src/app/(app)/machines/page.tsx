@@ -11,6 +11,8 @@ import {
   getUserClubs,
   getMeineMaschinen,
 } from "@/db/queries";
+import { cookies } from "next/headers";
+import { RememberScope } from "@/components/remember-scope";
 import { requireUser } from "@/lib/session";
 
 /*
@@ -34,7 +36,6 @@ export default async function MachinesPage({
   const user = await requireUser();
   const sp = await searchParams;
   const q = sp.q;
-  const clubFilter = sp.club ?? "";
   const sort = sp.sort === "name" || sp.sort === "jahr" ? sp.sort : "neu";
   const dir = sp.dir === "ab" ? ("ab" as const) : ("auf" as const);
   const ansicht =
@@ -68,8 +69,26 @@ export default async function MachinesPage({
       clubTabs.set(m.clubId, m.club.name);
     }
   }
+
+  /* Bereichs-Auswahl merken: die URL (?club=) gewinnt, sonst das zuletzt in
+     einem Cookie gemerkte (überlebt Navigation UND Sessions). „alle" ist ein
+     expliziter Wert, damit man bewusst dorthin zurück kann. Ein ungültiger/
+     veralteter Wert (gelöschter Club) fällt auf „alle" zurück. */
+  const gueltigeBereiche = new Set<string>([
+    "alle",
+    "privat",
+    ...clubTabs.keys(),
+  ]);
+  const cookieScope = (await cookies()).get("machinesScope")?.value;
+  const rawClub = gueltigeBereiche.has(sp.club ?? "")
+    ? (sp.club as string)
+    : gueltigeBereiche.has(cookieScope ?? "")
+      ? (cookieScope as string)
+      : "alle";
+  const clubFilter = rawClub === "alle" ? "" : rawClub;
+
   const tabs = [
-    { key: "", label: "Alle", count: alle.length },
+    { key: "alle", label: "Alle", count: alle.length },
     {
       key: "privat",
       label: "Privat",
@@ -119,8 +138,8 @@ export default async function MachinesPage({
   }) => {
     const p = new URLSearchParams();
     if (q) p.set("q", q);
-    const c = patch.club ?? clubFilter;
-    if (c) p.set("club", c);
+    const c = patch.club ?? rawClub;
+    p.set("club", c);
     const s = patch.sort ?? sort;
     if (s !== "neu") p.set("sort", s);
     const d = patch.dir ?? dir;
@@ -203,10 +222,11 @@ export default async function MachinesPage({
             label: t.label,
             count: t.count,
             href: href({ club: t.key }),
-            aktiv: clubFilter === t.key,
+            aktiv: rawClub === t.key,
           }))}
         />
       ) : null}
+      <RememberScope value={rawClub} />
 
       <p className="text-sm">
         <span className="text-[var(--color-muted)]">Sortieren: </span>
