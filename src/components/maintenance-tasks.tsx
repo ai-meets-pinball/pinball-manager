@@ -4,6 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { CheckCheck, Pencil, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { List, ListRow } from "@/components/ui/list";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Field, Input } from "@/components/ui/input";
@@ -44,26 +45,6 @@ export type Task = {
   logs: LogEntry[];
 };
 
-function Chip({
-  color,
-  children,
-}: {
-  color: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <span
-      className="inline-flex rounded-[4px] px-2 py-0.5 text-[11px] font-semibold"
-      style={{
-        color,
-        background: `color-mix(in srgb, ${color} 14%, transparent)`,
-      }}
-    >
-      {children}
-    </span>
-  );
-}
-
 function DueChip({
   status,
   tage,
@@ -71,24 +52,19 @@ function DueChip({
   status: FaelligkeitsStatus;
   tage: number | null;
 }) {
-  if (status === "kein-termin")
-    return <Chip color="var(--color-faint)">kein Termin</Chip>;
+  if (status === "kein-termin") return <Badge tone="muted">kein Termin</Badge>;
   if (status === "faellig") {
     const n = tage != null ? Math.abs(tage) : 0;
     return (
-      <Chip color="var(--color-danger)">
+      <Badge tone="danger">
         {n > 0 ? `überfällig (seit ${n} T.)` : "heute fällig"}
-      </Chip>
+      </Badge>
     );
   }
   if (status === "bald") {
-    return <Chip color="var(--color-warn)">fällig in {tage} T.</Chip>;
+    return <Badge tone="warn">fällig in {tage} T.</Badge>;
   }
-  return (
-    <Chip color="var(--color-success)">
-      {tage != null ? `in ${tage} T.` : "ok"}
-    </Chip>
-  );
+  return <Badge tone="success">{tage != null ? `in ${tage} T.` : "ok"}</Badge>;
 }
 
 function meta(t: Task): string {
@@ -164,9 +140,7 @@ export function MaintenanceTasks({
           meta={
             <>
               <StatusBadge value={t.prioritaet} />
-              {t.planItemId ? (
-                <Chip color="var(--color-primary)">Standard</Chip>
-              ) : null}
+              {t.planItemId ? <Badge tone="primary">Standard</Badge> : null}
               <DueChip status={t.status} tage={t.tageBisFaellig} />
             </>
           }
