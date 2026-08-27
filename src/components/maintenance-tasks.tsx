@@ -4,7 +4,7 @@ import { useActionState, useEffect, useState } from "react";
 import Link from "next/link";
 import { CheckCheck, Pencil, Trash2, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { List, ListRow } from "@/components/ui/list";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Field, Input } from "@/components/ui/input";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -144,10 +144,12 @@ export function MaintenanceTasks({
         )
       ) : null}
 
+      <List empty="Noch keine Wartungspunkte.">
       {tasks.map((t) => (
-        <Card key={t.id} className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            {schreibbar && auswahlModus ? (
+        <ListRow
+          key={t.id}
+          leading={
+            schreibbar && auswahlModus ? (
               <input
                 type="checkbox"
                 checked={auswahl.has(t.id)}
@@ -155,21 +157,20 @@ export function MaintenanceTasks({
                 aria-label={`${t.titel} auswählen`}
                 className="accent-[var(--color-accent)]"
               />
-            ) : null}
-            <StatusBadge value={t.prioritaet} />
-            <span className="font-medium">{t.titel}</span>
-            {t.planItemId ? (
-              <Chip color="var(--color-primary)">Standard</Chip>
-            ) : null}
-            <span className="ml-auto">
+            ) : undefined
+          }
+          title={t.titel}
+          subtitle={meta(t) || undefined}
+          meta={
+            <>
+              <StatusBadge value={t.prioritaet} />
+              {t.planItemId ? (
+                <Chip color="var(--color-primary)">Standard</Chip>
+              ) : null}
               <DueChip status={t.status} tage={t.tageBisFaellig} />
-            </span>
-          </div>
-
-          {meta(t) ? (
-            <p className="text-xs text-[var(--color-muted)]">{meta(t)}</p>
-          ) : null}
-
+            </>
+          }
+        >
           <div className="flex flex-wrap gap-4 text-xs text-[var(--color-muted)]">
             <span>Intervall: {intervallLabel(t)}</span>
             <span>
@@ -264,8 +265,9 @@ export function MaintenanceTasks({
               </ul>
             </details>
           ) : null}
-        </Card>
+        </ListRow>
       ))}
+      </List>
     </div>
   );
 }

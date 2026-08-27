@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { ConfirmButton } from "@/components/ui/confirm-button";
-import { LinkIcon, Pencil, Trash2 } from "lucide-react";
-import { ShareRepairControl } from "@/components/share-repair-control";
-import { Card } from "@/components/ui/card";
+import { Pencil, Trash2 } from "lucide-react";
+import { List, ListRow } from "@/components/ui/list";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { ShareRepairControl } from "@/components/share-repair-control";
 import { deleteRepair } from "@/db/actions/repairs";
 import type { ShareDefaults } from "@/lib/share-defaults";
 
@@ -31,6 +31,10 @@ type TeilenProps = {
   >;
 };
 
+/* Reparaturen eines Geräts als List/ListRow — der Reiter-Kopf (＋ Neue
+   Reparatur) rendert die Seite. Titel = die behobenen Fehler (oder „Reparatur");
+   Diagnose/Maßnahme/Teile/Kosten/Zeit und der Teilen-Schalter liegen im
+   Vollbreiten-Slot darunter. */
 export function RepairList({
   repairs,
   machineId,
@@ -43,32 +47,43 @@ export function RepairList({
   /** false = nur Lesen: keine Bearbeiten-/Lösch-Aktionen. */
   schreibbar?: boolean;
 }) {
-  if (repairs.length === 0) {
-    return (
-      <p className="text-[var(--color-muted)]">Keine Reparaturen erfasst.</p>
-    );
-  }
-
   return (
-    <div className="space-y-3">
+    <List empty="Keine Reparaturen erfasst.">
       {repairs.map((repair) => (
-        <Card key={repair.id} className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge value={repair.status} />
-            {repair.faults.map((f, i) => (
-              <span
-                key={i}
-                className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)]"
-              >
-                <LinkIcon size={12} />
-                {f.beschreibung.slice(0, 40)}
-              </span>
-            ))}
-            <span className="ml-auto text-xs text-[var(--color-muted)]">
-              {repair.datum.toLocaleDateString("de-DE")}
-            </span>
-          </div>
-
+        <ListRow
+          key={repair.id}
+          titleWrap
+          title={
+            repair.faults.length > 0
+              ? repair.faults.map((f) => f.beschreibung).join(" · ")
+              : "Reparatur"
+          }
+          subtitle={repair.datum.toLocaleDateString("de-DE")}
+          meta={<StatusBadge value={repair.status} />}
+          actions={
+            schreibbar ? (
+              <>
+                <Link
+                  href={`/machines/${machineId}/repairs/${repair.id}/edit`}
+                  className="inline-flex items-center gap-1 text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+                >
+                  <Pencil size={14} /> Bearbeiten
+                </Link>
+                <form action={deleteRepair}>
+                  <input type="hidden" name="machineId" value={machineId} />
+                  <input type="hidden" name="id" value={repair.id} />
+                  <ConfirmButton
+                    question="Diese Reparatur löschen?"
+                    confirmLabel="Ja, löschen"
+                    className="inline-flex items-center gap-1 text-sm text-[var(--color-muted)] hover:text-[var(--color-danger)]"
+                  >
+                    <Trash2 size={14} /> Löschen
+                  </ConfirmButton>
+                </form>
+              </>
+            ) : null
+          }
+        >
           {repair.diagnose ? (
             <p className="whitespace-pre-line break-words">
               <span className="text-xs font-medium text-[var(--color-muted)]">
@@ -86,31 +101,11 @@ export function RepairList({
             </p>
           ) : null}
 
-          <div className="flex flex-wrap gap-4 text-xs text-[var(--color-muted)]">
-            {repair.teile ? <span>Teile: {repair.teile}</span> : null}
-            {repair.kosten ? <span>Kosten: {repair.kosten} €</span> : null}
-            {repair.zeit != null ? <span>Zeit: {repair.zeit} min</span> : null}
-          </div>
-
-          {schreibbar ? (
-            <div className="flex gap-3 text-sm">
-              <Link
-                href={`/machines/${machineId}/repairs/${repair.id}/edit`}
-                className="inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-              >
-                <Pencil size={14} /> Bearbeiten
-              </Link>
-              <form action={deleteRepair}>
-                <input type="hidden" name="machineId" value={machineId} />
-                <input type="hidden" name="id" value={repair.id} />
-                <ConfirmButton
-                  question="Diese Reparatur löschen?"
-                  confirmLabel="Ja, löschen"
-                  className="inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-danger)]"
-                >
-                  <Trash2 size={14} /> Löschen
-                </ConfirmButton>
-              </form>
+          {repair.teile || repair.kosten || repair.zeit != null ? (
+            <div className="flex flex-wrap gap-4 text-xs text-[var(--color-muted)]">
+              {repair.teile ? <span>Teile: {repair.teile}</span> : null}
+              {repair.kosten ? <span>Kosten: {repair.kosten} €</span> : null}
+              {repair.zeit != null ? <span>Zeit: {repair.zeit} min</span> : null}
             </div>
           ) : null}
 
@@ -130,8 +125,8 @@ export function RepairList({
               clubs={teilen.clubs}
             />
           ) : null}
-        </Card>
+        </ListRow>
       ))}
-    </div>
+    </List>
   );
 }

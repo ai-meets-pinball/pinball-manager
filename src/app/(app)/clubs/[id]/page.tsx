@@ -9,6 +9,7 @@ import { MemberActions } from "@/components/member-actions";
 import { RoleInfo } from "@/components/role-info";
 import { ShareSettingsForm } from "@/components/share-settings-form";
 import { Card } from "@/components/ui/card";
+import { List, ListRow } from "@/components/ui/list";
 import { getSettingsFor } from "@/db/queries";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { deleteClub } from "@/db/actions/clubs";
@@ -134,29 +135,25 @@ export default async function ClubDetailPage({
           Mitglieder
           <RoleInfo roles={rollenKatalog} />
         </h2>
-        <div className="space-y-2">
+        <List empty="Noch keine Mitglieder.">
           {members.map((member) => (
-            <Card
+            <ListRow
               key={member.id}
-              className="flex items-center justify-between gap-3"
-            >
-              <div className="min-w-0">
-                <p className="truncate font-medium">{member.name}</p>
-                <p className="truncate text-sm text-[var(--color-muted)]">
-                  {member.email}
-                </p>
-              </div>
-              <MemberActions
-                clubId={club.id}
-                memberId={member.id}
-                rolle={member.rolle as ClubRole}
-                isSelf={member.id === currentUser.id}
-                canManage={manager}
-                canManageOwner={owner}
-              />
-            </Card>
+              title={member.name}
+              subtitle={member.email}
+              actions={
+                <MemberActions
+                  clubId={club.id}
+                  memberId={member.id}
+                  rolle={member.rolle as ClubRole}
+                  isSelf={member.id === currentUser.id}
+                  canManage={manager}
+                  canManageOwner={owner}
+                />
+              }
+            />
           ))}
-        </div>
+        </List>
 
         {manager ? (
           <Card className="space-y-4">

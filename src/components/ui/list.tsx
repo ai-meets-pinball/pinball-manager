@@ -51,6 +51,7 @@ export function ListRow({
   meta,
   actions,
   kompakt = false,
+  titleWrap = false,
   children,
 }: {
   leading?: ReactNode;
@@ -62,6 +63,9 @@ export function ListRow({
   /** Kompakt-Zeile (in einer `kompakt`-List): ohne eigene Karten-Oberfläche,
       engeres Padding — die Trennung übernimmt die Haarlinie der List. */
   kompakt?: boolean;
+  /** Titel darf umbrechen statt abgeschnitten zu werden — für reiche Zeilen mit
+      Fließtext (z. B. eine Fehlerbeschreibung als Titel). */
+  titleWrap?: boolean;
   children?: ReactNode;
 }) {
   return (
@@ -74,7 +78,7 @@ export function ListRow({
     >
       {leading ? <div className="flex-none">{leading}</div> : null}
       <div className="min-w-0 flex-1">
-        <p className="truncate font-medium">
+        <p className={`font-medium ${titleWrap ? "break-words" : "truncate"}`}>
           {href ? (
             <Link href={href} className="hover:underline">
               {title}
@@ -97,7 +101,7 @@ export function ListRow({
           {actions}
         </div>
       ) : null}
-      {children ? <div className="w-full">{children}</div> : null}
+      {children ? <div className="w-full space-y-2">{children}</div> : null}
     </li>
   );
 }
