@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import Link from "next/link";
-import { Boxes, ExternalLink, Pencil, Plus, QrCode, Trash2, Users } from "lucide-react";
+import { ArrowLeft, Boxes, ExternalLink, Pencil, Plus, QrCode, Trash2, Users } from "lucide-react";
 import { BesitzerZeile } from "@/components/besitzer-zeile";
 import { AusstattungListe } from "@/components/ausstattung-liste";
 import { FaultList } from "@/components/fault-list";
@@ -324,6 +324,12 @@ export default async function MachineDetailPage({
 
   return (
     <div className="space-y-6">
+      <Link
+        href="/machines"
+        className="inline-flex items-center gap-1 text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+      >
+        <ArrowLeft size={14} /> Maschinen
+      </Link>
       {/* Kopf: Identität der Maschine + schreibende Aktionen — immer sichtbar. */}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="flex items-start gap-4">

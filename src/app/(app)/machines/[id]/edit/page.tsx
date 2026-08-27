@@ -1,4 +1,5 @@
 import { MachineForm } from "@/components/machine-form";
+import { PageHeader } from "@/components/ui/page-header";
 import { updateMachine } from "@/db/actions/machines";
 import {
   getBesitzerKatalog,
@@ -25,7 +26,11 @@ export default async function EditMachinePage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">{modellName(machine)} bearbeiten</h1>
+      <PageHeader
+        title={`${modellName(machine)} bearbeiten`}
+        backHref={`/machines/${machine.id}`}
+        backLabel="Zur Maschine"
+      />
       <MachineForm
         action={updateMachine}
         backHref={`/machines/${machine.id}`}

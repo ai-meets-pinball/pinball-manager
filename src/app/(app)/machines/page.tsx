@@ -1,7 +1,9 @@
 import Link from "next/link";
 import { LayoutGrid, Plus, Table2 } from "lucide-react";
 import { MachinesBoard } from "@/components/machines-board";
+import { ButtonLink } from "@/components/ui/button";
 import { ChipFilter } from "@/components/ui/chip-filter";
+import { PageHeader } from "@/components/ui/page-header";
 import { SearchToolbar } from "@/components/ui/search-toolbar";
 import {
   getDueMaintenanceCountByMachine,
@@ -154,15 +156,14 @@ export default async function MachinesPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">Maschinen</h1>
-        <Link
-          href="/machines/new"
-          className="inline-flex items-center gap-2 rounded-[var(--radius)] bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-[var(--color-primary-fg)] hover:opacity-90"
-        >
-          <Plus size={16} /> Neue Maschine
-        </Link>
-      </div>
+      <PageHeader
+        title="Maschinen"
+        actions={
+          <ButtonLink href="/machines/new">
+            <Plus size={16} /> Neue Maschine
+          </ButtonLink>
+        }
+      />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Suche: GET-Formular aktualisiert die URL — Filterung server-seitig. */}

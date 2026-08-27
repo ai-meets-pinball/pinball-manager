@@ -25,6 +25,7 @@ import { AutoRefresh } from "@/components/auto-refresh";
 import { schwerster, type Betriebsstatus } from "@/lib/betriebsstatus";
 import { modellName } from "@/lib/format";
 import { tageDazwischen } from "@/lib/faelligkeit";
+import { PageHeader } from "@/components/ui/page-header";
 import { mindestens } from "@/lib/rechte";
 import { requireUser } from "@/lib/session";
 
@@ -216,28 +217,30 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">Übersicht</h1>
-        {/* Karten- vs. kompakte Listenansicht für die drei Abschnitte unten. */}
-        <div className="flex items-center gap-1" aria-label="Ansicht">
-          <Link
-            href={href({ ansicht: "karten" })}
-            aria-label="Kartenansicht"
-            title="Kartenansicht"
-            className={ansichtStil(ansicht === "karten")}
-          >
-            <LayoutGrid size={16} />
-          </Link>
-          <Link
-            href={href({ ansicht: "liste" })}
-            aria-label="Listenansicht"
-            title="Listenansicht"
-            className={ansichtStil(ansicht === "liste")}
-          >
-            <ListIcon size={16} />
-          </Link>
-        </div>
-      </div>
+      <PageHeader
+        title="Übersicht"
+        actions={
+          // Karten- vs. kompakte Listenansicht für die drei Abschnitte unten.
+          <div className="flex items-center gap-1" aria-label="Ansicht">
+            <Link
+              href={href({ ansicht: "karten" })}
+              aria-label="Kartenansicht"
+              title="Kartenansicht"
+              className={ansichtStil(ansicht === "karten")}
+            >
+              <LayoutGrid size={16} />
+            </Link>
+            <Link
+              href={href({ ansicht: "liste" })}
+              aria-label="Listenansicht"
+              title="Listenansicht"
+              className={ansichtStil(ansicht === "liste")}
+            >
+              <ListIcon size={16} />
+            </Link>
+          </div>
+        }
+      />
 
       {/* Turniermodus-Umschalter (nur für Owner/Admin der eigenen Clubs). */}
       {managedClubs.length > 0 ? (

@@ -1,4 +1,5 @@
 import { ClubForm } from "@/components/club-form";
+import { PageHeader } from "@/components/ui/page-header";
 import { createClub } from "@/db/actions/clubs";
 import { requireUser } from "@/lib/session";
 
@@ -7,10 +8,12 @@ export default async function NewClubPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Neuer Club</h1>
-      <p className="text-[var(--color-muted)]">
-        Als Ersteller wirst du automatisch Admin.
-      </p>
+      <PageHeader
+        title="Neuer Club"
+        description="Als Ersteller wirst du automatisch Admin."
+        backHref="/clubs"
+        backLabel="Zu den Clubs"
+      />
       <ClubForm action={createClub} />
     </div>
   );

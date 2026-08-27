@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { DokumentForm, type DokumentArt } from "@/components/dokument-form";
+import { PageHeader } from "@/components/ui/page-header";
 import { updateDokument } from "@/db/actions/dokumente";
 import { db } from "@/db";
 import { machineDokumente } from "@/db/schema";
@@ -25,9 +26,11 @@ export default async function EditDokumentPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">
-        Dokument bearbeiten · {modellName(machine)}
-      </h1>
+      <PageHeader
+        title={`Dokument bearbeiten · ${modellName(machine)}`}
+        backHref={`/machines/${id}?bereich=dokumente`}
+        backLabel="Zur Maschine"
+      />
       <DokumentForm
         action={updateDokument}
         machineId={id}

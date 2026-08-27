@@ -1,4 +1,5 @@
 import { count, eq, inArray } from "drizzle-orm";
+import { PageHeader } from "@/components/ui/page-header";
 import { MachineTabs, type MachineTab } from "@/components/machine-tabs";
 import { PlanCreate } from "@/components/plan-create";
 import { PlanHeader } from "@/components/plan-header";
@@ -104,15 +105,10 @@ export default async function WartungsplaenePage({
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-bold">Wartungspläne</h1>
-        <p className="text-[var(--color-muted)]">
-          Benannte Standards als Vorlage — beliebig viele je Nutzer bzw. Club.
-          Einmal gepflegt, auf beliebig vielen Maschinen verknüpft; Änderungen
-          hier wirken sofort auf alle verknüpften Maschinen. Maschinen mit
-          eigener Kopie bleiben unberührt.
-        </p>
-      </div>
+      <PageHeader
+        title="Wartungspläne"
+        description="Benannte Standards als Vorlage — beliebig viele je Nutzer bzw. Club. Einmal gepflegt, auf beliebig vielen Maschinen verknüpft; Änderungen hier wirken sofort auf alle verknüpften Maschinen. Maschinen mit eigener Kopie bleiben unberührt."
+      />
 
       <PlanCreate
         clubs={meineClubs

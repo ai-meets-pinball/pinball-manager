@@ -1,4 +1,5 @@
 import { TerminForm } from "@/components/termin-form";
+import { PageHeader } from "@/components/ui/page-header";
 import { createTermin } from "@/db/actions/termine";
 import { requireMachineWrite } from "@/lib/session";
 import { modellName } from "@/lib/format";
@@ -13,7 +14,11 @@ export default async function NewTerminPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Neuer Termin · {modellName(machine)}</h1>
+      <PageHeader
+        title={`Neuer Termin · ${modellName(machine)}`}
+        backHref={`/machines/${id}?bereich=termine`}
+        backLabel="Zur Maschine"
+      />
       <TerminForm action={createTermin} machineId={id} />
     </div>
   );

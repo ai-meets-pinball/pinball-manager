@@ -2,6 +2,7 @@ import { and, desc, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { RepairForm } from "@/components/repair-form";
 import { updateRepair } from "@/db/actions/repairs";
+import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/db";
 import { faults, repairFaults, repairs } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
@@ -33,7 +34,11 @@ export default async function EditRepairPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Reparatur bearbeiten</h1>
+      <PageHeader
+        title="Reparatur bearbeiten"
+        backHref={`/machines/${id}?bereich=reparaturen`}
+        backLabel="Zur Maschine"
+      />
       <RepairForm
         action={updateRepair}
         machineId={id}

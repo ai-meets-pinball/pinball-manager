@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageHeader } from "@/components/ui/page-header";
 import { BookOpen } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { getKnowledgeModels } from "@/db/queries";
@@ -19,15 +20,10 @@ export default async function WissensbasisPage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-bold">Wissensbasis</h1>
-        <p className="text-[var(--color-muted)]">
-          Geteiltes Wissen je Modell — Infos aus dem Handbuch, Guides und mehr.
-          Einmal am Modell gepflegt, für alle Instanzen sichtbar; du musst den
-          Automaten nicht selbst besitzen. Es erscheinen nur Modelle mit für
-          dich sichtbarem Wissen.
-        </p>
-      </div>
+      <PageHeader
+        title="Wissensbasis"
+        description="Geteiltes Wissen je Modell — Infos aus dem Handbuch, Guides und mehr. Einmal am Modell gepflegt, für alle Instanzen sichtbar; du musst den Automaten nicht selbst besitzen. Es erscheinen nur Modelle mit für dich sichtbarem Wissen."
+      />
 
       {modelle.length === 0 ? (
         <Card>

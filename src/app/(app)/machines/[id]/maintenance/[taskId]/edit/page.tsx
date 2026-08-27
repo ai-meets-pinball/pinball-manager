@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { MaintenanceTaskForm } from "@/components/maintenance-task-form";
 import { updateTask } from "@/db/actions/maintenance";
+import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/db";
 import { maintenanceTasks } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
@@ -24,7 +25,11 @@ export default async function EditMaintenanceTaskPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Wartungspunkt bearbeiten</h1>
+      <PageHeader
+        title="Wartungspunkt bearbeiten"
+        backHref={`/machines/${id}?bereich=wartung`}
+        backLabel="Zur Maschine"
+      />
       <MaintenanceTaskForm action={updateTask} machineId={id} task={task} />
     </div>
   );

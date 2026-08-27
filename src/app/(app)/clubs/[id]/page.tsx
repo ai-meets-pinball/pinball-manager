@@ -1,7 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import Link from "next/link";
-import { QrCode, Trash2, X } from "lucide-react";
+import { ArrowLeft, QrCode, Trash2, X } from "lucide-react";
 import { AddMemberForm } from "@/components/add-member-form";
 import { ClubLogoForm } from "@/components/club-logo-form";
 import { MachineCard } from "@/components/machine-card";
@@ -88,6 +88,12 @@ export default async function ClubDetailPage({
 
   return (
     <div className="space-y-8">
+      <Link
+        href="/clubs"
+        className="inline-flex items-center gap-1 text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+      >
+        <ArrowLeft size={14} /> Clubs
+      </Link>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           {club.logoUrl ? (
