@@ -23,6 +23,7 @@ import { StatusSeit } from "@/components/status-seit";
 import { StatusSteuerung } from "@/components/status-steuerung";
 import { TerminListe } from "@/components/termin-liste";
 import { DokumenteListe } from "@/components/dokumente-liste";
+import { CountPill } from "@/components/ui/count-pill";
 import { TroubleshootingGenerate } from "@/components/troubleshooting-generate";
 import { TroubleshootingJsonImport } from "@/components/troubleshooting-json-import";
 import { Card } from "@/components/ui/card";
@@ -61,30 +62,6 @@ const LEAF_LABEL = {
   dokumente: "Dokumente",
 } as const;
 type Leaf = keyof typeof LEAF_LABEL;
-
-// Kompakte Zähl-Pill für die Reiter-Badges (gleiche Farblogik wie zuvor die
-// Section-Badges: warn = offene Fehler, danger = überfällige Wartung).
-function CountPill({
-  n,
-  tone = "neutral",
-}: {
-  n: number | string;
-  tone?: "neutral" | "warn" | "danger";
-}) {
-  const cls = {
-    neutral: "border-[var(--color-border)] text-[var(--color-muted)]",
-    warn: "border-[var(--color-warn)]/40 bg-[var(--color-warn)]/10 text-[var(--color-warn)]",
-    danger:
-      "border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 text-[var(--color-danger)]",
-  }[tone];
-  return (
-    <span
-      className={`rounded-full border px-1.5 py-0.5 text-[10px] font-semibold leading-none ${cls}`}
-    >
-      {n}
-    </span>
-  );
-}
 
 export default async function MachineDetailPage({
   params,

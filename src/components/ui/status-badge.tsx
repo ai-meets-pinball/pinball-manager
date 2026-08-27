@@ -1,41 +1,42 @@
 import { STATUS_LABEL } from "@/lib/betriebsstatus";
+import { Badge, type BadgeTone } from "@/components/ui/badge";
 
 /*
-  Status-/Prioritäts-Chip, einheitlich für Fehler, Reparaturen & Rollen.
-  Die Tönung wird per color-mix aus der jeweiligen Token-Farbe abgeleitet,
-  sodass Hell- und Dunkelmodus automatisch passen.
+  Status-/Prioritäts-Chip, einheitlich für Fehler, Reparaturen & Rollen. Dünner
+  Wrapper über `Badge` (badge.tsx): bildet den Enum-Wert auf einen semantischen
+  Ton ab und liefert das deutsche Label. So gibt es EINEN Pillen-Stil.
 */
-const tone: Record<string, string> = {
+const tone: Record<string, BadgeTone> = {
   // Fehler-Status
-  offen: "var(--color-warn)",
-  quittiert: "var(--color-faint)",
-  "in Arbeit": "var(--color-accent)",
-  behoben: "var(--color-success)",
+  offen: "warn",
+  quittiert: "muted",
+  "in Arbeit": "accent",
+  behoben: "success",
   // Reparatur-Status
-  erledigt: "var(--color-success)",
+  erledigt: "success",
   // Feedback-Status (zusätzlich zu offen/in Arbeit/erledigt oben)
-  zurückgestellt: "var(--color-faint)",
-  verworfen: "var(--color-danger)",
+  zurückgestellt: "muted",
+  verworfen: "danger",
   // Priorität (Fehler: niedrig/mittel/hoch; Wartung zusätzlich sehr hoch/kritisch)
-  niedrig: "var(--color-faint)",
-  mittel: "var(--color-warn)",
-  hoch: "var(--color-danger)",
-  "sehr hoch": "var(--color-danger)",
-  kritisch: "var(--color-danger)",
+  niedrig: "muted",
+  mittel: "warn",
+  hoch: "danger",
+  "sehr hoch": "danger",
+  kritisch: "danger",
   // Rollen (Clubs)
-  owner: "var(--color-primary)",
-  admin: "var(--color-accent)",
-  member: "var(--color-faint)",
+  owner: "primary",
+  admin: "accent",
+  member: "muted",
   // Globale Rolle
-  superadmin: "var(--color-primary)",
-  kurator: "var(--color-success)",
+  superadmin: "primary",
+  kurator: "success",
   // Maschinen-Betriebsstatus (Dashboard)
-  spielbereit: "var(--color-success)",
-  eingeschraenkt: "var(--color-warn)",
-  ausser_betrieb: "var(--color-danger)",
+  spielbereit: "success",
+  eingeschraenkt: "warn",
+  ausser_betrieb: "danger",
   // Maschinen-Herkunft (Admin-Sichtbarkeitsansicht)
-  eigene: "var(--color-primary)",
-  Club: "var(--color-accent)",
+  eigene: "primary",
+  Club: "accent",
 };
 
 /** Anzeigenamen für Enum-Werte, die nicht schon deutsch sind. */
@@ -49,19 +50,8 @@ export const ROLE_LABEL: Record<string, string> = {
 };
 
 export function StatusBadge({ value }: { value: string }) {
-  const c = tone[value] ?? "var(--color-faint)";
   // Enum-Werte (Rollen, Status) auf deutsche Labels abbilden; alles andere
   // (Fehler-/Reparatur-Status) ist bereits deutsch und bleibt unverändert.
   const label = ROLE_LABEL[value] ?? value;
-  return (
-    <span
-      className="inline-flex rounded-[4px] px-2 py-0.5 text-[11px] font-semibold"
-      style={{
-        color: c,
-        background: `color-mix(in srgb, ${c} 14%, transparent)`,
-      }}
-    >
-      {label}
-    </span>
-  );
+  return <Badge tone={tone[value] ?? "muted"}>{label}</Badge>;
 }

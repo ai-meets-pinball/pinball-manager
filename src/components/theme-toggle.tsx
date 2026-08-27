@@ -3,10 +3,13 @@
 import { Moon, Sun } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
+import { IconButton } from "@/components/ui/icon-button";
+import { ICON } from "@/components/ui/icon";
 
 /**
- * Umschalter zwischen Light- und Dark-Mode. Das Orange bleibt in beiden Modi
- * die Markenfarbe. Rendert erst nach dem Mount das echte Icon (Hydration).
+ * Umschalter zwischen Light- und Dark-Mode. Der burgunderrote Akzent bleibt in
+ * beiden Modi die Markenfarbe. Rendert erst nach dem Mount das echte Icon
+ * (Hydration). Nutzt die gemeinsame IconButton-Chrome.
  */
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();
@@ -19,13 +22,12 @@ export function ThemeToggle() {
   const isDark = resolvedTheme === "dark";
 
   return (
-    <button
+    <IconButton
       type="button"
       aria-label="Theme umschalten"
       onClick={() => setTheme(isDark ? "light" : "dark")}
-      className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-fg)] transition-colors hover:bg-[var(--color-overlay)]"
     >
-      {mounted && isDark ? <Sun size={17} /> : <Moon size={17} />}
-    </button>
+      {mounted && isDark ? <Sun size={ICON.md} /> : <Moon size={ICON.md} />}
+    </IconButton>
   );
 }
