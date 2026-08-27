@@ -2,6 +2,9 @@ import { and, asc, count, desc, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import Link from "next/link";
 import { LayoutGrid, Table2 } from "lucide-react";
 import { ViewToggle } from "@/components/ui/view-toggle";
+import { cookies } from "next/headers";
+import { RememberParams } from "@/components/remember-params";
+import { klebrig } from "@/lib/sticky-view";
 import { ModelGenerationSelect } from "@/components/model-generation-select";
 import { AutoSubmitSelect } from "@/components/ui/auto-submit-select";
 import { List, ListRow } from "@/components/ui/list";
@@ -36,11 +39,28 @@ export default async function AdminModellePage({
   }>;
 }) {
   const sp = await searchParams;
+  const cookieStore = await cookies();
   const q = (sp.q ?? "").trim();
   const gen = sp.gen ?? "";
-  const sort = sp.sort === "jahr" ? "jahr" : "name";
-  const dir = sp.dir === "ab" ? "ab" : "auf";
-  const ansicht = sp.ansicht === "tabelle" ? "tabelle" : "karten";
+  // Sortierung + Ansicht werden gemerkt (URL gewinnt, sonst Cookie).
+  const sort = klebrig(
+    sp.sort,
+    cookieStore.get("modelleSort")?.value,
+    (v) => v === "name" || v === "jahr",
+    "name",
+  ) as "name" | "jahr";
+  const dir = klebrig(
+    sp.dir,
+    cookieStore.get("modelleDir")?.value,
+    (v) => v === "auf" || v === "ab",
+    "auf",
+  ) as "auf" | "ab";
+  const ansicht = klebrig(
+    sp.ansicht,
+    cookieStore.get("modelleView")?.value,
+    (v) => v === "karten" || v === "tabelle",
+    "karten",
+  ) as "karten" | "tabelle";
   const seite = Math.max(1, Number(sp.seite) || 1);
 
   // Generationen für Filter + Zuordnungs-Select.
@@ -106,13 +126,14 @@ export default async function AdminModellePage({
     .limit(PRO_SEITE)
     .offset((aktuelleSeite - 1) * PRO_SEITE);
 
-  // Nicht-Default-Parameter — von Pagination/Sortier-Links zu erhalten.
+  // Erhaltene Parameter für Pagination/Ansicht-Links. Sortierung + Ansicht sind
+  // IMMER dabei (auch Defaults), damit die gemerkte Auswahl bei jedem Link mitläuft.
   const params: Record<string, string> = {
     ...(q ? { q } : {}),
     ...(gen ? { gen } : {}),
-    ...(sort !== "name" ? { sort } : {}),
-    ...(dir !== "auf" ? { dir } : {}),
-    ...(ansicht === "tabelle" ? { ansicht } : {}),
+    sort,
+    dir,
+    ansicht,
   };
 
   /* Sortier-Link: Klick auf die aktive Spalte dreht die Richtung um; sonst
@@ -121,23 +142,21 @@ export default async function AdminModellePage({
     const p = new URLSearchParams({
       ...(q ? { q } : {}),
       ...(gen ? { gen } : {}),
-      ...(ansicht === "tabelle" ? { ansicht } : {}),
+      ansicht,
     });
-    if (key !== "name") p.set("sort", key);
-    if (sort === key && dir === "auf") p.set("dir", "ab");
-    const qs = p.toString();
-    return `/admin/modelle${qs ? `?${qs}` : ""}`;
+    p.set("sort", key);
+    p.set("dir", sort === key && dir === "auf" ? "ab" : "auf");
+    // Seite fällt bewusst auf 1 zurück (kein seite-Parameter).
+    return `/admin/modelle?${p.toString()}`;
   };
 
   /* Ansicht-Umschalter (Karten mit Bild / kompakte Tabelle) — Zustand lebt in
      der URL wie alles andere; Seite und Filter bleiben erhalten. */
   const ansichtHref = (a: "karten" | "tabelle") => {
     const p = new URLSearchParams(params);
-    p.delete("ansicht");
-    if (a === "tabelle") p.set("ansicht", "tabelle");
+    p.set("ansicht", a);
     if (aktuelleSeite > 1) p.set("seite", String(aktuelleSeite));
-    const qs = p.toString();
-    return `/admin/modelle${qs ? `?${qs}` : ""}`;
+    return `/admin/modelle?${p.toString()}`;
   };
   const sortLabel = (key: "name" | "jahr", label: string) => (
     <Link
@@ -194,6 +213,14 @@ export default async function AdminModellePage({
                 ))}
               </AutoSubmitSelect>
             </SearchToolbar>
+            <RememberParams
+              path="/admin/modelle"
+              params={{
+                modelleSort: sort,
+                modelleDir: dir,
+                modelleView: ansicht,
+              }}
+            />
             <ViewToggle
               options={[
                 {

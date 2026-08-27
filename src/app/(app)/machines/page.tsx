@@ -12,8 +12,9 @@ import {
   getMeineMaschinen,
 } from "@/db/queries";
 import { cookies } from "next/headers";
-import { RememberScope } from "@/components/remember-scope";
+import { RememberParams } from "@/components/remember-params";
 import { requireUser } from "@/lib/session";
+import { klebrig } from "@/lib/sticky-view";
 
 /*
   Maschinenliste mit Tabs (Alle · Privat · je Club), Suche, Sortierung und zwei
@@ -36,10 +37,25 @@ export default async function MachinesPage({
   const user = await requireUser();
   const sp = await searchParams;
   const q = sp.q;
-  const sort = sp.sort === "name" || sp.sort === "jahr" ? sp.sort : "neu";
-  const dir = sp.dir === "ab" ? ("ab" as const) : ("auf" as const);
-  const ansicht =
-    sp.ansicht === "tabelle" ? ("tabelle" as const) : ("karten" as const);
+  const cookieStore = await cookies();
+  const sort = klebrig(
+    sp.sort,
+    cookieStore.get("machinesSort")?.value,
+    (v) => v === "neu" || v === "name" || v === "jahr",
+    "neu",
+  ) as "neu" | "name" | "jahr";
+  const dir = klebrig(
+    sp.dir,
+    cookieStore.get("machinesDir")?.value,
+    (v) => v === "auf" || v === "ab",
+    "auf",
+  ) as "auf" | "ab";
+  const ansicht = klebrig(
+    sp.ansicht,
+    cookieStore.get("machinesView")?.value,
+    (v) => v === "karten" || v === "tabelle",
+    "karten",
+  ) as "karten" | "tabelle";
 
   const machines = await getMeineMaschinen(user, q);
   // Fällige Wartungen je Maschine — für die „N fällig"-Badge.
@@ -79,12 +95,12 @@ export default async function MachinesPage({
     "privat",
     ...clubTabs.keys(),
   ]);
-  const cookieScope = (await cookies()).get("machinesScope")?.value;
-  const rawClub = gueltigeBereiche.has(sp.club ?? "")
-    ? (sp.club as string)
-    : gueltigeBereiche.has(cookieScope ?? "")
-      ? (cookieScope as string)
-      : "alle";
+  const rawClub = klebrig(
+    sp.club,
+    cookieStore.get("machinesScope")?.value,
+    (v) => gueltigeBereiche.has(v),
+    "alle",
+  );
   const clubFilter = rawClub === "alle" ? "" : rawClub;
 
   const tabs = [
@@ -137,17 +153,15 @@ export default async function MachinesPage({
     dir?: string;
   }) => {
     const p = new URLSearchParams();
+    // Steuer-Links tragen IMMER alle gemerkten Parameter (auch Defaults), damit
+    // jeder Wert wieder wählbar ist; weggelassene fallen serverseitig auf den
+    // gemerkten Cookie-Wert zurück (siehe klebrig()).
     if (q) p.set("q", q);
-    const c = patch.club ?? rawClub;
-    p.set("club", c);
-    const s = patch.sort ?? sort;
-    if (s !== "neu") p.set("sort", s);
-    const d = patch.dir ?? dir;
-    if (d !== "auf") p.set("dir", d);
-    const a = patch.ansicht ?? ansicht;
-    if (a === "tabelle") p.set("ansicht", "tabelle");
-    const qs = p.toString();
-    return `/machines${qs ? `?${qs}` : ""}`;
+    p.set("club", patch.club ?? rawClub);
+    p.set("sort", patch.sort ?? sort);
+    p.set("dir", patch.dir ?? dir);
+    p.set("ansicht", patch.ansicht ?? ansicht);
+    return `/machines?${p.toString()}`;
   };
 
   /* Sortier-Link: Klick auf die aktive Spalte dreht die Richtung um. */
@@ -185,12 +199,7 @@ export default async function MachinesPage({
           placeholder="Hersteller oder Modell suchen…"
           defaultValue={q ?? ""}
           label="Maschinen suchen"
-          keep={{
-            ...(clubFilter ? { club: clubFilter } : {}),
-            ...(sort !== "neu" ? { sort } : {}),
-            ...(dir !== "auf" ? { dir } : {}),
-            ...(ansicht === "tabelle" ? { ansicht } : {}),
-          }}
+          keep={{ club: rawClub, sort, dir, ansicht }}
           resetHref="/machines"
           aktiv={Boolean(q)}
         />
@@ -226,7 +235,15 @@ export default async function MachinesPage({
           }))}
         />
       ) : null}
-      <RememberScope value={rawClub} />
+      <RememberParams
+        path="/machines"
+        params={{
+          machinesScope: rawClub,
+          machinesSort: sort,
+          machinesDir: dir,
+          machinesView: ansicht,
+        }}
+      />
 
       <p className="text-sm">
         <span className="text-[var(--color-muted)]">Sortieren: </span>

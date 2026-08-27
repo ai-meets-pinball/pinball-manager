@@ -27,6 +27,9 @@ import { modellName } from "@/lib/format";
 import { tageDazwischen } from "@/lib/faelligkeit";
 import { PageHeader } from "@/components/ui/page-header";
 import { ViewToggle } from "@/components/ui/view-toggle";
+import { cookies } from "next/headers";
+import { RememberParams } from "@/components/remember-params";
+import { klebrig } from "@/lib/sticky-view";
 import { mindestens } from "@/lib/rechte";
 import { requireUser } from "@/lib/session";
 
@@ -88,12 +91,24 @@ export default async function DashboardPage({
   // Auswahl aus der URL (CSV) gegen die gültigen Bereiche filtern. Leere/keine
   // Auswahl = alle Bereiche (kein Filter). Zustand lebt in der URL wie überall.
   const sp = await searchParams;
+  const cookieStore = await cookies();
   const gueltig = new Set(scopes.map((s) => s.key));
-  const gewaehlt = (sp.scope ?? "").split(",").filter((k) => gueltig.has(k));
+  // Bereich merken: URL gewinnt, sonst der gemerkte Cookie-Wert (überlebt
+  // Navigation UND Sessions). "" = alle Bereiche.
+  const scopeSource =
+    sp.scope !== undefined
+      ? sp.scope
+      : (cookieStore.get("dashboardScope")?.value ?? "");
+  const gewaehlt = scopeSource.split(",").filter((k) => gueltig.has(k));
   const aktiv = new Set(gewaehlt.length ? gewaehlt : scopes.map((s) => s.key));
 
-  // Ansicht: Karten (voreingestellt) oder kompakte Liste (dichte Zeilen).
-  const ansicht = sp.ansicht === "liste" ? "liste" : "karten";
+  // Ansicht: Karten (voreingestellt) oder kompakte Liste — ebenfalls gemerkt.
+  const ansicht = klebrig(
+    sp.ansicht,
+    cookieStore.get("dashboardView")?.value,
+    (v) => v === "karten" || v === "liste",
+    "karten",
+  ) as "karten" | "liste";
   const kompakt = ansicht === "liste";
 
   // Gemeinsamer URL-Bauer: hält Bereich UND Ansicht (jede Änderung erhält das
@@ -106,18 +121,19 @@ export default async function DashboardPage({
     const bereiche = naechste.scope ?? gewaehlt;
     const a = naechste.ansicht ?? ansicht;
     const p = new URLSearchParams();
-    if (bereiche.length && bereiche.length < scopes.length) {
-      p.set(
-        "scope",
-        scopes
-          .map((s) => s.key)
-          .filter((k) => bereiche.includes(k))
-          .join(","),
-      );
-    }
-    if (a === "liste") p.set("ansicht", "liste");
-    const qs = p.toString();
-    return `/dashboard${qs ? `?${qs}` : ""}`;
+    // Immer explizit (auch Defaults), damit jede Auswahl wieder wählbar ist;
+    // "" = alle Bereiche.
+    p.set(
+      "scope",
+      bereiche.length && bereiche.length < scopes.length
+        ? scopes
+            .map((s) => s.key)
+            .filter((k) => bereiche.includes(k))
+            .join(",")
+        : "",
+    );
+    p.set("ansicht", a);
+    return `/dashboard?${p.toString()}`;
   };
 
   const machines = alleMaschinen.filter((m) => aktiv.has(scopeKey(m.clubId)));
@@ -212,6 +228,10 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-8">
+      <RememberParams
+        path="/dashboard"
+        params={{ dashboardScope: gewaehlt.join(","), dashboardView: ansicht }}
+      />
       <PageHeader
         title="Übersicht"
         actions={
