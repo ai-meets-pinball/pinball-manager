@@ -102,8 +102,14 @@ export function FormLeaveGuard({
             >
               Verwerfen
             </button>
-            {/* Echter Submit des umgebenden Formulars. */}
-            <Button type="submit" size="sm">
+            {/* Echter Submit des umgebenden Formulars — Dialog dabei selbst
+                schließen (wie bei ConfirmButton), damit er nicht offen bleibt,
+                falls die Action revalidiert statt wegzunavigieren. */}
+            <Button
+              type="submit"
+              size="sm"
+              onClick={() => dialogRef.current?.close()}
+            >
               Speichern
             </Button>
           </div>

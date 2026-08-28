@@ -63,8 +63,18 @@ export function ConfirmButton({
             >
               Abbrechen
             </button>
-            {/* Submit → sendet das umgebende <form> ab. */}
-            <Button type="submit" variant="danger" size="sm">
+            {/* Submit → sendet das umgebende <form> ab. Den Dialog SELBST
+                schließen: eine Server-Action, die revalidiert (statt weg zu
+                navigieren, z. B. „Plan löschen"), lässt das native <dialog>
+                sonst offen — die re-gerenderte, wiederverwendete Komponente
+                zeigte es dann weiter/erneut. close() verhindert das Absenden
+                nicht (der Submit läuft als Default-Aktion des Klicks). */}
+            <Button
+              type="submit"
+              variant="danger"
+              size="sm"
+              onClick={() => dialogRef.current?.close()}
+            >
               {confirmLabel}
             </Button>
           </div>
