@@ -1,7 +1,7 @@
 import { count, eq, isNotNull } from "drizzle-orm";
 import { GenerationCreateForm } from "@/components/generation-create-form";
 import { GenerationRow } from "@/components/generation-row";
-import { Card } from "@/components/ui/card";
+import { AddDisclosure } from "@/components/ui/add-disclosure";
 import { List } from "@/components/ui/list";
 import { db } from "@/db";
 import { generations, machineModels } from "@/db/schema";
@@ -63,9 +63,9 @@ export default async function AdminGenerationenPage() {
         <h2 className="text-lg font-semibold">
           Generationen ({genList.length})
         </h2>
-        <Card>
+        <AddDisclosure label="Neue Generation">
           <GenerationCreateForm />
-        </Card>
+        </AddDisclosure>
         <List empty="Noch keine Generationen — lege oben eine an.">
           {genList.map((g) => (
             <GenerationRow

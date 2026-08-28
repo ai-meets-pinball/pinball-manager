@@ -23,7 +23,7 @@ export function GenerationCreateForm() {
       <div className="flex flex-wrap items-center gap-2">
         <Input
           name="name"
-          placeholder="Neue Generation, z. B. WPC-95"
+          placeholder="z. B. WPC-95"
           required
           className="max-w-xs"
           aria-label="Name der neuen Generation"

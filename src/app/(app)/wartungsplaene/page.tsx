@@ -1,5 +1,6 @@
 import { count, eq, inArray } from "drizzle-orm";
 import { PageHeader } from "@/components/ui/page-header";
+import { AddDisclosure } from "@/components/ui/add-disclosure";
 import { MachineTabs, type MachineTab } from "@/components/machine-tabs";
 import { PlanCreate } from "@/components/plan-create";
 import { PlanHeader } from "@/components/plan-header";
@@ -110,11 +111,13 @@ export default async function WartungsplaenePage({
         description="Benannte Standards als Vorlage — beliebig viele je Nutzer bzw. Club. Einmal gepflegt, auf beliebig vielen Maschinen verknüpft; Änderungen hier wirken sofort auf alle verknüpften Maschinen. Maschinen mit eigener Kopie bleiben unberührt."
       />
 
-      <PlanCreate
-        clubs={meineClubs
-          .filter((c) => mindestens(c.rolle, "admin"))
-          .map((c) => ({ id: c.id, name: c.name }))}
-      />
+      <AddDisclosure label="Neuer Plan">
+        <PlanCreate
+          clubs={meineClubs
+            .filter((c) => mindestens(c.rolle, "admin"))
+            .map((c) => ({ id: c.id, name: c.name }))}
+        />
+      </AddDisclosure>
 
       {eintraege.length === 0 ? (
         <p className="text-sm text-[var(--color-muted)]">

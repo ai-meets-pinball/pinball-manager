@@ -5,6 +5,7 @@ import { AdminClubRoles } from "@/components/admin-club-roles";
 import { InviteUserForm } from "@/components/invite-user-form";
 import { RoleInfo } from "@/components/role-info";
 import { Button } from "@/components/ui/button";
+import { AddDisclosure } from "@/components/ui/add-disclosure";
 import { Card, cardSurface } from "@/components/ui/card";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { List, ListRow } from "@/components/ui/list";
@@ -108,7 +109,9 @@ export default async function AdminPage() {
           passiert dabei nicht (dafür lädst du im jeweiligen Club ein).
         </p>
         <Card className="space-y-4">
-          <InviteUserForm />
+          <AddDisclosure label="Neue Einladung">
+            <InviteUserForm />
+          </AddDisclosure>
 
           {offeneEinladungen.length > 0 ? (
             <div className="space-y-2 border-t border-[var(--color-border)] pt-3">

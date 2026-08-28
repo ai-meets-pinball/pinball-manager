@@ -10,6 +10,7 @@ import { RoleInfo } from "@/components/role-info";
 import { ShareSettingsForm } from "@/components/share-settings-form";
 import { Card } from "@/components/ui/card";
 import { List, ListRow } from "@/components/ui/list";
+import { AddDisclosure } from "@/components/ui/add-disclosure";
 import { getSettingsFor } from "@/db/queries";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { deleteClub } from "@/db/actions/clubs";
@@ -157,11 +158,13 @@ export default async function ClubDetailPage({
 
         {manager ? (
           <Card className="space-y-4">
-            <AddMemberForm
-              action={inviteMember}
-              clubId={club.id}
-              allowOwner={owner}
-            />
+            <AddDisclosure label="Mitglied einladen">
+              <AddMemberForm
+                action={inviteMember}
+                clubId={club.id}
+                allowOwner={owner}
+              />
+            </AddDisclosure>
 
             {pendingInvites.length > 0 ? (
               <div className="space-y-2 border-t border-[var(--color-border)] pt-3">
