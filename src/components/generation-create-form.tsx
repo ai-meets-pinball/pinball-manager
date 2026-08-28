@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FormFeedback } from "@/components/ui/form-feedback";
+import { CollapseOnSuccess } from "@/components/ui/collapse-on-success";
 import { Input } from "@/components/ui/input";
 import { createGeneration } from "@/db/actions/generations";
 import type { FormState } from "@/db/actions/form-state";
@@ -33,6 +34,7 @@ export function GenerationCreateForm() {
         </Button>
       </div>
       <FormFeedback state={state} />
+      <CollapseOnSuccess when={Boolean(state.ok || state.message)} />
     </form>
   );
 }

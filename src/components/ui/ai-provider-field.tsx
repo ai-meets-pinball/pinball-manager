@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Cloud, Cpu, Zap } from "lucide-react";
 import { ApiKeyField } from "@/components/ui/api-key-field";
+import { InfoPopover } from "@/components/ui/info-popover";
 import type { AiProvider } from "@/lib/ai/provider";
 
 /*
@@ -59,8 +60,13 @@ export function AiProviderField({
   return (
     <div className="flex flex-col gap-2">
       {mehrere ? (
-        <div className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium">Verarbeiten mit</span>
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5 text-sm">
+          <span className="flex items-center gap-1.5 font-medium">
+            Verarbeiten mit
+            <InfoPopover label="Was bedeuten die Optionen?">
+              {META[selected].hint}
+            </InfoPopover>
+          </span>
           <div role="radiogroup" className="flex flex-wrap gap-2">
             {providers.map((p) => {
               const aktiv = selected === p;
@@ -72,20 +78,17 @@ export function AiProviderField({
                   role="radio"
                   aria-checked={aktiv}
                   onClick={() => setSelected(p)}
-                  className={`inline-flex items-center gap-1.5 rounded-[var(--radius)] border px-3 py-1.5 ${
+                  className={`inline-flex items-center gap-1.5 rounded-[var(--radius)] border px-2.5 py-1 ${
                     aktiv
                       ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
                       : "border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-fg)]"
                   }`}
                 >
-                  <Icon size={15} /> {META[p].label}
+                  <Icon size={14} /> {META[p].label}
                 </button>
               );
             })}
           </div>
-          <span className="text-xs text-[var(--color-muted)]">
-            {META[selected].hint}
-          </span>
         </div>
       ) : null}
 

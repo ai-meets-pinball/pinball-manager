@@ -4,6 +4,7 @@ import { Mail } from "lucide-react";
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { FormFeedback } from "@/components/ui/form-feedback";
+import { CollapseOnSuccess } from "@/components/ui/collapse-on-success";
 import { Field, Input, Textarea } from "@/components/ui/input";
 import type { FormState } from "@/db/actions/form-state";
 import { invitePlatformUser } from "@/db/actions/invitations";
@@ -35,6 +36,7 @@ export function InviteUserForm() {
         </Button>
       </div>
       <FormFeedback state={state} />
+      <CollapseOnSuccess when={Boolean(state.ok || state.message)} />
     </form>
   );
 }

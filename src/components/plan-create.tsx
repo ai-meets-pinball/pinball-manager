@@ -5,6 +5,7 @@ import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/input";
 import { FormFeedback } from "@/components/ui/form-feedback";
+import { CollapseOnSuccess } from "@/components/ui/collapse-on-success";
 import { createPlan } from "@/db/actions/maintenance-plans";
 import type { FormState } from "@/db/actions/form-state";
 
@@ -55,6 +56,7 @@ export function PlanCreate({
         <Plus size={15} /> {pending ? "…" : "Anlegen"}
       </Button>
       <FormFeedback state={state} />
+      <CollapseOnSuccess when={Boolean(state.ok || state.message)} />
     </form>
   );
 }

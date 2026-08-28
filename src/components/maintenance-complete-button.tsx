@@ -28,13 +28,14 @@ export function MaintenanceCompleteButton({
 
   return (
     <div>
-      <button
+      <Button
         type="button"
+        variant="secondary"
+        size="sm"
         onClick={() => setOffen((v) => !v)}
-        className="inline-flex items-center gap-1 text-sm text-[var(--color-success)] hover:underline"
       >
         <Check size={14} /> Erledigt eintragen
-      </button>
+      </Button>
 
       {offen ? (
         <form

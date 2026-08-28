@@ -3,6 +3,7 @@
 import { Mail } from "lucide-react";
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
+import { CollapseOnSuccess } from "@/components/ui/collapse-on-success";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
 import type { FormState } from "@/db/actions/form-state";
 
@@ -57,6 +58,7 @@ export function AddMemberForm({
       {state.message ? (
         <p className="text-sm text-[var(--color-success)]">{state.message}</p>
       ) : null}
+      <CollapseOnSuccess when={Boolean(state.ok || state.message)} />
     </form>
   );
 }
