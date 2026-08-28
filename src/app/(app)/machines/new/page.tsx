@@ -1,4 +1,5 @@
 import { MachineForm } from "@/components/machine-form";
+import { PageHeader } from "@/components/ui/page-header";
 import { createMachine } from "@/db/actions/machines";
 import {
   getBesitzerKatalog,
@@ -15,7 +16,11 @@ export default async function NewMachinePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Neue Maschine</h1>
+      <PageHeader
+        title="Neue Maschine"
+        backHref="/machines"
+        backLabel="Zu den Maschinen"
+      />
       <MachineForm
         action={createMachine}
         backHref="/machines"

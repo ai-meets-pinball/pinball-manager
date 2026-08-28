@@ -1,6 +1,10 @@
 import { and, asc, count, desc, eq, ilike, isNull, or, sql } from "drizzle-orm";
 import Link from "next/link";
 import { LayoutGrid, Table2 } from "lucide-react";
+import { ViewToggle } from "@/components/ui/view-toggle";
+import { cookies } from "next/headers";
+import { RememberParams } from "@/components/remember-params";
+import { klebrig } from "@/lib/sticky-view";
 import { ModelGenerationSelect } from "@/components/model-generation-select";
 import { AutoSubmitSelect } from "@/components/ui/auto-submit-select";
 import { List, ListRow } from "@/components/ui/list";
@@ -35,11 +39,28 @@ export default async function AdminModellePage({
   }>;
 }) {
   const sp = await searchParams;
+  const cookieStore = await cookies();
   const q = (sp.q ?? "").trim();
   const gen = sp.gen ?? "";
-  const sort = sp.sort === "jahr" ? "jahr" : "name";
-  const dir = sp.dir === "ab" ? "ab" : "auf";
-  const ansicht = sp.ansicht === "tabelle" ? "tabelle" : "karten";
+  // Sortierung + Ansicht werden gemerkt (URL gewinnt, sonst Cookie).
+  const sort = klebrig(
+    sp.sort,
+    cookieStore.get("modelleSort")?.value,
+    (v) => v === "name" || v === "jahr",
+    "name",
+  ) as "name" | "jahr";
+  const dir = klebrig(
+    sp.dir,
+    cookieStore.get("modelleDir")?.value,
+    (v) => v === "auf" || v === "ab",
+    "auf",
+  ) as "auf" | "ab";
+  const ansicht = klebrig(
+    sp.ansicht,
+    cookieStore.get("modelleView")?.value,
+    (v) => v === "karten" || v === "tabelle",
+    "karten",
+  ) as "karten" | "tabelle";
   const seite = Math.max(1, Number(sp.seite) || 1);
 
   // Generationen für Filter + Zuordnungs-Select.
@@ -105,13 +126,14 @@ export default async function AdminModellePage({
     .limit(PRO_SEITE)
     .offset((aktuelleSeite - 1) * PRO_SEITE);
 
-  // Nicht-Default-Parameter — von Pagination/Sortier-Links zu erhalten.
+  // Erhaltene Parameter für Pagination/Ansicht-Links. Sortierung + Ansicht sind
+  // IMMER dabei (auch Defaults), damit die gemerkte Auswahl bei jedem Link mitläuft.
   const params: Record<string, string> = {
     ...(q ? { q } : {}),
     ...(gen ? { gen } : {}),
-    ...(sort !== "name" ? { sort } : {}),
-    ...(dir !== "auf" ? { dir } : {}),
-    ...(ansicht === "tabelle" ? { ansicht } : {}),
+    sort,
+    dir,
+    ansicht,
   };
 
   /* Sortier-Link: Klick auf die aktive Spalte dreht die Richtung um; sonst
@@ -120,30 +142,22 @@ export default async function AdminModellePage({
     const p = new URLSearchParams({
       ...(q ? { q } : {}),
       ...(gen ? { gen } : {}),
-      ...(ansicht === "tabelle" ? { ansicht } : {}),
+      ansicht,
     });
-    if (key !== "name") p.set("sort", key);
-    if (sort === key && dir === "auf") p.set("dir", "ab");
-    const qs = p.toString();
-    return `/admin/modelle${qs ? `?${qs}` : ""}`;
+    p.set("sort", key);
+    p.set("dir", sort === key && dir === "auf" ? "ab" : "auf");
+    // Seite fällt bewusst auf 1 zurück (kein seite-Parameter).
+    return `/admin/modelle?${p.toString()}`;
   };
 
   /* Ansicht-Umschalter (Karten mit Bild / kompakte Tabelle) — Zustand lebt in
      der URL wie alles andere; Seite und Filter bleiben erhalten. */
   const ansichtHref = (a: "karten" | "tabelle") => {
     const p = new URLSearchParams(params);
-    p.delete("ansicht");
-    if (a === "tabelle") p.set("ansicht", "tabelle");
+    p.set("ansicht", a);
     if (aktuelleSeite > 1) p.set("seite", String(aktuelleSeite));
-    const qs = p.toString();
-    return `/admin/modelle${qs ? `?${qs}` : ""}`;
+    return `/admin/modelle?${p.toString()}`;
   };
-  const ansichtStil = (aktiv: boolean) =>
-    `rounded-[var(--radius)] border p-1.5 ${
-      aktiv
-        ? "border-[var(--color-primary)] text-[var(--color-primary)]"
-        : "border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-    }`;
   const sortLabel = (key: "name" | "jahr", label: string) => (
     <Link
       href={sortHref(key)}
@@ -199,24 +213,30 @@ export default async function AdminModellePage({
                 ))}
               </AutoSubmitSelect>
             </SearchToolbar>
-            <div className="flex items-center gap-1" aria-label="Ansicht">
-              <Link
-                href={ansichtHref("karten")}
-                aria-label="Kartenansicht"
-                title="Kartenansicht"
-                className={ansichtStil(ansicht === "karten")}
-              >
-                <LayoutGrid size={16} />
-              </Link>
-              <Link
-                href={ansichtHref("tabelle")}
-                aria-label="Tabellenansicht"
-                title="Tabellenansicht"
-                className={ansichtStil(ansicht === "tabelle")}
-              >
-                <Table2 size={16} />
-              </Link>
-            </div>
+            <RememberParams
+              path="/admin/modelle"
+              params={{
+                modelleSort: sort,
+                modelleDir: dir,
+                modelleView: ansicht,
+              }}
+            />
+            <ViewToggle
+              options={[
+                {
+                  href: ansichtHref("karten"),
+                  label: "Kartenansicht",
+                  icon: <LayoutGrid size={16} />,
+                  active: ansicht === "karten",
+                },
+                {
+                  href: ansichtHref("tabelle"),
+                  label: "Tabellenansicht",
+                  icon: <Table2 size={16} />,
+                  active: ansicht === "tabelle",
+                },
+              ]}
+            />
           </div>
         </div>
 

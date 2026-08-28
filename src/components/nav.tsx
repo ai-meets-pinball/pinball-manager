@@ -2,30 +2,18 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  BookOpen,
-  Boxes,
-  Bug,
-  CalendarClock,
-  Globe,
-  LayoutDashboard,
-  Wrench,
-} from "lucide-react";
+import { Bug, Globe } from "lucide-react";
 import { Logo } from "@/components/logo";
+import { NAV_LINKS } from "@/components/nav-links";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { UserMenu } from "@/components/user-menu";
+import { IconButtonLink } from "@/components/ui/icon-button";
+import { ICON } from "@/components/ui/icon";
 
-/* Hauptziele bleiben in der Kopfzeile; Clubs, Konto, Administration und
-   Abmelden liegen gebündelt im Nutzer-Menü (siehe user-menu.tsx). */
-const links = [
-  { href: "/dashboard", label: "Übersicht", icon: LayoutDashboard },
-  { href: "/machines", label: "Maschinen", icon: Wrench },
-  { href: "/termine", label: "Termine", icon: CalendarClock },
-  { href: "/modelle", label: "Wissensbasis", icon: Boxes },
-  { href: "/help", label: "Hilfe", icon: BookOpen },
-];
-
-/** Kopfzeile der angemeldeten Bereiche. */
+/* Kopfzeile der angemeldeten Bereiche. Die Hauptziele stehen ab `sm` hier;
+   darunter übernimmt die Bottom-Tab-Bar (bottom-nav.tsx), damit das obere Band
+   nicht überläuft. Clubs, Konto, Administration und Abmelden liegen gebündelt
+   im Nutzer-Menü (user-menu.tsx). */
 export function Nav({
   userName,
   avatar,
@@ -51,8 +39,9 @@ export function Nav({
             <Logo size={20} />
           </Link>
 
-          <div className="flex items-center gap-0.5 sm:gap-1">
-            {links.map(({ href, label, icon: Icon }) => {
+          {/* Hauptziele nur ab sm — mobil übernimmt die Bottom-Tab-Bar. */}
+          <div className="hidden items-center gap-0.5 sm:flex sm:gap-1">
+            {NAV_LINKS.map(({ href, label, icon: Icon }) => {
               const active =
                 pathname === href || pathname.startsWith(`${href}/`);
               return (
@@ -67,10 +56,10 @@ export function Nav({
                   }`}
                 >
                   <Icon
-                    size={15}
+                    size={ICON.md}
                     className={active ? "text-[var(--color-accent)]" : ""}
                   />
-                  <span className="hidden sm:inline">{label}</span>
+                  <span>{label}</span>
                 </Link>
               );
             })}
@@ -78,29 +67,24 @@ export function Nav({
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
-          {/* Runde Icon-Knöpfe — gleiche Optik wie Theme-Umschalter und Avatar. */}
-          <Link
+          {/* Runde Icon-Knöpfe — gemeinsame IconButton-Chrome. */}
+          <IconButtonLink
             href="/"
             title="Öffentliche Website"
             aria-label="Öffentliche Website"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-border)] text-[var(--color-fg)] transition-colors hover:bg-[var(--color-overlay)]"
           >
-            <Globe size={17} />
-          </Link>
+            <Globe size={ICON.md} />
+          </IconButtonLink>
           {/* Problem melden — direkt aus der Kopfzeile, damit die AKTUELLE
               Seite als Herkunft (?von=…) in der Meldung landet. */}
-          <Link
+          <IconButtonLink
             href={`/feedback?von=${encodeURIComponent(pathname)}`}
             title="Problem melden / Feedback"
             aria-label="Problem melden / Feedback"
-            className={`inline-flex h-9 w-9 items-center justify-center rounded-full border border-[var(--color-border)] transition-colors hover:bg-[var(--color-overlay)] ${
-              pathname.startsWith("/feedback")
-                ? "text-[var(--color-accent)] ring-2 ring-[var(--color-primary)]/40"
-                : "text-[var(--color-fg)]"
-            }`}
+            active={pathname.startsWith("/feedback")}
           >
-            <Bug size={17} />
-          </Link>
+            <Bug size={ICON.md} />
+          </IconButtonLink>
           <ThemeToggle />
           <UserMenu
             userName={userName}

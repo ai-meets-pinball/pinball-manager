@@ -28,7 +28,7 @@ export function PlanCreate({
       action={formAction}
       className="flex flex-wrap items-end gap-2 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-3"
     >
-      <Field label="Neuer Plan">
+      <Field label="Name">
         <Input name="name" placeholder="z. B. Monatlich" required maxLength={80} />
       </Field>
       {clubs.length > 0 ? (

@@ -1,7 +1,7 @@
 import { and, desc, eq } from "drizzle-orm";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import Link from "next/link";
-import { QrCode, Trash2, X } from "lucide-react";
+import { ArrowLeft, QrCode, Trash2, X } from "lucide-react";
 import { AddMemberForm } from "@/components/add-member-form";
 import { ClubLogoForm } from "@/components/club-logo-form";
 import { MachineCard } from "@/components/machine-card";
@@ -9,6 +9,8 @@ import { MemberActions } from "@/components/member-actions";
 import { RoleInfo } from "@/components/role-info";
 import { ShareSettingsForm } from "@/components/share-settings-form";
 import { Card } from "@/components/ui/card";
+import { List, ListRow } from "@/components/ui/list";
+import { AddDisclosure } from "@/components/ui/add-disclosure";
 import { getSettingsFor } from "@/db/queries";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { deleteClub } from "@/db/actions/clubs";
@@ -88,6 +90,12 @@ export default async function ClubDetailPage({
 
   return (
     <div className="space-y-8">
+      <Link
+        href="/clubs"
+        className="inline-flex items-center gap-1 text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+      >
+        <ArrowLeft size={14} /> Clubs
+      </Link>
       <div className="flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           {club.logoUrl ? (
@@ -128,37 +136,35 @@ export default async function ClubDetailPage({
           Mitglieder
           <RoleInfo roles={rollenKatalog} />
         </h2>
-        <div className="space-y-2">
+        <List empty="Noch keine Mitglieder.">
           {members.map((member) => (
-            <Card
+            <ListRow
               key={member.id}
-              className="flex items-center justify-between gap-3"
-            >
-              <div className="min-w-0">
-                <p className="truncate font-medium">{member.name}</p>
-                <p className="truncate text-sm text-[var(--color-muted)]">
-                  {member.email}
-                </p>
-              </div>
-              <MemberActions
-                clubId={club.id}
-                memberId={member.id}
-                rolle={member.rolle as ClubRole}
-                isSelf={member.id === currentUser.id}
-                canManage={manager}
-                canManageOwner={owner}
-              />
-            </Card>
+              title={member.name}
+              subtitle={member.email}
+              actions={
+                <MemberActions
+                  clubId={club.id}
+                  memberId={member.id}
+                  rolle={member.rolle as ClubRole}
+                  isSelf={member.id === currentUser.id}
+                  canManage={manager}
+                  canManageOwner={owner}
+                />
+              }
+            />
           ))}
-        </div>
+        </List>
 
         {manager ? (
           <Card className="space-y-4">
-            <AddMemberForm
-              action={inviteMember}
-              clubId={club.id}
-              allowOwner={owner}
-            />
+            <AddDisclosure label="Mitglied einladen">
+              <AddMemberForm
+                action={inviteMember}
+                clubId={club.id}
+                allowOwner={owner}
+              />
+            </AddDisclosure>
 
             {pendingInvites.length > 0 ? (
               <div className="space-y-2 border-t border-[var(--color-border)] pt-3">

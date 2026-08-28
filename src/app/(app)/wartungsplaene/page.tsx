@@ -1,4 +1,6 @@
 import { count, eq, inArray } from "drizzle-orm";
+import { PageHeader } from "@/components/ui/page-header";
+import { AddDisclosure } from "@/components/ui/add-disclosure";
 import { MachineTabs, type MachineTab } from "@/components/machine-tabs";
 import { PlanCreate } from "@/components/plan-create";
 import { PlanHeader } from "@/components/plan-header";
@@ -104,21 +106,18 @@ export default async function WartungsplaenePage({
 
   return (
     <div className="space-y-6">
-      <div className="space-y-2">
-        <h1 className="text-2xl font-bold">Wartungspläne</h1>
-        <p className="text-[var(--color-muted)]">
-          Benannte Standards als Vorlage — beliebig viele je Nutzer bzw. Club.
-          Einmal gepflegt, auf beliebig vielen Maschinen verknüpft; Änderungen
-          hier wirken sofort auf alle verknüpften Maschinen. Maschinen mit
-          eigener Kopie bleiben unberührt.
-        </p>
-      </div>
-
-      <PlanCreate
-        clubs={meineClubs
-          .filter((c) => mindestens(c.rolle, "admin"))
-          .map((c) => ({ id: c.id, name: c.name }))}
+      <PageHeader
+        title="Wartungspläne"
+        description="Benannte Standards als Vorlage — beliebig viele je Nutzer bzw. Club. Einmal gepflegt, auf beliebig vielen Maschinen verknüpft; Änderungen hier wirken sofort auf alle verknüpften Maschinen. Maschinen mit eigener Kopie bleiben unberührt."
       />
+
+      <AddDisclosure label="Neuer Plan">
+        <PlanCreate
+          clubs={meineClubs
+            .filter((c) => mindestens(c.rolle, "admin"))
+            .map((c) => ({ id: c.id, name: c.name }))}
+        />
+      </AddDisclosure>
 
       {eintraege.length === 0 ? (
         <p className="text-sm text-[var(--color-muted)]">

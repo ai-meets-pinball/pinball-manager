@@ -1,4 +1,5 @@
 import { FaultForm } from "@/components/fault-form";
+import { PageHeader } from "@/components/ui/page-header";
 import { createFault } from "@/db/actions/faults";
 import { requireMachineWrite } from "@/lib/session";
 import { modellName } from "@/lib/format";
@@ -13,9 +14,11 @@ export default async function NewFaultPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">
-        Neuer Fehler · {modellName(machine)}
-      </h1>
+      <PageHeader
+        title={`Neuer Fehler · ${modellName(machine)}`}
+        backHref={`/machines/${id}?bereich=fehler`}
+        backLabel="Zur Maschine"
+      />
       <FaultForm action={createFault} machineId={id} />
     </div>
   );

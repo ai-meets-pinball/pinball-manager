@@ -1,4 +1,5 @@
 import type { ComponentProps } from "react";
+import Link from "next/link";
 
 type Variant = "primary" | "secondary" | "danger";
 type Size = "md" | "sm";
@@ -22,6 +23,16 @@ const sizes: Record<Size, string> = {
   sm: "px-3 py-1.5",
 };
 
+/* Klassen-String zentral — damit ein Link (ButtonLink) exakt wie ein Button
+   aussieht, ohne die Optik ein zweites Mal von Hand nachzubauen. */
+export function buttonStyles({
+  variant = "primary",
+  size = "md",
+  className = "",
+}: { variant?: Variant; size?: Size; className?: string } = {}): string {
+  return `${base} ${variants[variant]} ${sizes[size]} ${className}`;
+}
+
 /* ComponentProps<"button"> schließt in React 19 auch `ref` ein — Refs werden
    ohne forwardRef einfach durchgereicht (nutzt z. B. ConfirmButton für den
    Fokus-Sprung auf „Ja …"). */
@@ -34,10 +45,20 @@ export function Button({
   variant?: Variant;
   size?: Size;
 }) {
-  return (
-    <button
-      className={`${base} ${variants[variant]} ${sizes[size]} ${className}`}
-      {...props}
-    />
-  );
+  return <button className={buttonStyles({ variant, size, className })} {...props} />;
+}
+
+/* Wie `Button`, aber als `next/link` — für Primär-Aktionen, die navigieren
+   („Neue Maschine", „Neuer Fehler" …). Vorher wurden solche CTAs von Hand
+   gebaut und wichen vom Akzent-Hover ab. */
+export function ButtonLink({
+  variant = "primary",
+  size = "md",
+  className = "",
+  ...props
+}: ComponentProps<typeof Link> & {
+  variant?: Variant;
+  size?: Size;
+}) {
+  return <Link className={buttonStyles({ variant, size, className })} {...props} />;
 }

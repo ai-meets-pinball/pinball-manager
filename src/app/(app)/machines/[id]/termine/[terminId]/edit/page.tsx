@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { TerminForm } from "@/components/termin-form";
+import { PageHeader } from "@/components/ui/page-header";
 import { updateTermin } from "@/db/actions/termine";
 import { db } from "@/db";
 import { termine } from "@/db/schema";
@@ -22,9 +23,11 @@ export default async function EditTerminPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">
-        Termin bearbeiten · {modellName(machine)}
-      </h1>
+      <PageHeader
+        title={`Termin bearbeiten · ${modellName(machine)}`}
+        backHref={`/machines/${id}?bereich=termine`}
+        backLabel="Zur Maschine"
+      />
       <TerminForm
         action={updateTermin}
         machineId={id}

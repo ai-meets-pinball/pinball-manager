@@ -1,5 +1,6 @@
 import { eq } from "drizzle-orm";
 import { Nav } from "@/components/nav";
+import { BottomNav } from "@/components/bottom-nav";
 import { db } from "@/db";
 import { user as userTable } from "@/db/schema";
 import { initialen } from "@/lib/format";
@@ -30,7 +31,11 @@ export default async function AppLayout({
         isSuperAdmin={isSuperAdmin(user)}
         istKurator={kannKuratieren(user)}
       />
-      <main className="mx-auto max-w-5xl px-6 py-8">{children}</main>
+      {/* pb: mobil Platz für die Bottom-Tab-Bar, damit Inhalt nicht darunter liegt. */}
+      <main className="mx-auto max-w-5xl px-6 pt-8 pb-28 sm:pb-8">
+        {children}
+      </main>
+      <BottomNav />
     </div>
   );
 }

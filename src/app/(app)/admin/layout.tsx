@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { PageHeader } from "@/components/ui/page-header";
 import { redirect } from "next/navigation";
 import { AdminNav } from "@/components/admin-nav";
 import { isSuperAdmin, requireUser } from "@/lib/session";
@@ -19,7 +20,7 @@ export default async function AdminLayout({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Administration</h1>
+      <PageHeader title="Administration" />
       <AdminNav />
       {children}
     </div>

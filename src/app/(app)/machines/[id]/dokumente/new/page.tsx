@@ -1,4 +1,5 @@
 import { DokumentForm, type DokumentArt } from "@/components/dokument-form";
+import { PageHeader } from "@/components/ui/page-header";
 import { createDokument } from "@/db/actions/dokumente";
 import { requireMachineWrite } from "@/lib/session";
 import { modellName } from "@/lib/format";
@@ -19,9 +20,11 @@ export default async function NewDokumentPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">
-        Neues Dokument · {modellName(machine)}
-      </h1>
+      <PageHeader
+        title={`Neues Dokument · ${modellName(machine)}`}
+        backHref={`/machines/${id}?bereich=dokumente`}
+        backLabel="Zur Maschine"
+      />
       <DokumentForm
         action={createDokument}
         machineId={id}

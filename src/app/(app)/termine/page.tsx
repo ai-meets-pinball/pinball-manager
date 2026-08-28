@@ -1,4 +1,5 @@
 import { List, ListRow } from "@/components/ui/list";
+import { PageHeader } from "@/components/ui/page-header";
 import { getKommendeTermine } from "@/db/queries";
 import { requireUser } from "@/lib/session";
 import { tageDazwischen } from "@/lib/faelligkeit";
@@ -16,12 +17,10 @@ export default async function TerminePage() {
 
   return (
     <div className="space-y-6">
-      <div className="space-y-1">
-        <h1 className="text-2xl font-bold">Termine ({termine.length})</h1>
-        <p className="text-sm text-[var(--color-muted)]">
-          Anstehende Termine über alle deine Geräte — nächster zuerst.
-        </p>
-      </div>
+      <PageHeader
+        title={`Termine (${termine.length})`}
+        description="Anstehende Termine über alle deine Geräte — nächster zuerst."
+      />
 
       <List empty="Keine anstehenden Termine. Lege sie im Reiter »Termine« eines Geräts an.">
         {termine.map((t) => {

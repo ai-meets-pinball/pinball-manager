@@ -40,7 +40,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Wo finde ich was?",
-        text: "Oben links liegen »Übersicht« (dein Dashboard), »Maschinen«, »Wissensbasis« (geteiltes Wissen je Modell) und »Hilfe«. Hinter dem Nutzer-Icon oben rechts findest du Clubs, Konto, Wartungspläne, Kuratierung (nur Kuratoren), Administration (nur Super-Admins) und Abmelden. Daneben schaltest du zwischen hellem und dunklem Design um.",
+        text: "Auf größeren Bildschirmen liegen oben links »Übersicht« (dein Dashboard), »Maschinen«, »Termine«, »Wissensbasis« (geteiltes Wissen je Modell) und »Hilfe«. Auf dem Handy erreichst du dieselben Hauptbereiche über die Leiste am unteren Bildschirmrand (in Daumenreichweite). Hinter dem Nutzer-Icon oben rechts findest du Clubs, Konto, Wartungspläne, Kuratierung (nur Kuratoren), Administration (nur Super-Admins) und Abmelden. Daneben liegen der Umschalter für helles/dunkles Design, ein Knopf zur öffentlichen Website und »Problem melden«.",
       },
     ],
   },

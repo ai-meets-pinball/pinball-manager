@@ -1,4 +1,5 @@
 import { ShieldAlert } from "lucide-react";
+import { PageHeader } from "@/components/ui/page-header";
 import { redirect } from "next/navigation";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { List, ListRow } from "@/components/ui/list";
@@ -60,10 +61,14 @@ export default async function KuratierungPage() {
 
   return (
     <div className="space-y-8">
-      <div className="flex items-center gap-2">
-        <ShieldAlert size={22} className="text-[var(--color-primary)]" />
-        <h1 className="text-2xl font-bold">Kuratierung</h1>
-      </div>
+      <PageHeader
+        title={
+          <span className="flex items-center gap-2">
+            <ShieldAlert size={22} className="text-[var(--color-primary)]" />
+            Kuratierung
+          </span>
+        }
+      />
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">

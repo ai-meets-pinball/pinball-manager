@@ -1,4 +1,5 @@
 import { MaintenanceTaskForm } from "@/components/maintenance-task-form";
+import { PageHeader } from "@/components/ui/page-header";
 import { createTask } from "@/db/actions/maintenance";
 import { requireMachineWrite } from "@/lib/session";
 import { modellName } from "@/lib/format";
@@ -13,9 +14,11 @@ export default async function NewMaintenanceTaskPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">
-        Neuer Wartungspunkt · {modellName(machine)}
-      </h1>
+      <PageHeader
+        title={`Neuer Wartungspunkt · ${modellName(machine)}`}
+        backHref={`/machines/${id}?bereich=wartung`}
+        backLabel="Zur Maschine"
+      />
       <MaintenanceTaskForm action={createTask} machineId={id} />
     </div>
   );

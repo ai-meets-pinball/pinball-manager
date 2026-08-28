@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageHeader } from "@/components/ui/page-header";
 import { Bug, ImageIcon } from "lucide-react";
 import { FeedbackBearbeiten, FeedbackForm } from "@/components/feedback-form";
 import { Card } from "@/components/ui/card";
@@ -115,16 +116,15 @@ export default async function FeedbackPage({
 
   return (
     <div className="space-y-8">
-      <div className="space-y-2">
-        <h1 className="flex items-center gap-2 text-2xl font-bold">
-          <Bug size={22} className="text-[var(--color-primary)]" />
-          Feedback &amp; Fehlermeldungen
-        </h1>
-        <p className="text-[var(--color-muted)]">
-          Etwas funktioniert nicht oder du hast eine Idee? Beschreib es kurz —
-          du siehst hier auch den Stand deiner bisherigen Meldungen.
-        </p>
-      </div>
+      <PageHeader
+        title={
+          <span className="flex items-center gap-2">
+            <Bug size={22} className="text-[var(--color-primary)]" />
+            Feedback &amp; Fehlermeldungen
+          </span>
+        }
+        description="Etwas funktioniert nicht oder du hast eine Idee? Beschreib es kurz — du siehst hier auch den Stand deiner bisherigen Meldungen."
+      />
 
       <nav
         aria-label="Bereiche"

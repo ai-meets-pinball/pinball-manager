@@ -1,14 +1,20 @@
 import Link from "next/link";
 import { LayoutGrid, Plus, Table2 } from "lucide-react";
 import { MachinesBoard } from "@/components/machines-board";
+import { ButtonLink } from "@/components/ui/button";
 import { ChipFilter } from "@/components/ui/chip-filter";
+import { PageHeader } from "@/components/ui/page-header";
 import { SearchToolbar } from "@/components/ui/search-toolbar";
+import { ViewToggle } from "@/components/ui/view-toggle";
 import {
   getDueMaintenanceCountByMachine,
   getUserClubs,
   getMeineMaschinen,
 } from "@/db/queries";
+import { cookies } from "next/headers";
+import { RememberParams } from "@/components/remember-params";
 import { requireUser } from "@/lib/session";
+import { klebrig } from "@/lib/sticky-view";
 
 /*
   Maschinenliste mit Tabs (Alle · Privat · je Club), Suche, Sortierung und zwei
@@ -31,11 +37,25 @@ export default async function MachinesPage({
   const user = await requireUser();
   const sp = await searchParams;
   const q = sp.q;
-  const clubFilter = sp.club ?? "";
-  const sort = sp.sort === "name" || sp.sort === "jahr" ? sp.sort : "neu";
-  const dir = sp.dir === "ab" ? ("ab" as const) : ("auf" as const);
-  const ansicht =
-    sp.ansicht === "tabelle" ? ("tabelle" as const) : ("karten" as const);
+  const cookieStore = await cookies();
+  const sort = klebrig(
+    sp.sort,
+    cookieStore.get("machinesSort")?.value,
+    (v) => v === "neu" || v === "name" || v === "jahr",
+    "neu",
+  ) as "neu" | "name" | "jahr";
+  const dir = klebrig(
+    sp.dir,
+    cookieStore.get("machinesDir")?.value,
+    (v) => v === "auf" || v === "ab",
+    "auf",
+  ) as "auf" | "ab";
+  const ansicht = klebrig(
+    sp.ansicht,
+    cookieStore.get("machinesView")?.value,
+    (v) => v === "karten" || v === "tabelle",
+    "karten",
+  ) as "karten" | "tabelle";
 
   const machines = await getMeineMaschinen(user, q);
   // Fällige Wartungen je Maschine — für die „N fällig"-Badge.
@@ -65,8 +85,26 @@ export default async function MachinesPage({
       clubTabs.set(m.clubId, m.club.name);
     }
   }
+
+  /* Bereichs-Auswahl merken: die URL (?club=) gewinnt, sonst das zuletzt in
+     einem Cookie gemerkte (überlebt Navigation UND Sessions). „alle" ist ein
+     expliziter Wert, damit man bewusst dorthin zurück kann. Ein ungültiger/
+     veralteter Wert (gelöschter Club) fällt auf „alle" zurück. */
+  const gueltigeBereiche = new Set<string>([
+    "alle",
+    "privat",
+    ...clubTabs.keys(),
+  ]);
+  const rawClub = klebrig(
+    sp.club,
+    cookieStore.get("machinesScope")?.value,
+    (v) => gueltigeBereiche.has(v),
+    "alle",
+  );
+  const clubFilter = rawClub === "alle" ? "" : rawClub;
+
   const tabs = [
-    { key: "", label: "Alle", count: alle.length },
+    { key: "alle", label: "Alle", count: alle.length },
     {
       key: "privat",
       label: "Privat",
@@ -115,17 +153,15 @@ export default async function MachinesPage({
     dir?: string;
   }) => {
     const p = new URLSearchParams();
+    // Steuer-Links tragen IMMER alle gemerkten Parameter (auch Defaults), damit
+    // jeder Wert wieder wählbar ist; weggelassene fallen serverseitig auf den
+    // gemerkten Cookie-Wert zurück (siehe klebrig()).
     if (q) p.set("q", q);
-    const c = patch.club ?? clubFilter;
-    if (c) p.set("club", c);
-    const s = patch.sort ?? sort;
-    if (s !== "neu") p.set("sort", s);
-    const d = patch.dir ?? dir;
-    if (d !== "auf") p.set("dir", d);
-    const a = patch.ansicht ?? ansicht;
-    if (a === "tabelle") p.set("ansicht", "tabelle");
-    const qs = p.toString();
-    return `/machines${qs ? `?${qs}` : ""}`;
+    p.set("club", patch.club ?? rawClub);
+    p.set("sort", patch.sort ?? sort);
+    p.set("dir", patch.dir ?? dir);
+    p.set("ansicht", patch.ansicht ?? ansicht);
+    return `/machines?${p.toString()}`;
   };
 
   /* Sortier-Link: Klick auf die aktive Spalte dreht die Richtung um. */
@@ -145,24 +181,17 @@ export default async function MachinesPage({
       {sort === key ? (dir === "auf" ? " ↑" : " ↓") : ""}
     </Link>
   );
-  const ansichtStil = (aktiv: boolean) =>
-    `rounded-[var(--radius)] border p-1.5 ${
-      aktiv
-        ? "border-[var(--color-primary)] text-[var(--color-primary)]"
-        : "border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-    }`;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">Maschinen</h1>
-        <Link
-          href="/machines/new"
-          className="inline-flex items-center gap-2 rounded-[var(--radius)] bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-[var(--color-primary-fg)] hover:opacity-90"
-        >
-          <Plus size={16} /> Neue Maschine
-        </Link>
-      </div>
+      <PageHeader
+        title="Maschinen"
+        actions={
+          <ButtonLink href="/machines/new">
+            <Plus size={16} /> Neue Maschine
+          </ButtonLink>
+        }
+      />
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         {/* Suche: GET-Formular aktualisiert die URL — Filterung server-seitig. */}
@@ -170,33 +199,26 @@ export default async function MachinesPage({
           placeholder="Hersteller oder Modell suchen…"
           defaultValue={q ?? ""}
           label="Maschinen suchen"
-          keep={{
-            ...(clubFilter ? { club: clubFilter } : {}),
-            ...(sort !== "neu" ? { sort } : {}),
-            ...(dir !== "auf" ? { dir } : {}),
-            ...(ansicht === "tabelle" ? { ansicht } : {}),
-          }}
+          keep={{ club: rawClub, sort, dir, ansicht }}
           resetHref="/machines"
           aktiv={Boolean(q)}
         />
-        <div className="flex items-center gap-1" aria-label="Ansicht">
-          <Link
-            href={href({ ansicht: "karten" })}
-            aria-label="Kartenansicht"
-            title="Kartenansicht"
-            className={ansichtStil(ansicht === "karten")}
-          >
-            <LayoutGrid size={16} />
-          </Link>
-          <Link
-            href={href({ ansicht: "tabelle" })}
-            aria-label="Tabellenansicht"
-            title="Tabellenansicht"
-            className={ansichtStil(ansicht === "tabelle")}
-          >
-            <Table2 size={16} />
-          </Link>
-        </div>
+        <ViewToggle
+          options={[
+            {
+              href: href({ ansicht: "karten" }),
+              label: "Kartenansicht",
+              icon: <LayoutGrid size={16} />,
+              active: ansicht === "karten",
+            },
+            {
+              href: href({ ansicht: "tabelle" }),
+              label: "Tabellenansicht",
+              icon: <Table2 size={16} />,
+              active: ansicht === "tabelle",
+            },
+          ]}
+        />
       </div>
 
       {/* Bereichs-Filter: Alle · Privat · je Club — dieselbe Chip-Komponente
@@ -209,10 +231,19 @@ export default async function MachinesPage({
             label: t.label,
             count: t.count,
             href: href({ club: t.key }),
-            aktiv: clubFilter === t.key,
+            aktiv: rawClub === t.key,
           }))}
         />
       ) : null}
+      <RememberParams
+        path="/machines"
+        params={{
+          machinesScope: rawClub,
+          machinesSort: sort,
+          machinesDir: dir,
+          machinesView: ansicht,
+        }}
+      />
 
       <p className="text-sm">
         <span className="text-[var(--color-muted)]">Sortieren: </span>

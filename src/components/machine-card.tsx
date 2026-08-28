@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Check, Users, Wrench } from "lucide-react";
+import { CountPill } from "@/components/ui/count-pill";
 import { modellName } from "@/lib/format";
 
 type Machine = {
@@ -53,17 +54,17 @@ export function MachineCard({
         ) : null}
         {wartungFaellig > 0 ? (
           <p className="mt-1.5">
-            <span className="inline-flex items-center gap-1 rounded-full border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-2 py-0.5 text-xs font-medium text-[var(--color-danger)]">
+            <CountPill tone="danger">
               <Wrench size={11} /> {wartungFaellig} Wartung
               {wartungFaellig === 1 ? "" : "en"} fällig
-            </span>
+            </CountPill>
           </p>
         ) : null}
         {hinweis ? (
           <p className="mt-1.5">
-            <span className="inline-flex items-center gap-1 rounded-full border border-[var(--color-success)]/40 bg-[var(--color-success)]/10 px-2 py-0.5 text-xs font-medium text-[var(--color-success)]">
+            <CountPill tone="success">
               <Check size={11} /> {hinweis}
-            </span>
+            </CountPill>
           </p>
         ) : null}
       </div>

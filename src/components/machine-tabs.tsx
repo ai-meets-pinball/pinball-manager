@@ -32,7 +32,7 @@ export function MachineTabs({
   const hatUnterreihe = Boolean(secondary && secondary.length > 0);
   return (
     <div
-      className={`sticky top-14 z-30 mx-[calc(50%-50vw)] bg-[var(--color-bg)]/90 backdrop-blur ${
+      className={`sticky top-16 z-30 mx-[calc(50%-50vw)] bg-[var(--color-bg)]/90 backdrop-blur ${
         hatUnterreihe ? "border-b border-[var(--color-border)]" : ""
       }`}
     >
@@ -60,29 +60,37 @@ export function MachineTabs({
         </nav>
       </div>
 
-      {/* Unterbereiche der aktiven Gruppe — als Pillen. */}
+      {/* Unterbereiche der aktiven Gruppe — als Pillen. Der rechte Verlauf
+          signalisiert auf schmalen Schirmen, dass die Reihe scrollt (sonst läge
+          das letzte Blatt — z. B. „Dokumente" — unsichtbar außerhalb). */}
       {hatUnterreihe ? (
         <div className="mx-auto max-w-5xl px-6 py-2">
-          <nav
-            aria-label="Unterbereiche"
-            className="flex gap-1.5 overflow-x-auto text-sm"
-          >
-            {secondary!.map((t) => (
-              <Link
-                key={t.key}
-                href={t.href}
-                aria-current={t.active ? "page" : undefined}
-                className={`flex flex-none items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 transition-colors ${
-                  t.active
-                    ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
-                    : "border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-                }`}
-              >
-                {t.label}
-                {t.badge}
-              </Link>
-            ))}
-          </nav>
+          <div className="relative">
+            <nav
+              aria-label="Unterbereiche"
+              className="flex gap-1.5 overflow-x-auto scroll-px-6 pr-6 text-sm"
+            >
+              {secondary!.map((t) => (
+                <Link
+                  key={t.key}
+                  href={t.href}
+                  aria-current={t.active ? "page" : undefined}
+                  className={`flex flex-none items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1.5 transition-colors ${
+                    t.active
+                      ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
+                      : "border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+                  }`}
+                >
+                  {t.label}
+                  {t.badge}
+                </Link>
+              ))}
+            </nav>
+            <div
+              aria-hidden
+              className="pointer-events-none absolute inset-y-0 right-0 w-6 bg-gradient-to-l from-[var(--color-bg)] to-transparent"
+            />
+          </div>
         </div>
       ) : null}
     </div>

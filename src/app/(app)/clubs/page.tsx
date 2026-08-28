@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Plus, Users } from "lucide-react";
+import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { PageHeader } from "@/components/ui/page-header";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { getUserClubs } from "@/db/queries";
 import { requireUser } from "@/lib/session";
@@ -11,15 +13,14 @@ export default async function ClubsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold">Clubs</h1>
-        <Link
-          href="/clubs/new"
-          className="inline-flex items-center gap-2 rounded-[var(--radius)] bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-[var(--color-primary-fg)] hover:opacity-90"
-        >
-          <Plus size={16} /> Neuer Club
-        </Link>
-      </div>
+      <PageHeader
+        title="Clubs"
+        actions={
+          <ButtonLink href="/clubs/new">
+            <Plus size={16} /> Neuer Club
+          </ButtonLink>
+        }
+      />
 
       {clubs.length === 0 ? (
         <p className="text-[var(--color-muted)]">

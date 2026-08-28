@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageHeader } from "@/components/ui/page-header";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { and, eq, gte, sql } from "drizzle-orm";
 import { ChevronDown, LogOut } from "lucide-react";
@@ -87,7 +88,7 @@ export default async function AccountPage() {
 
   return (
     <div className="mx-auto max-w-xl space-y-8">
-      <h1 className="text-2xl font-bold">Konto</h1>
+      <PageHeader title="Konto" />
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Profil</h2>

@@ -1,5 +1,6 @@
 import { desc, eq } from "drizzle-orm";
 import { RepairForm } from "@/components/repair-form";
+import { PageHeader } from "@/components/ui/page-header";
 import { createRepair } from "@/db/actions/repairs";
 import { db } from "@/db";
 import { faults } from "@/db/schema";
@@ -25,9 +26,11 @@ export default async function NewRepairPage({
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold">
-        Neue Reparatur · {modellName(machine)}
-      </h1>
+      <PageHeader
+        title={`Neue Reparatur · ${modellName(machine)}`}
+        backHref={`/machines/${id}?bereich=reparaturen`}
+        backLabel="Zur Maschine"
+      />
       <RepairForm
         action={createRepair}
         machineId={id}

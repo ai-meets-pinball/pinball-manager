@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Pencil, Trash2, Wrench } from "lucide-react";
-import { Card } from "@/components/ui/card";
+import { List, ListRow } from "@/components/ui/list";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { QuelleBadge } from "@/components/ui/quelle-badge";
 import { RepairSuggestButton } from "@/components/repair-suggest-button";
@@ -22,6 +22,9 @@ type Fault = {
   bilder?: string[];
 };
 
+/* Fehler eines Geräts als List/ListRow — der Reiter-Kopf (Filter + ＋ Neuer
+   Fehler) rendert die Seite. Die Beschreibung ist der (umbrechende) Titel;
+   Fotos und der KI-Reparaturvorschlag liegen im Vollbreiten-Slot darunter. */
 export function FaultList({
   faults,
   machineId,
@@ -38,31 +41,53 @@ export function FaultList({
   /** Zentraler Anthropic-Key vorhanden? (sonst BYO-Feld im Vorschlag). */
   kiCentralKey?: boolean;
 }) {
-  if (faults.length === 0) {
-    return <p className="text-[var(--color-muted)]">Keine Fehler erfasst.</p>;
-  }
-
   return (
-    <div className="space-y-3">
+    <List empty="Keine Fehler erfasst.">
       {faults.map((fault) => (
-        <Card key={fault.id} className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge value={fault.status} />
-            <StatusBadge value={fault.prioritaet} />
-            <QuelleBadge quelle={fault.quelle} />
-            {fault.kategorie ? (
-              <span className="text-xs text-[var(--color-muted)]">
-                {fault.kategorie}
-              </span>
-            ) : null}
-            <span className="ml-auto text-xs text-[var(--color-muted)]">
-              {fault.datum.toLocaleDateString("de-DE")}
-              {fault.melderName ? ` · ${fault.melderName}` : ""}
-            </span>
-          </div>
-
-          <p className="whitespace-pre-wrap">{fault.beschreibung}</p>
-
+        <ListRow
+          key={fault.id}
+          titleWrap
+          title={fault.beschreibung}
+          subtitle={`${fault.datum.toLocaleDateString("de-DE")}${
+            fault.melderName ? ` · ${fault.melderName}` : ""
+          }${fault.kategorie ? ` · ${fault.kategorie}` : ""}`}
+          meta={
+            <>
+              <StatusBadge value={fault.status} />
+              <StatusBadge value={fault.prioritaet} />
+              <QuelleBadge quelle={fault.quelle} />
+            </>
+          }
+          actions={
+            schreibbar ? (
+              <>
+                <Link
+                  href={`/machines/${machineId}/repairs/new?faultId=${fault.id}`}
+                  className="inline-flex items-center gap-1 text-sm text-[var(--color-primary)] hover:underline"
+                >
+                  <Wrench size={14} /> Reparatur
+                </Link>
+                <Link
+                  href={`/machines/${machineId}/faults/${fault.id}/edit`}
+                  className="inline-flex items-center gap-1 text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+                >
+                  <Pencil size={14} /> Bearbeiten
+                </Link>
+                <form action={deleteFault}>
+                  <input type="hidden" name="machineId" value={machineId} />
+                  <input type="hidden" name="id" value={fault.id} />
+                  <ConfirmButton
+                    question="Diesen Fehler löschen?"
+                    confirmLabel="Ja, löschen"
+                    className="inline-flex items-center gap-1 text-sm text-[var(--color-muted)] hover:text-[var(--color-danger)]"
+                  >
+                    <Trash2 size={14} /> Löschen
+                  </ConfirmButton>
+                </form>
+              </>
+            ) : null
+          }
+        >
           {fault.bilder && fault.bilder.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {fault.bilder.map((url) => (
@@ -84,34 +109,6 @@ export function FaultList({
             </div>
           ) : null}
 
-          {schreibbar ? (
-            <div className="flex gap-3 text-sm">
-              <Link
-                href={`/machines/${machineId}/repairs/new?faultId=${fault.id}`}
-                className="inline-flex items-center gap-1 text-[var(--color-primary)] hover:underline"
-              >
-                <Wrench size={14} /> Reparatur erfassen
-              </Link>
-              <Link
-                href={`/machines/${machineId}/faults/${fault.id}/edit`}
-                className="inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-              >
-                <Pencil size={14} /> Bearbeiten
-              </Link>
-              <form action={deleteFault}>
-                <input type="hidden" name="machineId" value={machineId} />
-                <input type="hidden" name="id" value={fault.id} />
-                <ConfirmButton
-                  question="Diesen Fehler löschen?"
-                  confirmLabel="Ja, löschen"
-                  className="inline-flex items-center gap-1 text-[var(--color-muted)] hover:text-[var(--color-danger)]"
-                >
-                  <Trash2 size={14} /> Löschen
-                </ConfirmButton>
-              </form>
-            </div>
-          ) : null}
-
           {schreibbar && kiProviders.length > 0 ? (
             <RepairSuggestButton
               machineId={machineId}
@@ -124,8 +121,8 @@ export function FaultList({
               centralKey={kiCentralKey}
             />
           ) : null}
-        </Card>
+        </ListRow>
       ))}
-    </div>
+    </List>
   );
 }

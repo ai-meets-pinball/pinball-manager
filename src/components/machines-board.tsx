@@ -6,6 +6,7 @@ import { CheckSquare, Trash2 } from "lucide-react";
 import { MachineCard } from "@/components/machine-card";
 import { Button } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
+import { CountPill } from "@/components/ui/count-pill";
 import {
   assignMachinesToClub,
   deleteMachines,
@@ -328,9 +329,7 @@ export function MachinesBoard({
                   </td>
                   <td className="py-2">
                     {m.wartungFaellig > 0 ? (
-                      <span className="rounded-full border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-1.5 py-0.5 text-[10px] font-semibold text-[var(--color-danger)]">
-                        {m.wartungFaellig} fällig
-                      </span>
+                      <CountPill n={`${m.wartungFaellig} fällig`} tone="danger" />
                     ) : (
                       <span className="text-[var(--color-faint)]">—</span>
                     )}
