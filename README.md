@@ -77,7 +77,7 @@ NEXT_PUBLIC_SUPABASE_BUCKET="machine-photos"
 ```
 
 Weitere – optionale – Variablen stehen mit Erklärung in [`.env.example`](.env.example):
-OPDB (`OPDB_API_KEY`), E-Mail-Versand (`RESEND_API_KEY`, `EMAIL_FROM`), KI
+Match Play/OPDB (`MATCHPLAY_API_KEY`, optional — der Modell-Katalog kommt aus dem öffentlichen OPDB-Export), E-Mail-Versand (`RESEND_API_KEY`, `EMAIL_FROM`), KI
 (`ANTHROPIC_API_KEY`, `ANTHROPIC_MODEL`) und der Wartungs-Reminder-Cron
 (`CRON_SECRET`, siehe [`vercel.json`](vercel.json)).
 

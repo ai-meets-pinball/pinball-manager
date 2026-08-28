@@ -87,7 +87,7 @@ export const ANLEITUNG: HilfeSektion[] = [
     schritte: [
       {
         titel: "Anlegen",
-        text: "Maschinen → »Neue Maschine«. Wähle das Modell aus dem Katalog — Hersteller, Modell, Baujahr, Generation und Foto werden übernommen; die OPDB-Suche dient als Fallback für fehlende Modelle. Ein eigenes Foto kannst du zusätzlich hochladen. Tipp: Die Modell-Auswahl verknüpft die Maschine mit dem Modell — nur damit lassen sich später Handbuch-Daten und Reparaturen teilen.",
+        text: "Maschinen → »Neue Maschine«. Wähle das Modell aus dem Katalog — Hersteller, Modell, Baujahr, Generation und Foto werden übernommen. Fehlt ein Modell im Katalog, legst du es über »Von Hand eintragen« selbst an. Ein eigenes Foto kannst du zusätzlich hochladen. Tipp: Die Modell-Auswahl verknüpft die Maschine mit dem Modell — nur damit lassen sich später Handbuch-Daten und Reparaturen teilen.",
       },
       {
         titel: "Filter & Ansichten",
