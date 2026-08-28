@@ -4,7 +4,10 @@
   (die App-Kernlogik lib/generation-catalog.ts lässt sich hier wegen des
   @/-Alias nicht direkt importieren), spiegelt aber exakt deren Semantik:
   Generationen per Name (unique) upserten, Modelle nur zuordnen, wenn nicht von
-  Hand gesetzt (generation_manuell=false).
+  Hand gesetzt (generation_manuell=false). Danach ein HEURISTISCHER Fallback für
+  noch offene Modelle: passt der Hersteller UND fällt das Baujahr ins Jahresfenster
+  GENAU EINER Generation, wird sie zugeordnet (mehrdeutige oder fehlende Treffer
+  bleiben leer; Hand-Zuordnungen bleiben unberührt).
 */
 import fs from "node:fs";
 import postgres from "postgres";
@@ -82,8 +85,38 @@ for (const m of modelle) {
   }
 }
 
+// Heuristischer Fallback für noch offene Modelle (kein OPDB-Ref-Treffer im
+// Mirror): Hersteller identisch (case-insensitive) UND Baujahr im Fenster
+// [jahr_von, jahr_bis] GENAU EINER Generation → zuordnen. Mehrere passende
+// Fenster = mehrdeutig → bewusst leer lassen. Erst NACH der Ref-Zuordnung, damit
+// exakte Ref-Treffer Vorrang haben; nur Modelle mit noch leerer Generation.
+const genFenster = await sql`
+  SELECT id, hersteller, jahr_von, jahr_bis FROM generations
+  WHERE hersteller IS NOT NULL AND jahr_von IS NOT NULL AND jahr_bis IS NOT NULL`;
+const offen = await sql`
+  SELECT id, hersteller, baujahr FROM machine_models
+  WHERE generation_id IS NULL AND generation_manuell = false AND baujahr IS NOT NULL`;
+let heuristik = 0;
+let mehrdeutig = 0;
+for (const m of offen) {
+  const h = m.hersteller.toLowerCase();
+  const treffer = genFenster.filter(
+    (g) =>
+      g.hersteller.toLowerCase() === h &&
+      m.baujahr >= g.jahr_von &&
+      m.baujahr <= g.jahr_bis,
+  );
+  if (treffer.length === 1) {
+    await sql`UPDATE machine_models SET generation_id = ${treffer[0].id} WHERE id = ${m.id}`;
+    heuristik++;
+  } else if (treffer.length > 1) {
+    mehrdeutig++;
+  }
+}
+
 console.log(
   `Generationen gesamt: ${alleGen.length} (${neu} neu) · ` +
-    `Modelle zugeordnet: ${zugeordnet} · manuell übersprungen: ${manuell} · ohne Treffer: ${ohne}`,
+    `per Ref zugeordnet: ${zugeordnet} · manuell übersprungen: ${manuell} · ohne Ref-Treffer: ${ohne}\n` +
+    `Heuristik (Hersteller+Baujahr): ${heuristik} zugeordnet, ${mehrdeutig} mehrdeutig übersprungen`,
 );
 await sql.end();
