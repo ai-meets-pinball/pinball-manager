@@ -2,7 +2,6 @@
 
 import { useActionState, useState } from "react";
 import { ModelSearch } from "@/components/model-search";
-import { OpdbSearch } from "@/components/opdb-search";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/input";
 import { FormLeaveGuard } from "@/components/ui/form-leave-guard";
@@ -58,7 +57,6 @@ type Auswahl = {
   opdbRef: string;
   ipdbRef: string | null;
   imageUrl: string | null;
-  quelle: "katalog" | "opdb";
 };
 
 /*
@@ -221,44 +219,15 @@ export function MachineForm({
     <form action={formAction} className="flex max-w-lg flex-col gap-4">
       {machine ? <input type="hidden" name="id" value={machine.id} /> : null}
 
-      {/* Modell-Wahl (Katalog-Suche + OPDB). Beim Anlegen sofort sichtbar; beim
-          Bearbeiten erst nach „Anderes Modell wählen" — ein definiertes Modell
-          wird read-only angezeigt (kein erneutes Suchen nötig). */}
+      {/* Modell-Wahl aus dem EIGENEN Katalog (inkl. Generation + Bild). Beim
+          Anlegen sofort sichtbar; beim Bearbeiten erst nach „Anderes Modell
+          wählen". Fehlt ein Modell im Katalog, trägt man es über „Von Hand
+          eintragen" selbst ein — die frühere Live-OPDB-Übernahme entfällt, weil
+          die OPDB-API zum 1. Okt 2026 abgeschaltet wird (der Katalog stammt aus
+          dem OPDB-Export, siehe scripts/import-opdb.mjs). */}
       {zeigeWahl ? (
         <>
-      {/* Primär: der EIGENE Katalog (inkl. Generation + Bild). Das Modell
-          wird serverseitig über die OPDB-Referenz aufgelöst (ensureMachineModel). */}
-      <ModelSearch
-        onSelect={(m) => {
-          setVals({
-            hersteller: m.hersteller,
-            modell: m.modell,
-            baujahr: m.baujahr != null ? String(m.baujahr) : "",
-            opdbRef: m.opdbRef,
-            ipdbRef: m.ipdbRef ?? "",
-          });
-          setAuswahl({
-            name: modellName(m),
-            baujahr: m.baujahr,
-            generationName: m.generationName,
-            opdbRef: m.opdbRef,
-            ipdbRef: m.ipdbRef,
-            imageUrl: m.imageUrl,
-            quelle: "katalog",
-          });
-          setManuell(false);
-          setZeigeWahl(false);
-        }}
-      />
-
-      {/* Fallback für Modelle, die (noch) nicht im Katalog sind — legt den
-          Modell beim Speichern neu an; Generation folgt im Admin. */}
-      <details className="text-sm">
-        <summary className="cursor-pointer text-[var(--color-muted)] hover:text-[var(--color-fg)]">
-          Nicht im Katalog? Aus OPDB übernehmen …
-        </summary>
-        <div className="pt-2">
-          <OpdbSearch
+          <ModelSearch
             onSelect={(m) => {
               setVals({
                 hersteller: m.hersteller,
@@ -270,18 +239,26 @@ export function MachineForm({
               setAuswahl({
                 name: modellName(m),
                 baujahr: m.baujahr,
-                generationName: null,
+                generationName: m.generationName,
                 opdbRef: m.opdbRef,
                 ipdbRef: m.ipdbRef,
                 imageUrl: m.imageUrl,
-                quelle: "opdb",
               });
               setManuell(false);
               setZeigeWahl(false);
             }}
           />
-        </div>
-      </details>
+          <button
+            type="button"
+            onClick={() => {
+              setAuswahl(null);
+              setManuell(true);
+              setZeigeWahl(false);
+            }}
+            className="self-start text-sm text-[var(--color-muted)] underline hover:text-[var(--color-fg)]"
+          >
+            Nicht im Katalog? Von Hand eintragen …
+          </button>
         </>
       ) : null}
 
@@ -352,6 +329,16 @@ export function MachineForm({
       ) : manuell ? (
         /* ── Manueller Modus: editierbare Felder (Handeintrag / Anpassen). ── */
         <>
+          <button
+            type="button"
+            onClick={() => {
+              setManuell(false);
+              setZeigeWahl(true);
+            }}
+            className="self-start text-sm text-[var(--color-muted)] underline hover:text-[var(--color-fg)]"
+          >
+            ← Doch aus dem Katalog wählen
+          </button>
           <Field label="Hersteller">
             <Input
               name="hersteller"

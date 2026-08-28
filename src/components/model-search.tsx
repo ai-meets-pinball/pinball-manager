@@ -10,11 +10,11 @@ import {
 import { modellName } from "@/lib/format";
 
 /*
-  Typeahead über den EIGENEN Modell-Katalog (machine_models) — die primäre
-  Auswahl beim Anlegen einer Maschine. Zeigt je Treffer Thumbnail, Name
-  („Modell | Hersteller"), Baujahr und Generation; ein Klick liefert den vollen
-  Datensatz an onSelect (kein zweiter Roundtrip wie beim OPDB-Weg).
-  Debounce + latestReq-Guard wie in opdb-search.tsx.
+  Typeahead über den EIGENEN Modell-Katalog (machine_models) — die Modell-Auswahl
+  beim Anlegen einer Maschine (der Katalog stammt aus dem OPDB-Export, siehe
+  scripts/import-opdb.mjs). Zeigt je Treffer Thumbnail, Name („Modell | Hersteller"),
+  Baujahr und Generation; ein Klick liefert den vollen Datensatz an onSelect.
+  Debounce + latestReq-Guard gegen veraltete Antworten.
 */
 export function ModelSearch({
   onSelect,

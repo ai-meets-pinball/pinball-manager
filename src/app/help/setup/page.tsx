@@ -303,7 +303,7 @@ const abschnitte: Abschnitt[] = [
         titel: "Alle übrigen Variablen eintragen",
         text: "Was lokal in `.env.local` steht, muss auch bei Vercel hinterlegt werden — sonst funktioniert online genau das nicht, was den fehlenden Schlüssel braucht.",
         befehl:
-          "BETTER_AUTH_SECRET, BETTER_AUTH_URL (echte Domain!), SUPER_ADMIN_EMAILS,\nRESEND_API_KEY, EMAIL_FROM, OPDB_API_KEY, ANTHROPIC_API_KEY,\nNEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_BUCKET",
+          "BETTER_AUTH_SECRET, BETTER_AUTH_URL (echte Domain!), SUPER_ADMIN_EMAILS,\nRESEND_API_KEY, EMAIL_FROM, MATCHPLAY_API_KEY, ANTHROPIC_API_KEY,\nNEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_BUCKET",
         falle:
           "`BETTER_AUTH_URL` muss online die echte Domain sein. Bleibt dort localhost, gehen Anmelde- und Einladungslinks ins Leere.",
       },
@@ -341,8 +341,8 @@ const abschnitte: Abschnitt[] = [
       "Zwei externe Dienste liefern die Fachdaten: Automatenstammdaten und die Auswertung von Handbüchern.",
     schritte: [
       {
-        titel: "OPDB-Token",
-        text: "Auf opdb.org ein Konto anlegen und einen API-Token erzeugen (`OPDB_API_KEY`). Die Suche funktioniert ohne Token, die Detaildaten nicht.",
+        titel: "OPDB-Daten (Match Play)",
+        text: "Die opdb.org-API wird am 1. Oktober 2026 abgeschaltet. Der Modell-Katalog (`machine_models`) wird stattdessen aus dem öffentlichen OPDB-Export befüllt — einmal `node scripts/import-opdb.mjs` ausführen (kein Token nötig), danach `node scripts/seed-generations.mjs` für die Generationen. Ein `MATCHPLAY_API_KEY` (Match-Play-Konto → API) ist nur für optionale Zusatz-Endpunkte gedacht.",
       },
       {
         titel: "Anthropic-Schlüssel",
