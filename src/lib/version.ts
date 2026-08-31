@@ -3,4 +3,4 @@
   und ins PDF-Handbuch geschrieben. Konvention: je COMMIT um 0.01 erhöhen
   (0.60 → 0.61 → …). Zwei Nachkommastellen halten.
 */
-export const APP_VERSION = "1.29";
+export const APP_VERSION = "1.30";

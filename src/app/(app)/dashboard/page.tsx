@@ -5,6 +5,7 @@ import {
   Joystick,
   LayoutGrid,
   List as ListIcon,
+  Plus,
   PowerOff,
   Wrench,
 } from "lucide-react";
@@ -27,6 +28,7 @@ import { modellName } from "@/lib/format";
 import { tageDazwischen } from "@/lib/faelligkeit";
 import { PageHeader } from "@/components/ui/page-header";
 import { ViewToggle } from "@/components/ui/view-toggle";
+import { ButtonLink } from "@/components/ui/button";
 import { cookies } from "next/headers";
 import { RememberParams } from "@/components/remember-params";
 import { klebrig } from "@/lib/sticky-view";
@@ -254,6 +256,52 @@ export default async function DashboardPage({
           />
         }
       />
+
+      {/* Erste-Schritte für neue Nutzer (0 Maschinen) — statt einer nackten Seite. */}
+      {alleMaschinen.length === 0 ? (
+        <section className="space-y-4 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-6">
+          <div className="space-y-1">
+            <h2 className="text-lg font-semibold">
+              Willkommen bei Pinball Manager 👋
+            </h2>
+            <p className="text-sm text-[var(--color-muted)]">
+              Erfasse deine Automaten, halte Fehler &amp; Reparaturen fest und
+              plane die Wartung. So legst du los:
+            </p>
+          </div>
+          <ol className="list-decimal space-y-1.5 pl-5 text-sm text-[var(--color-muted)]">
+            <li>
+              <strong>Erste Maschine anlegen</strong> — Modell aus dem Katalog
+              wählen (Hersteller, Baujahr und Foto kommen automatisch).
+            </li>
+            <li>
+              An der Maschine <strong>Fehler melden</strong> und die{" "}
+              <strong>Wartung</strong> planen.
+            </li>
+            <li>
+              Optional einem <strong>Club</strong> beitreten oder einen erstellen,
+              um Maschinen &amp; Wissen zu teilen.
+            </li>
+          </ol>
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <ButtonLink href="/machines/new">
+              <Plus size={16} /> Erste Maschine anlegen
+            </ButtonLink>
+            <Link
+              href="/help"
+              className="text-sm text-[var(--color-primary)] hover:underline"
+            >
+              Zur Hilfe
+            </Link>
+            <Link
+              href={`/feedback?von=${encodeURIComponent("/dashboard")}`}
+              className="text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+            >
+              Problem melden
+            </Link>
+          </div>
+        </section>
+      ) : null}
 
       {/* Turniermodus-Umschalter (nur für Owner/Admin der eigenen Clubs). */}
       {managedClubs.length > 0 ? (
