@@ -2,8 +2,8 @@ import { MarketingFooter, MarketingNav } from "@/components/site-chrome";
 
 /*
   Datenschutzerklärung (DSGVO). Solider Entwurf — KEINE Rechtsberatung; vor dem
-  öffentlichen Onboarding gegenlesen/prüfen lassen. Platzhalter [ … ] (v. a.
-  Verantwortlicher + zuständige Aufsichtsbehörde) mit echten Angaben füllen.
+  öffentlichen Onboarding gegenlesen/prüfen lassen. Verantwortlicher + zuständige
+  Aufsichtsbehörde (BW) sind mit den echten Angaben des Betreibers gefüllt.
 */
 export const metadata = { title: "Datenschutzerklärung · Pinball Manager" };
 
@@ -32,13 +32,13 @@ export default function DatenschutzPage() {
             1. Verantwortlicher
           </h2>
           <p>
-            [Vor- und Nachname]
+            Frank Goeltl
             <br />
-            [Straße und Hausnummer], [PLZ und Ort], Deutschland
+            Roemersteinstr. 9, 73230 Kirchheim unter Teck, Deutschland
             <br />
             E-Mail:{" "}
-            <a href="mailto:kontakt@pinball-manager.app" className={A}>
-              kontakt@pinball-manager.app
+            <a href="mailto:frg@silverballmania.com" className={A}>
+              frg@silverballmania.com
             </a>{" "}
             (siehe auch <a href="/impressum" className={A}>Impressum</a>).
           </p>
@@ -151,7 +151,8 @@ export default function DatenschutzPage() {
           </p>
           <p className="mt-2">
             Zudem besteht ein Beschwerderecht bei einer Datenschutz-Aufsichts­behörde,
-            insbesondere der für uns zuständigen: [zuständige Aufsichtsbehörde].
+            insbesondere der für uns zuständigen: der Landesbeauftragte für den
+            Datenschutz und die Informationsfreiheit Baden-Württemberg.
           </p>
 
           <h2 className={H2}>8. Änderungen</h2>

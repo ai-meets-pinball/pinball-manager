@@ -63,7 +63,7 @@ Der Zugang läuft **auf Einladung** – aus Sicherheitsgründen gibt es (noch) k
 offene Selbstregistrierung. Wenn du dabei sein willst:
 
 👉 hier im Thread antworten, uns eine **PN** schreiben oder eine kurze Mail an
-**kontakt@pinball-manager.app**.
+**frg@silverballmania.com**.
 
 Ihr bekommt dann einen persönlichen Einladungslink und könnt direkt loslegen.
 

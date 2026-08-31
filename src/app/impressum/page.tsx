@@ -1,9 +1,9 @@
 import { MarketingFooter, MarketingNav } from "@/components/site-chrome";
 
 /*
-  Impressum (Pflicht nach § 5 DDG). ACHTUNG: Die eckigen Platzhalter
-  [ … ] müssen vor dem öffentlichen Onboarding durch die echten Angaben
-  (Name/Anschrift) ersetzt werden — das ist keine Rechtsberatung.
+  Impressum (Pflicht nach § 5 DDG). Angaben übernommen vom Betreiber
+  (silverballmania.com): Einzelperson, kein Handelsregister / keine USt-IdNr.
+  Vor dem öffentlichen Onboarding gegenlesen lassen — das ist keine Rechtsberatung.
 */
 export const metadata = { title: "Impressum · Pinball Manager" };
 
@@ -24,11 +24,11 @@ export default function ImpressumPage() {
             Angaben gemäß § 5 DDG
           </h2>
           <p>
-            [Vor- und Nachname]
+            Frank Goeltl
             <br />
-            [Straße und Hausnummer]
+            Roemersteinstr. 9
             <br />
-            [PLZ und Ort]
+            73230 Kirchheim unter Teck
             <br />
             Deutschland
           </p>
@@ -37,15 +37,15 @@ export default function ImpressumPage() {
           <p>
             E-Mail:{" "}
             <a
-              href="mailto:kontakt@pinball-manager.app"
+              href="mailto:frg@silverballmania.com"
               className="text-[var(--color-accent)] underline underline-offset-2 hover:opacity-80"
             >
-              kontakt@pinball-manager.app
+              frg@silverballmania.com
             </a>
           </p>
 
           <h2 className={H2}>Verantwortlich i. S. d. § 18 Abs. 2 MStV</h2>
-          <p>[Vor- und Nachname], Anschrift wie oben.</p>
+          <p>Frank Goeltl, Anschrift wie oben.</p>
 
           <h2 className={H2}>Verbraucherstreitbeilegung</h2>
           <p>

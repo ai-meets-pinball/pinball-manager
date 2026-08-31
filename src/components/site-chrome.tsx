@@ -70,7 +70,7 @@ export function MarketingFooter() {
         {[
           { l: "Datenschutz", href: "/datenschutz" },
           { l: "Impressum", href: "/impressum" },
-          { l: "Kontakt", href: "mailto:kontakt@pinball-manager.app" },
+          { l: "Kontakt", href: "mailto:frg@silverballmania.com" },
         ].map(({ l, href }) => (
           <Link
             key={l}
