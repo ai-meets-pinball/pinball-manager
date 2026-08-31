@@ -8,6 +8,7 @@ import {
   EmailForm,
   ProfileForm,
 } from "@/components/account-forms";
+import { DeleteAccountForm } from "@/components/delete-account-form";
 import { ShareSettingsForm } from "@/components/share-settings-form";
 import { WhatsappSettingsForm } from "@/components/whatsapp-settings-form";
 import { UserLogoForm } from "@/components/user-logo-form";
@@ -332,6 +333,22 @@ export default async function AccountPage() {
           </summary>
           <div className="border-t border-[var(--color-border)] px-4 py-4">
             <ChangePasswordForm />
+          </div>
+        </details>
+      </section>
+
+      <section className="space-y-3">
+        <h2 className="text-lg font-semibold">Konto löschen</h2>
+        <details className="group overflow-hidden rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)]">
+          <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium text-[var(--color-danger)] hover:bg-[var(--color-inset)]">
+            Konto unwiderruflich löschen
+            <ChevronDown
+              size={16}
+              className="text-[var(--color-muted)] transition-transform group-open:rotate-180"
+            />
+          </summary>
+          <div className="border-t border-[var(--color-border)] px-4 py-4">
+            <DeleteAccountForm email={user.email} />
           </div>
         </details>
       </section>
