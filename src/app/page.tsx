@@ -10,7 +10,7 @@ import { STAMMTISCH_URL } from "@/lib/links";
 const heroStats = [
   { value: "2.200+", label: "Modelle im Katalog" },
   { value: "0 €", label: "Aktuell kostenlos" },
-  { value: "Beta", label: "Zugang auf Einladung" },
+  { value: "Preview", label: "Zugang auf Einladung" },
 ];
 
 const mockFields = [

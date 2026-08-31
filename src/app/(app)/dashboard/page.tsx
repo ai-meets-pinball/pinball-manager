@@ -262,7 +262,7 @@ export default async function DashboardPage({
         <section className="space-y-4 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-6">
           <div className="space-y-1">
             <h2 className="text-lg font-semibold">
-              Willkommen bei Pinball Manager 👋
+              Willkommen bei Pinball Manager
             </h2>
             <p className="text-sm text-[var(--color-muted)]">
               Erfasse deine Automaten, halte Fehler &amp; Reparaturen fest und

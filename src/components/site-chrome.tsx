@@ -15,6 +15,7 @@ const navItems = [
   { href: "/", label: "Start" },
   { href: "/features", label: "Funktionen" },
   { href: "/preise", label: "Nutzung" },
+  { href: "/preview", label: "Mitmachen" },
 ];
 
 export function MarketingNav() {

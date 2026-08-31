@@ -38,7 +38,7 @@ export function Nav({
           <Link href="/machines" className="flex items-center gap-1.5">
             <Logo size={20} />
             <span className="rounded-full border border-[var(--color-border)] px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-[var(--color-muted)]">
-              Beta
+              Preview
             </span>
           </Link>
 
