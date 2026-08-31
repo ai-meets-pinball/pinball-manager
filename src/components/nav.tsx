@@ -35,11 +35,8 @@ export function Nav({
     <header className="sticky top-0 z-50 border-b border-[var(--color-border)] bg-[var(--color-bg)]/90 backdrop-blur-md print:hidden">
       <nav className="mx-auto flex max-w-5xl items-center justify-between gap-2 px-4 py-3 sm:gap-4 sm:px-6">
         <div className="flex items-center gap-2 sm:gap-5">
-          <Link href="/machines" className="flex items-center gap-1.5">
+          <Link href="/machines" className="flex shrink-0 items-center">
             <Logo size={20} />
-            <span className="rounded-full border border-[var(--color-border)] px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-[var(--color-muted)]">
-              Preview
-            </span>
           </Link>
 
           {/* Hauptziele nur ab sm — mobil übernimmt die Bottom-Tab-Bar. */}
@@ -70,6 +67,11 @@ export function Nav({
         </div>
 
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Preview-Kennzeichnung als Status-Pille bei den App-Steuerungen.
+              Ab sm sichtbar — die schmale Mobile-Kopfzeile bleibt unüberfüllt. */}
+          <span className="hidden shrink-0 rounded-full border border-[var(--color-border)] px-1.5 py-px text-[10px] font-semibold uppercase tracking-wide text-[var(--color-muted)] sm:inline-block">
+            Preview
+          </span>
           {/* Runde Icon-Knöpfe — gemeinsame IconButton-Chrome. */}
           <IconButtonLink
             href="/"

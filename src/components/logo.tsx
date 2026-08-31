@@ -49,7 +49,7 @@ export function Logo({
         />
       </svg>
       {withWordmark ? (
-        <span className="text-[17px] font-bold tracking-[-0.2px]">
+        <span className="whitespace-nowrap text-[17px] font-bold tracking-[-0.2px]">
           pinball<span className="text-[var(--color-accent)]">-manager</span>
         </span>
       ) : null}
