@@ -67,13 +67,18 @@ export function MarketingFooter() {
         © 2026 Pinball Manager
       </div>
       <div className="flex gap-6">
-        {["Datenschutz", "Impressum", "Kontakt"].map((l) => (
-          <span
+        {[
+          { l: "Datenschutz", href: "/datenschutz" },
+          { l: "Impressum", href: "/impressum" },
+          { l: "Kontakt", href: "mailto:frg@silverballmania.com" },
+        ].map(({ l, href }) => (
+          <Link
             key={l}
-            className="cursor-pointer text-[13px] text-[var(--color-muted)] transition-colors hover:text-[var(--color-accent)]"
+            href={href}
+            className="text-[13px] text-[var(--color-muted)] transition-colors hover:text-[var(--color-accent)]"
           >
             {l}
-          </span>
+          </Link>
         ))}
       </div>
     </footer>

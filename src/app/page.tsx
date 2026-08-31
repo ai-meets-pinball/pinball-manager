@@ -8,9 +8,9 @@ import { STAMMTISCH_URL } from "@/lib/links";
 */
 
 const heroStats = [
-  { value: "xxxx", label: "Erfasste Maschinen" },
-  { value: "xxx", label: "Vereine" },
+  { value: "2.200+", label: "Modelle im Katalog" },
   { value: "0 €", label: "Aktuell kostenlos" },
+  { value: "Beta", label: "Zugang auf Einladung" },
 ];
 
 const mockFields = [
@@ -37,6 +37,21 @@ const clubRows = [
   { name: "Medieval Madness", owner: "D. Ruiz" },
   { name: "Fish Tales", owner: "Verein" },
   { name: "Cactus Canyon", owner: "M. Ortiz" },
+];
+
+const audiences = [
+  {
+    title: "Vereine & Clubs",
+    desc: "Alle Geräte an einem Ort, gemeinsam gepflegt: wer hat welchen Fehler gemeldet, wer was repariert, was ist bald fällig — mit Rollen und QR-Code zum Melden direkt am Gerät.",
+  },
+  {
+    title: "Sammler",
+    desc: "Die ganze Sammlung sauber katalogisiert — Modell, Baujahr, Zustand, dazu Handbücher und die komplette Reparatur- und Wartungshistorie je Automat.",
+  },
+  {
+    title: "Einzelne Besitzer",
+    desc: "Auch bei ein, zwei Automaten den Überblick behalten: Fehler notieren, Wartung mit Erinnerung planen — griffbereit am Handy, direkt an der Maschine.",
+  },
 ];
 
 /** Feine haarlinien-getrennte Rasterfläche (1px-Lücken zeigen die Rahmenfarbe). */
@@ -188,6 +203,36 @@ export default function HomePage() {
                   In Entwicklung · Phase 3
                 </div>
               ) : null}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* ===== FÜR WEN ===== */}
+      <section className="mx-auto max-w-[1200px] px-5 pb-[70px] sm:px-12">
+        <div className="mb-12 max-w-[620px]">
+          <div className="mb-3 font-mono text-xs uppercase tracking-[1px] text-[var(--color-faint)]">
+            Für wen
+          </div>
+          <h2 className="mb-3.5 text-[26px] font-bold tracking-[-0.3px] sm:text-[30px]">
+            Ob ein Automat oder ein ganzer Vereinsbestand.
+          </h2>
+          <p className="text-[15px] leading-[1.65] text-[var(--color-muted)]">
+            Egal ob ein Gerät zu Hause oder ein geteilter Bestand im Verein —
+            dieselbe App wächst mit.
+          </p>
+        </div>
+
+        <div className={`grid grid-cols-1 md:grid-cols-3 ${hairlineGrid}`}>
+          {audiences.map((a) => (
+            <div
+              key={a.title}
+              className="bg-[var(--color-surface)] px-[22px] py-[26px]"
+            >
+              <h3 className="mb-2 text-base font-bold">{a.title}</h3>
+              <p className="text-[13px] leading-[1.6] text-[var(--color-muted)]">
+                {a.desc}
+              </p>
             </div>
           ))}
         </div>

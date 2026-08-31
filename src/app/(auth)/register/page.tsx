@@ -69,6 +69,14 @@ function RegisterForm() {
       <Button type="submit" disabled={pending}>
         {pending ? "Konto wird erstellt…" : "Registrieren"}
       </Button>
+
+      <p className="text-xs text-[var(--color-muted)]">
+        Mit der Registrierung akzeptierst du die{" "}
+        <Link href="/datenschutz" className="text-[var(--color-accent)] underline">
+          Datenschutzerklärung
+        </Link>
+        .
+      </p>
     </form>
   );
 }
