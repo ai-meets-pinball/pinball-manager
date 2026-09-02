@@ -92,7 +92,9 @@ ohne Websuche. Details siehe [`.env.example`](.env.example).
 
 ```bash
 # Schema in die Datenbank schreiben (erzeugt alle Tabellen)
-npm run db:migrate     # oder für schnelles Iterieren: npm run db:push
+npm run db:status      # vorher: was ist verzeichnet, was würde db:migrate tun?
+npm run db:migrate     # produktiv IMMER migrate (push schreibt kein Log — nur für die E2E-DB)
+npm run db:status      # nachher: 0 ausstehend? drizzle-kit migrate ist bei Fehlern stumm
 ```
 
 Außerdem im Supabase-Dashboard einen **öffentlichen Storage-Bucket** namens

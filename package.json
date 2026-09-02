@@ -12,6 +12,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
+    "db:status": "node scripts/migrate-status.mjs",
+    "db:reconcile": "node scripts/migrate-reconcile.mjs",
     "auth:generate": "npx @better-auth/cli@latest generate --output src/db/auth-schema.ts --y",
     "feedback": "tsx scripts/feedback.ts",
     "e2e": "playwright test",

@@ -21,6 +21,8 @@ npm run db:migrate           # write schema to the DB (or: npm run db:push)
 npm run dev                  # dev server on http://localhost:3100 (Next.js 16 + Turbopack)
 npm run build                # production build (used to verify changes)
 npm run db:generate          # regenerate SQL migrations after editing src/db/schema.ts
+npm run db:status            # was ist verzeichnet, was würde db:migrate tun? VOR und NACH db:migrate
+npm run db:reconcile         # Migrationslog nachführen (Vorschau; --apply trägt ein) — nur nach db:push-Altlast
 
 # Unit-Tests (Vitest) — nur die REINEN Regeln, ohne DB und ohne Browser
 npm test                     # einmal durchlaufen
@@ -49,6 +51,14 @@ App runs on http://localhost:3100.
 > Testkonten entstehen über den regulären Einladungs-/Sign-up-Pfad und melden sich über
 > den echten Login an — ein Bypass würde an genau der Rechtelogik vorbeitesten, die
 > abgesichert werden soll.
+
+> **Migrationen produktiv:** NUR `db:migrate`, eingerahmt von `db:status`. `drizzle-kit migrate`
+> ist bei einem Fehler STUMM — es zeigt nur den Spinner, keine Fehlermeldung, und rollt alles zurück;
+> die Erfolgszeile „[✓] migrations applied successfully!" ist der einzige Beleg. `db:push` nur für die
+> E2E-DB: es schreibt kein Log, und danach versucht `db:migrate` alles seit dem letzten Log-Eintrag
+> erneut (→ „existiert bereits" → stumm zurückgerollt). Genau das war am 2026-09-02 der Fall (Log bei
+> 0040, Schema bei 0055); `db:reconcile` hat das Log nachgeführt, ohne Migrationen zu wiederholen
+> (Plan: docs/superpowers/specs/2026-09-02-migrationslog-abgleich-design.md).
 
 > Note: this project uses **Next.js 16** (App Router, Turbopack). The request-routing edge file is `src/proxy.ts` (Next 16 renamed `middleware` → `proxy`).
 

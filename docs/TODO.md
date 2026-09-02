@@ -9,6 +9,22 @@ Melde-Warnung bleibt rein anzeigend) und **In-Place-Editor + Bearbeitungs-
 Verlauf** (`knowledge_revisions`; Neu-Generierung/Import aktualisiert in place —
 id und Signale bleiben erhalten).
 
+## Umgesetzt 09/2026 (Stand 2026-09-02)
+
+- **UX-Konsolidierung** aller Seiten auf ein Muster (kompakte Zeilen, Icon-
+  Aktionen, Neu/Ändern im `<dialog>`, Unmögliches ausgegraut mit Grund, Actions
+  geben `FormState` zurück statt zu werfen) — Spec mit den bewusst offenen
+  Punkten: `docs/superpowers/specs/2026-09-02-ux-konsolidierung-design.md`.
+  Offen dort: Prompts-Karte als Ganzes, doppeltes Anbieter-Feld in der
+  Prompt-Refinery, zwei Sammel-Leisten der Maschinenliste, Zurück-Link der
+  Modellseite.
+- **Modell-Familie**: baugleiche OPDB-Editionen (gleiche ersten zwei Segmente,
+  `opdb_machine_ref`) teilen Wissen, Guides, Tipps, Freigaben und Generation,
+  ohne dass Katalogzeilen verschmelzen (CONTEXT.md „Familie", Datenmodell §2).
+- **Migrationslog** der produktiven DB mit dem Journal abgeglichen (`db:status`,
+  `db:reconcile`); Regel: produktiv nur `db:migrate`, `db:push` nur E2E —
+  Spec: `docs/superpowers/specs/2026-09-02-migrationslog-abgleich-design.md`.
+
 ## Offen, aber aktuell geringer Nutzen
 
 - **Fork** (`knowledge_overrides` `typ='fork'` + vorhandenes
@@ -39,7 +55,11 @@ Aufteilung von `queries.ts` nach Themen.
 **Bewusst nicht gebaut:**
 
 - **`formAction`-Wrapper** (`FormState` als Union mit `code`, plus ein Wrapper,
-  der geworfene Gates in Werte übersetzt). *Entscheidung 2026-08-11.* Die
+  der geworfene Gates in Werte übersetzt). *Entscheidung 2026-08-11, präzisiert
+  2026-09-02:* FACHREGELN (letzter Owner, Standard-verwaltet, Platzhalter …)
+  geben seit der UX-Konsolidierung `FormState` zurück und laufen über
+  `ui/action-form.tsx`; nur AUTH-Gates (`darf*`, `require*`) werfen weiter —
+  genau die Trennung, die hier gemeint war. Die
   Oberfläche riegelt an 15 Stellen über `darf` ab, bevor eine Aktion angeboten
   wird, und sechs E2E-Tests belegen das — ein geworfenes „darfst du nicht"
   erreicht nur, wer die UI umgeht, und dafür ist eine Error-Boundary die
