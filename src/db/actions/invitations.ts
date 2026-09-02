@@ -184,7 +184,9 @@ async function acceptForUser(
   });
   // Dieselbe Regel wie auf der Landeseite (lib/einladung.ts).
   const gesperrt = einladungGesperrt(inv, userEmail, new Date());
-  if (gesperrt || !inv) return { error: gesperrt ?? "Einladung ungültig." };
+  if (gesperrt) return { error: gesperrt };
+  // Ohne Einladung hätte die Regel gesperrt — der Typ weiß das nur nicht.
+  if (!inv) return { error: "Einladung ungültig." };
 
   // Club-Einladung: Rollenzuweisung = Mitgliedschaft (idempotent).
   // Plattform-Einladung (clubId/roleId NULL): nichts zuzuweisen, nur quittieren.

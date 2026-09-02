@@ -29,15 +29,19 @@ const PRUEFER = [
   { re: /ALTER TABLE "?(\w+)"? ADD COLUMN (?:IF NOT EXISTS )?"?(\w+)"?/gi, art: "Spalte", da: async (m) =>
       (await sql`SELECT 1 FROM information_schema.columns WHERE table_name=${m[1]} AND column_name=${m[2]}`).length > 0,
     name: (m) => `${m[1]}.${m[2]}` },
-  { re: /CREATE (?:UNIQUE )?INDEX (?:IF NOT EXISTS )?"?(\w+)"?/gi, art: "Index", da: async (m) =>
-      (await sql`SELECT 1 FROM pg_indexes WHERE indexname=${m[1]}`).length > 0 },
+  // Index/Constraint tragen ihre Tabelle mit (name = "tabelle.objekt"), damit
+  // „später entfernt" nur den DROP TABLE DIESER Tabelle meint.
+  { re: /CREATE (?:UNIQUE )?INDEX (?:IF NOT EXISTS )?"?(\w+)"? ON "?(\w+)"?/gi, art: "Index", da: async (m) =>
+      (await sql`SELECT 1 FROM pg_indexes WHERE indexname=${m[1]}`).length > 0,
+    name: (m) => `${m[2]}.${m[1]}` },
   { re: /CREATE TYPE "?(?:public"?\."?)?(\w+)"?/gi, art: "Typ", da: async (m) =>
       (await sql`SELECT 1 FROM pg_type WHERE typname=${m[1]}`).length > 0 },
   { re: /ALTER TYPE "?(?:public"?\."?)?(\w+)"? ADD VALUE (?:IF NOT EXISTS )?'([^']+)'/gi, art: "Enum-Wert", da: async (m) =>
       (await sql`SELECT 1 FROM pg_enum e JOIN pg_type t ON t.oid=e.enumtypid WHERE t.typname=${m[1]} AND e.enumlabel=${m[2]}`).length > 0,
     name: (m) => `${m[1]}.${m[2]}` },
-  { re: /ADD CONSTRAINT "?(\w+)"?/gi, art: "Constraint", da: async (m) =>
-      (await sql`SELECT 1 FROM pg_constraint WHERE conname=${m[1]}`).length > 0 },
+  { re: /ALTER TABLE "?(\w+)"? ADD CONSTRAINT "?(\w+)"?/gi, art: "Constraint", da: async (m) =>
+      (await sql`SELECT 1 FROM pg_constraint WHERE conname=${m[2]}`).length > 0,
+    name: (m) => `${m[1]}.${m[2]}` },
   { re: /ALTER TABLE "?(\w+)"? ENABLE ROW LEVEL SECURITY/gi, art: "RLS", da: async (m) =>
       Boolean((await sql`SELECT relrowsecurity FROM pg_class WHERE relname=${m[1]}`)[0]?.relrowsecurity) },
   // DROPs: das Objekt darf NICHT mehr da sein.
@@ -59,10 +63,20 @@ const DATENPRUEFER = {
     return !keys.includes("supporter") && keys.includes("gast") && keys.includes("user");
   },
   "0055_opdb_machine_ref_backfill": async () => {
+    // Backfill: jede zweisegmentige Referenz hat ihren Schlüssel …
     const [r] = await sql`
       SELECT count(*) FILTER (WHERE split_part(btrim(opdb_ref),'-',2) <> '' AND opdb_machine_ref IS NULL)::int AS offen
       FROM machine_models`;
-    return r.offen === 0;
+    if (r.offen !== 0) return false;
+    // … und Relink: keine Maschine hängt mehr an einer anderen baugleichen Zeile,
+    // obwohl es zu ihrer eigenen Referenz eine Katalogzeile gibt.
+    const [l] = await sql`
+      SELECT count(*)::int AS offen FROM machines m
+      JOIN machine_models neu ON neu.opdb_ref = btrim(m.opdb_ref)
+      JOIN machine_models alt ON alt.id = m.model_id
+      WHERE neu.id <> alt.id AND neu.opdb_machine_ref IS NOT NULL
+        AND neu.opdb_machine_ref = alt.opdb_machine_ref`;
+    return l.offen === 0;
   },
 };
 
@@ -81,8 +95,8 @@ function spaeterEntfernt(name, art, spaetere) {
   return spaetere.some((t) => {
     if (art === "Tabelle" || art === "RLS") return new RegExp(`DROP TABLE (?:IF EXISTS )?"?${name}"?\\b`, "i").test(t);
     if (art === "Spalte") return new RegExp(`DROP TABLE (?:IF EXISTS )?"?${tabelle}"?\\b|ALTER TABLE "?${tabelle}"? DROP COLUMN (?:IF EXISTS )?"?${spalte}"?\\b`, "i").test(t);
-    if (art === "Constraint") return new RegExp(`DROP CONSTRAINT (?:IF EXISTS )?"?${name}"?\\b|DROP TABLE`, "i").test(t);
-    if (art === "Index") return new RegExp(`DROP INDEX (?:IF EXISTS )?"?${name}"?\\b|DROP TABLE`, "i").test(t);
+    if (art === "Constraint") return new RegExp(`DROP CONSTRAINT (?:IF EXISTS )?"?${spalte}"?\\b|DROP TABLE (?:IF EXISTS )?"?${tabelle}"?\\b`, "i").test(t);
+    if (art === "Index") return new RegExp(`DROP INDEX (?:IF EXISTS )?"?${spalte}"?\\b|DROP TABLE (?:IF EXISTS )?"?${tabelle}"?\\b`, "i").test(t);
     if (art === "Typ") return new RegExp(`DROP TYPE (?:IF EXISTS )?"?(?:public"?\\."?)?${name}"?\\b`, "i").test(t);
     // Enum-Wert: mit dem Typ verschwindet auch der Wert (name = "typ.wert").
     if (art === "Enum-Wert") return new RegExp(`DROP TYPE (?:IF EXISTS )?"?(?:public"?\\."?)?${tabelle}"?\\b`, "i").test(t);

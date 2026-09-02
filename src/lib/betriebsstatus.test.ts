@@ -3,6 +3,7 @@ import {
   abgeleiteterStatus,
   naechsterStatus,
   schwerster,
+  statusUnveraendert,
 } from "@/lib/betriebsstatus";
 
 const fehler = (prioritaet: string, status: string) => ({ prioritaet, status });
@@ -106,5 +107,18 @@ describe("naechsterStatus", () => {
     expect(
       naechsterStatus({ status: "ausser_betrieb", statusManuell: false }, []),
     ).toBe("spielbereit");
+  });
+});
+
+describe("statusUnveraendert", () => {
+  const gepinnt = { manuell: true, status: "eingeschraenkt", grund: "Netzteil" };
+  it("erkennt den No-op nur bei gepinntem Status mit gleichem Wert und Grund", () => {
+    expect(statusUnveraendert(gepinnt, { status: "eingeschraenkt", grund: " Netzteil " })).toBe(true);
+    expect(statusUnveraendert(gepinnt, { status: "spielbereit", grund: "Netzteil" })).toBe(false);
+    expect(statusUnveraendert(gepinnt, { status: "eingeschraenkt", grund: "" })).toBe(false);
+  });
+  it("Automatik-Status mit gleichem Wert zu pinnen ist eine Änderung", () => {
+    expect(statusUnveraendert({ ...gepinnt, manuell: false }, { status: "eingeschraenkt", grund: "Netzteil" })).toBe(false);
+    expect(statusUnveraendert({ manuell: true, status: "spielbereit", grund: null }, { status: "spielbereit", grund: undefined })).toBe(true);
   });
 });

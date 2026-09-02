@@ -1,4 +1,4 @@
-import { FEEDBACK_ABSCHLUSS_STATUS } from "@/lib/validators";
+import { FEEDBACK_ABSCHLUSS_STATUS, FEEDBACK_STATUS } from "@/lib/validators";
 
 /*
   Reine Regeln rund um den Feedback-Status (ohne DB/Mail) — damit die
@@ -37,7 +37,9 @@ export const FEEDBACK_ABSCHLUSS_SATZ: Record<string, string> = {
   Enum-Werte in Filter-Chips und Auswahlfeldern). Die Werte selbst bleiben
   kleingeschrieben, weil sie so in der DB und in FEEDBACK_STATUS stehen.
 */
-export const FEEDBACK_STATUS_LABEL: Record<string, string> = {
+export type FeedbackStatus = (typeof FEEDBACK_STATUS)[number];
+
+export const FEEDBACK_STATUS_LABEL: Record<FeedbackStatus, string> = {
   offen: "Offen",
   "in Arbeit": "In Arbeit",
   erledigt: "Erledigt",

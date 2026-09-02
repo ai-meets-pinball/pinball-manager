@@ -10,7 +10,7 @@ import {
   setzeMaschinenStatus,
   statusAufAutomatik,
 } from "@/db/actions/machine-status";
-import { BETRIEBSSTATUS, STATUS_LABEL } from "@/lib/betriebsstatus";
+import { BETRIEBSSTATUS, STATUS_LABEL, statusUnveraendert } from "@/lib/betriebsstatus";
 import type { FormState } from "@/db/actions/form-state";
 
 /*
@@ -37,8 +37,10 @@ export function StatusSteuerung({
   // Ein Automatik-Status darf mit gleichem Wert gepinnt werden (das IST die Änderung).
   const [statusSel, setStatusSel] = useState<string>(status);
   const [grundSel, setGrundSel] = useState(grund ?? "");
-  const unveraendert =
-    manuell && statusSel === status && grundSel.trim() === (grund ?? "").trim();
+  const unveraendert = statusUnveraendert(
+    { manuell, status, grund: grund ?? null },
+    { status: statusSel, grund: grundSel },
+  );
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     async (prev, fd) => {
       const res = await setzeMaschinenStatus(prev, fd);

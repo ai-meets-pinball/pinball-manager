@@ -1,4 +1,7 @@
 import { STATUS_LABEL } from "@/lib/betriebsstatus";
+import { PRIORITAET_LABEL } from "@/lib/faelligkeit";
+import { FEEDBACK_STATUS_LABEL } from "@/lib/feedback-status";
+import { FEHLER_STATUS_LABEL } from "@/lib/fehler-status";
 import { Badge, type BadgeTone } from "@/components/ui/badge";
 
 /*
@@ -46,20 +49,12 @@ export const ROLE_LABEL: Record<string, string> = {
   member: "Mitglied",
   superadmin: "Super-Admin",
   kurator: "Kurator",
-  // Fehler-/Reparatur-/Feedback-Status und Prioritäten: die Werte sind deutsch,
-  // aber klein — als Badge groß, wie die Filter-Chips (P7, eine Schreibweise).
-  offen: "Offen",
-  quittiert: "Quittiert",
-  "in Arbeit": "In Arbeit",
-  behoben: "Behoben",
-  erledigt: "Erledigt",
-  zurückgestellt: "Zurückgestellt",
-  verworfen: "Verworfen",
-  niedrig: "Niedrig",
-  mittel: "Mittel",
-  hoch: "Hoch",
-  "sehr hoch": "Sehr hoch",
-  kritisch: "Kritisch",
+  // Fehler-/Feedback-Status und Prioritäten kommen aus den lib-Karten — EINE
+  // Quelle für Chips, Auswahlfelder und Badges (P7). Reparatur-Status („offen",
+  // „in Arbeit", „erledigt") sind darin enthalten.
+  ...FEHLER_STATUS_LABEL,
+  ...FEEDBACK_STATUS_LABEL,
+  ...PRIORITAET_LABEL,
   // Betriebsstatus kommt aus lib/betriebsstatus.ts — eine Quelle für Badge,
   // Auswahlfeld und Übersicht.
   ...STATUS_LABEL,

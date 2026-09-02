@@ -7,6 +7,7 @@ import { FormLeaveGuard } from "@/components/ui/form-leave-guard";
 import { KiVorschlagHolen } from "@/components/repair-suggest-button";
 import type { FormState } from "@/db/actions/form-state";
 import type { AiProvider } from "@/lib/ai/provider";
+import { ROLE_LABEL, StatusBadge } from "@/components/ui/status-badge";
 
 type Fault = { id: string; beschreibung: string; status: string };
 
@@ -98,10 +99,7 @@ export function RepairForm({
                     className="mt-1 accent-[var(--color-accent)]"
                   />
                   <span>
-                    <span className="text-xs text-[var(--color-muted)]">
-                      [{f.status}]
-                    </span>{" "}
-                    {f.beschreibung}
+                    <StatusBadge value={f.status} /> {f.beschreibung}
                   </span>
                 </label>
               ))}
@@ -147,9 +145,11 @@ export function RepairForm({
 
         <Field label="Status">
           <Select name="status" defaultValue={repair?.status ?? "offen"}>
-            <option value="offen">offen</option>
-            <option value="in Arbeit">in Arbeit</option>
-            <option value="erledigt">erledigt</option>
+            {(["offen", "in Arbeit", "erledigt"] as const).map((st) => (
+              <option key={st} value={st}>
+                {ROLE_LABEL[st] ?? st}
+              </option>
+            ))}
           </Select>
         </Field>
 

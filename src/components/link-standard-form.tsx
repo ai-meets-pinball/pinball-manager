@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Copy, Link2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { FormFeedback } from "@/components/ui/form-feedback";
@@ -36,6 +36,9 @@ export function LinkStandardForm({
     {},
   );
   const pending = verknuepft || kopiert;
+  // Welche Action zuletzt lief — nur deren Rückmeldung wird gezeigt (sonst
+  // deckte ein altes „Kopie"-Ergebnis einen neuen Verknüpfen-Fehler zu).
+  const [zuletzt, setZuletzt] = useState<"verknuepfen" | "kopie">("verknuepfen");
 
   if (plans.length === 0) {
     return (
@@ -75,7 +78,13 @@ export function LinkStandardForm({
           </optgroup>
         ))}
       </Select>
-      <Button type="submit" variant="secondary" size="sm" disabled={pending}>
+      <Button
+        type="submit"
+        variant="secondary"
+        size="sm"
+        disabled={pending}
+        onClick={() => setZuletzt("verknuepfen")}
+      >
         <Link2 size={14} /> {verknuepft ? "Verknüpfe…" : "Verknüpfen"}
       </Button>
       <Button
@@ -84,11 +93,11 @@ export function LinkStandardForm({
         size="sm"
         formAction={kopieAction}
         disabled={pending}
+        onClick={() => setZuletzt("kopie")}
       >
         <Copy size={14} /> {kopiert ? "Kopiere…" : "Als Kopie übernehmen"}
       </Button>
-      {/* Es spricht immer nur die zuletzt benutzte Action. */}
-      <FormFeedback state={kopie.error || kopie.message ? kopie : verknuepfen} />
+      <FormFeedback state={zuletzt === "kopie" ? kopie : verknuepfen} />
     </form>
   );
 }

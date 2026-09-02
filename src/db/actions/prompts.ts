@@ -10,6 +10,7 @@ import {
   PROMPT_KEYS,
   extractSpaltenBlock,
   fehlendePlatzhalter,
+  overrideBelegt,
   renderPrompt,
   type PromptKey,
 } from "@/lib/prompts";
@@ -48,20 +49,19 @@ export async function savePrompt(
   if (fehlend.length > 0) {
     return { error: `Platzhalter fehlen: ${fehlend.join(", ")}` };
   }
-  // „Override anlegen" darf einen bestehenden nicht still überschreiben.
+  // „Override anlegen" darf einen bestehenden nicht still überschreiben —
+  // dieselbe Regel (overrideBelegt, lib/prompts.ts), die im Formular die
+  // belegten Bereiche aus der Auswahl nimmt.
   if (String(formData.get("modus") ?? "") === "neu") {
-    const vorhanden = await db.query.promptOverrides.findFirst({
-      where: and(
-        eq(promptOverrides.key, key),
-        hersteller
-          ? eq(promptOverrides.hersteller, hersteller)
-          : isNull(promptOverrides.hersteller),
-        generationId
-          ? eq(promptOverrides.generationId, generationId)
-          : isNull(promptOverrides.generationId),
-      ),
-    });
-    if (vorhanden) {
+    const vorhanden = await db
+      .select({
+        hersteller: promptOverrides.hersteller,
+        generationId: promptOverrides.generationId,
+        vorlage: promptOverrides.vorlage,
+      })
+      .from(promptOverrides)
+      .where(eq(promptOverrides.key, key));
+    if (overrideBelegt(vorhanden, { hersteller, generationId })) {
       return {
         error: "Für diesen Bereich gibt es schon einen Override — bearbeite ihn oben.",
       };

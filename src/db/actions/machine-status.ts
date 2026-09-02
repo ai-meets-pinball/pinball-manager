@@ -8,6 +8,7 @@ import { aktualisiereMaschinenStatus } from "@/db/machine-status-core";
 import { requireMachineWrite } from "@/lib/session";
 import { machineStatusSchema } from "@/lib/validators";
 import type { FormState } from "@/db/actions/form-state";
+import { statusUnveraendert } from "@/lib/betriebsstatus";
 
 /*
   Betriebsstatus einer Maschine — die GATE-behafteten Formular-Actions.
@@ -46,11 +47,7 @@ export async function setzeMaschinenStatus(
 
   // Ein No-op (schon manuell, gleicher Status, gleicher Grund) schreibt nichts —
   // sonst würde jedes „Setzen" Autor und Zeitstempel still überschreiben.
-  if (
-    aktuell?.manuell &&
-    aktuell.status === parsed.data.status &&
-    (aktuell.grund ?? "") === (parsed.data.grund || "")
-  ) {
+  if (aktuell && statusUnveraendert(aktuell, parsed.data)) {
     return { ok: true };
   }
 

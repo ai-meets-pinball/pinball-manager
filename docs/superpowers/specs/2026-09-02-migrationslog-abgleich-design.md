@@ -64,10 +64,13 @@ laufen lassen — Aufwand ohne Nutzen, die Wirkung ist ja da.
 2. **Abgleich-Skript** `scripts/migrate-reconcile.mjs`: für jeden ausstehenden
    Journal-Eintrag prüfen, dass seine Objekte existieren (dieselbe Prüfung wie
    im Befund: Tabellen, Spalten, Indizes, Typen, Enum-Werte, Constraints, RLS);
-   nur wenn ALLE Prüfungen bestehen, die Log-Zeile einfügen. Läuft in einer
-   Transaktion; ohne `--apply` nur Vorschau. Für Daten-Migrationen ohne DDL
+   nur wenn ALLE prüfbaren Prüfungen bestehen, die Log-Zeile einfügen. Läuft in
+   einer Transaktion; ohne `--apply` nur Vorschau. Für Daten-Migrationen ohne DDL
    (0044, 0055) wird die Wirkung per gezielter Abfrage geprüft (Rollen-Keys,
-   `opdb_machine_ref` gefüllt).
+   `opdb_machine_ref` gefüllt UND Relink vollzogen). Anweisungen, die weder DDL
+   noch eine hinterlegte Datenprüfung sind (Backfills älterer Migrationen),
+   meldet das Skript als „ungeprüft" — sie blockieren nicht, stehen aber im
+   Bericht; wer sie absichern will, ergänzt einen `DATENPRUEFER`-Eintrag.
 3. **Probe auf der E2E-Datenbank** (Docker `pinball-e2e`, per `push` befüllt, hat
    dieselbe Situation: Schema da, Log leer): `db:status` → 56 ausstehend;
    `migrate-reconcile --apply` → 56 verzeichnet; `db:migrate` → No-op, Exit 0;

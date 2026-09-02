@@ -121,7 +121,7 @@ export function MaintenanceTasks({
         }
       >
         {tasks.map((t) => (
-          <TaskZeile
+          <WartungspunktZeile
             key={t.id}
             task={t}
             machineId={machineId}
@@ -136,7 +136,7 @@ export function MaintenanceTasks({
   );
 }
 
-function TaskZeile({
+function WartungspunktZeile({
   task: t,
   machineId,
   schreibbar,

@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { clubs, roleAssignments, roles, user } from "@/db/schema";
 import { loeschBlocker, loescheNutzer } from "@/db/konto-loeschung";
-import { istLetzterOwner, rolleEntfernenGesperrt } from "@/lib/rechte";
+import { istLetzterOwner, rolleEntfernenGesperrt, EIGENE_GLOBALE_ROLLE_GESPERRT } from "@/lib/rechte";
 import {
   countClubOwners,
   getClubRole,
@@ -62,7 +62,7 @@ export async function setUserRole(
       return { error: "Unbekannte globale Rolle" };
     }
     if (userId === me.id) {
-      return { error: "Eigene globale Rollen lassen sich hier nicht ändern" };
+      return { error: EIGENE_GLOBALE_ROLLE_GESPERRT };
     }
     await db
       .insert(roleAssignments)

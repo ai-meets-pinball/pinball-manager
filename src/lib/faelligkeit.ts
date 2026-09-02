@@ -1,3 +1,4 @@
+import { MAINTENANCE_PRIORITAETEN } from "@/lib/validators";
 /*
   Fälligkeit von Wartungspunkten — die EINE Stelle, an der „fällig", „bald" und
   „überfällig" definiert sind (Begriffe: CONTEXT.md).
@@ -157,6 +158,15 @@ export function baldBis(jetzt: Date): Date {
 }
 
 /* ── Wartungspunkte: Labels und Sperren ───────────────────────────────────── */
+
+/** Anzeigename je Priorität — groß, wie die Badges (P7). */
+export const PRIORITAET_LABEL: Record<(typeof MAINTENANCE_PRIORITAETEN)[number], string> = {
+  niedrig: "Niedrig",
+  mittel: "Mittel",
+  hoch: "Hoch",
+  "sehr hoch": "Sehr hoch",
+  kritisch: "Kritisch",
+};
 
 /** Anzeigename je Intervall-Typ — statt roher Keys („zeit") in Auswahlfeldern. */
 export const INTERVALL_TYP_LABEL: Record<string, string> = {

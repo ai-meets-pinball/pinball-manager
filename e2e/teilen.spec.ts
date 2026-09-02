@@ -68,6 +68,26 @@ test.describe("Teilen", () => {
     await expect(page.getByText("Spulen & Flasher").first()).toBeVisible();
   });
 
+  test("Teilen-Dialog: teilen, Chip erscheint, Freigabe aufheben", async ({ page }) => {
+    await loginAs(page, USERS.owner);
+    await page.goto(`/machines/${ownerMachine}?bereich=reparaturen`);
+
+    const zeile = page.locator("li", { hasText: "E2E Diagnose" });
+    await zeile.getByRole("button", { name: "Reparatur teilen" }).click();
+    const dialog = zeile.locator("dialog[open]");
+    await dialog.locator('select[name="scope"]').selectOption("platform");
+    await dialog.getByRole("button", { name: "Teilen" }).click();
+    await expect(zeile.locator("dialog[open]")).toHaveCount(0);
+    await expect(zeile.getByText(/Geteilt: Alle angemeldeten Nutzer/)).toBeVisible();
+
+    // Aufheben fragt nach; danach ist der Chip weg und die SQL-Tests unten
+    // starten ohne bestehende Freigabe.
+    await zeile.getByRole("button", { name: "Freigabe der Reparatur ändern" }).click();
+    await zeile.locator("dialog[open]").getByRole("button", { name: "Freigabe aufheben" }).click();
+    await zeile.locator("dialog[open]").getByRole("button", { name: "Ja, aufheben" }).click();
+    await expect(zeile.getByText(/Geteilt:/)).toHaveCount(0);
+  });
+
   test("Feldprojektion: Kosten und Name bleiben verborgen", async ({ page }) => {
     const ownerId = await userIdByEmail(USERS.owner);
     await sql`

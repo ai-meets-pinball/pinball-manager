@@ -64,6 +64,11 @@ export function istLetzterOwner(rolle: string | null, ownerAnzahl: number): bool
 
 /* ── Rollen entziehen (Admin) ─────────────────────────────────────────────── */
 
+/** Der eine Grund, den UI und Actions nennen, wenn jemand seine EIGENE globale
+    Rolle anfasst — Vergabe wie Entzug. */
+export const EIGENE_GLOBALE_ROLLE_GESPERRT =
+  "Eigene globale Rollen lassen sich hier nicht ändern";
+
 /** Eine Zuweisung, die jemand im Admin entziehen möchte — mit dem Kontext,
     den die Entscheidung braucht (Zähler, Selbstbezug). */
 export type RollenZuweisung =
@@ -87,7 +92,7 @@ export function rolleEntfernenGesperrt(z: RollenZuweisung): string | null {
       ? "Ein Club braucht mindestens einen Owner"
       : null;
   }
-  if (z.istSelbst) return "Eigene globale Rollen lassen sich hier nicht ändern";
+  if (z.istSelbst) return EIGENE_GLOBALE_ROLLE_GESPERRT;
   if (z.rolle === SUPERADMIN_ROLE && z.superAdminAnzahl <= 1) {
     return "Der letzte Super-Admin bleibt geschützt";
   }

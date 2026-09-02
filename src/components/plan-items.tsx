@@ -16,7 +16,7 @@ import {
   deletePlanItem,
   updatePlanItem,
 } from "@/db/actions/maintenance-plans";
-import { INTERVALL_TYP_LABEL, intervallLabel } from "@/lib/faelligkeit";
+import { INTERVALL_TYP_LABEL, intervallLabel, PRIORITAET_LABEL } from "@/lib/faelligkeit";
 import {
   MAINTENANCE_INTERVALL_TYPEN,
   MAINTENANCE_PRIORITAETEN,
@@ -223,7 +223,7 @@ function PunktDialog({ ziel, onClose }: { ziel: Ziel; onClose: () => void }) {
             <Select name="prioritaet" defaultValue={start.prioritaet}>
               {MAINTENANCE_PRIORITAETEN.map((p) => (
                 <option key={p} value={p}>
-                  {p}
+                  {PRIORITAET_LABEL[p]}
                 </option>
               ))}
             </Select>

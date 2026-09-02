@@ -176,8 +176,8 @@ function guideAuswahl(userId: string) {
 /**
  * Sichtbare Troubleshooting-Guides eines Modells — inklusive der Guides, die
  * auf der GENERATION dieses Modells liegen (Generation-Resolver): Wissen einer
- * Board-/Hardware-Generation gilt für alle ihre Modelle. Fakten bleiben bewusst
- * modell-exakt (Editionsunterschiede) und werden hier NICHT aufgelöst.
+ * Board-/Hardware-Generation gilt für alle ihre Modelle. Modell-Ebene heißt
+ * dabei FAMILIE (baugleiche Editionen, getFamilie) — wie bei den Fakten.
  */
 export async function getModelGuides(
   currentUser: SessionUser,

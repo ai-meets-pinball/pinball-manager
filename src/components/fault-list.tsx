@@ -38,9 +38,6 @@ export function FaultList({
   machineId: string;
   /** false = nur Lesen: keine Bearbeiten-/Lösch-/Reparatur-Aktionen. */
   schreibbar?: boolean;
-  /** Übergangsweise noch angenommen, aber ohne Wirkung: die Detailseite reicht
-      die KI-Zutaten weiter, obwohl der Vorschlag jetzt auf „Neue Reparatur"
-      lebt. Entfällt, sobald page.tsx die beiden Props nicht mehr übergibt. */
 }) {
   return (
     <List empty="Keine Fehler erfasst.">

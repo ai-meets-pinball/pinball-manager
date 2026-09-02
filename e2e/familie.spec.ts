@@ -114,6 +114,38 @@ test.describe("Familie (baugleiche Editionen)", () => {
     await expect(page.getByText("E2E-Abschnitt")).toHaveCount(0);
   });
 
+  test("Modellwechsel innerhalb der Familie behält Freigaben, außerhalb widerruft er sie", async ({
+    page,
+  }) => {
+    // Eigene Freigabe des Owners an der LE-Maschine.
+    const eigeneRepair = await addRepair(leMachine);
+    await sql`
+      INSERT INTO shares (artefakt_typ, artefakt_id, model_id, owner_id, scope, anonym, zeige_kosten)
+      VALUES ('repair', ${eigeneRepair}, ${leModelId}, ${ownerId}, 'platform', false, false)`;
+    const freigaben = async () =>
+      (await sql`SELECT count(*)::int AS n FROM shares WHERE artefakt_id = ${eigeneRepair}`)[0].n;
+
+    await loginAs(page, USERS.owner);
+    // LE → Premium/LE (baugleich): Freigabe bleibt.
+    await page.goto(`/machines/${leMachine}/edit`);
+    await page.getByRole("button", { name: "Manuell anpassen" }).click();
+    await page.getByLabel("OPDB-Referenz").fill("E2E9-MFAM");
+    await page.getByRole("button", { name: /speichern|aktualisieren/i }).click();
+    await page.waitForURL(`**/machines/${leMachine}`);
+    expect(await freigaben()).toBe(1);
+
+    // Premium/LE → Pro (andere Maschine): Freigabe wird widerrufen.
+    await page.goto(`/machines/${leMachine}/edit`);
+    await page.getByRole("button", { name: "Manuell anpassen" }).click();
+    await page.getByLabel("OPDB-Referenz").fill("E2E9-MPRO");
+    await page.getByRole("button", { name: /speichern|aktualisieren/i }).click();
+    await page.waitForURL(`**/machines/${leMachine}`);
+    expect(await freigaben()).toBe(0);
+
+    // Zurück auf die LE-Referenz, damit der Folgetest die Familie sieht.
+    await sql`UPDATE machines SET model_id = ${leModelId}, opdb_ref = 'E2E9-MFAM-ALE' WHERE id = ${leMachine}`;
+  });
+
   test("Modellseite nennt die baugleiche Edition; Wissensbasis zeigt die Familie einmal", async ({
     page,
   }) => {

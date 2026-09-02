@@ -3,7 +3,6 @@
 import {
   useActionState,
   useEffect,
-  useMemo,
   useRef,
   useState,
   type DragEvent,
@@ -39,6 +38,16 @@ function ScreenshotFeld() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [datei, setDatei] = useState<File | null>(null);
   const [ueberZone, setUeberZone] = useState(false);
+  // Vorschau-URL wird im Handler erzeugt und dort auch wieder freigegeben —
+  // kein Nebeneffekt beim Rendern (StrictMode würde sonst eine URL je Datei leaken).
+  const [vorschau, setVorschau] = useState<string | null>(null);
+  function vorschauSetzen(file: File | null) {
+    setVorschau((alt) => {
+      if (alt) URL.revokeObjectURL(alt);
+      return file ? URL.createObjectURL(file) : null;
+    });
+  }
+  useEffect(() => () => vorschauSetzen(null), []);
 
   function uebernehmen(file: File | null) {
     if (!file || !file.type.startsWith("image/")) return;
@@ -47,11 +56,13 @@ function ScreenshotFeld() {
     dt.items.add(file);
     if (inputRef.current) inputRef.current.files = dt.files;
     setDatei(file);
+    vorschauSetzen(file);
   }
 
   function entfernen() {
     if (inputRef.current) inputRef.current.value = "";
     setDatei(null);
+    vorschauSetzen(null);
   }
 
   function onDrop(e: DragEvent<HTMLDivElement>) {
@@ -60,28 +71,23 @@ function ScreenshotFeld() {
     uebernehmen(e.dataTransfer.files?.[0] ?? null);
   }
 
-  // Strg/Cmd+V: ein Bild in der Zwischenablage landet direkt im Feld.
+  // Strg/Cmd+V: ein Bild in der Zwischenablage landet direkt im Feld. Der
+  // Listener hängt einmal am Dokument; die Ref zeigt immer auf den aktuellen Handler.
+  const uebernehmenRef = useRef(uebernehmen);
+  useEffect(() => {
+    uebernehmenRef.current = uebernehmen;
+  });
   useEffect(() => {
     function onPaste(e: ClipboardEvent) {
       const bild = Array.from(e.clipboardData?.items ?? []).find((i) =>
         i.type.startsWith("image/"),
       );
-      if (bild) uebernehmen(bild.getAsFile());
+      if (bild) uebernehmenRef.current(bild.getAsFile());
     }
     document.addEventListener("paste", onPaste);
     return () => document.removeEventListener("paste", onPaste);
   }, []);
 
-  // Vorschau-URL aus der Datei ableiten (kein eigener State) und beim Wechsel
-  // wieder freigeben.
-  const vorschau = useMemo(
-    () => (datei ? URL.createObjectURL(datei) : null),
-    [datei],
-  );
-  useEffect(() => {
-    if (!vorschau) return;
-    return () => URL.revokeObjectURL(vorschau);
-  }, [vorschau]);
 
   return (
     <div className="space-y-2">

@@ -71,3 +71,20 @@ export function naechsterStatus(
   const neu = abgeleiteterStatus(fehler);
   return neu === maschine.status ? null : neu;
 }
+
+/**
+ * Würde „Status setzen" nichts ändern? Nur wenn der Status BEREITS manuell
+ * gepinnt ist und Wert wie Grund gleich bleiben — ein Automatik-Status mit
+ * gleichem Wert zu pinnen IST eine Änderung. Eine Regel für den Knopf
+ * (deaktiviert) und die Action (schreibt nichts).
+ */
+export function statusUnveraendert(
+  aktuell: { manuell: boolean; status: string; grund: string | null },
+  neu: { status: string; grund: string | null | undefined },
+): boolean {
+  return (
+    aktuell.manuell &&
+    aktuell.status === neu.status &&
+    (aktuell.grund ?? "").trim() === (neu.grund ?? "").trim()
+  );
+}
