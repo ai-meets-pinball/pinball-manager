@@ -271,3 +271,20 @@ export function waehleVorlage(
   }
   return { vorlage: DEFAULT_PROMPTS[key].vorlage, quelle: "standard" };
 }
+
+/** Welche Pflicht-Platzhalter fehlen in einer Vorlage? Leer = alles da. Die
+    Regel steht hier, damit Speichern-Knopf UND Action dasselbe prüfen. */
+export function fehlendePlatzhalter(vorlage: string, platzhalter: string[]): string[] {
+  return platzhalter.filter((p) => !vorlage.includes(p));
+}
+
+/** Gibt es für diesen Bereich (Hersteller ODER Generation) schon einen Override?
+    Dann darf „Override anlegen" ihn nicht still überschreiben. */
+export function overrideBelegt(
+  overrides: OverrideRow[],
+  bereich: { hersteller: string | null; generationId: string | null },
+): boolean {
+  return overrides.some(
+    (o) => o.hersteller === bereich.hersteller && o.generationId === bereich.generationId,
+  );
+}

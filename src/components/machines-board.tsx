@@ -30,7 +30,12 @@ type Item = {
   clubId: string | null;
   club: { name: string } | null;
   wartungFaellig: number;
+  /** Darf der Nutzer diese Maschine umhängen/löschen? Sonst nicht anhakbar. */
+  darfUmhaengen: boolean;
 };
+
+const KEIN_RECHT =
+  "Nur Eigentümer oder Club-Owner/-Admin dürfen diese Maschine umhängen oder löschen";
 
 const selectStyles =
   "rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-fg)] outline-none focus:border-[var(--color-primary)]";
@@ -224,11 +229,13 @@ export function MachinesBoard({
     setAuswahl(new Set());
   }
 
-  // „Alle" bezieht sich auf die aktuell angezeigten (ggf. gefilterten) Maschinen.
+  // „Alle" bezieht sich auf die aktuell angezeigten (ggf. gefilterten) Maschinen
+  // — und nur auf die, die man auch anhaken darf.
+  const anhakbar = machines.filter((m) => m.darfUmhaengen);
   const alleAusgewaehlt =
-    machines.length > 0 && auswahl.size === machines.length;
+    anhakbar.length > 0 && auswahl.size === anhakbar.length;
   function alleUmschalten() {
-    setAuswahl(alleAusgewaehlt ? new Set() : new Set(machines.map((m) => m.id)));
+    setAuswahl(alleAusgewaehlt ? new Set() : new Set(anhakbar.map((m) => m.id)));
   }
 
   return (
@@ -304,8 +311,10 @@ export function MachinesBoard({
                         type="checkbox"
                         checked={auswahl.has(m.id)}
                         onChange={() => toggle(m.id)}
+                        disabled={!m.darfUmhaengen}
+                        title={m.darfUmhaengen ? undefined : KEIN_RECHT}
                         aria-label={`${modellName(m)} auswählen`}
-                        className="accent-[var(--color-accent)]"
+                        className="accent-[var(--color-accent)] disabled:cursor-not-allowed disabled:opacity-40"
                       />
                     </td>
                   ) : null}
@@ -348,7 +357,11 @@ export function MachinesBoard({
               wartungFaellig={m.wartungFaellig}
               selection={
                 auswahlModus
-                  ? { selected: auswahl.has(m.id), onToggle: () => toggle(m.id) }
+                  ? {
+                      selected: auswahl.has(m.id),
+                      onToggle: () => toggle(m.id),
+                      gesperrt: m.darfUmhaengen ? null : KEIN_RECHT,
+                    }
                   : undefined
               }
               hinweis={

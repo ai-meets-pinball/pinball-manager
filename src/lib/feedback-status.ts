@@ -31,3 +31,16 @@ export const FEEDBACK_ABSCHLUSS_SATZ: Record<string, string> = {
   zurückgestellt: "wurde vorerst zurückgestellt",
   verworfen: "wurde nach Prüfung nicht übernommen",
 };
+
+/*
+  Anzeige-Label je Feedback-Status (P7: menschliche Labels statt roher
+  Enum-Werte in Filter-Chips und Auswahlfeldern). Die Werte selbst bleiben
+  kleingeschrieben, weil sie so in der DB und in FEEDBACK_STATUS stehen.
+*/
+export const FEEDBACK_STATUS_LABEL: Record<string, string> = {
+  offen: "Offen",
+  "in Arbeit": "In Arbeit",
+  erledigt: "Erledigt",
+  zurückgestellt: "Zurückgestellt",
+  verworfen: "Verworfen",
+};

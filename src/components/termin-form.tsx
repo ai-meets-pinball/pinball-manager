@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/input";
 import { FormLeaveGuard } from "@/components/ui/form-leave-guard";
 import type { FormState } from "@/db/actions/form-state";
+import { datumISO } from "@/lib/format";
 
 type TerminValues = {
   id: string;
@@ -30,7 +31,7 @@ export function TerminForm({
     action,
     {},
   );
-  const heute = new Date().toISOString().slice(0, 10);
+  const heute = datumISO(new Date());
 
   return (
     <form action={formAction} className="flex max-w-lg flex-col gap-4">

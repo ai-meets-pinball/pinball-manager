@@ -76,7 +76,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Turniermodus (Club)",
-        text: "Für Turniere: Owner/Admin eines Clubs schalten oben den »Turniermodus« an. Ist er aktiv und steht an einer Club-Maschine ein NEUER, noch nicht quittierter Fehler (Status »offen«), schlägt das Dashboard sichtbar Alarm. Sobald jeder betroffene Fehler mindestens auf »quittiert« gesetzt ist, verstummt der Alarm. Im Turniermodus lädt das Dashboard automatisch nach (~25 Sekunden), damit ein neuer Fehler den Alarm auch ohne Neuladen auslöst.",
+        text: "Für Turniere: Owner/Admin eines Clubs starten ihn oben rechts über den Knopf »Turniermodus starten« (bei mehreren Clubs fragt ein Dialog, für welchen). Ist er aktiv und steht an einer Club-Maschine ein NEUER, noch nicht quittierter Fehler (Status »offen«), schlägt das Dashboard sichtbar Alarm. Sobald jeder betroffene Fehler mindestens auf »quittiert« gesetzt ist, verstummt der Alarm. Im Turniermodus lädt das Dashboard automatisch nach (~25 Sekunden), damit ein neuer Fehler den Alarm auch ohne Neuladen auslöst.",
       },
     ],
   },
@@ -91,11 +91,11 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Filter & Ansichten",
-        text: "Über der Liste liegen Filter-Chips: »Alle«, »Privat« und einer je Club (mit Anzahl) — dieselben Chips wie auf der Übersicht. Rechts wechselst du zwischen Kartenansicht (mit Fotos und Badges) und Tabellenansicht (kompakt, sortierbar).",
+        text: "In der Steuerzeile über der Liste liegen die Filter-Chips: »Alle«, »Privat« und einer je Club (mit Anzahl) — dieselben Chips wie im Kopf der Übersicht. Rechts wechselst du zwischen Kartenansicht (mit Fotos und Badges) und Tabellenansicht (kompakt, sortierbar).",
       },
       {
         titel: "Suchen & sortieren",
-        text: "Das Suchfeld filtert nach Hersteller/Modell; sortieren lässt sich nach »Neueste«, »Name« oder »Baujahr« — in beiden Ansichten.",
+        text: "Alles in einer Zeile: Suchfeld (Hersteller/Modell, Enter sucht), daneben die Sortierung als Auswahl (»Neueste«, »Name«, »Baujahr« — wirkt sofort) mit einem Pfeil für die Richtung, dann die Bereichs-Chips, rechts die Ansicht.",
       },
       {
         titel: "Private Sammlung",
@@ -155,7 +155,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "KI-Reparaturvorschlag",
-        text: "Zu jedem Fehler kannst du mit Schreibrecht einen KI-Reparaturvorschlag erzeugen (»KI-Reparaturvorschlag« am Fehler aufklappen, Anbieter wählen, generieren). Die KI nutzt das Symptom, das Modell und das hinterlegte Wissen (Handbuch-Fakten, Troubleshooting-Guide) und schlägt Diagnose, Maßnahme und Teile vor — damit wird direkt eine neue Reparatur VORBEFÜLLT (der Fehler ist schon angehakt). Prüfe und passe alles an, bevor du speicherst: der Vorschlag ist ein Startpunkt und ersetzt nicht Manual und Schaltplan.",
+        text: "Zu jedem Fehler kannst du mit Schreibrecht einen KI-Reparaturvorschlag holen: am Fehler auf »Reparatur«, dann oben auf der Seite »Neue Reparatur« Anbieter wählen und »Vorschlag von der KI holen«. Die KI nutzt das Symptom, das Modell und das hinterlegte Wissen (Handbuch-Fakten, Troubleshooting-Guide) und trägt Diagnose, Maßnahme und Teile direkt ins Formular ein (der Fehler ist schon angehakt). Prüfe und passe alles an, bevor du speicherst: der Vorschlag ist ein Startpunkt und ersetzt nicht Manual und Schaltplan.",
       },
       {
         titel: "Per QR-Code melden — auch ohne Konto",
@@ -202,27 +202,27 @@ export const ANLEITUNG: HilfeSektion[] = [
     schritte: [
       {
         titel: "Punkte anlegen",
-        text: "Auf der Maschinen-Detailseite im Reiter »Wartung«: die Maschine mit einem Standard-Wartungsplan verknüpfen (aus deinen Plänen und den Plänen deiner Clubs im Dropdown wählen — »Verknüpfen« folgt dem Standard, »Als Kopie übernehmen« macht daraus eigene Punkte), »Aus Guide übernehmen« (zieht Punkte aus dem Troubleshooting-Guide) oder »Neuer Wartungspunkt« für eigene Einträge. Erledigte Wartung trägst du je Punkt mit Datum ein — oder über »Mehrere erledigen« gleich mehrere Punkte auf einmal (Datum heute vorbelegt).",
+        text: "Auf der Maschinen-Detailseite im Reiter »Wartung«: die Maschine mit einem Standard-Wartungsplan verknüpfen (aus deinen Plänen und den Plänen deiner Clubs im Dropdown wählen — »Verknüpfen« folgt dem Standard, »Als Kopie übernehmen« macht daraus eigene Punkte), »Aus Guide übernehmen« (zieht Punkte aus dem Troubleshooting-Guide) oder »Neuer Wartungspunkt« für eigene Einträge. Jeder Punkt ist eine Zeile mit Fälligkeit, Intervall, letzter und nächster Wartung; rechts sitzen Häkchen (Erledigt eintragen), Stift und Papierkorb. Erledigte Wartung trägst du je Punkt über das Häkchen ein — oder über »Mehrere erledigen« gleich mehrere Punkte auf einmal (Datum heute vorbelegt).",
       },
       {
         titel: "Standard-Wartungspläne",
-        text: "Unter Nutzer-Icon → »Wartungspläne« legst du BELIEBIG VIELE benannte Pläne an — eigene (privat) und je Club, den du managst (Owner/Admin bearbeiten, Mitglieder nutzen sie). Beim Anlegen gibst du einen Namen an und wählst optional »aus Standard-Vorlage« (spielt eine bewährte 20-Punkte-Liste ein); danach passt du die Punkte frei an, benennst den Plan um oder löschst ihn (verknüpfte Maschinen werden dabei entkoppelt — ihre Punkte werden eigene Kopien, die Historie bleibt). Die Pläne liegen hinter Reitern.",
+        text: "Unter Nutzer-Icon → »Wartungspläne« legst du BELIEBIG VIELE benannte Pläne an — eigene (privat) und je Club, den du managst (Owner/Admin bearbeiten, Mitglieder nutzen sie). »Neuer Plan« fragt nach einem Namen und optional »aus Standard-Vorlage« (spielt eine bewährte 20-Punkte-Liste ein); danach passt du die Punkte über Stift und Papierkorb an jeder Zeile bzw. »Punkt hinzufügen« an, benennst den Plan um (Stift am Namen) oder löschst ihn (verknüpfte Maschinen werden dabei entkoppelt — ihre Punkte werden eigene Kopien, die Historie bleibt). Die Pläne liegen hinter Reitern.",
       },
       {
         titel: "Verknüpfen oder kopieren?",
-        text: "Verknüpfst du eine Maschine mit einem Standard, folgen ihre Punkte dem Standard: Änderungen dort wirken sofort auf allen verknüpften Maschinen; solche Punkte tragen den Badge »Standard« und werden im Standard bearbeitet (Erledigt-Einträge und Historie bleiben natürlich an der Maschine). »Standard als Kopie übernehmen« legt stattdessen freie, editierbare Kopien an. Über »Verknüpfung lösen« werden alle Punkte einer verknüpften Maschine zu eigenen Kopien. Vorhandene gleichnamige Punkte behalten beim Verknüpfen ihre Historie.",
+        text: "Verknüpfst du eine Maschine mit einem Standard, folgen ihre Punkte dem Standard: Änderungen dort wirken sofort auf allen verknüpften Maschinen; solche Punkte tragen den Badge »Standard«, Stift und Papierkorb sind an der Maschine deaktiviert (der Tooltip sagt warum) — bearbeitet wird im Standard; Erledigt-Einträge und Historie bleiben natürlich an der Maschine. »Standard als Kopie übernehmen« legt stattdessen freie, editierbare Kopien an. Über »Verknüpfung lösen« werden alle Punkte einer verknüpften Maschine zu eigenen Kopien. Vorhandene gleichnamige Punkte behalten beim Verknüpfen ihre Historie.",
       },
       {
         titel: "Intervall & Fälligkeit",
-        text: "Nur zeitbasierte Punkte (z. B. »alle 30 Tage«) bekommen einen Termin und eine Fälligkeits-Anzeige: »heute fällig«, »überfällig (seit N T.)« oder »bald fällig« für die nächsten 14 Tage. Gezählt wird tageweise — ein Punkt, der heute dran ist, gilt den ganzen Tag als fällig, nicht erst ab der Uhrzeit. Spielzahl- und Bedarf-Punkte sind reine Checkliste ohne Termin.",
+        text: "Nur zeitbasierte Punkte (z. B. »alle 30 Tage«) bekommen einen Termin und eine Fälligkeits-Anzeige: »heute fällig«, »überfällig seit N Tagen« oder gelb »in N Tagen« für die nächsten 14 Tage. Gezählt wird tageweise — ein Punkt, der heute dran ist, gilt den ganzen Tag als fällig, nicht erst ab der Uhrzeit. Spielzahl- und Bedarf-Punkte sind reine Checkliste ohne Termin.",
       },
       {
         titel: "Erledigt eintragen",
-        text: "»Erledigt eintragen« schreibt einen Eintrag in die Historie (Datum, optionale Notiz) und verschiebt die nächste Fälligkeit automatisch um das Intervall.",
+        text: "Das Häkchen an einem Wartungspunkt öffnet »Erledigt eintragen« (Datum heute vorbelegt, optionale Notiz). Der Eintrag landet in der Historie und verschiebt die nächste Fälligkeit automatisch um das Intervall.",
       },
       {
         titel: "Historie",
-        text: "Je Wartungspunkt lässt sich die Historie aller Erledigungen auf- und zuklappen; einzelne Einträge können gelöscht werden.",
+        text: "»Historie (n)« an jedem Wartungspunkt öffnet die Liste aller Erledigungen samt vollständiger Beschreibung des Punkts; einzelne Einträge lassen sich dort löschen (die Fälligkeit wird dann neu berechnet).",
       },
       {
         titel: "Erinnerungen",
@@ -302,7 +302,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Mitglieder einladen",
-        text: "Auf der Club-Seite (als Owner oder Admin) eine E-Mail eingeben, Rolle wählen und »Einladen«. Der Empfänger bekommt eine E-Mail mit Beitritts-Link. Offene Einladungen kannst du jederzeit zurückziehen.",
+        text: "Auf der Club-Seite (als Owner oder Admin) öffnet »Mitglied einladen« neben der Überschrift einen Dialog: E-Mail eingeben, Rolle wählen und »Einladen«. Der Empfänger bekommt eine E-Mail mit Beitritts-Link. Offene Einladungen stehen unter der Mitgliederliste und lassen sich über den Papierkorb zurückziehen; verfallene tauchen dort nicht mehr auf.",
       },
       {
         titel: "Rollen",
@@ -310,7 +310,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Rolle ändern",
-        text: "Als Owner oder Admin wählst du in der Mitgliederliste eine andere Rolle aus und speicherst. Die Owner-Rolle kann nur ein Owner vergeben oder entziehen.",
+        text: "Als Owner oder Admin öffnet der Stift am Zeilenende der Mitgliederliste einen Dialog, in dem du die neue Rolle wählst und speicherst; der Papierkorb entfernt das Mitglied, am eigenen Eintrag steht stattdessen »Verlassen«. Die Owner-Rolle kann nur ein Owner vergeben oder entziehen. Beim letzten Owner sind Stift, Papierkorb und Verlassen ausgegraut und sagen warum — erst jemand anderen zum Owner befördern.",
       },
       {
         titel: "Owner-Regel",
@@ -357,7 +357,7 @@ export const ANLEITUNG: HilfeSektion[] = [
     schritte: [
       {
         titel: "Hochladen",
-        text: "Auf der Maschinen-Detailseite im Reiter »Handbuch« öffnest du »Handbuch per KI auswerten«. Standardweg ist »In der App«: bestätigen, dass du das Handbuch besitzt bzw. die Rechte hast, das PDF wählen und auswerten. Anbieter, Detailstufe und Sichtbarkeit liegen unter »Erweiterte Optionen« — für den Normalfall musst du sie nicht anfassen.",
+        text: "Auf der Maschinen-Detailseite im Reiter »Handbuch« öffnet der Knopf »Handbuch auswerten« (rechts oben) einen Dialog. Standardweg ist »In der App«: bestätigen, dass du das Handbuch besitzt bzw. die Rechte hast, das PDF wählen und auswerten. Anbieter, Detailstufe und Sichtbarkeit liegen unter »Erweiterte Optionen« — für den Normalfall musst du sie nicht anfassen.",
       },
       {
         titel: "Was passiert",
@@ -365,7 +365,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Alternative ohne KI: JSON-Import",
-        text: "Hast du ein ChatGPT- oder Claude-Abo, geht es auch ohne KI-Verarbeitung in der App: In »Handbuch per KI auswerten« auf »Eigenes ChatGPT-/Claude-Abo« umschalten, den vorbereiteten Prompt kopieren, dort zusammen mit dem Handbuch nutzen und die JSON-Ausgabe einfügen. »Prüfen« zeigt eine Vorschau samt Warnungen, erst dann wird importiert.",
+        text: "Hast du ein ChatGPT- oder Claude-Abo, geht es auch ohne KI-Verarbeitung in der App: Im Dialog »Handbuch auswerten« auf »Eigenes ChatGPT-/Claude-Abo« umschalten, den vorbereiteten Prompt kopieren, dort zusammen mit dem Handbuch nutzen und die JSON-Ausgabe einfügen. »Prüfen« zeigt eine Vorschau samt Warnungen, erst dann wird importiert.",
       },
       {
         titel: "KI-Schlüssel (falls nötig)",
@@ -373,7 +373,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Ansehen",
-        text: "Switch- und Lampen-Matrix erscheinen als farbcodiertes Raster (WPC-Draht-Farbcodes, Opto-Schalter markiert). Über die Kennzahl-Karten springst du zu den Abschnitten; Tabellen mit einer Typ-Spalte lassen sich filtern.",
+        text: "Alle Faktentabellen stehen offen da; Switch- und Lampen-Matrix erscheinen als farbcodiertes Raster (WPC-Draht-Farbcodes, Opto-Schalter markiert). Die Kennzahl-Karten oben sind Sprunglinks zu den Tabellen; ein Klick auf den Tabellenkopf klappt eine lange Tabelle zu. Tabellen mit einer Typ-Spalte lassen sich filtern.",
       },
     ],
   },
@@ -389,11 +389,11 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Erstellen",
-        text: "Im Reiter »Guide« auf »Troubleshooting-Guide erstellen« (nur mit Schreibrecht). Claude bestimmt zunächst die Plattform bzw. Geräte-Generation und prüft sie samt bekannter Serienfehler per Websuche gegen Community-Quellen (IPDB, PinWiki, Pinside). Das dauert ein bis zwei Minuten.",
+        text: "Im Reiter »Guide« öffnet »Guide erstellen« (nur mit Schreibrecht) einen Dialog mit zwei Wegen: »Per KI erzeugen« oder »JSON importieren«. Beim KI-Weg bestimmt Claude zunächst die Plattform bzw. Geräte-Generation und prüft sie samt bekannter Serienfehler per Websuche gegen Community-Quellen (IPDB, PinWiki, Pinside). Das dauert ein bis zwei Minuten.",
       },
       {
         titel: "Alternative ohne KI: JSON-Import",
-        text: "Wie bei den Handbuch-Daten geht es auch ohne die KI-Erstellung in der App: Im Reiter »Guide« den vorbereiteten Prompt kopieren (er enthält bereits Hersteller, Modell und Baujahr), in ChatGPT ausführen und die JSON-Ausgabe einfügen. »Prüfen« zeigt eine Vorschau samt Warnungen, erst dann wird importiert. Der Import ersetzt deinen bisherigen Guide auf der gewählten Ebene — der alte Stand wandert in den Verlauf. Importierte Guides sind als »Importiert (extern erstellt)« gekennzeichnet.",
+        text: "Wie bei den Handbuch-Daten geht es auch ohne die KI-Erstellung in der App: Im Dialog »Guide erstellen« auf »JSON importieren« umschalten, den vorbereiteten Prompt kopieren (er enthält bereits Hersteller, Modell und Baujahr), in ChatGPT ausführen und die JSON-Ausgabe einfügen. »Prüfen« zeigt eine Vorschau samt Warnungen, erst dann wird importiert. Der Import ersetzt deinen bisherigen Guide auf der gewählten Ebene — der alte Stand wandert in den Verlauf. Importierte Guides sind als »Importiert (extern erstellt)« gekennzeichnet.",
       },
       {
         titel: "Gültigkeit: Modell oder Generation",
@@ -405,7 +405,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Neu erstellen",
-        text: "Über »Guide neu erstellen« lässt sich der Leitfaden jederzeit neu erzeugen. Der bisherige Stand geht dabei nicht verloren — er wandert in den Verlauf des Eintrags (siehe »Wissenseinträge bearbeiten & Verlauf«).",
+        text: "Gibt es schon einen eigenen Guide, heißt der Knopf »Guide ersetzen« — derselbe Dialog erzeugt oder importiert den Leitfaden neu. Der bisherige Stand geht dabei nicht verloren — er wandert in den Verlauf des Eintrags (siehe »Wissenseinträge bearbeiten & Verlauf«).",
       },
       {
         titel: "Wichtig",
@@ -421,7 +421,7 @@ export const ANLEITUNG: HilfeSektion[] = [
     schritte: [
       {
         titel: "Der Katalog",
-        text: "»Wissensbasis« in der Navigation zeigt alle Modelle, zu denen für dich Wissen sichtbar ist (eigenes plus geteiltes) — mit Foto und Anzahl der Einträge.",
+        text: "»Wissensbasis« in der Navigation zeigt alle Modelle, zu denen für dich Wissen sichtbar ist (eigenes plus geteiltes) — mit Foto und Anzahl der Einträge. Baugleiche Editionen einer Maschine (z. B. Premium und LE — gleiche ersten zwei Teile der OPDB-Kennung) teilen ihr Wissen und erscheinen als ein Eintrag mit »auch …«; die Modellseite nennt sie unter »Baugleich mit«. Die Pro-Ausführung ist eine andere Maschine.",
       },
       {
         titel: "Modellseite",
@@ -433,7 +433,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Allgemeine Tipps",
-        text: "Im Reiter »Tipps« (Maschine wie Modellseite) sammelst du frei formulierte Hinweise — z. B. Wartungskniffe oder bekannte Schwachstellen. Der Text erlaubt eine einfache FORMATIERUNG: **fett**, _kursiv_, Aufzählungen mit einem Bindestrich am Zeilenanfang und Links als [Text](URL) — reine URLs werden automatisch anklickbar. Zusätzlich lassen sich weiterführende LINKS mit optionalem Namen und kurzer Beschreibung anhängen. Ein Tipp kann anders als übriges Wissen MEHRERE Modelle und/oder ganze Generationen zugleich betreffen; die Ziele wählst du beim Anlegen aus dem Katalog (das Modell der aktuellen Maschine ist vorausgewählt). Die Tipp-Liste lässt sich zwischen Karten- und kompakter Listenansicht umschalten. Jeder Tipp zeigt »gilt für …«, trägt eine Sichtbarkeit und lässt sich wie andere Einträge bewerten, ausblenden, bearbeiten und (nur vom Autor) löschen.",
+        text: "Im Reiter »Tipps« (Maschine wie Modellseite) sammelst du frei formulierte Hinweise — z. B. Wartungskniffe oder bekannte Schwachstellen. Der Text erlaubt eine einfache FORMATIERUNG: **fett**, _kursiv_, Aufzählungen mit einem Bindestrich am Zeilenanfang und Links als [Text](URL) — reine URLs werden automatisch anklickbar. Zusätzlich lassen sich weiterführende LINKS mit optionalem Namen und kurzer Beschreibung anhängen. Ein Tipp kann anders als übriges Wissen MEHRERE Modelle und/oder ganze Generationen zugleich betreffen; die Ziele wählst du beim Anlegen (»Tipp hinzufügen« öffnet einen Dialog) aus dem Katalog (das Modell der aktuellen Maschine ist vorausgewählt). Rechts oben schaltest du zwischen Karten- und kompakter Listenansicht um; die Wahl bleibt gemerkt. Jeder Tipp zeigt »gilt für …«, trägt eine Sichtbarkeit und lässt sich wie andere Einträge bewerten und ausblenden; eigene Tipps tragen im Kopf Stift (Bearbeiten) und Papierkorb (Löschen mit Rückfrage).",
       },
     ],
   },
@@ -445,11 +445,11 @@ export const ANLEITUNG: HilfeSektion[] = [
     schritte: [
       {
         titel: "Sichtbarkeit je Wissenseintrag",
-        text: "Handbuch-Daten und Guides tragen eine Sichtbarkeit: »privat« (nur du), »Club« oder »öffentlich« (alle angemeldeten Nutzer — kein Zugriff aus dem offenen Internet). Du wählst sie beim Erzeugen bzw. Import und kannst sie am Eintrag jederzeit ändern. Jeder Eintrag zeigt seinen Autor.",
+        text: "Handbuch-Daten und Guides tragen eine Sichtbarkeit: »privat« (nur du), »Club« oder »öffentlich« (alle angemeldeten Nutzer — kein Zugriff aus dem offenen Internet). Du wählst sie beim Erzeugen bzw. Import; am eigenen Eintrag änderst du sie über das Auswahlfeld »Sichtbar:« im Kopf — die Wahl wird sofort gespeichert. Jeder Eintrag zeigt seinen Autor.",
       },
       {
         titel: "Reparaturen teilen",
-        text: "Unter jeder Reparatur gibt es »Teilen«. Standardmäßig anonym und ohne Kosten/Aufwand — beides lässt sich je Eintrag umschalten. Reichweiten: alle angemeldeten Nutzer, bestimmte Clubs oder bestimmte Personen per E-Mail. Die Vorschau zeigt exakt, was andere lesen.",
+        text: "Rechts an jeder Reparatur sitzt das Teilen-Symbol; es öffnet den Teilen-Dialog. Eine geteilte Reparatur trägt den Chip »Geteilt: …«, und dasselbe Symbol öffnet dann die Freigabe zum Ändern oder Aufheben (mit Rückfrage). Standardmäßig anonym und ohne Kosten/Aufwand — beides lässt sich je Eintrag umschalten. Reichweiten: alle angemeldeten Nutzer, bestimmte Clubs oder bestimmte Personen per E-Mail. Die Vorschau zeigt exakt, was andere lesen.",
       },
       {
         titel: "Was du siehst",
@@ -481,11 +481,11 @@ export const ANLEITUNG: HilfeSektion[] = [
     schritte: [
       {
         titel: "Bearbeiten",
-        text: "Unter jedem eigenen Eintrag gibt es »Bearbeiten«: bei Handbuch-Daten und Guides änderst du Titel und Inhalt als JSON (gleiche Struktur wie beim Import), »Prüfen« validiert die Eingabe, erst dann ist Speichern möglich. Tipps bearbeitest du direkt als Text samt ihrer Links. Optional gibst du einen Kommentar zur Änderung an.",
+        text: "Im Kopf jedes eigenen Eintrags sitzt ein Stift; er öffnet den Editor als Dialog: bei Handbuch-Daten und Guides änderst du Titel und Inhalt als JSON (gleiche Struktur wie beim Import), »Prüfen« validiert die Eingabe, erst dann ist Speichern möglich. Tipps bearbeitest du direkt als Text samt ihrer Links. »Speichern« bleibt ausgegraut, solange sich nichts gegenüber dem gespeicherten Stand geändert hat. Optional gibst du einen Kommentar zur Änderung an.",
       },
       {
         titel: "Verlauf",
-        text: "»Verlauf (n)« unter dem Eintrag zeigt alle früheren Stände — mit Datum, Bearbeiter, Kommentar und dem kompletten alten Inhalt. Den Verlauf sieht nur der Autor.",
+        text: "Der Link »Verlauf (n)« im Kopf des Eintrags öffnet alle früheren Stände in einem Dialog — mit Datum, Bearbeiter, Kommentar und dem kompletten alten Inhalt. Den Verlauf sieht nur der Autor.",
       },
       {
         titel: "Bewertungen bleiben erhalten",
@@ -517,7 +517,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Clubs verlassen",
-        text: "Unter »Meine Clubs« siehst du deine Clubs samt Rolle und kannst sie über »Verlassen« verlassen. Bist du letzter Owner, musst du vorher jemanden zum Owner befördern — dann steht dort statt des Buttons ein Hinweis.",
+        text: "Unter »Meine Clubs« siehst du deine Clubs samt Rolle und kannst sie über »Verlassen« verlassen. Bist du letzter Owner, musst du vorher jemanden zum Owner befördern — bis dahin ist der Knopf ausgegraut und sagt warum.",
       },
       {
         titel: "Logo & Sammel-QR (private Sammlung)",
@@ -525,11 +525,11 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "WhatsApp bei neuen Fehlern",
-        text: "Unter »WhatsApp-Benachrichtigung« hinterlegst du deine Nummer (Format +49151…) und aktivierst die Benachrichtigung PRO CLUB. Danach bekommst du eine WhatsApp, sobald an einer Maschine dieses Clubs ein neuer Fehler gemeldet wird — auch bei Gast-Meldungen per QR-Code. Nur Owner/Admins eines Clubs können das aktivieren; ohne hinterlegte Nummer geht trotz aktivem Schalter nichts raus. Damit es nicht spammt, wird je Maschine höchstens alle 30 Minuten eine Nachricht geschickt.",
+        text: "Unter »WhatsApp-Benachrichtigung« hinterlegst du deine Nummer (Format +49151…) und schaltest die Benachrichtigung PRO CLUB per Häkchen ein — das speichert sofort. Danach bekommst du eine WhatsApp, sobald an einer Maschine dieses Clubs ein neuer Fehler gemeldet wird — auch bei Gast-Meldungen per QR-Code. Nur Owner/Admins eines Clubs können das aktivieren; ohne hinterlegte Nummer geht trotz aktivem Schalter nichts raus. Damit es nicht spammt, wird je Maschine höchstens alle 30 Minuten eine Nachricht geschickt.",
       },
       {
         titel: "Passwort ändern",
-        text: "Unter »Sicherheit« den Bereich »Passwort ändern« aufklappen: aktuelles Passwort, neues Passwort und Wiederholung — gleiche Regeln, mit Anzeigen/Verbergen.",
+        text: "Unter »Sicherheit«: aktuelles Passwort, neues Passwort und Wiederholung — gleiche Regeln, mit Anzeigen/Verbergen. Darunter löscht »Konto löschen« nach Eingabe deiner E-Mail-Adresse das Konto unwiderruflich.",
       },
       {
         titel: "Freigabe-Voreinstellungen",
@@ -598,7 +598,11 @@ export const ADMIN_HILFE: HilfeSektion[] = [
       },
       {
         titel: "Rollen je Nutzer verwalten",
-        text: "Es gibt zwei Achsen: GLOBALE Rollen (Super-Admin, Kurator — plattformweit) und CLUB-Rollen (Owner/Admin/Mitglied — immer in genau einem Club). Eine Person kann mehrere halten: verschiedene Rollen in verschiedenen Clubs plus globale. In der Nutzerliste zeigt jede Person ihre Rollen; unter »Rollen verwalten« vergibst/änderst/entziehst du beides — bei einer Club-Rolle wählst du immer den Club dazu. (Club-Rollen lassen sich weiterhin auch direkt im jeweiligen Club vergeben.)",
+        text: "Es gibt zwei Achsen: GLOBALE Rollen (Super-Admin, Kurator — plattformweit) und CLUB-Rollen (Owner/Admin/Mitglied — immer in genau einem Club). Eine Person kann mehrere halten: verschiedene Rollen in verschiedenen Clubs plus globale. Die Nutzerseite hat zwei Ansichten (Umschalter rechts oben): Karten zeigen unter jeder Person jede Zuweisung als Zeile mit Stift (Club-Rolle ändern) und Papierkorb (entziehen); die Liste zeigt die Rollen kompakt als Chips, und der Stift am Zeilenende klappt dieselbe Bearbeitung auf; »Rolle hinzufügen« öffnet einen Dialog: erst »Wo?« (Plattform oder ein Club), dann die passende Rolle. Was nicht geht — letzter Owner, letzter Super-Admin — ist ausgegraut und sagt warum. (Club-Rollen lassen sich weiterhin auch direkt im jeweiligen Club vergeben.)",
+      },
+      {
+        titel: "Konto löschen (Admin)",
+        text: "Der Papierkorb am Nutzer löscht dessen Konto unwiderruflich — derselbe Weg wie die Selbst-Löschung unter »Konto«: private Maschinen samt Fotos werden gelöscht, in Clubs geteilte Inhalte bleiben erhalten und gehen auf dich als handelnden Super-Admin über. Ist die Person alleiniger Owner eines Clubs, wird abgelehnt — erst die Ownerschaft übertragen. Das eigene Konto ist hier gesperrt.",
       },
       {
         titel: "Grundrollen: Gast & User",
@@ -614,7 +618,7 @@ export const ADMIN_HILFE: HilfeSektion[] = [
       },
       {
         titel: "Sichtbarkeits-Debug",
-        text: "»Sichtbarkeit« neben einem Nutzer zeigt, welche Maschinen dieser Nutzer aktuell sehen kann — hilfreich, wenn jemand etwas vermisst. (Ein temporäres Werkzeug.)",
+        text: "Die Debug-Seite /admin/visibility/<Nutzer-ID> zeigt, welche Maschinen ein Nutzer aktuell sehen kann — hilfreich, wenn jemand etwas vermisst. Sie ist bewusst nicht verlinkt (ein temporäres Werkzeug).",
       },
     ],
   },
@@ -680,7 +684,7 @@ export const ADMIN_HILFE: HilfeSektion[] = [
       },
       {
         titel: "Generationen",
-        text: "Unter »Generationen« pflegst du die Board-System-Liste (z. B. WPC-95, Stern SPIKE 2) mit Hersteller und Zeitraum. Jede Generation zeigt aufklappbar ihre Modelle. Wissen auf Generation-Ebene (z. B. ein Guide) erscheint automatisch bei allen Modellen der Generation.",
+        text: "Unter »Generationen« pflegst du die Board-System-Liste (z. B. WPC-95, Stern SPIKE 2) mit Hersteller und Zeitraum. Die Modellzahl je Generation ist ein Link auf die entsprechend gefilterte Modell-Liste; umbenennen und löschen geht über die Icons rechts in der Zeile. Wissen auf Generation-Ebene (z. B. ein Guide) erscheint automatisch bei allen Modellen der Generation.",
       },
     ],
   },
@@ -720,7 +724,7 @@ export const ADMIN_HILFE: HilfeSektion[] = [
       },
       {
         titel: "Triage (nur Super-Admins)",
-        text: "Je Meldung lassen sich Status (offen → in Arbeit → erledigt, zusätzlich zurückgestellt und verworfen) und eine Antwort setzen — beides sieht der Melder unter »Meine Meldungen«. Wird eine Meldung ABGESCHLOSSEN (erledigt/zurückgestellt/verworfen), bekommt der Melder automatisch eine E-Mail mit dem Ergebnis. Die Liste »Alle Meldungen« lässt sich nach Status filtern (Chips). Bei einer neuen Meldung geht automatisch eine E-Mail an alle Super-Admins; erledigte oder gegenstandslose Meldungen können gelöscht werden.",
+        text: "Über das Stift-Icon einer Meldung lassen sich Status (offen → in Arbeit → erledigt, zusätzlich zurückgestellt und verworfen) und eine Antwort in einem Dialog setzen — beides sieht der Melder unter »Meine Meldungen«. Wird eine Meldung ABGESCHLOSSEN (erledigt/zurückgestellt/verworfen), bekommt der Melder automatisch eine E-Mail mit dem Ergebnis. Die Liste »Alle Meldungen« lässt sich nach Status filtern (Chips). Bei einer neuen Meldung geht automatisch eine E-Mail an alle Super-Admins; erledigte oder gegenstandslose Meldungen können gelöscht werden.",
       },
       {
         titel: "Versand-Protokoll",

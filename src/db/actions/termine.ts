@@ -95,7 +95,10 @@ export async function updateTermin(
   redirect(`/machines/${machineId}?bereich=termine`);
 }
 
-export async function deleteTermin(formData: FormData): Promise<void> {
+export async function deleteTermin(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
   const machineId = String(formData.get("machineId"));
   const id = String(formData.get("id"));
   await requireMachineWrite(machineId);
@@ -105,6 +108,7 @@ export async function deleteTermin(formData: FormData): Promise<void> {
     .where(and(eq(termine.id, id), eq(termine.machineId, machineId)));
 
   revalidatePath(`/machines/${machineId}`);
+  return { ok: true };
 }
 
 /** Termin erledigen: wiederkehrend rückt das Datum weiter (bleibt offen,

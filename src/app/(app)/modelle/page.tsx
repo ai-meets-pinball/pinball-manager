@@ -12,7 +12,9 @@ import { modellName } from "@/lib/format";
   Detailseite). Ein Modell (machine_models, z. B. „Monster Bash") ist die
   Klasse; einzelne Maschinen sind Instanzen — man muss den Automaten nicht
   selbst besitzen. Der Zähler meint WISSENSEINTRÄGE (nicht nur
-  Handbuch-Extrakte); Reparatur-Freigaben ziehen in Phase 3 nach.
+  Handbuch-Extrakte); Reparatur-Freigaben ziehen in Phase 3 nach. Baugleiche
+  Editionen (LE, Premium — gleiche ersten zwei OPDB-Segmente) erscheinen als
+  EIN Eintrag mit „auch …", denn sie teilen ihr Wissen.
 */
 export default async function WissensbasisPage() {
   const currentUser = await requireUser();
@@ -52,8 +54,10 @@ export default async function WissensbasisPage() {
                 ) : null}
                 <div className="min-w-0 flex-1 p-3">
                   <p className="truncate font-semibold">{modellName(m)}</p>
-                  <p className="text-sm text-[var(--color-muted)]">
+                  <p className="truncate text-sm text-[var(--color-muted)]">
                     {m.baujahr ?? "—"}
+                    {/* Baugleiche Editionen teilen diese Wissensbasis. */}
+                    {m.editionen.length > 0 ? ` · auch ${m.editionen.join(", ")}` : ""}
                   </p>
                   <div className="mt-2 flex flex-wrap gap-3 text-xs text-[var(--color-muted)]">
                     <span className="inline-flex items-center gap-1">

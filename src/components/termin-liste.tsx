@@ -1,10 +1,13 @@
 import Link from "next/link";
 import { Check, Pencil, Repeat, Trash2 } from "lucide-react";
-import { Badge, type BadgeTone } from "@/components/ui/badge";
-import { List, ListRow } from "@/components/ui/list";
+import { ActionForm } from "@/components/ui/action-form";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
+import { ICON_BTN } from "@/components/ui/icon-button";
+import { List, ListRow } from "@/components/ui/list";
 import { deleteTermin, erledigeTermin } from "@/db/actions/termine";
-import { tageDazwischen } from "@/lib/faelligkeit";
+import { faelligLabel, tageDazwischen } from "@/lib/faelligkeit";
 
 export type TerminEintrag = {
   id: string;
@@ -16,21 +19,10 @@ export type TerminEintrag = {
 };
 
 /* Offene Termine eines Geräts (nächster zuerst) als List/ListRow — der Reiter-
-   Kopf (＋ Neuer Termin) rendert die Seite. „Erledigt" rückt einen
-   wiederkehrenden Termin weiter, sonst schließt es ihn. */
-function faelligLabel(tage: number): { text: string; tone: BadgeTone } {
-  if (tage < 0)
-    return {
-      text: `überfällig seit ${-tage} Tag${-tage === 1 ? "" : "en"}`,
-      tone: "danger",
-    };
-  if (tage === 0) return { text: "heute fällig", tone: "warn" };
-  return {
-    text: `in ${tage} Tag${tage === 1 ? "" : "en"}`,
-    tone: tage <= 14 ? "neutral" : "muted",
-  };
-}
-
+   Kopf (＋ Neuer Termin) rendert die Seite. Rechts die Zeilen-Aktionen:
+   „Erledigt" als beschrifteter Knopf (rückt einen wiederkehrenden Termin
+   weiter, sonst schließt es ihn), Stift und Papierkorb als Icons. Das
+   Fälligkeits-Label kommt aus derselben Regel wie bei der Wartung. */
 export function TerminListe({
   termine,
   machineId,
@@ -45,7 +37,11 @@ export function TerminListe({
   return (
     <List empty="Keine anstehenden Termine.">
       {termine.map((t) => {
-        const f = faelligLabel(tageDazwischen(jetzt, t.datum));
+        const tage = tageDazwischen(jetzt, t.datum);
+        const f = faelligLabel(
+          tage <= 0 ? "faellig" : tage <= 14 ? "bald" : "ok",
+          tage,
+        );
         return (
           <ListRow
             key={t.id}
@@ -58,7 +54,7 @@ export function TerminListe({
                     <Repeat size={11} /> alle {t.wiederholenMonate} Monate
                   </Badge>
                 ) : null}
-                <Badge tone={f.tone}>{f.text}</Badge>
+                <Badge tone={f.ton}>{f.text}</Badge>
               </>
             }
             actions={
@@ -67,31 +63,44 @@ export function TerminListe({
                   <form action={erledigeTermin}>
                     <input type="hidden" name="machineId" value={machineId} />
                     <input type="hidden" name="id" value={t.id} />
-                    <button
+                    <Button
                       type="submit"
-                      className="inline-flex items-center gap-1 text-sm text-[var(--color-primary)] hover:underline"
+                      variant="secondary"
+                      size="sm"
+                      title={
+                        t.wiederholenMonate
+                          ? "Rückt den Termin um das Intervall weiter"
+                          : "Schließt den Termin"
+                      }
                     >
                       <Check size={14} /> Erledigt
-                      {t.wiederholenMonate ? " (nächster)" : ""}
-                    </button>
+                    </Button>
                   </form>
                   <Link
                     href={`/machines/${machineId}/termine/${t.id}/edit`}
-                    className="inline-flex items-center gap-1 text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+                    aria-label="Termin bearbeiten"
+                    title="Bearbeiten"
+                    className={ICON_BTN}
                   >
-                    <Pencil size={14} /> Bearbeiten
+                    <Pencil size={14} />
                   </Link>
-                  <form action={deleteTermin}>
+                  <ActionForm action={deleteTermin}>
                     <input type="hidden" name="machineId" value={machineId} />
                     <input type="hidden" name="id" value={t.id} />
                     <ConfirmButton
-                      question="Diesen Termin löschen?"
+                      question={
+                        t.wiederholenMonate
+                          ? "Diesen Termin samt allen Wiederholungen löschen? Es gibt dann keine Erinnerung mehr."
+                          : "Diesen Termin löschen? Es gibt dann keine Erinnerung mehr."
+                      }
                       confirmLabel="Ja, löschen"
-                      className="inline-flex items-center gap-1 text-sm text-[var(--color-muted)] hover:text-[var(--color-danger)]"
+                      aria-label="Termin löschen"
+                      title="Löschen"
+                      className={`${ICON_BTN} hover:text-[var(--color-danger)]`}
                     >
-                      <Trash2 size={14} /> Löschen
+                      <Trash2 size={14} />
                     </ConfirmButton>
-                  </form>
+                  </ActionForm>
                 </>
               ) : null
             }

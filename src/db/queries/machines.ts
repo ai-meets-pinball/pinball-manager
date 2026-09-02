@@ -14,6 +14,7 @@ import {
   type SQL,
 } from "drizzle-orm";
 import { db } from "@/db";
+import { getFamilie } from "@/db/queries/familie";
 import {
   clubs,
   faultImages,
@@ -46,13 +47,15 @@ export async function getMachineModel(modelId: string) {
   });
 }
 
-/** Die Generation eines Modells (oder null) — für die Ebene-Wahl beim Guide. */
+/** Die Generation eines Modells (oder null) — für die Ebene-Wahl beim Guide.
+    Über die Familie: hat nur eine baugleiche Edition die Generation, gilt sie. */
 export async function getModelGeneration(modelId: string) {
+  const { generationId } = await getFamilie(modelId);
+  if (!generationId) return null;
   const [row] = await db
     .select({ id: generations.id, name: generations.name })
-    .from(machineModels)
-    .innerJoin(generations, eq(generations.id, machineModels.generationId))
-    .where(eq(machineModels.id, modelId));
+    .from(generations)
+    .where(eq(generations.id, generationId));
   return row ?? null;
 }
 

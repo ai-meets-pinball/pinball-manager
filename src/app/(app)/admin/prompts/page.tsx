@@ -66,7 +66,7 @@ export default async function PromptsPage() {
 
             <PromptEditor
               promptKey={key}
-              label="Standard"
+              label="Global"
               platzhalter={def.platzhalter}
               vorlage={global?.vorlage ?? def.vorlage}
               existiert={Boolean(global)}
@@ -94,6 +94,11 @@ export default async function PromptsPage() {
               <PromptOverrideNeu
                 promptKey={key}
                 standard={global?.vorlage ?? def.vorlage}
+                belegt={scoped.map((o) => ({
+                  hersteller: o.hersteller ?? null,
+                  generationId: o.generationId ?? null,
+                  vorlage: o.vorlage,
+                }))}
                 hersteller={herstellerListe}
                 generationen={generationen}
                 herstellerScoped={def.herstellerScoped}

@@ -1,9 +1,10 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
+import { getFamilie } from "@/db/queries/familie";
 import { generations, machineModels } from "@/db/schema";
 import { requireSuperAdmin } from "@/lib/session";
 import type { FormState } from "@/db/actions/form-state";
@@ -40,13 +41,15 @@ export async function createGeneration(
     .returning({ id: generations.id });
 
   revalidiere();
+  // `ok` statt Erfolgstext: der Anlegen-Dialog schließt bei Erfolg (ActionDialog);
+  // die neue Zeile erscheint durch die Revalidierung in der Liste.
   return eingefuegt.length > 0
-    ? { message: `Generation „${parsed.data}" angelegt.` }
+    ? { ok: true }
     : { error: `„${parsed.data}" gibt es bereits.` };
 }
 
-/** Generation umbenennen. Gibt FormState zurück, damit die Zeile Fehler
-    (leerer Name, Namenskonflikt) anzeigen und sich bei Erfolg schließen kann. */
+/** Generation umbenennen. Gibt FormState zurück, damit der Dialog Fehler
+    (leerer Name, Namenskonflikt) anzeigen und sich bei Erfolg (`ok`) schließen kann. */
 export async function renameGeneration(
   _prev: FormState,
   formData: FormData,
@@ -68,16 +71,22 @@ export async function renameGeneration(
     return { error: `„${name.data}" gibt es bereits.` };
   }
   revalidiere();
-  return { message: "Umbenannt." };
+  return { ok: true };
 }
 
-/** Generation löschen — die Zuordnung der Modelle entfällt (FK set null). */
-export async function deleteGeneration(formData: FormData): Promise<void> {
+/** Generation löschen — die Zuordnung der Modelle entfällt (FK set null).
+    FormState statt void, damit eine Ablehnung unter dem Papierkorb steht
+    (ActionForm) und nicht still verschwindet. */
+export async function deleteGeneration(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
   await requireSuperAdmin();
   const id = z.string().uuid().safeParse(formData.get("id"));
-  if (!id.success) return;
+  if (!id.success) return { error: "Ungültige Generation." };
   await db.delete(generations).where(eq(generations.id, id.data));
   revalidiere();
+  return { ok: true };
 }
 
 /** Generation eines Modells von Hand setzen. „auto" gibt es zurück an den Import
@@ -92,12 +101,16 @@ export async function assignModelGeneration(
   const wert = String(formData.get("generationId") ?? "");
 
   try {
+    // Baugleiche Editionen (Familie, lib/opdb-ref.ts) haben dieselbe Hardware —
+    // die Zuordnung gilt für alle Zeilen der Familie, sonst drifteten LE und
+    // Premium/LE auseinander.
+    const { ids } = await getFamilie(modelId.data);
     if (wert === "auto") {
       // Zurück in den Import-Modus: nächster Katalog-Import darf wieder setzen.
       await db
         .update(machineModels)
         .set({ generationManuell: false })
-        .where(eq(machineModels.id, modelId.data));
+        .where(inArray(machineModels.id, ids));
     } else {
       const gid = z.string().uuid().safeParse(wert);
       await db
@@ -106,7 +119,7 @@ export async function assignModelGeneration(
           generationId: gid.success ? gid.data : null,
           generationManuell: true,
         })
-        .where(eq(machineModels.id, modelId.data));
+        .where(inArray(machineModels.id, ids));
     }
   } catch (e) {
     console.error("[generations] assign:", (e as Error).message);

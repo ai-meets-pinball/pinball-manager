@@ -6,7 +6,7 @@ import { loginAs, USERS } from "./helpers/auth";
   Feedback-/Bug-Report-System: Nutzer melden Fehler/Wünsche zur APP; der
   Auto-Kontext (Seite, Version, Browser) wird serverseitig erfasst. Eigene
   Meldungen samt Status sieht jeder Melder; ALLE Meldungen sehen nur
-  Super-Admins (Triage: Status + Antwort, Löschen).
+  Super-Admins (Triage: Status + Antwort im Dialog, Löschen per Papierkorb).
 */
 test.describe("Feedback & Fehlermeldungen", () => {
   test.afterAll(async () => {
@@ -28,6 +28,8 @@ test.describe("Feedback & Fehlermeldungen", () => {
     await expect(
       page.getByText("Danke — deine Meldung ist eingegangen."),
     ).toBeVisible();
+    // Eigene Meldungen liegen im Reiter „Meine Meldungen" (?tab=meine).
+    await page.goto("/feedback?tab=meine");
     await expect(
       page.getByRole("listitem").filter({ hasText: "E2E Testmeldung" }),
     ).toBeVisible();
@@ -44,7 +46,7 @@ test.describe("Feedback & Fehlermeldungen", () => {
 
   test("andere Nutzer sehen fremde Meldungen nicht", async ({ page }) => {
     await loginAs(page, USERS.outsider);
-    await page.goto("/feedback");
+    await page.goto("/feedback?tab=meine");
     await expect(page.getByText("E2E Testmeldung")).toHaveCount(0);
     await expect(page.getByText("Alle Meldungen")).toHaveCount(0);
   });
@@ -53,23 +55,29 @@ test.describe("Feedback & Fehlermeldungen", () => {
     page,
   }) => {
     await loginAs(page, USERS.admin);
-    await page.goto("/feedback");
+    await page.goto("/feedback?tab=alle");
     const zeile = page
       .getByRole("listitem")
       .filter({ hasText: "E2E Testmeldung" });
-    await zeile.locator("select").selectOption("in Arbeit");
-    await zeile
-      .getByPlaceholder(/Antwort an den Melder/)
+    // Triage läuft im Dialog (Stift-Icon): Status + Antwort zusammen.
+    await zeile.getByRole("button", { name: "Meldung bearbeiten" }).click();
+    const dialog = zeile.locator("dialog[open]");
+    // Felder direkt ansprechen: der Hinweistext des Antwortfelds enthält
+    // „Abschluss-Status", sodass getByLabel("Status") zwei Treffer hätte.
+    await dialog.locator('select[name="status"]').selectOption("in Arbeit");
+    await dialog
+      .locator('textarea[name="antwort"]')
       .fill("E2E: Wir schauen uns das an.");
-    await zeile.getByRole("button", { name: "Speichern" }).click();
-    await expect(zeile.getByText("Gespeichert.")).toBeVisible();
+    await dialog.getByRole("button", { name: "Speichern" }).click();
+    await expect(zeile.locator("dialog[open]")).toHaveCount(0);
+    await expect(zeile.getByText("In Arbeit")).toBeVisible();
 
     await loginAs(page, USERS.member);
-    await page.goto("/feedback");
+    await page.goto("/feedback?tab=meine");
     const meine = page
       .getByRole("listitem")
       .filter({ hasText: "E2E Testmeldung" });
-    await expect(meine.getByText("in Arbeit")).toBeVisible();
+    await expect(meine.getByText("In Arbeit")).toBeVisible();
     await expect(
       meine.getByText(/Wir schauen uns das an\./),
     ).toBeVisible();
@@ -77,11 +85,11 @@ test.describe("Feedback & Fehlermeldungen", () => {
 
   test("Super-Admin löscht (zweistufig)", async ({ page }) => {
     await loginAs(page, USERS.admin);
-    await page.goto("/feedback");
+    await page.goto("/feedback?tab=alle");
     const zeile = page
       .getByRole("listitem")
       .filter({ hasText: "E2E Testmeldung" });
-    await zeile.getByRole("button", { name: "Löschen" }).click();
+    await zeile.getByRole("button", { name: "Meldung löschen" }).click();
     await zeile.getByRole("button", { name: "Ja, löschen" }).click();
     await expect(zeile).toHaveCount(0);
   });

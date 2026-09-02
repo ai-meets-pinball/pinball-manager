@@ -1,15 +1,15 @@
-import { count, eq, isNotNull } from "drizzle-orm";
-import { GenerationCreateForm } from "@/components/generation-create-form";
+import { count, eq } from "drizzle-orm";
+import { GenerationAnlegen } from "@/components/generation-create-form";
 import { GenerationRow } from "@/components/generation-row";
-import { AddDisclosure } from "@/components/ui/add-disclosure";
 import { List } from "@/components/ui/list";
 import { db } from "@/db";
 import { generations, machineModels } from "@/db/schema";
 
 /*
   Generationen (Super-Admin): die Board-/Hardware-Systeme (z. B. „WPC-95",
-  „Stern SPIKE2") anlegen, umbenennen, löschen. Jede Zeile ist aufklappbar zu
-  ihren Modellen; die Zuordnung Modell → Generation passiert auf /admin/modelle.
+  „Stern SPIKE2") anlegen, umbenennen, löschen. Die Modelle einer Generation
+  stehen nicht hier, sondern hinter dem Link der Modellzahl auf /admin/modelle
+  (dort passiert auch die Zuordnung Modell → Generation).
   Der Super-Admin-Guard sitzt im admin/layout.tsx.
 */
 export default async function AdminGenerationenPage() {
@@ -26,31 +26,6 @@ export default async function AdminGenerationenPage() {
     .groupBy(generations.id)
     .orderBy(generations.name);
 
-  // Modelle je Generation (für die Aufklapp-Liste der Zeilen).
-  const zugeordnet = await db
-    .select({
-      hersteller: machineModels.hersteller,
-      modell: machineModels.modell,
-      baujahr: machineModels.baujahr,
-      generationId: machineModels.generationId,
-    })
-    .from(machineModels)
-    .where(isNotNull(machineModels.generationId))
-    .orderBy(machineModels.modell, machineModels.hersteller);
-  const proGeneration = new Map<
-    string,
-    { hersteller: string; modell: string; baujahr: number | null }[]
-  >();
-  for (const m of zugeordnet) {
-    const liste = proGeneration.get(m.generationId!) ?? [];
-    liste.push({
-      hersteller: m.hersteller,
-      modell: m.modell,
-      baujahr: m.baujahr,
-    });
-    proGeneration.set(m.generationId!, liste);
-  }
-
   return (
     <div className="space-y-6">
       <p className="text-sm text-[var(--color-muted)]">
@@ -60,24 +35,24 @@ export default async function AdminGenerationenPage() {
       </p>
 
       <section className="space-y-3">
-        <h2 className="text-lg font-semibold">
-          Generationen ({genList.length})
-        </h2>
-        <AddDisclosure label="Neue Generation">
-          <GenerationCreateForm />
-        </AddDisclosure>
-        <List empty="Noch keine Generationen — lege oben eine an.">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <h2 className="text-lg font-semibold">
+            Generationen ({genList.length})
+          </h2>
+          <GenerationAnlegen />
+        </div>
+        <List empty="Noch keine Generationen.">
           {genList.map((g) => (
             <GenerationRow
               key={g.id}
               id={g.id}
               name={g.name}
-              untertitel={`${g.anzahl} Modell(e)${
+              modelle={g.anzahl}
+              zeitraum={
                 g.jahrVon
-                  ? ` · ${g.jahrVon}${g.jahrBis && g.jahrBis !== g.jahrVon ? `–${g.jahrBis}` : ""}`
-                  : ""
-              }`}
-              modelle={proGeneration.get(g.id) ?? []}
+                  ? `${g.jahrVon}${g.jahrBis && g.jahrBis !== g.jahrVon ? `–${g.jahrBis}` : ""}`
+                  : null
+              }
             />
           ))}
         </List>

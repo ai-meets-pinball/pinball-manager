@@ -7,12 +7,14 @@ import { FormFeedback } from "@/components/ui/form-feedback";
 import { Select } from "@/components/ui/input";
 import { assignModelGeneration } from "@/db/actions/generations";
 import type { FormState } from "@/db/actions/form-state";
+import { ICON_BTN } from "@/components/ui/icon-button";
 
 /*
   Generation eines Modells: ANZEIGEN zuerst (der Name als Text), Ändern auf
   Verlangen (Stift → Select). Das Select submittet direkt bei Änderung und
   schließt bei Erfolg; Fehler werden angezeigt (FormFeedback), nicht verschluckt.
-  „— keine —" ist eine bewusste Zuordnung ohne Generation.
+  „ohne Generation" ist eine bewusste Zuordnung ohne Generation. Die Wahl gilt
+  für alle baugleichen Editionen des Modells (Familie) — ein Klick, eine Hardware.
 */
 export function ModelGenerationSelect({
   modelId,
@@ -59,14 +61,14 @@ export function ModelGenerationSelect({
               : "text-sm text-[var(--color-faint)]"
           }
         >
-          {aktuellName ?? "keine Generation"}
+          {aktuellName ?? "ohne Generation"}
         </span>
         <button
           type="button"
           onClick={() => setBearbeiten(true)}
           aria-label="Generation ändern"
           title="Generation ändern"
-          className="text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+          className={ICON_BTN}
         >
           <Pencil size={14} />
         </button>
@@ -87,7 +89,7 @@ export function ModelGenerationSelect({
         aria-label="Generation zuordnen"
         className="max-w-64"
       >
-        <option value="">— keine —</option>
+        <option value="">ohne Generation</option>
         {generationen.map((g) => (
           <option key={g.id} value={g.id}>
             {g.name}

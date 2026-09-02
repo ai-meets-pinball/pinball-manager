@@ -8,8 +8,10 @@ import {
   StickyNote,
   Trash2,
 } from "lucide-react";
-import { List, ListRow } from "@/components/ui/list";
+import { ActionForm } from "@/components/ui/action-form";
 import { ConfirmButton } from "@/components/ui/confirm-button";
+import { ICON_BTN } from "@/components/ui/icon-button";
+import { List, ListRow } from "@/components/ui/list";
 import { deleteDokument } from "@/db/actions/dokumente";
 
 export type DokumentEintrag = {
@@ -39,7 +41,7 @@ function hostVon(url: string): string {
 
 /* Dokumente eines Geräts (Links / Notizen / Dateien) als List/ListRow — der
    Reiter-Kopf (＋ Neues Dokument) rendert die Seite. Links öffnen extern,
-   Dateien werden heruntergeladen. */
+   Dateien werden heruntergeladen; rechts Stift und Papierkorb als Icons. */
 export function DokumenteListe({
   dokumente,
   machineId,
@@ -81,25 +83,29 @@ export function DokumenteListe({
                 <>
                   <Link
                     href={`/machines/${machineId}/dokumente/${d.id}/edit`}
-                    className="inline-flex items-center gap-1 text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+                    aria-label="Dokument bearbeiten"
+                    title="Bearbeiten"
+                    className={ICON_BTN}
                   >
-                    <Pencil size={14} /> Bearbeiten
+                    <Pencil size={14} />
                   </Link>
-                  <form action={deleteDokument}>
+                  <ActionForm action={deleteDokument}>
                     <input type="hidden" name="machineId" value={machineId} />
                     <input type="hidden" name="id" value={d.id} />
                     <ConfirmButton
                       question={
                         d.typ === "datei"
-                          ? "Dieses Dokument samt Datei löschen?"
+                          ? "Dieses Dokument löschen? Die Datei wird dabei endgültig aus dem Speicher entfernt."
                           : "Diesen Eintrag löschen?"
                       }
                       confirmLabel="Ja, löschen"
-                      className="inline-flex items-center gap-1 text-sm text-[var(--color-muted)] hover:text-[var(--color-danger)]"
+                      aria-label="Dokument löschen"
+                      title="Löschen"
+                      className={`${ICON_BTN} hover:text-[var(--color-danger)]`}
                     >
-                      <Trash2 size={14} /> Löschen
+                      <Trash2 size={14} />
                     </ConfirmButton>
-                  </form>
+                  </ActionForm>
                 </>
               ) : null
             }

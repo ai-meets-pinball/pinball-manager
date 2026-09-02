@@ -6,6 +6,7 @@ import {
   darfWissen,
   istLetzterOwner,
   mindestens,
+  rolleEntfernenGesperrt,
 } from "@/lib/rechte";
 
 /*
@@ -133,5 +134,60 @@ describe("istLetzterOwner", () => {
     expect(istLetzterOwner("owner", 2)).toBe(false);
     expect(istLetzterOwner("admin", 1)).toBe(false);
     expect(istLetzterOwner(null, 0)).toBe(false);
+  });
+});
+
+describe("rolleEntfernenGesperrt", () => {
+  it("lässt Club-Rollen entfernen, solange ein weiterer Owner bleibt", () => {
+    expect(
+      rolleEntfernenGesperrt({ scope: "club", rolle: "owner", ownerAnzahl: 2 }),
+    ).toBeNull();
+    expect(
+      rolleEntfernenGesperrt({ scope: "club", rolle: "admin", ownerAnzahl: 1 }),
+    ).toBeNull();
+  });
+
+  it("sperrt den letzten Owner eines Clubs", () => {
+    expect(
+      rolleEntfernenGesperrt({ scope: "club", rolle: "owner", ownerAnzahl: 1 }),
+    ).toBe("Ein Club braucht mindestens einen Owner");
+  });
+
+  it("sperrt den letzten Super-Admin", () => {
+    expect(
+      rolleEntfernenGesperrt({
+        scope: "global",
+        rolle: "superadmin",
+        superAdminAnzahl: 1,
+        istSelbst: false,
+      }),
+    ).toBe("Der letzte Super-Admin bleibt geschützt");
+    expect(
+      rolleEntfernenGesperrt({
+        scope: "global",
+        rolle: "superadmin",
+        superAdminAnzahl: 2,
+        istSelbst: false,
+      }),
+    ).toBeNull();
+  });
+
+  it("sperrt die eigenen globalen Rollen, nicht die eigenen Club-Rollen", () => {
+    expect(
+      rolleEntfernenGesperrt({
+        scope: "global",
+        rolle: "kurator",
+        superAdminAnzahl: 5,
+        istSelbst: true,
+      }),
+    ).toBe("Eigene globale Rollen lassen sich hier nicht ändern");
+    expect(
+      rolleEntfernenGesperrt({
+        scope: "global",
+        rolle: "kurator",
+        superAdminAnzahl: 1,
+        istSelbst: false,
+      }),
+    ).toBeNull();
   });
 });

@@ -49,13 +49,14 @@ async function darfPlanBearbeiten(
   return false;
 }
 
+/* Plan laden — undefined statt Wurf: die Aufrufer geben „nicht gefunden" als
+   FormState zurück (Plan in einem anderen Tab gelöscht = Zeile, keine Fehlerseite). */
 async function planOderFehler(planId: string) {
-  const plan = await db.query.maintenancePlans.findFirst({
+  return db.query.maintenancePlans.findFirst({
     where: eq(maintenancePlans.id, planId),
   });
-  if (!plan) throw new Error("Wartungsplan nicht gefunden");
-  return plan;
 }
+const PLAN_FEHLT = { error: "Wartungsplan nicht gefunden" } as const;
 
 /* ── Standard anlegen (Seed aus dem Code-Template) ────────────────────────── */
 
@@ -106,7 +107,8 @@ export async function createPlan(
   }
 
   revalidatePath("/wartungsplaene");
-  return { message: "Plan angelegt." };
+  // ok statt message: der Dialog schließt, der neue Plan erscheint als Reiter.
+  return { ok: true };
 }
 
 /** Plan umbenennen (Eigentümer bzw. Club-Manager). */
@@ -119,6 +121,7 @@ export async function renamePlan(
   const name = String(formData.get("name") ?? "").trim();
   if (!name) return { error: "Name fehlt." };
   const plan = await planOderFehler(planId);
+  if (!plan) return PLAN_FEHLT;
   if (!(await darfPlanBearbeiten(me, plan))) {
     return { error: "Keine Berechtigung für diesen Plan." };
   }
@@ -134,21 +137,26 @@ export async function renamePlan(
     throw e;
   }
   revalidatePath("/wartungsplaene");
-  return { message: "Umbenannt." };
+  return { ok: true };
 }
 
 /** Plan löschen. Verknüpfte Maschinen werden per FK entkoppelt
     (maintenance_plan_id → NULL, deren Tasks planItemId → NULL = eigene Kopien;
     Historie bleibt). */
-export async function deletePlan(formData: FormData): Promise<void> {
+export async function deletePlan(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
   const me = await requireUser();
   const planId = String(formData.get("planId") ?? "");
   const plan = await planOderFehler(planId);
+  if (!plan) return PLAN_FEHLT;
   if (!(await darfPlanBearbeiten(me, plan))) {
-    throw new Error("Nur Eigentümer bzw. Club-Manager dürfen den Plan löschen");
+    return { error: "Nur Eigentümer bzw. Club-Manager dürfen den Plan löschen" };
   }
   await db.delete(maintenancePlans).where(eq(maintenancePlans.id, planId));
   revalidatePath("/wartungsplaene");
+  return { ok: true };
 }
 
 /* ── Punkte: CRUD mit Propagation ─────────────────────────────────────────── */
@@ -165,6 +173,7 @@ export async function createPlanItem(
   const me = await requireUser();
   const planId = String(formData.get("planId"));
   const plan = await planOderFehler(planId);
+  if (!plan) return PLAN_FEHLT;
   if (!(await darfPlanBearbeiten(me, plan))) {
     return { error: "Keine Berechtigung für diesen Standard." };
   }
@@ -222,7 +231,7 @@ export async function createPlanItem(
   });
 
   revalidatePath("/wartungsplaene");
-  return { message: "Punkt angelegt." };
+  return { ok: true };
 }
 
 export async function updatePlanItem(
@@ -236,6 +245,7 @@ export async function updatePlanItem(
   });
   if (!item) return { error: "Punkt nicht gefunden." };
   const plan = await planOderFehler(item.planId);
+  if (!plan) return PLAN_FEHLT;
   if (!(await darfPlanBearbeiten(me, plan))) {
     return { error: "Keine Berechtigung für diesen Standard." };
   }
@@ -292,20 +302,24 @@ export async function updatePlanItem(
   });
 
   revalidatePath("/wartungsplaene");
-  return { message: "Gespeichert — auf verknüpfte Maschinen übertragen." };
+  return { ok: true };
 }
 
-export async function deletePlanItem(formData: FormData): Promise<void> {
+export async function deletePlanItem(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
   const me = await requireUser();
   const itemId = String(formData.get("itemId"));
   const item = await db.query.maintenancePlanItems.findFirst({
     where: eq(maintenancePlanItems.id, itemId),
   });
-  if (!item) return;
+  if (!item) return { ok: true };
   const plan = await planOderFehler(item.planId);
-  // Kein stilles Nichtstun: eine Verweigerung soll ankommen.
+  if (!plan) return PLAN_FEHLT;
+  // Kein stilles Nichtstun: eine Verweigerung soll ankommen — als Zeile.
   if (!(await darfPlanBearbeiten(me, plan))) {
-    throw new Error("Nur Eigentümer bzw. Club-Manager dürfen den Standard ändern");
+    return { error: "Nur Eigentümer bzw. Club-Manager dürfen den Standard ändern" };
   }
 
   await db.transaction(async (tx) => {
@@ -332,6 +346,7 @@ export async function deletePlanItem(formData: FormData): Promise<void> {
   });
 
   revalidatePath("/wartungsplaene");
+  return { ok: true };
 }
 
 /* ── Maschine ↔ Standard ──────────────────────────────────────────────────── */
@@ -414,8 +429,9 @@ export async function linkMachineToStandard(
 
 /** Verknüpfung lösen: alle Punkte werden eigene, frei editierbare Kopien. */
 export async function unlinkMachineFromStandard(
+  _prev: FormState,
   formData: FormData,
-): Promise<void> {
+): Promise<FormState> {
   const machineId = String(formData.get("machineId"));
   await requireMachineWrite(machineId);
 
@@ -431,4 +447,5 @@ export async function unlinkMachineFromStandard(
   });
 
   revalidatePath(`/machines/${machineId}`);
+  return { ok: true };
 }

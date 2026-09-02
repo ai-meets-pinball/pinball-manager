@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   FEEDBACK_ABSCHLUSS_SATZ,
+  FEEDBACK_STATUS_LABEL,
   istAbschluss,
   sollBenachrichtigen,
 } from "@/lib/feedback-status";
+import { FEEDBACK_STATUS } from "@/lib/validators";
 
 describe("istAbschluss", () => {
   it("erkennt Abschluss-Status", () => {
@@ -39,6 +41,16 @@ describe("FEEDBACK_ABSCHLUSS_SATZ", () => {
   it("hat einen Satz je Abschluss-Status", () => {
     for (const s of ["erledigt", "zurückgestellt", "verworfen"]) {
       expect(typeof FEEDBACK_ABSCHLUSS_SATZ[s]).toBe("string");
+    }
+  });
+});
+
+describe("FEEDBACK_STATUS_LABEL", () => {
+  it("hat ein großgeschriebenes Label für jeden Status", () => {
+    for (const s of FEEDBACK_STATUS) {
+      const label = FEEDBACK_STATUS_LABEL[s];
+      expect(typeof label).toBe("string");
+      expect(label[0]).toBe(label[0].toUpperCase());
     }
   });
 });

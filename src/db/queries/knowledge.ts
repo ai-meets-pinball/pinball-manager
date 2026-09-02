@@ -21,6 +21,8 @@ import {
   machineModels,
   user,
 } from "@/db/schema";
+import { getFamilie } from "@/db/queries/familie";
+import { gruppiereNachFamilie } from "@/lib/opdb-ref";
 import { darfWissen, kannKuratieren } from "@/lib/rechte";
 import {
   getUserClubIds,
@@ -116,12 +118,16 @@ export async function knowledgeSichtbarFuer(
   return Boolean(row);
 }
 
-/** Sichtbare Handbuch-Fakten (typ='handbuch_fakten') eines Modells (Modell). */
+/** Sichtbare Handbuch-Fakten (typ='handbuch_fakten') eines Modells — samt
+    seiner baugleichen Editionen (Familie): die Spulen-/Schaltermatrix ist dieselbe. */
 export async function getModelKnowledge(
   currentUser: SessionUser,
   modelId: string,
 ) {
-  const sichtbar = await knowledgeVisibilityFilter(currentUser);
+  const [sichtbar, familie] = await Promise.all([
+    knowledgeVisibilityFilter(currentUser),
+    getFamilie(modelId),
+  ]);
   return db
     .select(knowledgeAuswahl(currentUser.id))
     .from(knowledge)
@@ -129,7 +135,7 @@ export async function getModelKnowledge(
     .where(
       and(
         eq(knowledge.typ, "handbuch_fakten"),
-        eq(knowledge.modelId, modelId),
+        inArray(knowledge.modelId, familie.ids),
         sichtbar,
       ),
     )
@@ -177,17 +183,17 @@ export async function getModelGuides(
   currentUser: SessionUser,
   modelId: string,
 ) {
-  const sichtbar = await knowledgeVisibilityFilter(currentUser);
-  const [model] = await db
-    .select({ generationId: machineModels.generationId })
-    .from(machineModels)
-    .where(eq(machineModels.id, modelId));
-  const ebene = model?.generationId
+  // Familie (baugleiche Editionen) + deren Generation — eine Abfrage.
+  const [sichtbar, familie] = await Promise.all([
+    knowledgeVisibilityFilter(currentUser),
+    getFamilie(modelId),
+  ]);
+  const ebene = familie.generationId
     ? or(
-        eq(knowledge.modelId, modelId),
-        eq(knowledge.generationId, model.generationId),
+        inArray(knowledge.modelId, familie.ids),
+        eq(knowledge.generationId, familie.generationId),
       )
-    : eq(knowledge.modelId, modelId);
+    : inArray(knowledge.modelId, familie.ids);
 
   return db
     .select(guideAuswahl(currentUser.id))
@@ -228,18 +234,18 @@ export async function getMachineGuides(
   kann.
 */
 export async function getModelTipps(currentUser: SessionUser, modelId: string) {
-  const sichtbar = await knowledgeVisibilityFilter(currentUser);
-  const [model] = await db
-    .select({ generationId: machineModels.generationId })
-    .from(machineModels)
-    .where(eq(machineModels.id, modelId));
+  const [sichtbar, familie] = await Promise.all([
+    knowledgeVisibilityFilter(currentUser),
+    getFamilie(modelId),
+  ]);
 
-  const zielTrifft = model?.generationId
+  // Ein Tipp trifft, wenn er eine Edition der Familie oder deren Generation zielt.
+  const zielTrifft = familie.generationId
     ? or(
-        eq(knowledgeTargets.modelId, modelId),
-        eq(knowledgeTargets.generationId, model.generationId),
+        inArray(knowledgeTargets.modelId, familie.ids),
+        eq(knowledgeTargets.generationId, familie.generationId),
       )
-    : eq(knowledgeTargets.modelId, modelId);
+    : inArray(knowledgeTargets.modelId, familie.ids);
 
   return db
     .select({
@@ -263,13 +269,17 @@ export async function getModelTipps(currentUser: SessionUser, modelId: string) {
     .orderBy(desc(knowledge.updatedAt));
 }
 
-/** Modell-Katalog für den Ziel-Picker des Tipp-Formulars (Flippermaster). */
+/** Modell-Katalog für den Ziel-Picker des Tipp-Formulars (Flippermaster) —
+    EIN Eintrag je Familie (der editionsneutrale Vertreter), `ids` nennt alle
+    Editionen, damit die Maschinen-Seite ihre eigene vorbelegen kann. Gespeichert
+    wird das Ziel am Vertreter; gelesen wird familienweit (getModelTipps). */
 export async function getTippZielKatalog() {
   // Die beiden Kataloge hängen nicht voneinander ab → parallel laden.
-  const [modelle, generationenListe] = await Promise.all([
+  const [zeilen, generationenListe] = await Promise.all([
     db
       .select({
         id: machineModels.id,
+        opdbRef: machineModels.opdbRef,
         hersteller: machineModels.hersteller,
         modell: machineModels.modell,
         baujahr: machineModels.baujahr,
@@ -281,6 +291,13 @@ export async function getTippZielKatalog() {
       .from(generations)
       .orderBy(generations.name),
   ]);
+  const modelle = gruppiereNachFamilie(zeilen).map((f) => ({
+    id: f.vertreter.id,
+    ids: f.mitglieder.map((m) => m.id),
+    hersteller: f.vertreter.hersteller,
+    modell: f.vertreter.modell,
+    baujahr: f.vertreter.baujahr,
+  }));
   return { modelle, generationen: generationenListe };
 }
 
@@ -289,9 +306,11 @@ export async function getTippZielKatalog() {
     Handbuch-Extrakte. */
 export async function getKnowledgeModels(currentUser: SessionUser) {
   const sichtbar = await knowledgeVisibilityFilter(currentUser);
-  return db
+  const zeilen = await db
     .select({
-      modelId: machineModels.id,
+      id: machineModels.id,
+      opdbRef: machineModels.opdbRef,
+      opdbMachineRef: machineModels.opdbMachineRef,
       hersteller: machineModels.hersteller,
       modell: machineModels.modell,
       baujahr: machineModels.baujahr,
@@ -303,6 +322,48 @@ export async function getKnowledgeModels(currentUser: SessionUser) {
     .where(sichtbar)
     .groupBy(machineModels.id)
     .orderBy(machineModels.modell, machineModels.hersteller);
+
+  // Die Familie ist eine Katalog-Eigenschaft, kein Wissens-Zufall: auch
+  // Editionen OHNE eigene Einträge gehören dazu (Vertreter-Wahl, „auch …").
+  const schluessel = [
+    ...new Set(zeilen.map((z) => z.opdbMachineRef).filter((s): s is string => s !== null)),
+  ];
+  const geschwister =
+    schluessel.length === 0
+      ? []
+      : await db
+          .select({
+            id: machineModels.id,
+            opdbRef: machineModels.opdbRef,
+            opdbMachineRef: machineModels.opdbMachineRef,
+            hersteller: machineModels.hersteller,
+            modell: machineModels.modell,
+            baujahr: machineModels.baujahr,
+            imageUrl: machineModels.imageUrl,
+          })
+          .from(machineModels)
+          .where(inArray(machineModels.opdbMachineRef, schluessel));
+  const bekannt = new Set(zeilen.map((z) => z.id));
+  const alle = [
+    ...zeilen,
+    ...geschwister
+      .filter((g) => !bekannt.has(g.id))
+      .map((g) => ({ ...g, eintraege: 0 })),
+  ];
+
+  // Baugleiche Editionen sind EINE Wissensbasis: je Familie ein Eintrag, der
+  // Vertreter verlinkt, die Zähler summiert, die anderen Editionen benannt.
+  return gruppiereNachFamilie(alle).map((f) => ({
+    modelId: f.vertreter.id,
+    hersteller: f.vertreter.hersteller,
+    modell: f.vertreter.modell,
+    baujahr: f.vertreter.baujahr,
+    imageUrl: f.vertreter.imageUrl ?? f.mitglieder.find((m) => m.imageUrl)?.imageUrl ?? null,
+    eintraege: f.mitglieder.reduce((n, m) => n + m.eintraege, 0),
+    editionen: f.mitglieder
+      .filter((m) => m.id !== f.vertreter.id)
+      .map((m) => m.modell),
+  }));
 }
 
 /** Verlauf eines Wissenseintrags, neueste Revision zuerst. Das Autor-Gate

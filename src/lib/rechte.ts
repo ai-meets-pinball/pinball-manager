@@ -62,6 +62,38 @@ export function istLetzterOwner(rolle: string | null, ownerAnzahl: number): bool
   return rolle === "owner" && ownerAnzahl <= 1;
 }
 
+/* ── Rollen entziehen (Admin) ─────────────────────────────────────────────── */
+
+/** Eine Zuweisung, die jemand im Admin entziehen möchte — mit dem Kontext,
+    den die Entscheidung braucht (Zähler, Selbstbezug). */
+export type RollenZuweisung =
+  | { scope: "club"; rolle: string; ownerAnzahl: number }
+  | {
+      scope: "global";
+      rolle: string;
+      superAdminAnzahl: number;
+      /** Betrifft die Zuweisung den Handelnden selbst? */
+      istSelbst: boolean;
+    };
+
+/**
+ * Darf diese Rolle entzogen werden? Liefert den Grund der Sperre als Text
+ * (den der Button als Hinweis zeigt) — oder null, wenn nichts dagegensteht.
+ * Eine Regel für UI (Button deaktivieren) UND Action (Ablehnung im Rennen).
+ */
+export function rolleEntfernenGesperrt(z: RollenZuweisung): string | null {
+  if (z.scope === "club") {
+    return istLetzterOwner(z.rolle, z.ownerAnzahl)
+      ? "Ein Club braucht mindestens einen Owner"
+      : null;
+  }
+  if (z.istSelbst) return "Eigene globale Rollen lassen sich hier nicht ändern";
+  if (z.rolle === SUPERADMIN_ROLE && z.superAdminAnzahl <= 1) {
+    return "Der letzte Super-Admin bleibt geschützt";
+  }
+  return null;
+}
+
 /* ── Maschinen ────────────────────────────────────────────────────────────── */
 
 export type MaschinenRechte = {

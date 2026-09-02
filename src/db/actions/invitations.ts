@@ -19,6 +19,7 @@ import {
 } from "@/lib/session";
 import { inviteSchema } from "@/lib/validators";
 import type { FormState } from "@/db/actions/form-state";
+import { einladungGesperrt } from "@/lib/einladung";
 
 const INVITE_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 Tage
 
@@ -181,15 +182,9 @@ async function acceptForUser(
   const inv = await db.query.invitations.findFirst({
     where: eq(invitations.token, token),
   });
-  if (!inv || inv.status !== "pending") {
-    return { error: "Einladung ungültig oder bereits verwendet." };
-  }
-  if (inv.expiresAt.getTime() < Date.now()) {
-    return { error: "Einladung ist abgelaufen." };
-  }
-  if (inv.email.toLowerCase() !== userEmail.toLowerCase()) {
-    return { error: "Diese Einladung gilt für eine andere E-Mail-Adresse." };
-  }
+  // Dieselbe Regel wie auf der Landeseite (lib/einladung.ts).
+  const gesperrt = einladungGesperrt(inv, userEmail, new Date());
+  if (gesperrt || !inv) return { error: gesperrt ?? "Einladung ungültig." };
 
   // Club-Einladung: Rollenzuweisung = Mitgliedschaft (idempotent).
   // Plattform-Einladung (clubId/roleId NULL): nichts zuzuweisen, nur quittieren.
@@ -212,14 +207,19 @@ async function acceptForUser(
   return { clubId: inv.clubId ?? undefined };
 }
 
-/** Einladung annehmen (Button auf der Invite-Landing-Seite). */
-export async function acceptInvitation(formData: FormData): Promise<void> {
+/** Einladung annehmen (Button auf der Invite-Landing-Seite und unter „Konto").
+    Ablehnung als FormState — eine zwischenzeitlich abgelaufene Einladung ist
+    eine Zeile, keine Fehlerseite. */
+export async function acceptInvitation(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
   const token = String(formData.get("token"));
   const currentUser = await requireUser();
   const res = await acceptForUser(token, currentUser.id, currentUser.email);
-  if (res.error) throw new Error(res.error);
+  if (res.error) return { error: res.error };
   revalidatePath("/clubs");
-  redirect(`/clubs/${res.clubId}`);
+  redirect(res.clubId ? `/clubs/${res.clubId}` : "/machines");
 }
 
 /** Für den Sign-up-über-Invite-Fluss: nimmt an, ohne zu redirecten. */
@@ -233,7 +233,10 @@ export async function acceptInvitationAction(
 }
 
 /** Einladung ablehnen (Empfänger). Nur für die eigene E-Mail. */
-export async function declineInvitation(formData: FormData): Promise<void> {
+export async function declineInvitation(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
   const invitationId = String(formData.get("invitationId"));
   const currentUser = await requireUser();
 
@@ -241,7 +244,7 @@ export async function declineInvitation(formData: FormData): Promise<void> {
     where: eq(invitations.id, invitationId),
   });
   if (!inv || inv.email.toLowerCase() !== currentUser.email.toLowerCase()) {
-    throw new Error("Einladung nicht gefunden");
+    return { error: "Einladung nicht gefunden" };
   }
 
   await db
@@ -250,6 +253,7 @@ export async function declineInvitation(formData: FormData): Promise<void> {
     .where(eq(invitations.id, invitationId));
 
   revalidatePath("/account");
+  return { ok: true };
 }
 
 /** Offene Plattform-Einladung zurückziehen (nur Super-Admin). */

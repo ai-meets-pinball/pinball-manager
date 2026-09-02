@@ -21,7 +21,7 @@ import {
   getMeineMaschinen,
   getUserClubs,
 } from "@/db/queries";
-import { toggleTurniermodus } from "@/db/actions/clubs";
+import { TurniermodusSchalter } from "@/components/turniermodus-schalter";
 import { AutoRefresh } from "@/components/auto-refresh";
 import { schwerster, type Betriebsstatus } from "@/lib/betriebsstatus";
 import { modellName } from "@/lib/format";
@@ -237,8 +237,22 @@ export default async function DashboardPage({
       <PageHeader
         title="Übersicht"
         actions={
-          // Karten- vs. kompakte Listenansicht für die drei Abschnitte unten.
-          <ViewToggle
+          <>
+            {/* Bereichs-Filter (nur bei mehreren Optionen): mehrere Bereiche
+                gleichzeitig; alle aktiv = kein Filter. */}
+            {scopes.length > 1 ? (
+              <ChipFilter ariaLabel="Nach Bereich filtern" options={bereichOptionen} />
+            ) : null}
+            {/* Turniermodus (Owner/Admin): ein Knopf, fragt bei mehreren Clubs nach. */}
+            <TurniermodusSchalter
+              clubs={managedClubs.map((c) => ({
+                id: c.id,
+                name: c.name,
+                turniermodus: c.turniermodus,
+              }))}
+            />
+            {/* Karten- vs. kompakte Listenansicht für die drei Abschnitte unten. */}
+            <ViewToggle
             options={[
               {
                 href: href({ ansicht: "karten" }),
@@ -254,6 +268,7 @@ export default async function DashboardPage({
               },
             ]}
           />
+          </>
         }
       />
 
@@ -303,28 +318,6 @@ export default async function DashboardPage({
         </section>
       ) : null}
 
-      {/* Turniermodus-Umschalter (nur für Owner/Admin der eigenen Clubs). */}
-      {managedClubs.length > 0 ? (
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-[var(--color-muted)]">Turniermodus:</span>
-          {managedClubs.map((c) => (
-            <form key={c.id} action={toggleTurniermodus}>
-              <input type="hidden" name="clubId" value={c.id} />
-              <button
-                type="submit"
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1 ${
-                  c.turniermodus
-                    ? "border-[var(--color-danger)] font-semibold text-[var(--color-danger)]"
-                    : "border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-                }`}
-              >
-                {c.name}: {c.turniermodus ? "AN" : "aus"}
-              </button>
-            </form>
-          ))}
-        </div>
-      ) : null}
-
       {/* Alarm: unquittierte (offene) Fehler an Turnier-Maschinen. */}
       {alarmFehler.length > 0 ? (
         <div
@@ -343,7 +336,7 @@ export default async function DashboardPage({
             </p>
             <p className="text-sm text-[var(--color-muted)]">
               Neue, noch nicht quittierte Fehler an Turnier-Maschinen. Öffne den
-              Fehler und setze ihn auf „quittiert" — dann verstummt der Alarm.
+              Fehler und setze ihn auf „quittiert“ — dann verstummt der Alarm.
             </p>
           </div>
         </div>
@@ -352,30 +345,23 @@ export default async function DashboardPage({
       {/* Im Turniermodus live nachladen, damit neue Fehler den Alarm auslösen. */}
       {turnierAktiv ? <AutoRefresh intervalMs={25000} /> : null}
 
-      {/* Bereichs-Filter (nur bei mehreren Optionen): mehrere Bereiche lassen
-          sich gleichzeitig aktivieren. Alle aktiv = kein Filter. */}
-      {scopes.length > 1 ? (
-        <ChipFilter
-          label="Bereich:"
-          ariaLabel="Nach Bereich filtern"
-          options={bereichOptionen}
-        />
-      ) : null}
-
       {/* KPI-Kacheln — verlinken in Verwaltung bzw. zu den Abschnitten unten. */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      {/* Immer EINE Zeile (auch am Handy): Zahl groß, Label klein darunter. */}
+      <div className="grid grid-cols-4 gap-2">
         {kpis.map((k) => (
-          <Link key={k.label} href={k.href} className="group">
-            <Card className="flex items-center gap-3 transition-colors group-hover:border-[var(--color-primary)]">
+          <Link key={k.label} href={k.href} className="group min-w-0">
+            <Card className="flex min-w-0 items-center gap-2 p-2.5 transition-colors group-hover:border-[var(--color-primary)] sm:p-3">
               <k.icon
-                size={22}
-                className={k.tone || "text-[var(--color-muted)]"}
+                size={18}
+                className={`hidden shrink-0 sm:block ${k.tone || "text-[var(--color-muted)]"}`}
               />
-              <div>
-                <p className={`text-2xl font-bold leading-none ${k.tone}`}>
+              <div className="min-w-0">
+                <p className={`text-xl font-bold leading-none sm:text-2xl ${k.tone}`}>
                   {k.wert}
                 </p>
-                <p className="text-sm text-[var(--color-muted)]">{k.label}</p>
+                <p className="truncate text-xs text-[var(--color-muted)] sm:text-sm">
+                  {k.label}
+                </p>
               </div>
             </Card>
           </Link>

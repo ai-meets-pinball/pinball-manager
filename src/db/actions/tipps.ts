@@ -100,8 +100,12 @@ export async function createTipp(
 }
 
 /** Eigenen Tipp löschen (Autor oder Super-Admin). Ziele, Signale, Overrides
-    und Revisionen hängen per FK-Cascade am Eintrag. */
-export async function deleteTipp(formData: FormData): Promise<void> {
+    und Revisionen hängen per FK-Cascade am Eintrag. Gibt FormState zurück —
+    eine Ablehnung erscheint als Zeile am Papierkorb statt still zu verpuffen. */
+export async function deleteTipp(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
   const id = String(formData.get("knowledgeId") ?? "");
   const machineId = String(formData.get("machineId") ?? "");
   const currentUser = await requireUser();
@@ -111,9 +115,12 @@ export async function deleteTipp(formData: FormData): Promise<void> {
     .from(knowledge)
     .where(eq(knowledge.id, id))
     .limit(1);
-  if (!k || k.typ !== "tipp") return;
-  if (k.createdBy !== currentUser.id && !isSuperAdmin(currentUser)) return;
+  if (!k || k.typ !== "tipp") return { error: "Tipp nicht gefunden." };
+  if (k.createdBy !== currentUser.id && !isSuperAdmin(currentUser)) {
+    return { error: "Nur der Autor darf den Tipp löschen." };
+  }
 
   await db.delete(knowledge).where(eq(knowledge.id, id));
   if (machineId) revalidatePath(`/machines/${machineId}`);
+  return { ok: true };
 }

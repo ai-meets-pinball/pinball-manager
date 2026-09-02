@@ -446,8 +446,8 @@ export function FactTableView({
   label: string;
   typ: FactType;
   table: FactTable;
-  /** Kontrolliert vom Elternteil (MachineDataTables), damit KPI-Karten Bereiche
-      aufklappen können. onToggle synchronisiert Klicks auf den Kopf zurück. */
+  /** Kontrolliert vom Elternteil (MachineDataTables): Tabellen starten offen,
+      der Kopf klappt sie bewusst zu. onToggle synchronisiert Klicks zurück. */
   open: boolean;
   onToggle: (open: boolean) => void;
 }) {

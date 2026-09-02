@@ -249,18 +249,21 @@ export async function hideKnowledge(
 }
 
 /** Einen verborgenen Wissenseintrag wiederherstellen (Kurator/Super-Admin). */
-export async function restoreKnowledge(formData: FormData): Promise<void> {
+export async function restoreKnowledge(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
   const id = String(formData.get("knowledgeId") ?? "");
   const machineId = String(formData.get("machineId") ?? "");
 
   const currentUser = await requireUser();
-  // Kein stilles Nichtstun: wer nicht darf, bekommt einen Fehler statt eines
-  // Formulars, das scheinbar funktioniert hat.
+  // Kein stilles Nichtstun: wer nicht darf, bekommt eine Ablehnung als Zeile
+  // statt eines Formulars, das scheinbar funktioniert hat.
   if (!kannKuratieren(currentUser)) {
-    throw new Error("Nur Kuratoren dürfen Einträge wiederherstellen");
+    return { error: "Nur Kuratoren dürfen Einträge wiederherstellen" };
   }
   if (!(await knowledgeSichtbarFuer(currentUser, id))) {
-    throw new Error("Wissenseintrag nicht gefunden");
+    return { error: "Wissenseintrag nicht gefunden" };
   }
 
   await db
@@ -270,6 +273,7 @@ export async function restoreKnowledge(formData: FormData): Promise<void> {
 
   if (machineId) revalidatePath(`/machines/${machineId}`);
   revalidatePath("/kuratierung");
+  return { ok: true };
 }
 
 /*

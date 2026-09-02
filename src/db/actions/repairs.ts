@@ -145,7 +145,10 @@ export async function updateRepair(
   redirect(`/machines/${machineId}`);
 }
 
-export async function deleteRepair(formData: FormData): Promise<void> {
+export async function deleteRepair(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
   const machineId = String(formData.get("machineId"));
   const id = String(formData.get("id"));
   await requireMachineWrite(machineId);
@@ -158,4 +161,5 @@ export async function deleteRepair(formData: FormData): Promise<void> {
   // BEWUSST ohne mitStatusNachzug: das Löschen einer Reparatur
   // öffnet keinen behobenen Fehler wieder — der Status ändert sich nicht.
   revalidatePath(`/machines/${machineId}`);
+  return { ok: true };
 }

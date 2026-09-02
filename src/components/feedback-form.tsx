@@ -3,17 +3,22 @@
 import {
   useActionState,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type DragEvent,
 } from "react";
 import { useRouter } from "next/navigation";
-import { ImagePlus, Loader2, Send, X } from "lucide-react";
+import { ImagePlus, Loader2, Pencil, Send, X } from "lucide-react";
+import { ActionDialog, DialogAbbrechen } from "@/components/ui/action-dialog";
 import { Button } from "@/components/ui/button";
+import { ICON_BTN } from "@/components/ui/icon-button";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
 import { FormFeedback } from "@/components/ui/form-feedback";
 import { submitFeedback, updateFeedback } from "@/db/actions/feedback";
 import type { FormState } from "@/db/actions/form-state";
+import { FEEDBACK_STATUS_LABEL } from "@/lib/feedback-status";
+import { FEEDBACK_STATUS } from "@/lib/validators";
 
 /*
   Feedback-Formulare (Client-Inseln der /feedback-Seite):
@@ -25,14 +30,14 @@ import type { FormState } from "@/db/actions/form-state";
     Listener greift nur bei BILDERN in der Zwischenablage und stört Text-
     Eingaben nicht). Die Datei landet in einem echten <input type="file">,
     damit sie im normalen Form-Submit mitreist.
-  - FeedbackBearbeiten: Inline-Triage je Meldung (Status + Antwort) — wird nur
-    für Super-Admins gerendert; die Action prüft das zusätzlich.
+  - FeedbackBearbeiten: Stift-Icon je Meldung, das den Dialog „Meldung
+    bearbeiten" (Status + Antwort) öffnet — wird nur für Super-Admins
+    gerendert; die Action prüft das zusätzlich.
 */
 
 function ScreenshotFeld() {
   const inputRef = useRef<HTMLInputElement>(null);
   const [datei, setDatei] = useState<File | null>(null);
-  const [vorschau, setVorschau] = useState<string | null>(null);
   const [ueberZone, setUeberZone] = useState(false);
 
   function uebernehmen(file: File | null) {
@@ -67,16 +72,16 @@ function ScreenshotFeld() {
     return () => document.removeEventListener("paste", onPaste);
   }, []);
 
-  // Vorschau-URL verwalten (und wieder freigeben).
+  // Vorschau-URL aus der Datei ableiten (kein eigener State) und beim Wechsel
+  // wieder freigeben.
+  const vorschau = useMemo(
+    () => (datei ? URL.createObjectURL(datei) : null),
+    [datei],
+  );
   useEffect(() => {
-    if (!datei) {
-      setVorschau(null);
-      return;
-    }
-    const url = URL.createObjectURL(datei);
-    setVorschau(url);
-    return () => URL.revokeObjectURL(url);
-  }, [datei]);
+    if (!vorschau) return;
+    return () => URL.revokeObjectURL(vorschau);
+  }, [vorschau]);
 
   return (
     <div className="space-y-2">
@@ -203,6 +208,13 @@ export function FeedbackForm({ von }: { von: string }) {
   );
 }
 
+/*
+  Status und Antwort gehören zusammen: ein Abschluss-Status löst die Mail an den
+  Melder aus, und die Antwort ist ihr Text. Deshalb EIN Dialog für beides statt
+  eines Selects, das beim Ändern sofort speichert. Nur gemountet, solange offen
+  (siehe ActionDialog); Speichern erst, wenn sich etwas vom gespeicherten Stand
+  unterscheidet (P2).
+*/
 export function FeedbackBearbeiten({
   id,
   status,
@@ -212,43 +224,91 @@ export function FeedbackBearbeiten({
   status: string;
   antwort: string | null;
 }) {
-  const router = useRouter();
+  const [offen, setOffen] = useState(false);
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOffen(true)}
+        aria-label="Meldung bearbeiten"
+        title="Status und Antwort bearbeiten"
+        className={ICON_BTN}
+      >
+        <Pencil size={14} />
+      </button>
+      {offen ? (
+        <FeedbackDialog
+          id={id}
+          status={status}
+          antwort={antwort ?? ""}
+          onClose={() => setOffen(false)}
+        />
+      ) : null}
+    </>
+  );
+}
+
+function FeedbackDialog({
+  id,
+  status: gespeicherterStatus,
+  antwort: gespeicherteAntwort,
+  onClose,
+}: {
+  id: string;
+  status: string;
+  antwort: string;
+  onClose: () => void;
+}) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(
-    async (prev, fd) => {
-      const res = await updateFeedback(prev, fd);
-      if (res.message) router.refresh();
-      return res;
-    },
+    updateFeedback,
     {},
   );
+  const [status, setStatus] = useState(gespeicherterStatus);
+  const [antwort, setAntwort] = useState(gespeicherteAntwort);
+  const unveraendert =
+    status === gespeicherterStatus &&
+    antwort.trim() === gespeicherteAntwort.trim();
 
   return (
-    <form
-      action={formAction}
-      className="flex flex-wrap items-center gap-2 text-xs"
-    >
-      <input type="hidden" name="id" value={id} />
-      <Select name="status" defaultValue={status} className="w-auto py-1 text-xs">
-        <option value="offen">offen</option>
-        <option value="in Arbeit">in Arbeit</option>
-        <option value="erledigt">erledigt</option>
-        <option value="zurückgestellt">zurückgestellt</option>
-        <option value="verworfen">verworfen</option>
-      </Select>
-      <Input
-        name="antwort"
-        defaultValue={antwort ?? ""}
-        placeholder="Antwort an den Melder (optional)"
-        className="w-64 py-1 text-xs"
-      />
-      <button
-        type="submit"
-        disabled={pending}
-        className="text-[var(--color-primary)] hover:underline disabled:opacity-50"
-      >
-        {pending ? "…" : "Speichern"}
-      </button>
-      <FormFeedback state={state} />
-    </form>
+    <ActionDialog onClose={onClose} ok={Boolean(state.ok)}>
+      <form action={formAction} className="space-y-4 p-5">
+        <h3 className="text-base font-semibold">Meldung bearbeiten</h3>
+        <input type="hidden" name="id" value={id} />
+        <Field label="Status">
+          <Select
+            name="status"
+            value={status}
+            onChange={(e) => setStatus(e.target.value)}
+          >
+            {FEEDBACK_STATUS.map((s) => (
+              <option key={s} value={s}>
+                {FEEDBACK_STATUS_LABEL[s] ?? s}
+              </option>
+            ))}
+          </Select>
+        </Field>
+        <Field
+          label="Antwort an den Melder"
+          hint={
+            "Sichtbar unter „Meine Meldungen\"; bei einem Abschluss-Status geht sie per E-Mail mit."
+          }
+        >
+          <Textarea
+            name="antwort"
+            rows={3}
+            value={antwort}
+            onChange={(e) => setAntwort(e.target.value)}
+            placeholder="Antwort an den Melder (optional)"
+          />
+        </Field>
+        <FormFeedback state={state} />
+        <div className="flex justify-end gap-2">
+          <DialogAbbrechen />
+          <Button type="submit" size="sm" disabled={pending || unveraendert}>
+            {pending ? "…" : "Speichern"}
+          </Button>
+        </div>
+      </form>
+    </ActionDialog>
   );
 }

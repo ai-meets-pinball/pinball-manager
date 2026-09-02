@@ -106,7 +106,10 @@ export async function updateFault(
   redirect(`/machines/${machineId}`);
 }
 
-export async function deleteFault(formData: FormData): Promise<void> {
+export async function deleteFault(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
   const machineId = String(formData.get("machineId"));
   const id = String(formData.get("id"));
   await requireMachineWrite(machineId);
@@ -118,4 +121,5 @@ export async function deleteFault(formData: FormData): Promise<void> {
   );
 
   revalidatePath(`/machines/${machineId}`);
+  return { ok: true };
 }

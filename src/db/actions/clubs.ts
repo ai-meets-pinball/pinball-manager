@@ -4,8 +4,8 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { clubs, machines, roleAssignments } from "@/db/schema";
-import { darfClub, istLetzterOwner } from "@/lib/rechte";
+import { clubs, roleAssignments } from "@/db/schema";
+import { darfClub, istLetzterOwner, rolleEntfernenGesperrt } from "@/lib/rechte";
 import {
   countClubOwners,
   getClubRole,
@@ -17,6 +17,7 @@ import {
 import { uploadClubLogo } from "@/lib/storage";
 import { clubSchema, roleChangeSchema } from "@/lib/validators";
 import type { FormState } from "@/db/actions/form-state";
+import { loescheClub } from "@/db/club-loeschung";
 // Hinweis: Mitglieder werden per Einladung hinzugefügt — siehe actions/invitations.ts.
 // Eine club-bezogene Rollenzuweisung IST die Mitgliedschaft (keine memberships-Tabelle).
 
@@ -124,7 +125,8 @@ export async function changeMemberRole(
   const eigeneRolle = await getClubRole(currentUser.id, clubId);
   const aktuelleRolle = await getClubRole(targetUserId, clubId);
   if (!aktuelleRolle) return { error: "Mitglied nicht gefunden" };
-  if (aktuelleRolle === neueRolle) return {};
+  // `ok` statt leerem Objekt: der Rollen-Dialog schließt erst auf Erfolg.
+  if (aktuelleRolle === neueRolle) return { ok: true };
 
   // Owner-betreffende Änderungen (rein oder raus) nur durch Owner / Super-Admin.
   const betrifftOwner = neueRolle === "owner" || aktuelleRolle === "owner";
@@ -150,20 +152,26 @@ export async function changeMemberRole(
     );
 
   revalidatePath(`/clubs/${clubId}`);
-  return {};
+  return { ok: true };
 }
 
-export async function removeMember(formData: FormData): Promise<void> {
+/* Gibt FormState zurück statt zu werfen: eine abgelehnte Entfernung ist eine
+   Zeile im UI, keine Fehlerseite. Die Owner-Sperre kommt aus rolleEntfernenGesperrt
+   — dieselbe Regel, mit der die Mitgliederliste den Papierkorb ausgraut. */
+export async function removeMember(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
   const clubId = String(formData.get("clubId"));
   const userId = String(formData.get("userId"));
   const currentUser = await requireClubManager(clubId);
 
   if (userId === currentUser.id) {
-    throw new Error("Zum Austreten bitte »Club verlassen« verwenden");
+    return { error: "Zum Austreten bitte »Club verlassen« verwenden" };
   }
 
   const zielRolle = await getClubRole(userId, clubId);
-  if (!zielRolle) return;
+  if (!zielRolle) return { ok: true };
 
   // Owner dürfen nur von Ownern/Super-Admins entfernt werden.
   if (
@@ -171,12 +179,14 @@ export async function removeMember(formData: FormData): Promise<void> {
     !darfClub(currentUser, await getClubRole(currentUser.id, clubId))
       .ownerVergeben
   ) {
-    throw new Error("Nur Owner dürfen einen Owner entfernen");
+    return { error: "Nur Owner dürfen einen Owner entfernen" };
   }
-  // Letzten Owner nicht entfernen.
-  if (istLetzterOwner(zielRolle, await countClubOwners(clubId))) {
-    throw new Error("Ein Club braucht mindestens einen Owner");
-  }
+  const grund = rolleEntfernenGesperrt({
+    scope: "club",
+    rolle: zielRolle,
+    ownerAnzahl: await countClubOwners(clubId),
+  });
+  if (grund) return { error: grund };
 
   await db
     .delete(roleAssignments)
@@ -188,20 +198,25 @@ export async function removeMember(formData: FormData): Promise<void> {
     );
 
   revalidatePath(`/clubs/${clubId}`);
+  return { ok: true };
 }
 
 /** Selbst-Austritt aus einem Club. Der letzte Owner muss vorher jemanden befördern. */
-export async function leaveClub(formData: FormData): Promise<void> {
+export async function leaveClub(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
   const clubId = String(formData.get("clubId"));
   const currentUser = await requireUser();
 
   const eigeneRolle = await getClubRole(currentUser.id, clubId);
-  if (!eigeneRolle) throw new Error("Du bist kein Mitglied dieses Clubs");
+  if (!eigeneRolle) return { error: "Du bist kein Mitglied dieses Clubs" };
 
   if (istLetzterOwner(eigeneRolle, await countClubOwners(clubId))) {
-    throw new Error(
-      "Als letzter Owner kannst du nicht austreten — befördere zuerst jemanden zum Owner",
-    );
+    return {
+      error:
+        "Als letzter Owner kannst du nicht austreten — befördere zuerst jemanden zum Owner",
+    };
   }
 
   await db
@@ -222,14 +237,7 @@ export async function deleteClub(formData: FormData): Promise<void> {
   // Nur Owner (oder Super-Admin) dürfen den Club löschen.
   await requireClubOwner(clubId);
 
-  // Maschinen des Clubs werden nicht gelöscht, sondern entkoppelt (bleiben beim Eigentümer).
-  await db
-    .update(machines)
-    .set({ clubId: null })
-    .where(eq(machines.clubId, clubId));
-
-  // Rollenzuweisungen und Einladungen entfernt ON DELETE CASCADE.
-  await db.delete(clubs).where(eq(clubs.id, clubId));
+  await loescheClub(clubId);
 
   revalidatePath("/clubs");
   redirect("/clubs");

@@ -5,6 +5,7 @@ import { createRepair } from "@/db/actions/repairs";
 import { db } from "@/db";
 import { faults } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
+import { availableProviders } from "@/lib/ai/provider";
 import { modellName } from "@/lib/format";
 
 export default async function NewRepairPage({
@@ -24,6 +25,19 @@ export default async function NewRepairPage({
     orderBy: [desc(faults.datum)],
   });
 
+  // KI-Vorschlag nur, wenn die Reparatur zu EINEM Fehler dieser Maschine
+  // angelegt wird (Link „Reparatur" am Fehler) und ein Anbieter konfiguriert ist.
+  const kiProviders = availableProviders();
+  const fault = machineFaults.find((f) => f.id === faultId);
+  const kiVorschlag =
+    fault && kiProviders.length > 0
+      ? {
+          faultId: fault.id,
+          providers: kiProviders,
+          centralKey: Boolean(process.env.ANTHROPIC_API_KEY),
+        }
+      : undefined;
+
   return (
     <div className="space-y-6">
       <PageHeader
@@ -35,7 +49,8 @@ export default async function NewRepairPage({
         action={createRepair}
         machineId={id}
         faults={machineFaults}
-        selectedFaultIds={faultId ? [faultId] : []}
+        selectedFaultIds={fault ? [fault.id] : []}
+        kiVorschlag={kiVorschlag}
       />
     </div>
   );

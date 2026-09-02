@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { LayoutGrid, Plus, Table2 } from "lucide-react";
 import { MachinesBoard } from "@/components/machines-board";
 import { ButtonLink } from "@/components/ui/button";
@@ -15,6 +14,9 @@ import { cookies } from "next/headers";
 import { RememberParams } from "@/components/remember-params";
 import { requireUser } from "@/lib/session";
 import { klebrig } from "@/lib/sticky-view";
+import { darfMaschine } from "@/lib/rechte";
+import { AutoSubmitSelect } from "@/components/ui/auto-submit-select";
+import { SortRichtung } from "@/components/ui/sort-richtung";
 
 /*
   Maschinenliste mit Tabs (Alle · Privat · je Club), Suche, Sortierung und zwei
@@ -66,6 +68,9 @@ export default async function MachinesPage({
   // Clubs des Nutzers — Tabs + Ziele für die Bulk-Zuweisung.
   const meineClubs = await getUserClubs(user.id);
 
+  // Umhängen/Löschen im Sammelmodus: dieselbe Regel wie die Actions
+  // (darfMaschine().loeschen) — damit sich nur anhaken lässt, was auch geht.
+  const meineRollen = new Map(meineClubs.map((c) => [c.id, c.rolle]));
   const alle = machines.map((m) => ({
     id: m.id,
     hersteller: m.hersteller,
@@ -75,6 +80,11 @@ export default async function MachinesPage({
     clubId: m.clubId,
     club: m.club,
     wartungFaellig: wartungFaellig.get(m.id) ?? 0,
+    darfUmhaengen: darfMaschine(
+      user,
+      { ownerId: m.ownerId, clubId: m.clubId },
+      m.clubId ? (meineRollen.get(m.clubId) ?? null) : null,
+    ).loeschen,
   }));
 
   // Tabs: Alle · Privat · je Club (eigene Clubs + Clubs, in denen sichtbare
@@ -164,24 +174,6 @@ export default async function MachinesPage({
     return `/machines?${p.toString()}`;
   };
 
-  /* Sortier-Link: Klick auf die aktive Spalte dreht die Richtung um. */
-  const sortLabel = (key: "neu" | "name" | "jahr", label: string) => (
-    <Link
-      href={href({
-        sort: key,
-        dir: sort === key && dir === "auf" ? "ab" : "auf",
-      })}
-      className={
-        sort === key
-          ? "font-medium text-[var(--color-primary)]"
-          : "text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-      }
-    >
-      {label}
-      {sort === key ? (dir === "auf" ? " ↑" : " ↓") : ""}
-    </Link>
-  );
-
   return (
     <div className="space-y-6">
       <PageHeader
@@ -193,48 +185,66 @@ export default async function MachinesPage({
         }
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        {/* Suche: GET-Formular aktualisiert die URL — Filterung server-seitig. */}
+      {/* EINE Steuerzeile: Suche + Sortierung (Select, speichert beim Ändern,
+          Pfeil dreht die Richtung) + Bereichs-Chips, rechts die Ansicht. */}
+      <div className="flex flex-wrap items-center gap-2">
         <SearchToolbar
-          placeholder="Hersteller oder Modell suchen…"
+          placeholder="Suchen…"
           defaultValue={q ?? ""}
           label="Maschinen suchen"
-          keep={{ club: rawClub, sort, dir, ansicht }}
+          keep={{ club: rawClub, dir, ansicht }}
           resetHref="/machines"
           aktiv={Boolean(q)}
-        />
-        <ViewToggle
-          options={[
-            {
-              href: href({ ansicht: "karten" }),
-              label: "Kartenansicht",
-              icon: <LayoutGrid size={16} />,
-              active: ansicht === "karten",
-            },
-            {
-              href: href({ ansicht: "tabelle" }),
-              label: "Tabellenansicht",
-              icon: <Table2 size={16} />,
-              active: ansicht === "tabelle",
-            },
-          ]}
-        />
+          ohneButton
+          breite="w-44 sm:w-56"
+        >
+          <AutoSubmitSelect
+            name="sort"
+            defaultValue={sort}
+            aria-label="Sortieren"
+            className="w-auto"
+          >
+            <option value="neu">Neueste</option>
+            <option value="name">Name</option>
+            <option value="jahr">Baujahr</option>
+          </AutoSubmitSelect>
+          <SortRichtung
+            dir={dir}
+            href={href({ dir: dir === "auf" ? "ab" : "auf" })}
+          />
+        </SearchToolbar>
+        {/* Bereichs-Filter: Alle · Privat · je Club (nur, wenn es etwas zu filtern gibt). */}
+        {tabs.length > 2 || tabs[1].count > 0 ? (
+          <ChipFilter
+            ariaLabel="Nach Club filtern"
+            options={tabs.map((t) => ({
+              key: t.key,
+              label: t.label,
+              count: t.count,
+              href: href({ club: t.key }),
+              aktiv: rawClub === t.key,
+            }))}
+          />
+        ) : null}
+        <div className="ml-auto">
+          <ViewToggle
+            options={[
+              {
+                href: href({ ansicht: "karten" }),
+                label: "Kartenansicht",
+                icon: <LayoutGrid size={16} />,
+                active: ansicht === "karten",
+              },
+              {
+                href: href({ ansicht: "tabelle" }),
+                label: "Tabellenansicht",
+                icon: <Table2 size={16} />,
+                active: ansicht === "tabelle",
+              },
+            ]}
+          />
+        </div>
       </div>
-
-      {/* Bereichs-Filter: Alle · Privat · je Club — dieselbe Chip-Komponente
-          wie in der Übersicht (nur zeigen, wenn es etwas zu filtern gibt). */}
-      {tabs.length > 2 || tabs[1].count > 0 ? (
-        <ChipFilter
-          ariaLabel="Nach Club filtern"
-          options={tabs.map((t) => ({
-            key: t.key,
-            label: t.label,
-            count: t.count,
-            href: href({ club: t.key }),
-            aktiv: rawClub === t.key,
-          }))}
-        />
-      ) : null}
       <RememberParams
         path="/machines"
         params={{
@@ -244,15 +254,6 @@ export default async function MachinesPage({
           machinesView: ansicht,
         }}
       />
-
-      <p className="text-sm">
-        <span className="text-[var(--color-muted)]">Sortieren: </span>
-        {sortLabel("neu", "Neueste")}
-        <span className="text-[var(--color-faint)]"> · </span>
-        {sortLabel("name", "Name")}
-        <span className="text-[var(--color-faint)]"> · </span>
-        {sortLabel("jahr", "Baujahr")}
-      </p>
 
       {items.length === 0 ? (
         <p className="text-[var(--color-muted)]">

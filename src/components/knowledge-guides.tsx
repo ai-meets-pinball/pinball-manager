@@ -107,15 +107,22 @@ export function KnowledgeGuides({
       label,
       panel: (
         <Card className="space-y-3">
+          {/* Kopfzeile wie bei den Handbuch-Fakten: Autor-Aktionen rechts
+              (Sichtbarkeit, Verlauf, Stift); die Sichtbarkeit steht bei eigenen
+              Einträgen nur im Auswahlfeld. */}
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm text-[var(--color-muted)]">
-              {eigen
-                ? "Dein Guide"
-                : `Geteilt von ${e.autorName ?? "unbekannt"}`}
-              {" · "}
-              <span className="inline-flex items-center gap-1">
-                <S.Icon size={13} /> {S.label}
-              </span>
+              {eigen ? (
+                "Dein Guide"
+              ) : (
+                <>
+                  Geteilt von {e.autorName ?? "unbekannt"}
+                  {" · "}
+                  <span className="inline-flex items-center gap-1">
+                    <S.Icon size={13} /> {S.label}
+                  </span>
+                </>
+              )}
               {e.generationName ? (
                 <>
                   {" · "}
@@ -125,7 +132,7 @@ export function KnowledgeGuides({
                 </>
               ) : null}
             </p>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <KnowledgeSignals
                 knowledgeId={e.id}
                 machineId={machineId}
@@ -135,11 +142,26 @@ export function KnowledgeGuides({
                 eigen={eigen}
               />
               {eigen ? (
-                <SetVisibility
-                  knowledgeId={e.id}
-                  machineId={machineId}
-                  current={e.visibility}
-                />
+                <>
+                  <SetVisibility
+                    knowledgeId={e.id}
+                    machineId={machineId}
+                    current={e.visibility}
+                  />
+                  <KnowledgeVerlauf
+                    knowledgeId={e.id}
+                    anzahl={e.revisionen}
+                    typ="troubleshooting"
+                  />
+                  {/* Editiert wird NUR der guide-Teil; websuche/model bleiben serverseitig. */}
+                  <KnowledgeEdit
+                    knowledgeId={e.id}
+                    machineId={machineId}
+                    typ="troubleshooting"
+                    titel={e.titel}
+                    inhalt={g.guide}
+                  />
+                </>
               ) : (
                 <KnowledgeHide
                   knowledgeId={e.id}
@@ -170,23 +192,6 @@ export function KnowledgeGuides({
             websuche={g.websuche}
             createdAt={e.createdAt}
           />
-          {eigen ? (
-            <>
-              {/* Editiert wird NUR der guide-Teil; websuche/model bleiben serverseitig. */}
-              <KnowledgeEdit
-                knowledgeId={e.id}
-                machineId={machineId}
-                typ="troubleshooting"
-                titel={e.titel}
-                inhalt={g.guide}
-              />
-              <KnowledgeVerlauf
-                knowledgeId={e.id}
-                anzahl={e.revisionen}
-                typ="troubleshooting"
-              />
-            </>
-          ) : null}
         </Card>
       ),
     };

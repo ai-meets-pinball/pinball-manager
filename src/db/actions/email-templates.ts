@@ -40,18 +40,22 @@ export async function saveEmailTemplate(
       set: { subject, body, updatedAt: new Date(), updatedBy: currentUser.id },
     });
 
-  revalidatePath("/admin");
+  revalidatePath("/admin/vorlagen");
   return { message: "Vorlage gespeichert." };
 }
 
 /** Auf den Standardtext zurücksetzen = gespeicherte Abweichung löschen. */
-export async function resetEmailTemplate(formData: FormData): Promise<void> {
+export async function resetEmailTemplate(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
   await requireSuperAdmin();
   const key = String(formData.get("key")) as TemplateKey;
-  if (!TEMPLATE_KEYS.includes(key)) throw new Error("Unbekannte Vorlage");
+  if (!TEMPLATE_KEYS.includes(key)) return { error: "Unbekannte Vorlage" };
 
   await db.delete(emailTemplates).where(eq(emailTemplates.key, key));
-  revalidatePath("/admin");
+  revalidatePath("/admin/vorlagen");
+  return { ok: true };
 }
 
 /** Standardtext (für „Zurücksetzen"-Vorschau im Client). */

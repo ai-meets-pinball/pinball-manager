@@ -2,9 +2,12 @@
 
 import { useActionState, useState } from "react";
 import { Pencil, Plus, Trash2 } from "lucide-react";
+import { ActionDialog, DialogAbbrechen } from "@/components/ui/action-dialog";
+import { ActionForm } from "@/components/ui/action-form";
 import { Button } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { FormFeedback } from "@/components/ui/form-feedback";
+import { ICON_BTN } from "@/components/ui/icon-button";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
 import { ListRow } from "@/components/ui/list";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -13,7 +16,7 @@ import {
   deletePlanItem,
   updatePlanItem,
 } from "@/db/actions/maintenance-plans";
-import { intervallLabel } from "@/lib/faelligkeit";
+import { INTERVALL_TYP_LABEL, intervallLabel } from "@/lib/faelligkeit";
 import {
   MAINTENANCE_INTERVALL_TYPEN,
   MAINTENANCE_PRIORITAETEN,
@@ -21,8 +24,11 @@ import {
 import type { FormState } from "@/db/actions/form-state";
 
 /*
-  Punkte eines Standard-Wartungsplans (Vorlage): ANZEIGEN zuerst, Bearbeiten auf
-  Verlangen (Muster wie GenerationRow). Änderungen propagieren serverseitig auf
+  Punkte eines Standard-Wartungsplans (Vorlage): eine kompakte Zeile je Punkt
+  (Titel + Prioritäts-Badge, darunter Kategorie · Bauteil · Tätigkeit ·
+  Intervall), rechts Stift und Papierkorb. Neu UND Ändern laufen über EINEN
+  Dialog (PunktDialog); Speichern ist deaktiviert, bis sich ein Feld vom
+  gespeicherten Stand unterscheidet. Änderungen propagieren serverseitig auf
   alle verknüpften Maschinen (db/actions/maintenance-plans.ts).
 */
 
@@ -39,67 +45,40 @@ export type PlanItem = {
   intervallText: string | null;
 };
 
-/** Die Feldergruppe — geteilt von Bearbeiten (Row) und Anlegen (CreateForm). */
-function ItemFelder({ werte }: { werte?: Partial<PlanItem> }) {
-  return (
-    <>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <Field label="Titel">
-          <Input name="titel" defaultValue={werte?.titel ?? ""} required />
-        </Field>
-        <Field label="Kategorie">
-          <Input name="kategorie" defaultValue={werte?.kategorie ?? ""} />
-        </Field>
-        <Field label="Bauteil">
-          <Input name="bauteil" defaultValue={werte?.bauteil ?? ""} />
-        </Field>
-        <Field label="Tätigkeit">
-          <Input name="taetigkeit" defaultValue={werte?.taetigkeit ?? ""} />
-        </Field>
-        <Field label="Priorität">
-          <Select name="prioritaet" defaultValue={werte?.prioritaet ?? "mittel"}>
-            {MAINTENANCE_PRIORITAETEN.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Intervall-Typ">
-          <Select
-            name="intervallTyp"
-            defaultValue={werte?.intervallTyp ?? "bedarf"}
-          >
-            {MAINTENANCE_INTERVALL_TYPEN.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Intervall (Tage)" hint="Nur bei Typ „zeit“ — ergibt Termine.">
-          <Input
-            name="intervallTage"
-            type="number"
-            defaultValue={werte?.intervallTage ?? ""}
-          />
-        </Field>
-        <Field
-          label="Intervall-Text"
-          hint="Anzeige, z. B. „500 Spiele / monatlich“."
-        >
-          <Input name="intervallText" defaultValue={werte?.intervallText ?? ""} />
-        </Field>
-      </div>
-      <Field label="Beschreibung">
-        <Textarea
-          name="beschreibung"
-          rows={2}
-          defaultValue={werte?.beschreibung ?? ""}
-        />
-      </Field>
-    </>
-  );
+/* Die Formularfelder eines Punkts — als Strings, damit sich der aktuelle
+   Formularstand (FormData) direkt mit dem gespeicherten Punkt vergleichen lässt. */
+const FELDER = [
+  "titel",
+  "kategorie",
+  "bauteil",
+  "taetigkeit",
+  "prioritaet",
+  "intervallTyp",
+  "intervallTage",
+  "intervallText",
+  "beschreibung",
+] as const;
+type Werte = Record<(typeof FELDER)[number], string>;
+
+function werteVon(item?: PlanItem): Werte {
+  return {
+    titel: item?.titel ?? "",
+    kategorie: item?.kategorie ?? "",
+    bauteil: item?.bauteil ?? "",
+    taetigkeit: item?.taetigkeit ?? "",
+    prioritaet: item?.prioritaet ?? "mittel",
+    intervallTyp: item?.intervallTyp ?? "bedarf",
+    intervallTage: item?.intervallTage == null ? "" : String(item.intervallTage),
+    intervallText: item?.intervallText ?? "",
+    beschreibung: item?.beschreibung ?? "",
+  };
+}
+
+function werteAus(form: HTMLFormElement): Werte {
+  const fd = new FormData(form);
+  return Object.fromEntries(
+    FELDER.map((f) => [f, String(fd.get(f) ?? "").trim()]),
+  ) as Werte;
 }
 
 export function PlanItemRow({
@@ -110,101 +89,183 @@ export function PlanItemRow({
   schreibbar: boolean;
 }) {
   const [bearbeiten, setBearbeiten] = useState(false);
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
-    updatePlanItem,
-    {},
-  );
 
-  // Bei Erfolg schließen („adjust state during render", vgl. GenerationRow).
-  const [prevState, setPrevState] = useState(state);
-  if (state !== prevState) {
-    setPrevState(state);
-    if (state.message) setBearbeiten(false);
-  }
-
-  const meta = [item.kategorie, item.bauteil, item.taetigkeit]
+  const untertitel = [
+    [item.kategorie, item.bauteil, item.taetigkeit].filter(Boolean).join(" · "),
+    intervallLabel(item),
+  ]
     .filter(Boolean)
     .join(" · ");
 
   return (
     <ListRow
-      title={item.titel}
-      subtitle={`${meta ? `${meta} · ` : ""}${intervallLabel(item)}`}
-      meta={<StatusBadge value={item.prioritaet} />}
+      kompakt
+      titleWrap
+      title={
+        <>
+          <span className="mr-1.5">{item.titel}</span>
+          <StatusBadge value={item.prioritaet} />
+        </>
+      }
+      subtitle={untertitel}
       actions={
         schreibbar ? (
           <>
             <button
               type="button"
-              onClick={() => setBearbeiten((b) => !b)}
-              aria-expanded={bearbeiten}
+              onClick={() => setBearbeiten(true)}
               aria-label="Bearbeiten"
               title="Bearbeiten"
-              className="text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+              className={ICON_BTN}
             >
-              <Pencil size={16} />
+              <Pencil size={14} />
             </button>
-            <form action={deletePlanItem}>
+            <ActionForm action={deletePlanItem}>
               <input type="hidden" name="itemId" value={item.id} />
               <ConfirmButton
-                question="Punkt löschen? Er verschwindet auch auf verknüpften Maschinen (Punkte mit Historie bleiben dort als eigene)."
+                question={`„${item.titel}“ löschen? Er verschwindet auch auf verknüpften Maschinen (Punkte mit Historie bleiben dort als eigene).`}
                 confirmLabel="Ja, löschen"
                 aria-label="Punkt löschen"
+                title="Punkt löschen"
+                className={`${ICON_BTN} hover:text-[var(--color-danger)]`}
               >
-                <Trash2 size={16} />
+                <Trash2 size={14} />
               </ConfirmButton>
-            </form>
+            </ActionForm>
+            {bearbeiten ? (
+              <PunktDialog
+                ziel={{ art: "aendern", item }}
+                onClose={() => setBearbeiten(false)}
+              />
+            ) : null}
           </>
         ) : undefined
       }
-    >
-      {bearbeiten ? (
-        <form
-          action={formAction}
-          className="flex flex-col gap-3 border-t border-[var(--color-border)] pt-3"
-        >
-          <input type="hidden" name="itemId" value={item.id} />
-          <ItemFelder werte={item} />
-          <FormFeedback state={state} />
-          <div className="flex items-center gap-2">
-            <Button type="submit" size="sm" disabled={pending}>
-              {pending ? "Speichern…" : "Speichern"}
-            </Button>
-            <button
-              type="button"
-              onClick={() => setBearbeiten(false)}
-              className="text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-            >
-              Abbrechen
-            </button>
-          </div>
-        </form>
-      ) : null}
-    </ListRow>
+    />
   );
 }
 
+/** Kopf-Button „Punkt hinzufügen" mit dem Neu-Dialog. */
 export function PlanItemCreate({ planId }: { planId: string }) {
+  const [offen, setOffen] = useState(false);
+  return (
+    <>
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        onClick={() => setOffen(true)}
+      >
+        <Plus size={14} /> Punkt hinzufügen
+      </Button>
+      {offen ? (
+        <PunktDialog ziel={{ art: "neu", planId }} onClose={() => setOffen(false)} />
+      ) : null}
+    </>
+  );
+}
+
+type Ziel = { art: "neu"; planId: string } | { art: "aendern"; item: PlanItem };
+
+/*
+  EIN Dialog für Neu und Ändern. Nur gemountet, solange offen (siehe
+  ActionDialog). Der Formularstand wird bei jeder Änderung aus dem <form>
+  gelesen und mit dem gespeicherten Punkt verglichen — so bleibt der Button
+  „Speichern" aus, bis wirklich etwas anders ist; beim Anlegen, bis ein Titel
+  da ist.
+*/
+function PunktDialog({ ziel, onClose }: { ziel: Ziel; onClose: () => void }) {
+  const item = ziel.art === "aendern" ? ziel.item : undefined;
   const [state, formAction, pending] = useActionState<FormState, FormData>(
-    createPlanItem,
+    item ? updatePlanItem : createPlanItem,
     {},
   );
+  const start = werteVon(item);
+  const [aktuell, setAktuell] = useState<Werte>(start);
+  const unveraendert = item
+    ? FELDER.every((f) => aktuell[f] === start[f])
+    : aktuell.titel === "";
 
   return (
-    <details className="text-sm">
-      <summary className="inline-flex cursor-pointer items-center gap-1.5 text-[var(--color-muted)] hover:text-[var(--color-fg)]">
-        <Plus size={14} /> Punkt hinzufügen
-      </summary>
-      <form action={formAction} className="flex flex-col gap-3 pt-3">
-        <input type="hidden" name="planId" value={planId} />
-        <ItemFelder />
+    <ActionDialog onClose={onClose} ok={Boolean(state.ok)}>
+      <form
+        action={formAction}
+        onChange={(e) => setAktuell(werteAus(e.currentTarget))}
+        className="space-y-4 p-5"
+      >
+        <h3 className="text-base font-semibold">
+          {item ? "Punkt ändern" : "Punkt hinzufügen"}
+        </h3>
+        {ziel.art === "neu" ? (
+          <input type="hidden" name="planId" value={ziel.planId} />
+        ) : (
+          <input type="hidden" name="itemId" value={ziel.item.id} />
+        )}
+
+        <Field label="Titel">
+          <Input name="titel" defaultValue={start.titel} required autoFocus />
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Kategorie">
+            <Input name="kategorie" defaultValue={start.kategorie} />
+          </Field>
+          <Field label="Bauteil">
+            <Input name="bauteil" defaultValue={start.bauteil} />
+          </Field>
+          <Field label="Tätigkeit">
+            <Input
+              name="taetigkeit"
+              placeholder="Prüfen, Reinigen …"
+              defaultValue={start.taetigkeit}
+            />
+          </Field>
+          <Field label="Priorität">
+            <Select name="prioritaet" defaultValue={start.prioritaet}>
+              {MAINTENANCE_PRIORITAETEN.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Intervall-Typ">
+            <Select name="intervallTyp" defaultValue={start.intervallTyp}>
+              {MAINTENANCE_INTERVALL_TYPEN.map((t) => (
+                <option key={t} value={t}>
+                  {INTERVALL_TYP_LABEL[t]}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Intervall (Tage)">
+            <Input
+              name="intervallTage"
+              type="number"
+              min="1"
+              placeholder={aktuell.intervallTyp === "zeit" ? "z. B. 30" : "—"}
+              disabled={aktuell.intervallTyp !== "zeit"}
+              defaultValue={start.intervallTage}
+            />
+          </Field>
+        </div>
+        <Field
+          label="Intervall-Text (optional)"
+          hint="Freies Label, z. B. „500 Spiele / monatlich“. Nur ein Zeitintervall ergibt Termine."
+        >
+          <Input name="intervallText" defaultValue={start.intervallText} />
+        </Field>
+        <Field label="Beschreibung">
+          <Textarea name="beschreibung" rows={2} defaultValue={start.beschreibung} />
+        </Field>
+
         <FormFeedback state={state} />
-        <div>
-          <Button type="submit" size="sm" disabled={pending}>
-            {pending ? "Anlegen…" : "Anlegen"}
+        <div className="flex justify-end gap-2">
+          <DialogAbbrechen />
+          <Button type="submit" size="sm" disabled={pending || unveraendert}>
+            {pending ? "…" : item ? "Speichern" : "Hinzufügen"}
           </Button>
         </div>
       </form>
-    </details>
+    </ActionDialog>
   );
 }

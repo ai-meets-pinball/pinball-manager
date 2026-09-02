@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import {
   createMachine,
   sql,
@@ -8,8 +8,8 @@ import { loginAs, USERS } from "./helpers/auth";
 
 /*
   Troubleshooting-Guide als JSON-Import (KI-freie Alternative, wie beim
-  Handbuch-Fakten-Import): Prompt kopieren → extern erzeugen → JSON einfügen →
-  „Prüfen" → „Guide importieren". Nur mit Schreibrecht; die Herkunft wird als
+  Handbuch-Fakten-Import): „Guide erstellen" → „JSON importieren" → Prompt
+  kopieren → extern erzeugen → JSON einfügen → „Prüfen" → „Guide importieren". Nur mit Schreibrecht; die Herkunft wird als
   „Importiert (extern erstellt)" gekennzeichnet (model='import').
 */
 const GUIDE_JSON = JSON.stringify({
@@ -22,6 +22,17 @@ const GUIDE_JSON = JSON.stringify({
   ],
   quellen: ["E2E Manual"],
 });
+
+/* Der Import steckt im Dialog „Guide erstellen" (bzw. „Guide ersetzen") hinter
+   dem Modus-Schalter „JSON importieren". */
+async function guideDialogOeffnen(page: Page) {
+  await page
+    .getByRole("button", { name: /Guide (erstellen|ersetzen)/ })
+    .click();
+  const dialog = page.locator("dialog[open]");
+  await dialog.getByRole("tab", { name: "JSON importieren" }).click();
+  return dialog;
+}
 
 test.describe("Troubleshooting-Guide JSON-Import", () => {
   let machineId: string;
@@ -45,11 +56,12 @@ test.describe("Troubleshooting-Guide JSON-Import", () => {
   }) => {
     await loginAs(page, USERS.owner);
     await page.goto(`/machines/${machineId}?bereich=guide`);
-    await page.getByLabel("Guide-JSON").fill('{ "kaputt": true }');
-    await page.getByRole("button", { name: "Prüfen" }).click();
-    await expect(page.getByText(/passt nicht zur Guide-Struktur/)).toBeVisible();
+    const dialog = await guideDialogOeffnen(page);
+    await dialog.getByLabel("Guide-JSON").fill('{ "kaputt": true }');
+    await dialog.getByRole("button", { name: "Prüfen" }).click();
+    await expect(dialog.getByText(/passt nicht zur Guide-Struktur/)).toBeVisible();
     await expect(
-      page.getByRole("button", { name: "Guide importieren" }),
+      dialog.getByRole("button", { name: "Guide importieren" }),
     ).toBeDisabled();
   });
 
@@ -58,11 +70,14 @@ test.describe("Troubleshooting-Guide JSON-Import", () => {
   }) => {
     await loginAs(page, USERS.owner);
     await page.goto(`/machines/${machineId}?bereich=guide`);
-    await page.getByLabel("Guide-JSON").fill(GUIDE_JSON);
-    await page.getByRole("button", { name: "Prüfen" }).click();
-    await expect(page.getByText(/Blöcke \(davon/)).toBeVisible();
-    await page.getByRole("button", { name: "Guide importieren" }).click();
-    await expect(page.getByText("Guide importiert.")).toBeVisible();
+    const dialog = await guideDialogOeffnen(page);
+    await dialog.getByLabel("Guide-JSON").fill(GUIDE_JSON);
+    await dialog.getByRole("button", { name: "Prüfen" }).click();
+    await expect(dialog.getByText(/Blöcke \(davon/)).toBeVisible();
+    await dialog.getByRole("button", { name: "Guide importieren" }).click();
+    // Erfolg schließt den Dialog; der Guide steht danach auf der Seite.
+    await expect(page.locator("dialog[open]")).toHaveCount(0);
+    await expect(page.getByText("E2E-Plattform WPC-95")).toBeVisible();
 
     // In der DB als externer Import gekennzeichnet (inhalt.model = 'import').
     const [row] = await sql`

@@ -1,23 +1,34 @@
 /*
-  OPDB-Referenzen zerlegen.
+  OPDB-Referenzen zerlegen — und die FAMILIE bestimmen.
 
-  OPDB kennt drei Ebenen (Beispiel Godzilla):
-    Gruppe / Titel   G50Wr              — alle Editionen zusammen
-    Maschine/Edition G50Wr-MLeZP        — z. B. Premium (das ist unser Modell)
-    Alias            G50Wr-MLeZP-A1B2C  — Variante derselben Edition
+  OPDB kennt drei Ebenen (Beispiel Pokémon, Stern):
+    Gruppe / Titel    GV8wB              — alle Editionen zusammen (Pro, Premium, LE)
+    Maschine/Edition  GV8wB-MRjKd        — Premium/LE (Spulen-/Schaltermatrix)
+    Alias             GV8wB-MRjKd-ARz2r  — die LE als eigener Katalogeintrag
 
-  Bewusst eine eigene, REINE Datei: lib/opdb.ts trägt "use server" und darf
-  deshalb ausschließlich async Funktionen exportieren. Dieser Parser wird auch
-  in Migrationen/Server-Actions synchron gebraucht.
+  Regel des Produkts: nur die ersten ZWEI Segmente sind technisch relevant. Alle
+  Katalogzeilen mit gleichem Familienschlüssel sind BAUGLEICH (Editionen
+  derselben Maschine) und teilen ihr Wissen — die Zeilen selbst bleiben getrennt,
+  denn die OPDB-Referenzen sind vorgegeben und werden nicht verändert.
+  GV8wB-Mq12N (Pro) hat ein anderes zweites Segment und ist NICHT baugleich.
+
+  Bewusst eine eigene, REINE Datei (kein "use server", kein DB): der Parser wird
+  in Server-Actions synchron gebraucht, die Familienregel von UI, Actions und
+  dem SQL-Backfill (split_part) gleich verstanden — darum sind leere Segmente
+  hier genauso ungültig wie dort.
 */
 
 export type OpdbRefTeile = {
-  /** Erster Abschnitt = Gruppe/Titel (z. B. "G50Wr"). */
+  /** Die getrimmte Referenz, wie sie gespeichert wird. */
+  ref: string;
+  /** Erster Abschnitt = Gruppe/Titel (z. B. "GV8wB"). */
   groupRef: string;
-  /** Gruppe + Edition (z. B. "G50Wr-MLeZP") — unser Modell-Schlüssel. */
+  /** Gruppe + Maschine (z. B. "GV8wB-MRjKd") — der Familienschlüssel. */
   machineRef: string | null;
-  /** true, wenn die Referenz NUR eine Gruppe ist (keine Edition). */
+  /** true, wenn die Referenz NUR eine Gruppe ist (keine Maschine). */
   istGruppe: boolean;
+  /** true bei drei oder mehr Segmenten (Alias/Edition einer Maschine). */
+  istAlias: boolean;
 };
 
 /** Zerlegt eine OPDB-Referenz. Liefert null bei leerer/ungültiger Eingabe. */
@@ -25,20 +36,72 @@ export function parseOpdbRef(ref: string | null | undefined): OpdbRefTeile | nul
   const s = ref?.trim();
   if (!s) return null;
 
-  const teile = s.split("-").filter(Boolean);
+  const teile = s.split("-");
   const groupRef = teile[0];
   if (!groupRef) return null;
+  const maschine = teile[1];
 
   return {
+    ref: s,
     groupRef,
-    machineRef: teile.length >= 2 ? `${teile[0]}-${teile[1]}` : null,
+    machineRef: maschine ? `${groupRef}-${maschine}` : null,
     istGruppe: teile.length === 1,
+    istAlias: teile.length >= 3 && Boolean(maschine),
   };
 }
 
-/** Der Modell-Schlüssel zu einer Referenz: Edition, sonst null.
-    Eine reine Gruppen-Referenz taugt NICHT als Modell (Editionen haben
-    unterschiedliche Spulen-/Schalter-Matrizen). */
-export function modelKeyFromOpdbRef(ref: string | null | undefined): string | null {
+/** Familienschlüssel (erste zwei Segmente) — null für Gruppen-/kaputte Referenzen. */
+export function familienSchluessel(ref: string | null | undefined): string | null {
   return parseOpdbRef(ref)?.machineRef ?? null;
+}
+
+/** Sind zwei Referenzen baugleich (gleiche Familie)? Ohne Schlüssel nie. */
+export function istBaugleich(
+  a: string | null | undefined,
+  b: string | null | undefined,
+): boolean {
+  const ka = familienSchluessel(a);
+  const kb = familienSchluessel(b);
+  return ka !== null && kb !== null && ka === kb;
+}
+
+type FamilienZeile = { id: string; opdbRef: string; modell: string };
+
+/**
+ * Der Vertreter einer Familie für Listen, die je Familie EINEN Eintrag zeigen:
+ * die editionsneutrale zweisegmentige Zeile („Pokémon (Premium/LE)"), sonst die
+ * mit dem kürzesten Namen; Gleichstand entscheidet die Referenz (deterministisch).
+ */
+export function familienVertreter<T extends Omit<FamilienZeile, "id">>(rows: T[]): T {
+  const zwei = rows.find((r) => parseOpdbRef(r.opdbRef)?.istAlias === false);
+  if (zwei) return zwei;
+  return [...rows].sort(
+    (a, b) =>
+      a.modell.length - b.modell.length || a.opdbRef.localeCompare(b.opdbRef),
+  )[0];
+}
+
+/**
+ * Zeilen nach Familie bündeln. Zeilen ohne Schlüssel bilden je eine eigene
+ * Familie. Reihenfolge: nach Vertreter-Name, dann Referenz.
+ */
+export function gruppiereNachFamilie<T extends FamilienZeile>(
+  rows: T[],
+): { schluessel: string; vertreter: T; mitglieder: T[] }[] {
+  const karte = new Map<string, T[]>();
+  for (const r of rows) {
+    const k = familienSchluessel(r.opdbRef) ?? `id:${r.id}`;
+    karte.set(k, [...(karte.get(k) ?? []), r]);
+  }
+  return [...karte.entries()]
+    .map(([schluessel, mitglieder]) => ({
+      schluessel,
+      vertreter: familienVertreter(mitglieder),
+      mitglieder,
+    }))
+    .sort(
+      (a, b) =>
+        a.vertreter.modell.localeCompare(b.vertreter.modell, "de") ||
+        a.vertreter.opdbRef.localeCompare(b.vertreter.opdbRef),
+    );
 }

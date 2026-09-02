@@ -1,5 +1,6 @@
-import { and, eq, type SQL } from "drizzle-orm";
+import { and, eq, inArray, type SQL } from "drizzle-orm";
 import { db } from "@/db";
+import { getFamilie } from "@/db/queries/familie";
 import { knowledge, knowledgeRevisions } from "@/db/schema";
 import { modellName } from "@/lib/format";
 import { extractSchema, FACT_TYPES } from "@/lib/validators";
@@ -85,12 +86,14 @@ export async function upsertModelKnowledge(opts: {
   const inhalt = Object.fromEntries(present.map((t) => [t, result[t]]));
   const amModell = machine.modelId != null;
 
+  // Der eigene Eintrag darf an einer baugleichen Edition hängen (Familie) —
+  // dann wird DER aktualisiert statt ein zweiter angelegt.
   await schreibeMitRevision({
     where: and(
       eq(knowledge.createdBy, userId),
       eq(knowledge.typ, "handbuch_fakten"),
       amModell
-        ? eq(knowledge.modelId, machine.modelId!)
+        ? inArray(knowledge.modelId, (await getFamilie(machine.modelId!)).ids)
         : eq(knowledge.machineId, machine.id),
     )!,
     userId,
@@ -158,10 +161,16 @@ export async function upsertTroubleshootingKnowledge(opts: {
 
   // Zielebene bestimmen: Generation (bewusst gewählt) > Modell > Maschine.
   const aufGen = aufGeneration === true && generationId != null;
+  // Modell-Ebene sucht den eigenen Guide in der ganzen Familie (baugleiche Editionen).
   const ziel = aufGen
     ? { where: eq(knowledge.generationId, generationId!), generationId, modelId: null, machineId: null }
     : machine.modelId != null
-      ? { where: eq(knowledge.modelId, machine.modelId), generationId: null, modelId: machine.modelId, machineId: null }
+      ? {
+          where: inArray(knowledge.modelId, (await getFamilie(machine.modelId)).ids),
+          generationId: null,
+          modelId: machine.modelId,
+          machineId: null,
+        }
       : { where: eq(knowledge.machineId, machine.id), generationId: null, modelId: null, machineId: machine.id };
 
   const titel = aufGen

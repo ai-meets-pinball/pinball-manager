@@ -20,6 +20,19 @@ Ein Flippertyp, wie er ab Werk existiert — „Monster Bash (Williams 1998)".
 Monster Bash und Monster Bash Remake sind zwei Modelle, nicht eines.
 _Avoid_: Gerätetyp, Machine, Group
 
+**Familie**:
+Alle Modelle mit demselben Familienschlüssel — den ersten zwei Segmenten der
+OPDB-Referenz (`GV8wB-MRjKd`). Pokémon LE (`GV8wB-MRjKd-ARz2r`) und Pokémon
+Premium/LE (`GV8wB-MRjKd`) sind eine Familie: **baugleich**, gleiche Spulen- und
+Schaltermatrix, teilen ihr Wissen. Pokémon Pro (`GV8wB-Mq12N`) gehört nicht dazu.
+Jedes Modell bleibt eigener Katalogeintrag; die OPDB-Referenzen sind vorgegeben
+und werden nie verändert oder zusammengelegt.
+_Avoid_: Gruppe (das ist die OPDB-Titelebene Pro + Premium + LE), Alias, Variante
+
+**Edition**:
+Ein Modell innerhalb einer Familie mit eigener Bezeichnung — LE, Premium,
+Premium/LE.
+
 **Maschine**:
 Ein konkretes Gerät, das jemandem gehört — „Franks Monster Bash". Instanz genau
 eines Modells.

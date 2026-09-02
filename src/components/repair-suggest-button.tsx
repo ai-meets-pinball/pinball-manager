@@ -4,76 +4,66 @@ import { useActionState } from "react";
 import { Loader2, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AiProviderField } from "@/components/ui/ai-provider-field";
-import { RepairForm } from "@/components/repair-form";
-import { createRepair } from "@/db/actions/repairs";
+import { FormFeedback } from "@/components/ui/form-feedback";
 import { generateRepairSuggestion } from "@/db/actions/repair-suggestion";
 import type { RepairSuggestState } from "@/db/actions/repair-suggestion";
 import type { AiProvider } from "@/lib/ai/provider";
 
 /*
-  Fehler → KI-Reparaturvorschlag (Roadmap-Phase 3). Auf Knopfdruck erzeugt die
-  KI aus Symptom + Maschinen-Wissen einen Vorschlag (Diagnose/Maßnahme/Teile)
-  und füllt damit eine NEUE Reparatur vor — der Nutzer prüft und speichert über
-  das übliche Reparatur-Formular (createRepair). Nur mit Schreibrecht.
+  Fehler → KI-Reparaturvorschlag (Roadmap-Phase 3), als Baustein der Seite
+  „Neue Reparatur": auf Knopfdruck erzeugt die KI aus Symptom + Maschinen-
+  Wissen Diagnose/Maßnahme/Teile und reicht sie per onVorschlag ans Reparatur-
+  Formular weiter, das seine Felder damit füllt. Der Mensch prüft und speichert
+  wie gewohnt. Ein eigenes <form>, weil Anbieter/Schlüssel nur an die
+  Vorschlags-Action gehen sollen — nicht mit ins Speichern der Reparatur.
 */
-export function RepairSuggestButton({
-  machineId,
-  fault,
+export type KiVorschlag = { diagnose: string; massnahme: string; teile: string };
+
+export function KiVorschlagHolen({
+  faultId,
   providers,
   centralKey,
+  onVorschlag,
 }: {
-  machineId: string;
-  fault: { id: string; beschreibung: string; status: string };
+  faultId: string;
   providers: AiProvider[];
   centralKey: boolean;
+  onVorschlag: (v: KiVorschlag) => void;
 }) {
   const [state, formAction, pending] = useActionState<
     RepairSuggestState,
     FormData
-  >(generateRepairSuggestion, {});
+  >(async (prev, fd) => {
+    const antwort = await generateRepairSuggestion(prev, fd);
+    if (antwort.vorschlag) onVorschlag(antwort.vorschlag);
+    return antwort;
+  }, {});
 
   return (
-    <details className="rounded-[var(--radius)] border border-dashed border-[var(--color-border)]">
-      <summary className="flex cursor-pointer items-center gap-1.5 px-3 py-2 text-sm text-[var(--color-primary)] hover:underline">
-        <Sparkles size={14} /> KI-Reparaturvorschlag
-      </summary>
-      <div className="space-y-3 border-t border-[var(--color-border)] p-3">
-        <form action={formAction} className="space-y-3">
-          <input type="hidden" name="faultId" value={fault.id} />
-          <AiProviderField providers={providers} centralKey={centralKey} />
-          <Button type="submit" size="sm" disabled={pending}>
-            {pending ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <Sparkles size={16} />
-            )}
-            {pending ? "Erzeuge Vorschlag…" : "Vorschlag generieren"}
-          </Button>
-          {state.error ? (
-            <p className="text-sm text-[var(--color-danger)]">{state.error}</p>
-          ) : null}
-        </form>
-
+    <form
+      action={formAction}
+      className="space-y-3 rounded-[var(--radius)] border border-dashed border-[var(--color-border)] p-3"
+    >
+      <input type="hidden" name="faultId" value={faultId} />
+      <AiProviderField providers={providers} centralKey={centralKey} />
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="submit" variant="secondary" size="sm" disabled={pending}>
+          {pending ? (
+            <Loader2 size={14} className="animate-spin" />
+          ) : (
+            <Sparkles size={14} />
+          )}
+          {pending ? "Hole Vorschlag…" : "Vorschlag von der KI holen"}
+        </Button>
         {state.vorschlag ? (
-          <div className="space-y-3 border-t border-[var(--color-border)] pt-3">
-            <p className="text-xs text-[var(--color-muted)]">
-              KI-Vorschlag — bitte prüfen und anpassen, bevor du speicherst.
-              {state.vorschlag.hinweis ? ` ${state.vorschlag.hinweis}` : ""}
-            </p>
-            <RepairForm
-              action={createRepair}
-              machineId={machineId}
-              faults={[fault]}
-              selectedFaultIds={[fault.id]}
-              defaults={{
-                diagnose: state.vorschlag.diagnose,
-                massnahme: state.vorschlag.massnahme,
-                teile: state.vorschlag.teile,
-              }}
-            />
-          </div>
+          <p className="text-xs text-[var(--color-muted)]">
+            Vorschlag übernommen — bitte prüfen und anpassen, bevor du
+            speicherst.
+            {state.vorschlag.hinweis ? ` ${state.vorschlag.hinweis}` : ""}
+          </p>
         ) : null}
       </div>
-    </details>
+      <FormFeedback state={state} />
+    </form>
   );
 }

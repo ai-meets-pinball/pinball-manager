@@ -8,6 +8,7 @@ import { MachineTabs, type MachineTab } from "@/components/machine-tabs";
 import { SharedRepairs } from "@/components/shared-repairs";
 import { Card } from "@/components/ui/card";
 import {
+  getFamilie,
   getMachineModel,
   getModelGuides,
   getModelKnowledge,
@@ -40,11 +41,13 @@ export default async function GeraetetypPage({
   const model = await getMachineModel(modelId);
   if (!model) notFound();
 
-  const [fakten, guides, tipps, reparaturen] = await Promise.all([
+  // Familie: baugleiche Editionen (LE/Premium) — deren Wissen zählt hier mit.
+  const [fakten, guides, tipps, reparaturen, familie] = await Promise.all([
     getModelKnowledge(currentUser, modelId),
     getModelGuides(currentUser, modelId),
     getModelTipps(currentUser, modelId),
     getSharedRepairsForModel(currentUser, modelId),
+    getFamilie(modelId),
   ]);
 
   // Alle Bereiche bekommen einen Reiter samt Bestandszahl — auch mit (0),
@@ -88,6 +91,23 @@ export default async function GeraetetypPage({
           <h1 className="text-2xl font-bold">{modellName(model)}</h1>
           <p className="text-[var(--color-muted)]">
             {model.baujahr ?? "Baujahr unbekannt"} · Modell
+            {familie.geschwister.length > 0 ? (
+              <>
+                {" · Baugleich mit: "}
+                {familie.geschwister.map((g, i) => (
+                  <span key={g.id}>
+                    {i > 0 ? ", " : ""}
+                    <Link
+                      href={`/modelle/${g.id}`}
+                      className="hover:underline"
+                      title={g.opdbRef}
+                    >
+                      {g.modell}
+                    </Link>
+                  </span>
+                ))}
+              </>
+            ) : null}
           </p>
         </div>
       </div>

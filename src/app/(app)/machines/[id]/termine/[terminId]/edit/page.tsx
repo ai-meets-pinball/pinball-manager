@@ -6,7 +6,7 @@ import { updateTermin } from "@/db/actions/termine";
 import { db } from "@/db";
 import { termine } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
-import { modellName } from "@/lib/format";
+import { modellName, datumISO } from "@/lib/format";
 
 export default async function EditTerminPage({
   params,
@@ -35,7 +35,7 @@ export default async function EditTerminPage({
           id: t.id,
           titel: t.titel,
           notiz: t.notiz,
-          datum: t.datum.toISOString().slice(0, 10),
+          datum: datumISO(t.datum),
           erinnerungTageVorher: t.erinnerungTageVorher,
           wiederholenMonate: t.wiederholenMonate,
         }}

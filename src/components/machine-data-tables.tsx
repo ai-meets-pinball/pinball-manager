@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { FactTableView } from "@/components/fact-table-view";
 import { factTableSchema, type FactType } from "@/lib/validators";
 
@@ -46,8 +46,13 @@ export function MachineDataTables({ facts }: { facts: Row[] }) {
     .filter((x): x is { typ: FactType; table: ReturnType<typeof factTableSchema.parse> } => x !== null)
     .sort((a, b) => ORDER.indexOf(a.typ) - ORDER.indexOf(b.typ));
 
-  // Welche Bereiche sind aufgeklappt (kontrolliert, damit KPI-Karten aufklappen).
-  const [open, setOpen] = useState<Set<FactType>>(new Set());
+  // Alle Tabellen starten OFFEN (P3: keine Klappen vor dem Hauptinhalt) — der
+  // Kopf jeder Tabelle bleibt ein Umschalter, um eine lange Tabelle bewusst
+  // zuzuklappen. Der Zustand bleibt kontrolliert, damit ein Re-Render nichts
+  // zurücksetzt.
+  const [open, setOpen] = useState<Set<FactType>>(
+    () => new Set(parsed.map((p) => p.typ)),
+  );
   const setTyp = (typ: FactType, isOpen: boolean) =>
     setOpen((prev) => {
       const next = new Set(prev);
@@ -55,30 +60,24 @@ export function MachineDataTables({ facts }: { facts: Row[] }) {
       else next.delete(typ);
       return next;
     });
+  // Anker-Präfix: die Komponente kann mehrfach auf einer Seite stehen (Verlauf-
+  // Dialog neben dem aktuellen Stand) — sonst kollidieren die Sprungziele.
+  const anker = useId().replace(/[^a-zA-Z0-9]/g, "");
 
   if (parsed.length === 0) return null;
 
-  // Klick auf eine KPI-Karte: Bereich aufklappen UND dorthin scrollen.
-  const openAndScroll = (typ: FactType) => {
-    setTyp(typ, true);
-    document
-      .getElementById(`fact-${typ}`)
-      ?.scrollIntoView({ behavior: "smooth", block: "start" });
-  };
-
   return (
     <div className="space-y-4">
-      {/* Dashboard + Subnavigation: je Faktentyp eine Kennzahl-Karte, die den
-          Abschnitt aufklappt und dorthin scrollt. */}
+      {/* Dashboard + Subnavigation: je Faktentyp eine Kennzahl-Karte als
+          Sprunglink (#anker) zur offenen Tabelle. */}
       <nav
         aria-label="Handbuch-Abschnitte"
         className="grid grid-cols-3 gap-2 sm:grid-cols-6"
       >
         {parsed.map(({ typ, table }) => (
-          <button
+          <a
             key={typ}
-            type="button"
-            onClick={() => openAndScroll(typ)}
+            href={`#fact-${anker}-${typ}`}
             className="group flex flex-col gap-0.5 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)] px-3 py-2.5 text-left transition-colors hover:border-[var(--color-primary)]"
           >
             <span className="font-mono text-xl font-bold leading-none text-[var(--color-primary)]">
@@ -87,12 +86,12 @@ export function MachineDataTables({ facts }: { facts: Row[] }) {
             <span className="font-mono text-[10px] uppercase tracking-[0.08em] text-[var(--color-muted)] group-hover:text-[var(--color-fg)]">
               {LABELS[typ] ?? typ}
             </span>
-          </button>
+          </a>
         ))}
       </nav>
 
       {parsed.map(({ typ, table }) => (
-        <div key={typ} id={`fact-${typ}`} className="scroll-mt-24">
+        <div key={typ} id={`fact-${anker}-${typ}`} className="scroll-mt-24">
           <FactTableView
             typ={typ}
             label={LABELS[typ] ?? typ}

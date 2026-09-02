@@ -13,6 +13,8 @@ import {
   saveEmailTemplate,
 } from "@/db/actions/email-templates";
 import { renderPlaceholders } from "@/lib/email-templates";
+import { ActionForm } from "@/components/ui/action-form";
+import { Badge } from "@/components/ui/badge";
 
 /*
   Editor für eine E-Mail-Vorlage. Betreff und Einleitungstext sind anpassbar;
@@ -58,17 +60,16 @@ export function EmailTemplateForm({
     <Card className="space-y-3 bg-[var(--color-surface-2)]">
       <div className="flex flex-wrap items-baseline justify-between gap-2">
         <div>
-          <p className="font-medium">
-            {label}{" "}
-            <span className="font-mono text-xs text-[var(--color-faint)]">
-              {templateKey}
-            </span>
+          <p className="flex flex-wrap items-center gap-2 font-medium">
+            {label}
+            {angepasst ? (
+              <Badge tone="accent">angepasst</Badge>
+            ) : (
+              <Badge tone="muted">Standardtext</Badge>
+            )}
           </p>
           <p className="text-sm text-[var(--color-muted)]">{beschreibung}</p>
         </div>
-        <span className="font-mono text-[10px] uppercase tracking-[0.5px] text-[var(--color-faint)]">
-          {angepasst ? "angepasst" : "Standardtext"}
-        </span>
       </div>
 
       <form action={formAction} className="space-y-3">
@@ -121,14 +122,19 @@ export function EmailTemplateForm({
         <FormFeedback state={state} />
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button type="submit" disabled={pending}>
-            <Save size={16} /> {pending ? "Speichern…" : "Speichern"}
+          <Button
+            type="submit"
+            size="sm"
+            disabled={pending || (betreff === subject && text === body)}
+            title={betreff === subject && text === body ? "Keine Änderung" : undefined}
+          >
+            <Save size={14} /> {pending ? "Speichern…" : "Speichern"}
           </Button>
         </div>
       </form>
 
       {angepasst ? (
-        <form action={resetEmailTemplate}>
+        <ActionForm action={resetEmailTemplate}>
           <input type="hidden" name="key" value={templateKey} />
           <ConfirmButton
             question="Anpassungen verwerfen?"
@@ -136,7 +142,7 @@ export function EmailTemplateForm({
           >
             <RotateCcw size={13} /> Auf Standardtext zurücksetzen
           </ConfirmButton>
-        </form>
+        </ActionForm>
       ) : null}
     </Card>
   );

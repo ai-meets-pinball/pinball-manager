@@ -1,20 +1,21 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, gte, sql } from "drizzle-orm";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import Link from "next/link";
-import { ArrowLeft, QrCode, Trash2, X } from "lucide-react";
-import { AddMemberForm } from "@/components/add-member-form";
+import { QrCode, Trash2 } from "lucide-react";
+import { MitgliedEinladen } from "@/components/add-member-form";
 import { ClubLogoForm } from "@/components/club-logo-form";
 import { MachineCard } from "@/components/machine-card";
 import { MemberActions } from "@/components/member-actions";
 import { RoleInfo } from "@/components/role-info";
 import { ShareSettingsForm } from "@/components/share-settings-form";
 import { Card } from "@/components/ui/card";
+import { ICON_BTN } from "@/components/ui/icon-button";
 import { List, ListRow } from "@/components/ui/list";
-import { AddDisclosure } from "@/components/ui/add-disclosure";
+import { PageHeader } from "@/components/ui/page-header";
 import { getSettingsFor } from "@/db/queries";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { deleteClub } from "@/db/actions/clubs";
-import { inviteMember, revokeInvitation } from "@/db/actions/invitations";
+import { revokeInvitation } from "@/db/actions/invitations";
 import { db } from "@/db";
 import {
   clubs,
@@ -24,7 +25,8 @@ import {
   roles,
   user,
 } from "@/db/schema";
-import { isClubManager, isClubOwner, requireClubMember } from "@/lib/session";
+import { getClubRole, requireClubMember } from "@/lib/session";
+import { darfClub } from "@/lib/rechte";
 import type { ClubRole } from "@/lib/validators";
 
 export default async function ClubDetailPage({
@@ -34,8 +36,11 @@ export default async function ClubDetailPage({
 }) {
   const { id } = await params;
   const currentUser = await requireClubMember(id);
-  const manager = await isClubManager(currentUser.id, id);
-  const owner = await isClubOwner(currentUser.id, id);
+  // Dieselbe Regel wie in den Actions (lib/rechte.ts) — so sieht ein Super-Admin
+  // auch die Controls, die ihm die Actions ohnehin gewähren.
+  const rechte = darfClub(currentUser, await getClubRole(currentUser.id, id));
+  const manager = rechte.verwalten;
+  const owner = rechte.ownerVergeben;
 
   const club = await db.query.clubs.findFirst({ where: eq(clubs.id, id) });
   if (!club) return null;
@@ -53,6 +58,8 @@ export default async function ClubDetailPage({
     .innerJoin(roles, eq(roleAssignments.roleId, roles.id))
     .where(eq(roleAssignments.clubId, id))
     .orderBy(desc(roles.rang));
+  // Für die „mind. 1 Owner"-Sperre an Papierkorb/Verlassen/Rolle.
+  const ownerAnzahl = members.filter((m) => m.rolle === "owner").length;
 
   const clubMachines = await db.query.machines.findMany({
     where: eq(machines.clubId, id),
@@ -72,7 +79,8 @@ export default async function ClubDetailPage({
     .where(eq(roles.scope, "club"))
     .orderBy(desc(roles.rang));
 
-  // Offene Einladungen (nur für Manager sichtbar).
+  // Offene, noch nicht abgelaufene Einladungen (nur für Manager sichtbar).
+  // Ablauf serverseitig per SQL now() — eine verfallene Einladung ist nicht „offen".
   const pendingInvites = manager
     ? await db
         .select({
@@ -83,124 +91,122 @@ export default async function ClubDetailPage({
         .from(invitations)
         .innerJoin(roles, eq(invitations.roleId, roles.id))
         .where(
-          and(eq(invitations.clubId, id), eq(invitations.status, "pending")),
+          and(
+            eq(invitations.clubId, id),
+            eq(invitations.status, "pending"),
+            gte(invitations.expiresAt, sql`now()`),
+          ),
         )
         .orderBy(desc(invitations.createdAt))
     : [];
 
   return (
     <div className="space-y-8">
-      <Link
-        href="/clubs"
-        className="inline-flex items-center gap-1 text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-      >
-        <ArrowLeft size={14} /> Clubs
-      </Link>
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          {club.logoUrl ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={club.logoUrl}
-              alt={`Logo ${club.name}`}
-              className="h-12 w-12 flex-none rounded-[var(--radius)] object-contain"
-            />
-          ) : null}
-          <h1 className="text-2xl font-bold">{club.name}</h1>
-        </div>
-        <div className="flex items-center gap-2">
-          <Link
-            href={`/clubs/${club.id}/qr`}
-            className="inline-flex items-center gap-1.5 rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-          >
-            <QrCode size={15} /> Sammel-QR
-          </Link>
-          {owner ? (
-            <form action={deleteClub}>
-              <input type="hidden" name="clubId" value={club.id} />
-              <ConfirmButton
-                question="Club endgültig löschen? Maschinen bleiben beim Eigentümer, alle Mitgliedschaften und Einladungen entfallen."
-                confirmLabel="Ja, Club löschen"
-                className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-danger)]/40 px-3 py-2 text-sm text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10"
-              >
-                <Trash2 size={15} /> Club löschen
-              </ConfirmButton>
-            </form>
-          ) : null}
-        </div>
-      </div>
+      <PageHeader
+        backHref="/clubs"
+        backLabel="Clubs"
+        title={
+          <span className="flex items-center gap-3">
+            {club.logoUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={club.logoUrl}
+                alt={`Logo ${club.name}`}
+                className="h-12 w-12 flex-none rounded-[var(--radius)] object-contain"
+              />
+            ) : null}
+            {club.name}
+          </span>
+        }
+        actions={
+          <>
+            <Link
+              href={`/clubs/${club.id}/qr`}
+              className="inline-flex items-center gap-1.5 rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-2 text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+            >
+              <QrCode size={15} /> Sammel-QR
+            </Link>
+            {owner ? (
+              <form action={deleteClub}>
+                <input type="hidden" name="clubId" value={club.id} />
+                <ConfirmButton
+                  question="Club endgültig löschen? Maschinen bleiben beim Eigentümer, alle Mitgliedschaften und Einladungen entfallen."
+                  confirmLabel="Ja, Club löschen"
+                  className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-danger)]/40 px-3 py-2 text-sm text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10"
+                >
+                  <Trash2 size={15} /> Club löschen
+                </ConfirmButton>
+              </form>
+            ) : null}
+          </>
+        }
+      />
 
-      {/* Mitglieder */}
+      {/* Mitglieder — eine Zeile je Person, Rolle als Badge, Aktionen rechts. */}
       <section className="space-y-3">
-        <h2 className="flex items-center gap-1.5 text-lg font-semibold">
-          Mitglieder
-          <RoleInfo roles={rollenKatalog} />
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="flex items-center gap-1.5 text-lg font-semibold">
+            Mitglieder
+            <RoleInfo roles={rollenKatalog} />
+          </h2>
+          {manager ? (
+            <MitgliedEinladen clubId={club.id} allowOwner={owner} />
+          ) : null}
+        </div>
         <List empty="Noch keine Mitglieder.">
           {members.map((member) => (
             <ListRow
               key={member.id}
               title={member.name}
               subtitle={member.email}
+              meta={<StatusBadge value={member.rolle} />}
               actions={
                 <MemberActions
                   clubId={club.id}
                   memberId={member.id}
+                  name={member.name}
                   rolle={member.rolle as ClubRole}
                   isSelf={member.id === currentUser.id}
                   canManage={manager}
                   canManageOwner={owner}
+                  ownerAnzahl={ownerAnzahl}
                 />
               }
             />
           ))}
         </List>
 
-        {manager ? (
-          <Card className="space-y-4">
-            <AddDisclosure label="Mitglied einladen">
-              <AddMemberForm
-                action={inviteMember}
-                clubId={club.id}
-                allowOwner={owner}
-              />
-            </AddDisclosure>
-
-            {pendingInvites.length > 0 ? (
-              <div className="space-y-2 border-t border-[var(--color-border)] pt-3">
-                <p className="text-xs font-medium text-[var(--color-muted)]">
-                  Offene Einladungen
-                </p>
-                {pendingInvites.map((inv) => (
-                  <div
-                    key={inv.id}
-                    className="flex items-center justify-between gap-3 text-sm"
-                  >
-                    <span className="min-w-0 truncate">{inv.email}</span>
-                    <div className="flex items-center gap-2">
-                      <StatusBadge value={inv.rolle} />
-                      <form action={revokeInvitation}>
-                        <input type="hidden" name="clubId" value={club.id} />
-                        <input
-                          type="hidden"
-                          name="invitationId"
-                          value={inv.id}
-                        />
-                        <ConfirmButton
-                          question="Diese Einladung zurückziehen?"
-                          confirmLabel="Ja, zurückziehen"
-                          aria-label="Einladung zurückziehen"
-                          className="text-[var(--color-muted)] hover:text-[var(--color-danger)]"
-                        >
-                          <X size={16} />
-                        </ConfirmButton>
-                      </form>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-          </Card>
+        {pendingInvites.length > 0 ? (
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-[var(--color-muted)]">
+              Offene Einladungen
+            </p>
+            <List empty="Keine offenen Einladungen." kompakt>
+              {pendingInvites.map((inv) => (
+                <ListRow
+                  key={inv.id}
+                  kompakt
+                  title={<span className="text-sm">{inv.email}</span>}
+                  meta={<StatusBadge value={inv.rolle} />}
+                  actions={
+                    <form action={revokeInvitation}>
+                      <input type="hidden" name="clubId" value={club.id} />
+                      <input type="hidden" name="invitationId" value={inv.id} />
+                      <ConfirmButton
+                        question={`Einladung an ${inv.email} zurückziehen? Der verschickte Link wird ungültig.`}
+                        confirmLabel="Ja, zurückziehen"
+                        aria-label={`Einladung an ${inv.email} zurückziehen`}
+                        title="Einladung zurückziehen"
+                        className={`${ICON_BTN} hover:text-[var(--color-danger)]`}
+                      >
+                        <Trash2 size={14} />
+                      </ConfirmButton>
+                    </form>
+                  }
+                />
+              ))}
+            </List>
+          </div>
         ) : null}
       </section>
 
@@ -244,13 +250,6 @@ export default async function ClubDetailPage({
           </div>
         )}
       </section>
-
-      <Link
-        href="/clubs"
-        className="inline-block text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-      >
-        ← Alle Clubs
-      </Link>
     </div>
   );
 }

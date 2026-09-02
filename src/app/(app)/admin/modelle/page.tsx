@@ -1,5 +1,6 @@
-import { and, asc, count, desc, eq, ilike, isNull, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, inArray, isNull, or, sql } from "drizzle-orm";
 import Link from "next/link";
+import { CountPill } from "@/components/ui/count-pill";
 import { LayoutGrid, Table2 } from "lucide-react";
 import { ViewToggle } from "@/components/ui/view-toggle";
 import { cookies } from "next/headers";
@@ -13,6 +14,7 @@ import { SearchToolbar } from "@/components/ui/search-toolbar";
 import { db } from "@/db";
 import { generations, machineModels } from "@/db/schema";
 import { modellName } from "@/lib/format";
+import { SortRichtung } from "@/components/ui/sort-richtung";
 
 /*
   Modelle (Super-Admin): der Modell-Katalog — durchsuchbar (Text), filterbar
@@ -117,6 +119,7 @@ export default async function AdminModellePage({
       modell: machineModels.modell,
       baujahr: machineModels.baujahr,
       opdbRef: machineModels.opdbRef,
+      opdbMachineRef: machineModels.opdbMachineRef,
       imageUrl: machineModels.imageUrl,
       generationId: machineModels.generationId,
     })
@@ -125,6 +128,36 @@ export default async function AdminModellePage({
     .orderBy(...sortierung)
     .limit(PRO_SEITE)
     .offset((aktuelleSeite - 1) * PRO_SEITE);
+
+  // Familiengröße je Schlüssel der Seite: baugleiche Editionen (LE/Premium)
+  // bekommen eine Pille, die per Suche nach dem Schlüssel die Familie zeigt.
+  const schluessel = [
+    ...new Set(
+      modelle.map((m) => m.opdbMachineRef).filter((s): s is string => s !== null),
+    ),
+  ];
+  const familienGroesse = new Map<string, number>();
+  if (schluessel.length > 0) {
+    const zaehler = await db
+      .select({ key: machineModels.opdbMachineRef, n: count() })
+      .from(machineModels)
+      .where(inArray(machineModels.opdbMachineRef, schluessel))
+      .groupBy(machineModels.opdbMachineRef);
+    for (const z of zaehler) if (z.key) familienGroesse.set(z.key, z.n);
+  }
+  const familiePille = (m: { opdbMachineRef: string | null }) => {
+    const n = m.opdbMachineRef ? (familienGroesse.get(m.opdbMachineRef) ?? 0) : 0;
+    if (n < 2 || !m.opdbMachineRef) return null;
+    return (
+      <Link
+        href={`/admin/modelle?q=${encodeURIComponent(m.opdbMachineRef)}`}
+        title={`Familie: ${n} baugleiche Modelle`}
+        className="ml-1 inline-flex align-middle"
+      >
+        <CountPill n={n} />
+      </Link>
+    );
+  };
 
   // Erhaltene Parameter für Pagination/Ansicht-Links. Sortierung + Ansicht sind
   // IMMER dabei (auch Defaults), damit die gemerkte Auswahl bei jedem Link mitläuft.
@@ -136,20 +169,11 @@ export default async function AdminModellePage({
     ansicht,
   };
 
-  /* Sortier-Link: Klick auf die aktive Spalte dreht die Richtung um; sonst
-     Spalte wechseln (aufsteigend). Seite fällt dabei bewusst auf 1 zurück. */
-  const sortHref = (key: "name" | "jahr") => {
-    const p = new URLSearchParams({
-      ...(q ? { q } : {}),
-      ...(gen ? { gen } : {}),
-      ansicht,
-    });
-    p.set("sort", key);
-    p.set("dir", sort === key && dir === "auf" ? "ab" : "auf");
-    // Seite fällt bewusst auf 1 zurück (kein seite-Parameter).
-    return `/admin/modelle?${p.toString()}`;
-  };
-
+  /* Pfeil neben dem Sortier-Select dreht die Richtung; Seite fällt auf 1 zurück. */
+  const dirHref = new URLSearchParams({
+    ...params,
+    dir: dir === "auf" ? "ab" : "auf",
+  });
   /* Ansicht-Umschalter (Karten mit Bild / kompakte Tabelle) — Zustand lebt in
      der URL wie alles andere; Seite und Filter bleiben erhalten. */
   const ansichtHref = (a: "karten" | "tabelle") => {
@@ -158,19 +182,6 @@ export default async function AdminModellePage({
     if (aktuelleSeite > 1) p.set("seite", String(aktuelleSeite));
     return `/admin/modelle?${p.toString()}`;
   };
-  const sortLabel = (key: "name" | "jahr", label: string) => (
-    <Link
-      href={sortHref(key)}
-      className={
-        sort === key
-          ? "font-medium text-[var(--color-primary)]"
-          : "text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-      }
-    >
-      {label}
-      {sort === key ? (dir === "auf" ? " ↑" : " ↓") : ""}
-    </Link>
-  );
 
   return (
     <div className="space-y-6">
@@ -191,12 +202,13 @@ export default async function AdminModellePage({
               defaultValue={q}
               label="Modelle suchen"
               keep={{
-                ...(sort !== "name" ? { sort } : {}),
                 ...(dir !== "auf" ? { dir } : {}),
                 ...(ansicht === "tabelle" ? { ansicht } : {}),
               }}
               resetHref="/admin/modelle"
               aktiv={Boolean(q || gen)}
+              ohneButton
+              breite="w-44 sm:w-56"
             >
               <AutoSubmitSelect
                 name="gen"
@@ -205,13 +217,23 @@ export default async function AdminModellePage({
                 className="max-w-56"
               >
                 <option value="">Alle Generationen</option>
-                <option value="ohne">— ohne Generation —</option>
+                <option value="ohne">ohne Generation</option>
                 {genOptionen.map((g) => (
                   <option key={g.id} value={g.id}>
                     {g.name}
                   </option>
                 ))}
               </AutoSubmitSelect>
+              <AutoSubmitSelect
+                name="sort"
+                defaultValue={sort}
+                aria-label="Sortieren"
+                className="w-auto"
+              >
+                <option value="name">Name</option>
+                <option value="jahr">Baujahr</option>
+              </AutoSubmitSelect>
+              <SortRichtung dir={dir} href={`/admin/modelle?${dirHref.toString()}`} />
             </SearchToolbar>
             <RememberParams
               path="/admin/modelle"
@@ -239,13 +261,6 @@ export default async function AdminModellePage({
             />
           </div>
         </div>
-
-        <p className="text-sm">
-          <span className="text-[var(--color-muted)]">Sortieren: </span>
-          {sortLabel("name", "Name")}
-          <span className="text-[var(--color-faint)]"> · </span>
-          {sortLabel("jahr", "Baujahr")}
-        </p>
 
         {ansicht === "tabelle" ? (
           /* Kompakte Tabellen-Ansicht (ohne Bilder) — für schnelles Scannen
@@ -279,6 +294,7 @@ export default async function AdminModellePage({
                       <td className="py-2 pr-4">{m.baujahr ?? "—"}</td>
                       <td className="py-2 pr-4 font-mono text-xs text-[var(--color-faint)]">
                         {m.opdbRef}
+                        {familiePille(m)}
                       </td>
                       <td className="py-2">
                         <ModelGenerationSelect
@@ -319,6 +335,7 @@ export default async function AdminModellePage({
                   <>
                     {m.baujahr ?? "Baujahr unbekannt"}
                     <span className="font-mono text-xs"> · {m.opdbRef}</span>
+                    {familiePille(m)}
                   </>
                 }
                 actions={

@@ -9,6 +9,7 @@ import {
   type SQL,
 } from "drizzle-orm";
 import { db } from "@/db";
+import { getFamilie } from "@/db/queries/familie";
 import {
   clubSettings,
   faults,
@@ -98,7 +99,8 @@ export async function getSharedRepairsForModel(
     .where(
       and(
         eq(shares.artefaktTyp, "repair"),
-        eq(shares.modelId, modelId),
+        // Familie: Reparaturen baugleicher Editionen (LE/Premium) passen genauso.
+        inArray(shares.modelId, (await getFamilie(modelId)).ids),
         exkludiereMachineId
           ? ne(repairs.machineId, exkludiereMachineId)
           : undefined,
@@ -128,6 +130,7 @@ export async function getSharedRepairsForModel(
 export async function getRepairShares(machineId: string) {
   const zeilen = await db
     .select({
+      shareId: shares.id,
       artefaktId: shares.artefaktId,
       scope: shares.scope,
       anonym: shares.anonym,
@@ -138,7 +141,43 @@ export async function getRepairShares(machineId: string) {
     .where(
       and(eq(shares.artefaktTyp, "repair"), eq(repairs.machineId, machineId)),
     );
-  return new Map(zeilen.map((z) => [z.artefaktId, z]));
+
+  // Ziele mitliefern, damit „Ändern" mit den bestehenden Clubs/E-Mails startet
+  // (vorher begann der Dialog leer und scheiterte an „mindestens einen Club").
+  const ziele =
+    zeilen.length === 0
+      ? []
+      : await db
+          .select({
+            shareId: shareTargets.shareId,
+            clubId: shareTargets.clubId,
+            email: user.email,
+          })
+          .from(shareTargets)
+          .leftJoin(user, eq(user.id, shareTargets.userId))
+          .where(
+            inArray(
+              shareTargets.shareId,
+              zeilen.map((z) => z.shareId),
+            ),
+          );
+
+  return new Map(
+    zeilen.map((z) => [
+      z.artefaktId,
+      {
+        scope: z.scope,
+        anonym: z.anonym,
+        zeigeKosten: z.zeigeKosten,
+        clubIds: ziele
+          .filter((t) => t.shareId === z.shareId && t.clubId)
+          .map((t) => t.clubId as string),
+        emails: ziele
+          .filter((t) => t.shareId === z.shareId && t.email)
+          .map((t) => t.email as string),
+      },
+    ]),
+  );
 }
 
 /**

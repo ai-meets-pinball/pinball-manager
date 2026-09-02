@@ -6,6 +6,7 @@ import { List, ListRow } from "@/components/ui/list";
 import { restoreKnowledge } from "@/db/actions/knowledge";
 import { getKuratierungsUebersicht } from "@/db/queries";
 import { kannKuratieren, requireUser } from "@/lib/session";
+import { ActionForm } from "@/components/ui/action-form";
 
 /*
   Kuratierungs-Übersicht (Kurator + Super-Admin). Bewusst NICHT unter /admin:
@@ -133,7 +134,7 @@ export default async function KuratierungPage() {
               }
               meta={<SichtChip value={e.visibility} />}
               actions={
-                <form action={restoreKnowledge}>
+                <ActionForm action={restoreKnowledge}>
                   <input type="hidden" name="knowledgeId" value={e.id} />
                   <input
                     type="hidden"
@@ -146,7 +147,7 @@ export default async function KuratierungPage() {
                   >
                     Wiederherstellen
                   </ConfirmButton>
-                </form>
+                </ActionForm>
               }
             />
           ))}

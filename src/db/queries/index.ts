@@ -15,6 +15,7 @@
 export { getUserClubIds } from "@/lib/session";
 
 export * from "@/db/queries/machines";
+export * from "@/db/queries/familie";
 export * from "@/db/queries/maintenance";
 export * from "@/db/queries/knowledge";
 export * from "@/db/queries/shares";

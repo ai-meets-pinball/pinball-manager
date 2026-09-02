@@ -35,10 +35,24 @@ export async function setzeMaschinenStatus(
   }
 
   const [aktuell] = await db
-    .select({ status: machines.status, manuell: machines.statusManuell })
+    .select({
+      status: machines.status,
+      manuell: machines.statusManuell,
+      grund: machines.statusGrund,
+    })
     .from(machines)
     .where(eq(machines.id, machineId))
     .limit(1);
+
+  // Ein No-op (schon manuell, gleicher Status, gleicher Grund) schreibt nichts —
+  // sonst würde jedes „Setzen" Autor und Zeitstempel still überschreiben.
+  if (
+    aktuell?.manuell &&
+    aktuell.status === parsed.data.status &&
+    (aktuell.grund ?? "") === (parsed.data.grund || "")
+  ) {
+    return { ok: true };
+  }
 
   // statusSeit nur bumpen, wenn sich der Status wirklich ändert.
   const geaendert = !aktuell || aktuell.status !== parsed.data.status;

@@ -7,8 +7,9 @@ import { promptOverrides } from "@/db/schema";
 import { requireSuperAdmin } from "@/lib/session";
 import {
   DEFAULT_PROMPTS,
-  extractSpaltenBlock,
   PROMPT_KEYS,
+  extractSpaltenBlock,
+  fehlendePlatzhalter,
   renderPrompt,
   type PromptKey,
 } from "@/lib/prompts";
@@ -41,6 +42,30 @@ export async function savePrompt(
   if (!vorlage) return { error: "Der Prompt darf nicht leer sein." };
   if (hersteller && generationId) {
     return { error: "Bereich ist entweder Hersteller ODER Generation." };
+  }
+  // Die Regel von der Seite („Platzhalter müssen erhalten bleiben") gilt wirklich.
+  const fehlend = fehlendePlatzhalter(vorlage, DEFAULT_PROMPTS[key].platzhalter);
+  if (fehlend.length > 0) {
+    return { error: `Platzhalter fehlen: ${fehlend.join(", ")}` };
+  }
+  // „Override anlegen" darf einen bestehenden nicht still überschreiben.
+  if (String(formData.get("modus") ?? "") === "neu") {
+    const vorhanden = await db.query.promptOverrides.findFirst({
+      where: and(
+        eq(promptOverrides.key, key),
+        hersteller
+          ? eq(promptOverrides.hersteller, hersteller)
+          : isNull(promptOverrides.hersteller),
+        generationId
+          ? eq(promptOverrides.generationId, generationId)
+          : isNull(promptOverrides.generationId),
+      ),
+    });
+    if (vorhanden) {
+      return {
+        error: "Für diesen Bereich gibt es schon einen Override — bearbeite ihn oben.",
+      };
+    }
   }
 
   await db

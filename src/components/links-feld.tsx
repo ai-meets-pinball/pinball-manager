@@ -16,8 +16,11 @@ import type { TippLink } from "@/lib/tipp-inhalt";
 */
 export function LinksFeld({
   defaultLinks = [],
+  onChange,
 }: {
   defaultLinks?: TippLink[];
+  /** Meldet jede Änderung der Liste — der Editor braucht sie für „unverändert". */
+  onChange?: (links: TippLink[]) => void;
 }) {
   const [links, setLinks] = useState<TippLink[]>(() =>
     defaultLinks.map((l) => ({
@@ -26,15 +29,17 @@ export function LinksFeld({
       beschreibung: l.beschreibung ?? "",
     })),
   );
+  const aktualisiere = (neu: TippLink[]) => {
+    setLinks(neu);
+    onChange?.(neu);
+  };
 
   const setFeld = (i: number, feld: keyof TippLink, wert: string) =>
-    setLinks((alt) =>
-      alt.map((l, j) => (j === i ? { ...l, [feld]: wert } : l)),
-    );
+    aktualisiere(links.map((l, j) => (j === i ? { ...l, [feld]: wert } : l)));
   const hinzufuegen = () =>
-    setLinks((alt) => [...alt, { url: "", name: "", beschreibung: "" }]);
+    aktualisiere([...links, { url: "", name: "", beschreibung: "" }]);
   const entfernen = (i: number) =>
-    setLinks((alt) => alt.filter((_, j) => j !== i));
+    aktualisiere(links.filter((_, j) => j !== i));
 
   return (
     <div className="flex flex-col gap-2 text-sm">

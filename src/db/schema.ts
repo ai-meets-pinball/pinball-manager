@@ -222,20 +222,31 @@ export const emailTemplates = pgTable("email_templates", {
 
 /* ── Modell-Katalog ────────────────────────────────────────────────────── */
 /*
-  Ein Eintrag je OPDB-MASCHINE (Edition), nicht je Gruppe/Titel — „Godzilla
-  Premium" und „Godzilla Pro" sind getrennte Typen, weil sich Spulen- und
-  Schaltermatrizen unterscheiden. `opdbGroupRef` hält den Titel fest, damit
-  Editionen später gebündelt werden können.
+  Ein Eintrag je gespeicherter OPDB-Referenz — „Godzilla Premium" und „Godzilla
+  Pro" sind getrennte Typen, weil sich Spulen- und Schaltermatrizen unterscheiden.
+  Die Referenzen sind vorgegeben und werden nicht verändert oder zusammengelegt.
+
+  FAMILIE: OPDB-Referenzen sind Gruppe-Maschine[-Alias]; technisch relevant sind
+  nur die ersten zwei Segmente. `opdbMachineRef` hält diesen Familienschlüssel
+  (z. B. "GV8wB-MRjKd") — alle Zeilen mit gleichem Schlüssel sind BAUGLEICH
+  (Editionen wie LE/Premium derselben Maschine) und teilen ihr Wissen, ohne dass
+  ihre Zeilen verschmelzen (Regel: lib/opdb-ref.ts, Auflösung: queries/familie.ts).
+  `opdbGroupRef` hält den Titel (Pro + Premium + LE) — NICHT baugleich.
 
   Der Katalog ist GETEILT: er gehört niemandem. Deshalb wird beim Anlegen nur
   eingefügt, wenn der Eintrag fehlt (first writer wins) — sonst könnte ein
   Nutzer, der seine Instanzfelder überschreibt, die Daten aller anderen ändern.
   Die Felder an `machines` bleiben Instanz-Overrides für die Anzeige.
 */
-export const machineModels = pgTable("machine_models", {
+export const machineModels = pgTable(
+  "machine_models",
+  {
   id: uuid("id").primaryKey().defaultRandom(),
-  opdbRef: text("opdb_ref").notNull().unique(), // z. B. "G50Wr-MLeZP"
-  opdbGroupRef: text("opdb_group_ref"), // z. B. "G50Wr"
+  opdbRef: text("opdb_ref").notNull().unique(), // z. B. "GV8wB-MRjKd-ARz2r"
+  opdbGroupRef: text("opdb_group_ref"), // z. B. "GV8wB"
+  // Familienschlüssel = erste zwei Segmente ("GV8wB-MRjKd"); NULL bei
+  // einsegmentigen Referenzen (dann ist die Zeile ihre eigene Familie).
+  opdbMachineRef: text("opdb_machine_ref"),
   hersteller: text("hersteller").notNull(),
   modell: text("modell").notNull(),
   baujahr: integer("baujahr"),
@@ -251,7 +262,12 @@ export const machineModels = pgTable("machine_models", {
   // das NICHT (schützt Overrides). false = aus dem Import (darf überschrieben werden).
   generationManuell: boolean("generation_manuell").notNull().default(false),
   fetchedAt: timestamp("fetched_at").notNull().defaultNow(),
-});
+  },
+  (t) => [
+    // Familien-Auflösung ist eine Gleichheitssuche auf dieser Spalte.
+    index("machine_models_opdb_machine_ref_idx").on(t.opdbMachineRef),
+  ],
+);
 
 /* ── Geräte-Besitzer (Katalog) ───────────────────────────────────────────── */
 /*

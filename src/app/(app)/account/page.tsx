@@ -2,25 +2,30 @@ import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { and, eq, gte, sql } from "drizzle-orm";
-import { ChevronDown, LogOut } from "lucide-react";
+import { LogOut } from "lucide-react";
 import {
   ChangePasswordForm,
   EmailForm,
   ProfileForm,
 } from "@/components/account-forms";
-import { DeleteAccountForm } from "@/components/delete-account-form";
+import { KontoLoeschen } from "@/components/delete-account-form";
 import { ShareSettingsForm } from "@/components/share-settings-form";
-import { WhatsappSettingsForm } from "@/components/whatsapp-settings-form";
+import {
+  WhatsappClubSchalter,
+  WhatsappSettingsForm,
+} from "@/components/whatsapp-settings-form";
 import { UserLogoForm } from "@/components/user-logo-form";
+import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { ICON_BTN } from "@/components/ui/icon-button";
+import { List, ListRow } from "@/components/ui/list";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { getSettingsFor, getUserLogoUrl } from "@/db/queries";
 import { getWhatsappStatus } from "@/db/queries/whatsapp";
 import { leaveClub } from "@/db/actions/clubs";
-import { toggleWhatsappOptin } from "@/db/actions/whatsapp";
 import { acceptInvitation, declineInvitation } from "@/db/actions/invitations";
 import { db } from "@/db";
-import { istLetzterOwner, mindestens } from "@/lib/rechte";
+import { mindestens, rolleEntfernenGesperrt } from "@/lib/rechte";
 import {
   clubs,
   invitations,
@@ -29,6 +34,7 @@ import {
   user as userTable,
 } from "@/db/schema";
 import { isSuperAdmin, requireUser } from "@/lib/session";
+import { ActionForm } from "@/components/ui/action-form";
 
 export default async function AccountPage() {
   const user = await requireUser();
@@ -152,39 +158,31 @@ export default async function AccountPage() {
       {offeneInvites.length > 0 ? (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">Einladungen</h2>
-          {offeneInvites.map((inv) => (
-            <Card
-              key={inv.id}
-              className="flex flex-wrap items-center justify-between gap-3"
-            >
-              <div>
-                <p className="font-medium">{inv.clubName}</p>
-                <p className="text-sm text-[var(--color-muted)]">
-                  Rolle: <StatusBadge value={inv.rolle} />
-                </p>
-              </div>
-              <div className="flex items-center gap-2">
-                <form action={acceptInvitation}>
-                  <input type="hidden" name="token" value={inv.token} />
-                  <button
-                    type="submit"
-                    className="rounded-[var(--radius)] bg-[var(--color-primary)] px-3 py-1.5 text-sm text-[var(--color-primary-fg)] hover:bg-[var(--color-accent)]"
-                  >
-                    Annehmen
-                  </button>
-                </form>
-                <form action={declineInvitation}>
-                  <input type="hidden" name="invitationId" value={inv.id} />
-                  <button
-                    type="submit"
-                    className="rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 text-sm text-[var(--color-muted)] hover:text-[var(--color-danger)]"
-                  >
-                    Ablehnen
-                  </button>
-                </form>
-              </div>
-            </Card>
-          ))}
+          <List empty="Keine offenen Einladungen.">
+            {offeneInvites.map((inv) => (
+              <ListRow
+                key={inv.id}
+                title={inv.clubName}
+                meta={<StatusBadge value={inv.rolle} />}
+                actions={
+                  <>
+                    <ActionForm action={acceptInvitation}>
+                      <input type="hidden" name="token" value={inv.token} />
+                      <Button type="submit" size="sm">
+                        Annehmen
+                      </Button>
+                    </ActionForm>
+                    <ActionForm action={declineInvitation}>
+                      <input type="hidden" name="invitationId" value={inv.id} />
+                      <Button type="submit" variant="secondary" size="sm">
+                        Ablehnen
+                      </Button>
+                    </ActionForm>
+                  </>
+                }
+              />
+            ))}
+          </List>
         </section>
       ) : null}
 
@@ -201,50 +199,45 @@ export default async function AccountPage() {
             </Link>
           </p>
         ) : (
-          <div className="space-y-2">
+          <List empty="Du bist in keinem Club.">
             {myClubs.map((c) => {
-              // Der letzte Owner muss erst jemanden befördern.
-              const letzterOwner = istLetzterOwner(
-                c.rolle,
-                Number(c.ownerCount),
-              );
+              // Der letzte Owner muss erst jemanden befördern — dieselbe Regel
+              // wie in leaveClub; hier graut sie den Knopf aus.
+              const sperre = rolleEntfernenGesperrt({
+                scope: "club",
+                rolle: c.rolle,
+                ownerAnzahl: Number(c.ownerCount),
+              });
               return (
-                <Card
+                <ListRow
                   key={c.id}
-                  className="flex items-center justify-between gap-3"
-                >
-                  <Link
-                    href={`/clubs/${c.id}`}
-                    className="font-medium hover:underline"
-                  >
-                    {c.name}
-                  </Link>
-                  <div className="flex items-center gap-3">
-                    <StatusBadge value={c.rolle} />
-                    {letzterOwner ? (
-                      <span
-                        className="text-xs text-[var(--color-faint)]"
-                        title="Als letzter Owner kannst du nicht austreten — befördere zuerst jemanden zum Owner."
+                  title={c.name}
+                  href={`/clubs/${c.id}`}
+                  meta={<StatusBadge value={c.rolle} />}
+                  actions={
+                    <ActionForm action={leaveClub} className="flex items-center gap-1">
+                      <input type="hidden" name="clubId" value={c.id} />
+                      {sperre ? (
+                        <span className="hidden text-xs text-[var(--color-faint)] sm:inline">
+                          letzter Owner
+                        </span>
+                      ) : null}
+                      <ConfirmButton
+                        question={`${c.name} verlassen? Du verlierst den Zugriff auf die Club-Maschinen.`}
+                        confirmLabel="Ja, verlassen"
+                        disabled={sperre !== null}
+                        aria-label={`${c.name} verlassen`}
+                        title={sperre ?? "Club verlassen"}
+                        className={`${ICON_BTN} hover:text-[var(--color-danger)]`}
                       >
-                        letzter Owner
-                      </span>
-                    ) : (
-                      <form action={leaveClub}>
-                        <input type="hidden" name="clubId" value={c.id} />
-                        <ConfirmButton
-                          question="Diesen Club verlassen?"
-                          confirmLabel="Ja, verlassen"
-                          className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)] hover:text-[var(--color-danger)]"
-                        >
-                          <LogOut size={14} /> Verlassen
-                        </ConfirmButton>
-                      </form>
-                    )}
-                  </div>
-                </Card>
+                        <LogOut size={14} />
+                      </ConfirmButton>
+                    </ActionForm>
+                  }
+                />
               );
             })}
-          </div>
+          </List>
         )}
       </section>
 
@@ -253,7 +246,7 @@ export default async function AccountPage() {
         <Card className="space-y-4">
           <p className="text-sm text-[var(--color-muted)]">
             Erhalte eine WhatsApp, sobald an einer Club-Maschine ein neuer Fehler
-            gemeldet wird. Nummer hinterlegen und pro Club aktivieren — nur für
+            gemeldet wird. Nummer hinterlegen und pro Club einschalten — nur für
             Clubs, die du als Owner/Admin verwaltest.
           </p>
 
@@ -262,49 +255,26 @@ export default async function AccountPage() {
           {managedClubs.length > 0 ? (
             <div className="space-y-2 border-t border-[var(--color-border)] pt-3">
               <p className="text-xs font-medium text-[var(--color-muted)]">
-                Pro Club aktivieren
+                Pro Club
               </p>
               {!waStatus.nummer ? (
                 <p className="text-xs text-[var(--color-faint)]">
-                  Erst eine Nummer hinterlegen — sonst geht trotz aktivem
-                  Schalter nichts raus.
+                  Erst eine Nummer hinterlegen — dann lassen sich Clubs einschalten.
                 </p>
               ) : null}
-              {managedClubs.map((c) => {
-                const aktiv = aktiveClubs.has(c.id);
-                return (
-                  <div
-                    key={c.id}
-                    className="flex items-center justify-between gap-3"
-                  >
-                    <span className="text-sm font-medium">{c.name}</span>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`font-mono text-[10px] uppercase tracking-[0.5px] ${
-                          aktiv
-                            ? "text-[var(--color-success)]"
-                            : "text-[var(--color-faint)]"
-                        }`}
-                      >
-                        {aktiv ? "an" : "aus"}
-                      </span>
-                      <form action={toggleWhatsappOptin}>
-                        <input type="hidden" name="clubId" value={c.id} />
-                        <button
-                          type="submit"
-                          className="rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-                        >
-                          {aktiv ? "Deaktivieren" : "Aktivieren"}
-                        </button>
-                      </form>
-                    </div>
-                  </div>
-                );
-              })}
+              {managedClubs.map((c) => (
+                <WhatsappClubSchalter
+                  key={c.id}
+                  clubId={c.id}
+                  name={c.name}
+                  aktiv={aktiveClubs.has(c.id)}
+                  nummerVorhanden={Boolean(waStatus.nummer)}
+                />
+              ))}
             </div>
           ) : (
             <p className="border-t border-[var(--color-border)] pt-3 text-xs text-[var(--color-faint)]">
-              Die Benachrichtigung wird pro Club aktiviert — du verwaltest
+              Die Benachrichtigung wird pro Club eingeschaltet — du verwaltest
               aktuell keinen Club als Owner/Admin.
             </p>
           )}
@@ -323,34 +293,18 @@ export default async function AccountPage() {
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Sicherheit</h2>
-        <details className="group overflow-hidden rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)]">
-          <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium hover:bg-[var(--color-inset)]">
-            Passwort ändern
-            <ChevronDown
-              size={16}
-              className="text-[var(--color-muted)] transition-transform group-open:rotate-180"
-            />
-          </summary>
-          <div className="border-t border-[var(--color-border)] px-4 py-4">
-            <ChangePasswordForm />
-          </div>
-        </details>
-      </section>
-
-      <section className="space-y-3">
-        <h2 className="text-lg font-semibold">Konto löschen</h2>
-        <details className="group overflow-hidden rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)]">
-          <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3 text-sm font-medium text-[var(--color-danger)] hover:bg-[var(--color-inset)]">
-            Konto unwiderruflich löschen
-            <ChevronDown
-              size={16}
-              className="text-[var(--color-muted)] transition-transform group-open:rotate-180"
-            />
-          </summary>
-          <div className="border-t border-[var(--color-border)] px-4 py-4">
-            <DeleteAccountForm email={user.email} />
-          </div>
-        </details>
+        <Card className="space-y-3">
+          <p className="text-sm font-medium">Passwort ändern</p>
+          <ChangePasswordForm />
+        </Card>
+        {/* Konto löschen: kein Aufklapper — ein roter Knopf, der den Dialog
+            mit E-Mail-Bestätigung öffnet (KontoLoeschen). */}
+        <Card className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-sm text-[var(--color-muted)]">
+            Konto und persönliche Daten unwiderruflich löschen.
+          </p>
+          <KontoLoeschen email={user.email} />
+        </Card>
       </section>
     </div>
   );

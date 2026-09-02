@@ -74,11 +74,14 @@ export function MachineForm({
   mitglieder,
   aktuellerNutzer,
   machine,
+  clubAenderbar = true,
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   /** Ziel bei „Abbrechen" (Detailseite bzw. Maschinenliste). */
   backHref: string;
   clubs: Club[];
+  /** Darf die Club-Zuordnung geändert werden? (Eigentümer/Club-Manager.) */
+  clubAenderbar?: boolean;
   besitzerKatalog: BesitzerEintrag[];
   /** Club-Mitglieder als wählbare Besitzer (der Besitzer ist oft schon Nutzer). */
   mitglieder: { userId: string; name: string; clubId: string | null }[];
@@ -444,11 +447,25 @@ export function MachineForm({
 
       <Field
         label="Club (optional)"
-        hint="Geteilt mit den Mitgliedern des Clubs."
+        hint={
+          clubAenderbar
+            ? "Geteilt mit den Mitgliedern des Clubs."
+            : "Nur Eigentümer oder Club-Owner/-Admin dürfen die Club-Zuordnung ändern."
+        }
       >
+        {/* Deaktivierte Selects werden nicht gesendet — der Wert reist versteckt mit. */}
+        {!clubAenderbar ? (
+          <input type="hidden" name="clubId" value={clubSel} />
+        ) : null}
         <Select
-          name="clubId"
+          name={clubAenderbar ? "clubId" : undefined}
           value={clubSel}
+          disabled={!clubAenderbar}
+          title={
+            clubAenderbar
+              ? undefined
+              : "Nur Eigentümer oder Club-Owner/-Admin dürfen die Club-Zuordnung ändern"
+          }
           onChange={(e) => {
             setClubSel(e.target.value);
             // Chips aus dem alten Geltungsbereich passen nicht mehr —

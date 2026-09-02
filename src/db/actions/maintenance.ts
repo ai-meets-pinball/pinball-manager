@@ -1,9 +1,10 @@
 "use server";
 
-import { and, desc, eq, inArray, isNull } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
+import { getFamilie } from "@/db/queries/familie";
 import {
   knowledge,
   maintenanceLog,
@@ -12,8 +13,9 @@ import {
   maintenanceTasks,
 } from "@/db/schema";
 import { isClubMember, requireMachineWrite } from "@/lib/session";
+import { anzahl } from "@/lib/format";
 import { resolvePrompt } from "@/db/queries";
-import { naechsterTermin } from "@/lib/faelligkeit";
+import { naechsterTermin, wartungspunktGesperrt } from "@/lib/faelligkeit";
 import { resolveProvider } from "@/lib/ai/provider";
 import { AiError, generateJson, type AiAntwort } from "@/lib/ai/generate";
 import {
@@ -87,14 +89,10 @@ export async function updateTask(
     ),
   });
   if (!task) return { error: "Wartungspunkt nicht gefunden." };
-  // Vom Standard verwaltete Punkte werden IM Standard bearbeitet
-  // (db/actions/maintenance-plans.ts) — oder die Maschine löst die Verknüpfung.
-  if (task.planItemId) {
-    return {
-      error:
-        "Dieser Punkt wird vom Standard verwaltet — im Standard bearbeiten oder die Verknüpfung lösen.",
-    };
-  }
+  // Vom Standard verwaltete Punkte werden IM Standard bearbeitet — dieselbe
+  // Regel graut im UI den Stift aus (lib/faelligkeit.ts).
+  const gesperrt = wartungspunktGesperrt(task);
+  if (gesperrt) return { error: gesperrt };
 
   // Fälligkeit ab letzter Erledigung (oder Anlagedatum), damit ein geändertes
   // Intervall sofort den nächsten Termin setzt.
@@ -129,24 +127,37 @@ export async function updateTask(
   redirect(`/machines/${machineId}`);
 }
 
-export async function deleteTask(formData: FormData): Promise<void> {
+export async function deleteTask(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
   const machineId = String(formData.get("machineId"));
   const id = String(formData.get("id"));
   await requireMachineWrite(machineId);
 
-  // Vom Standard verwaltete Punkte nicht einzeln löschen (nur via Standard
-  // oder durch Lösen der Verknüpfung) — planItemId muss NULL sein.
+  const task = await db.query.maintenanceTasks.findFirst({
+    where: and(
+      eq(maintenanceTasks.id, id),
+      eq(maintenanceTasks.machineId, machineId),
+    ),
+  });
+  if (!task) return { error: "Wartungspunkt nicht gefunden." };
+  // Vom Standard verwaltete Punkte nicht einzeln löschen (nur via Standard oder
+  // durch Lösen der Verknüpfung). Vorher ein stilles Nichtstun per WHERE.
+  const gesperrt = wartungspunktGesperrt(task);
+  if (gesperrt) return { error: gesperrt };
+
   await db
     .delete(maintenanceTasks)
     .where(
       and(
         eq(maintenanceTasks.id, id),
         eq(maintenanceTasks.machineId, machineId),
-        isNull(maintenanceTasks.planItemId),
       ),
     );
 
   revalidatePath(`/machines/${machineId}`);
+  return { ok: true };
 }
 
 /* ── Erledigung (Historie) ────────────────────────────────────────────────── */
@@ -264,7 +275,12 @@ export async function logCompletionBulk(
   return { ok: true };
 }
 
-export async function deleteTaskLog(formData: FormData): Promise<void> {
+/* Historien-Eintrag löschen — FormState statt void, damit der Papierkorb im
+   Historie-Dialog (ActionForm + ConfirmButton) eine Ablehnung als Zeile zeigt. */
+export async function deleteTaskLog(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
   const machineId = String(formData.get("machineId"));
   const logId = String(formData.get("logId"));
   const taskId = String(formData.get("taskId"));
@@ -305,6 +321,7 @@ export async function deleteTaskLog(formData: FormData): Promise<void> {
   }
 
   revalidatePath(`/machines/${machineId}`);
+  return { ok: true };
 }
 
 /* ── Standard-Wartungsplan als KOPIE übernehmen ───────────────────────────── */
@@ -313,8 +330,9 @@ export async function deleteTaskLog(formData: FormData): Promise<void> {
    Verknüpfung; dafür gibt es linkMachineToStandard in maintenance-plans.ts). */
 
 export async function applyStandardMaintenance(
+  _prev: FormState,
   formData: FormData,
-): Promise<void> {
+): Promise<FormState> {
   const machineId = String(formData.get("machineId"));
   const { user } = await requireMachineWrite(machineId);
   const planId = String(formData.get("planId") ?? "");
@@ -329,10 +347,9 @@ export async function applyStandardMaintenance(
     plan != null &&
     (plan.userId === user.id ||
       (plan.clubId ? await isClubMember(user.id, plan.clubId) : false));
-  if (!erlaubt) {
-    revalidatePath(`/machines/${machineId}`);
-    return;
-  }
+  // Kein stilles Nichtstun: die Verweigerung erscheint unter dem Formular.
+  if (!plan) return { error: "Wartungsplan nicht gefunden." };
+  if (!erlaubt) return { error: "Kein Zugriff auf diesen Plan." };
 
   const vorhanden = await db.query.maintenanceTasks.findMany({
     where: eq(maintenanceTasks.machineId, machineId),
@@ -367,6 +384,14 @@ export async function applyStandardMaintenance(
 
   if (neu.length > 0) await db.insert(maintenanceTasks).values(neu);
   revalidatePath(`/machines/${machineId}`);
+  // Das Formular bleibt stehen (die Maschine ist NICHT verknüpft) — also sagen,
+  // was passiert ist; gleichnamige Punkte wurden übersprungen.
+  return {
+    message:
+      neu.length === 0
+        ? "Alle Punkte des Plans sind bereits vorhanden."
+        : `${anzahl(neu.length, "Punkt", "Punkte")} als Kopie übernommen.`,
+  };
 }
 
 /* ── Wartungspunkte aus dem Troubleshooting-Guide extrahieren (Claude) ─────── */
@@ -402,13 +427,14 @@ export async function importMaintenanceFromGuide(
 
   // Datenmodell-Redesign (Phase 2): der Guide dieses Nutzers liegt als
   // Modell-Wissen (knowledge, typ='troubleshooting') vor — je nach Modell auf
-  // Modell- oder Maschinen-Ebene. `inhalt` ist der Umschlag { guide, … }.
+  // Modell- (samt baugleicher Editionen) oder Maschinen-Ebene. `inhalt` ist der
+  // Umschlag { guide, … }.
   const eintrag = await db.query.knowledge.findFirst({
     where: and(
       eq(knowledge.typ, "troubleshooting"),
       eq(knowledge.createdBy, user.id),
       machine.modelId
-        ? eq(knowledge.modelId, machine.modelId)
+        ? inArray(knowledge.modelId, (await getFamilie(machine.modelId)).ids)
         : eq(knowledge.machineId, machineId),
     ),
   });

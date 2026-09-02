@@ -14,7 +14,7 @@ import {
   shares,
   user,
 } from "@/db/schema";
-import { parseOpdbRef } from "@/lib/opdb-ref";
+import { istBaugleich, parseOpdbRef } from "@/lib/opdb-ref";
 import { darfMaschine } from "@/lib/rechte";
 import {
   getClubRole,
@@ -54,9 +54,11 @@ async function parseMachine(userId: string, formData: FormData) {
   gibt, und liefert dessen id (oder null).
 
   Zwei bewusste Regeln:
-  - Nur EDITIONS-Referenzen taugen als Modell. Eine reine Gruppen-Referenz
-    (nur Titel) wird verworfen, weil sich Spulen-/Schaltermatrizen je Edition
-    unterscheiden. Aliasse werden auf ihre Edition normalisiert.
+  - Nur Referenzen MIT Maschinen-Segment taugen als Modell. Eine reine Gruppen-
+    Referenz (nur Titel) wird verworfen, weil sich Spulen-/Schaltermatrizen je
+    Maschine unterscheiden. Die gewählte Referenz wird NICHT gekürzt: eine
+    Edition (3 Segmente) bleibt ihre eigene Katalogzeile — Wissen teilt sie über
+    die Familie (`opdbMachineRef`, queries/familie.ts), nicht über eine Zeile.
   - `onConflictDoNothing`: der Katalog gehört niemandem. Wer eine Maschine später
     anlegt (und seine Instanzfelder frei editiert hat), darf die Katalogdaten
     aller anderen NICHT überschreiben — first writer wins.
@@ -77,8 +79,9 @@ async function ensureMachineModel(
   await db
     .insert(machineModels)
     .values({
-      opdbRef: teile.machineRef,
+      opdbRef: teile.ref,
       opdbGroupRef: teile.groupRef,
+      opdbMachineRef: teile.machineRef,
       hersteller: data.hersteller,
       modell: data.modell,
       baujahr: data.baujahr ?? null,
@@ -88,10 +91,23 @@ async function ensureMachineModel(
     .onConflictDoNothing();
 
   const model = await db.query.machineModels.findFirst({
-    where: eq(machineModels.opdbRef, teile.machineRef),
+    where: eq(machineModels.opdbRef, teile.ref),
     columns: { id: true },
   });
   return model?.id ?? null;
+}
+
+/** Gehören zwei Modelle derselben Familie an (baugleiche Editionen)?
+    Ohne beide Zeilen: nein — dann gilt der Wechsel als echter Modellwechsel. */
+async function sindBaugleich(a: string | null, b: string | null): Promise<boolean> {
+  if (!a || !b) return false;
+  const rows = await db
+    .select({ id: machineModels.id, opdbRef: machineModels.opdbRef })
+    .from(machineModels)
+    .where(inArray(machineModels.id, [a, b]));
+  const refA = rows.find((r) => r.id === a)?.opdbRef;
+  const refB = rows.find((r) => r.id === b)?.opdbRef;
+  return istBaugleich(refA, refB);
 }
 
 /** Die Reparatur-Freigaben einer Maschine aufheben, wenn sich ihr Modell
@@ -384,9 +400,15 @@ export async function createMachine(
   const data = result.data;
 
   // Eigenes Foto hat Vorrang; sonst das OPDB-Bild verwenden.
-  const fotoUrl =
-    (await uploadMachinePhoto(formData.get("foto") as File | null, user.id)) ??
-    opdbImageUrl(formData);
+  let fotoUrl: string | null;
+  try {
+    fotoUrl =
+      (await uploadMachinePhoto(formData.get("foto") as File | null, user.id)) ??
+      opdbImageUrl(formData);
+  } catch (e) {
+    // Zu groß / falscher Typ: als Zeile im Formular, nicht als Fehlerseite.
+    return { error: (e as Error).message };
+  }
 
   const modelId = await ensureMachineModel(data, opdbImageUrl(formData));
 
@@ -440,21 +462,37 @@ export async function updateMachine(
     und Handbuch-Fakten in einen eigenen Club verschieben oder sie aus dem
     bisherigen Club herauslösen. Für alle anderen bleibt die Zuordnung stehen.
   */
-  const clubId = darf.loeschen ? (data.clubId ?? null) : machine.clubId;
+  const clubId = data.clubId ?? null;
+  if (!darf.loeschen && clubId !== machine.clubId) {
+    // Nicht still behalten: das Formular graut das Feld aus, hier die Rückfallebene.
+    return {
+      error: "Nur Eigentümer oder Club-Owner/-Admin dürfen die Club-Zuordnung ändern.",
+    };
+  }
 
   // Eigenes Foto hat Vorrang; sonst ein neu gewähltes OPDB-Bild.
-  const neuesFoto =
-    (await uploadMachinePhoto(formData.get("foto") as File | null, user.id)) ??
-    opdbImageUrl(formData);
+  let neuesFoto: string | null;
+  try {
+    neuesFoto =
+      (await uploadMachinePhoto(formData.get("foto") as File | null, user.id)) ??
+      opdbImageUrl(formData);
+  } catch (e) {
+    return { error: (e as Error).message };
+  }
 
   /*
     Wechselt das Modell, werden bestehende Freigaben dieser Maschine
     WIDERRUFEN. Sonst blieben sie am alten Typ hängen und andere Besitzer
     bekämen die Daten eines ganz anderen Automaten als passende Referenz
     angezeigt — bei Spulen- und Schaltermatrizen ist das kein Schönheitsfehler.
+    Ausnahme: ein Wechsel INNERHALB der Familie (LE ↔ Premium/LE) ist baugleich
+    — die Freigaben passen weiterhin und bleiben.
   */
   const neuerModelId = await ensureMachineModel(data, opdbImageUrl(formData));
-  if (neuerModelId !== machine.modelId) {
+  if (
+    neuerModelId !== machine.modelId &&
+    !(await sindBaugleich(machine.modelId, neuerModelId))
+  ) {
     await widerrufeFreigaben(id);
   }
 

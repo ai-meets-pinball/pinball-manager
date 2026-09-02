@@ -33,6 +33,12 @@ export function StatusSteuerung({
 }) {
   const router = useRouter();
   const [offen, setOffen] = useState(false);
+  // Gesteuert, damit „Status setzen" erst aktiv wird, wenn sich etwas ändert.
+  // Ein Automatik-Status darf mit gleichem Wert gepinnt werden (das IST die Änderung).
+  const [statusSel, setStatusSel] = useState<string>(status);
+  const [grundSel, setGrundSel] = useState(grund ?? "");
+  const unveraendert =
+    manuell && statusSel === status && grundSel.trim() === (grund ?? "").trim();
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     async (prev, fd) => {
       const res = await setzeMaschinenStatus(prev, fd);
@@ -83,7 +89,11 @@ export function StatusSteuerung({
       <input type="hidden" name="machineId" value={machineId} />
       <div className="grid gap-3 sm:grid-cols-[14rem_1fr]">
         <Field label="Status">
-          <Select name="status" defaultValue={status}>
+          <Select
+            name="status"
+            value={statusSel}
+            onChange={(e) => setStatusSel(e.target.value)}
+          >
             {BETRIEBSSTATUS.map((s) => (
               <option key={s} value={s}>
                 {STATUS_LABEL[s]}
@@ -95,17 +105,22 @@ export function StatusSteuerung({
           <Input
             name="grund"
             placeholder="z. B. Netzteil defekt, Teil bestellt"
-            defaultValue={grund ?? ""}
+            value={grundSel}
+            onChange={(e) => setGrundSel(e.target.value)}
           />
         </Field>
       </div>
       <p className="text-xs text-[var(--color-muted)]">
-        Manuell gesetzter Status bleibt fest, bis du „Zurück auf Automatik"
+        Manuell gesetzter Status bleibt fest, bis du „Zurück auf Automatik“
         wählst — die Fehler-Automatik übersteuert ihn dann nicht mehr.
       </p>
       <FormFeedback state={state} />
       <div className="flex items-center gap-3">
-        <Button type="submit" disabled={pending}>
+        <Button
+          type="submit"
+          disabled={pending || unveraendert}
+          title={unveraendert ? "Keine Änderung" : undefined}
+        >
           {pending ? "…" : "Status setzen"}
         </Button>
         <button

@@ -2,9 +2,12 @@
 
 import { useActionState, useState } from "react";
 import { Check, ClipboardCopy, FileJson, Loader2 } from "lucide-react";
+import { DialogAbbrechen } from "@/components/ui/action-dialog";
 import { Button } from "@/components/ui/button";
 import { Field, Textarea } from "@/components/ui/input";
+import { FormFeedback } from "@/components/ui/form-feedback";
 import { VisibilityField } from "@/components/ui/visibility-field";
+import { GueltigkeitFeld } from "@/components/troubleshooting-generate";
 import { importTroubleshootingGuide } from "@/db/actions/machine-data";
 import {
   parseGuideText,
@@ -14,18 +17,20 @@ import type { FormState } from "@/db/actions/form-state";
 
 /*
   JSON-Import als Alternative zur KI-Generierung des Troubleshooting-Guides —
-  gleiches Prinzip wie ManualJsonImport: Prompt kopieren → extern (z. B. ChatGPT)
-  ausführen → JSON hier einfügen → „Prüfen" (Vorschau, dieselbe
-  parseGuideText wie serverseitig) → „Importieren". Der Prompt ist
+  lebt im „Guide erstellen"-Dialog (guide-erstellen.tsx) hinter dem Modus
+  „JSON importieren". Gleiches Prinzip wie ManualJsonImport: Prompt kopieren →
+  extern (z. B. ChatGPT) ausführen → JSON hier einfügen → „Prüfen" (Vorschau,
+  dieselbe parseGuideText wie serverseitig) → „Importieren". Der Prompt ist
   maschinenspezifisch (Hersteller/Modell/Baujahr) und kommt deshalb als Prop
   vom Server. Import erst nach erfolgreicher Prüfung; jede Änderung am JSON
-  verlangt erneutes Prüfen.
+  verlangt erneutes Prüfen. Erfolg meldet `onErfolg` (schließt den Dialog).
 */
 export function TroubleshootingJsonImport({
   machineId,
   prompt,
   vorhanden,
   generation,
+  onErfolg,
 }: {
   machineId: string;
   /** Der kopierbare ChatGPT-Prompt (serverseitig via buildGuideImportPrompt). */
@@ -35,12 +40,18 @@ export function TroubleshootingJsonImport({
   /** Generation des Modells (falls bekannt) — erlaubt einen Guide, der für
       ALLE Modelle dieser Board-/Hardware-Generation gilt. */
   generation?: { name: string } | null;
+  /** Wird nach erfolgreichem Import gerufen (schließt den Dialog). */
+  onErfolg?: () => void;
 }) {
   const [json, setJson] = useState("");
   const [check, setCheck] = useState<GuideImportResult | null>(null);
   const [copied, setCopied] = useState(false);
   const [state, formAction, pending] = useActionState<FormState, FormData>(
-    importTroubleshootingGuide,
+    async (prev, fd) => {
+      const res = await importTroubleshootingGuide(prev, fd);
+      if (res.message) onErfolg?.();
+      return res;
+    },
     {},
   );
 
@@ -56,21 +67,16 @@ export function TroubleshootingJsonImport({
 
   return (
     <div className="space-y-3">
-      <div>
-        <p className="flex items-center gap-2 font-medium">
-          <FileJson size={16} className="text-[var(--color-primary)]" />
-          Ohne KI-Verarbeitung: Guide aus ChatGPT-JSON importieren
-        </p>
-        <p className="mt-1 text-sm text-[var(--color-muted)]">
-          Mit ChatGPT-Abo: den Prompt dort einfügen (er enthält bereits
-          Hersteller, Modell und Baujahr) und die JSON-Ausgabe hier einsetzen —
-          spart die KI-Erstellung in der App.
-        </p>
-      </div>
+      <p className="text-sm text-[var(--color-muted)]">
+        Mit ChatGPT-Abo: den Prompt dort einfügen (er enthält bereits
+        Hersteller, Modell und Baujahr) und die JSON-Ausgabe hier einsetzen —
+        spart die KI-Erstellung in der App.
+      </p>
 
       <Button
         type="button"
         variant="secondary"
+        size="sm"
         onClick={copyPrompt}
         className="self-start"
       >
@@ -107,54 +113,37 @@ export function TroubleshootingJsonImport({
         />
       </label>
 
-      <Button
-        type="button"
-        variant="secondary"
-        onClick={() => setCheck(parseGuideText(json))}
-        disabled={!json.trim()}
-        className="self-start"
-      >
-        Prüfen
-      </Button>
-
       {check ? <Vorschau check={check} vorhanden={vorhanden} /> : null}
 
       {/* Import — erst nach erfolgreicher Prüfung aktiv. */}
-      <form action={formAction} className="space-y-2">
+      <form action={formAction} className="space-y-3">
         <input type="hidden" name="machineId" value={machineId} />
         <input type="hidden" name="json" value={json} />
 
-        {generation ? (
-          <label className="flex flex-col gap-1.5 text-sm">
-            <span className="font-medium">Gültigkeit</span>
-            <select
-              name="ebene"
-              defaultValue="modell"
-              className="rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-fg)] outline-none focus:border-[var(--color-accent)]"
-            >
-              <option value="modell">Nur dieses Modell</option>
-              <option value="generation">
-                Ganze Generation „{generation.name}“ (alle Modelle)
-              </option>
-            </select>
-          </label>
-        ) : null}
+        <GueltigkeitFeld generation={generation} />
+        <VisibilityField objekt="diesen Guide" />
+        <FormFeedback state={state} />
 
-        <VisibilityField />
-        {state.error ? (
-          <p className="text-sm text-[var(--color-danger)]">{state.error}</p>
-        ) : null}
-        {state.message ? (
-          <p className="text-sm text-[var(--color-success)]">{state.message}</p>
-        ) : null}
-        <Button type="submit" disabled={pending || !check?.ok}>
-          {pending ? (
-            <Loader2 size={16} className="animate-spin" />
-          ) : (
-            <FileJson size={16} />
-          )}
-          {pending ? "Importiere…" : "Guide importieren"}
-        </Button>
+        <div className="flex flex-wrap justify-end gap-2">
+          <DialogAbbrechen />
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={() => setCheck(parseGuideText(json))}
+            disabled={!json.trim()}
+          >
+            Prüfen
+          </Button>
+          <Button type="submit" size="sm" disabled={pending || !check?.ok}>
+            {pending ? (
+              <Loader2 size={16} className="animate-spin" />
+            ) : (
+              <FileJson size={16} />
+            )}
+            {pending ? "Importiere…" : "Guide importieren"}
+          </Button>
+        </div>
       </form>
     </div>
   );

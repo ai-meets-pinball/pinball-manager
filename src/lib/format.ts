@@ -56,3 +56,19 @@ export function relativeZeit(d: Date, jetzt: Date = new Date()): string {
   const jahre = Math.floor(tage / 365);
   return jahre === 1 ? "vor 1 Jahr" : `vor ${jahre} Jahren`;
 }
+
+/** „1 Mitglied" / „3 Mitglieder" — statt „3 Mitglied(er)". */
+export function anzahl(n: number, einzahl: string, mehrzahl: string): string {
+  return `${n} ${n === 1 ? einzahl : mehrzahl}`;
+}
+
+/**
+ * Datum als „YYYY-MM-DD" in LOKALER Zeit — für <input type="date">. `toISOString()`
+ * liefert UTC und kippt in Europa abends auf den Vortag.
+ */
+export function datumISO(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const t = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${t}`;
+}

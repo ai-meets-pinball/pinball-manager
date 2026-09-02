@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
 import { FormLeaveGuard } from "@/components/ui/form-leave-guard";
 import type { FormState } from "@/db/actions/form-state";
+import { INTERVALL_TYP_LABEL } from "@/lib/faelligkeit";
+import { MAINTENANCE_INTERVALL_TYPEN } from "@/lib/validators";
 
 type TaskValues = {
   id: string;
@@ -75,16 +77,19 @@ export function MaintenanceTaskForm({
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <Field
           label="Intervall-Typ"
-          hint="Nur »zeit« ergibt einen Fälligkeitstermin."
+          hint="Nur ein Zeitintervall ergibt einen Fälligkeitstermin."
         >
           <Select
             name="intervallTyp"
             value={intervallTyp}
             onChange={(e) => setIntervallTyp(e.target.value)}
           >
-            <option value="zeit">zeit (Termin)</option>
-            <option value="spiele">spiele (Checkliste)</option>
-            <option value="bedarf">bei Bedarf (Checkliste)</option>
+            {MAINTENANCE_INTERVALL_TYPEN.map((t) => (
+              <option key={t} value={t}>
+                {INTERVALL_TYP_LABEL[t]}
+                {t === "zeit" ? " (Termin)" : " (Checkliste)"}
+              </option>
+            ))}
           </Select>
         </Field>
         <Field label="Intervall (Tage)">
@@ -92,7 +97,9 @@ export function MaintenanceTaskForm({
             name="intervallTage"
             type="number"
             min="1"
-            placeholder={intervallTyp === "zeit" ? "z. B. 30" : "— nur bei »zeit«"}
+            placeholder={
+              intervallTyp === "zeit" ? "z. B. 30" : "— nur bei Zeitintervall"
+            }
             defaultValue={task?.intervallTage ?? ""}
             disabled={intervallTyp !== "zeit"}
           />

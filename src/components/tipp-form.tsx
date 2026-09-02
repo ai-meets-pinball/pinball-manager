@@ -2,29 +2,28 @@
 
 import { useActionState, useMemo, useState } from "react";
 import { Layers, Lightbulb, Loader2 } from "lucide-react";
+import { ActionDialog, DialogAbbrechen } from "@/components/ui/action-dialog";
 import { Button } from "@/components/ui/button";
-import { Field, Input, Select, Textarea } from "@/components/ui/input";
+import { Field, Input, Textarea } from "@/components/ui/input";
 import { FormFeedback } from "@/components/ui/form-feedback";
+import { VisibilityField } from "@/components/ui/visibility-field";
 import { LinksFeld } from "@/components/links-feld";
 import { createTipp } from "@/db/actions/tipps";
 import type { FormState } from "@/db/actions/form-state";
 
 /*
-  Neuen allgemeinen Tipp anlegen (typ='tipp'). Der Geltungsbereich ist n:m:
-  beliebig viele Modelle und/oder Generationen aus dem Katalog, das Modell der
-  aktuellen Maschine ist vorausgewählt. Die Auswahl lebt im Client-State und
-  wird als hidden inputs übertragen — die Checkboxen selbst tragen bewusst
-  KEINEN name: die Liste ist filterbar, und weggefilterte (unmountete)
-  Checkboxen würden ihre Auswahl sonst still aus dem Submit verlieren.
+  Neuen allgemeinen Tipp anlegen (typ='tipp') — ein Knopf „Tipp hinzufügen"
+  öffnet den Dialog (natives <dialog>, nur gemountet solange offen, schließt
+  bei Erfolg). Der Geltungsbereich ist n:m: beliebig viele Modelle und/oder
+  Generationen aus dem Katalog, das Modell der aktuellen Maschine ist
+  vorausgewählt. Die Auswahl lebt im Client-State und wird als hidden inputs
+  übertragen — die Checkboxen selbst tragen bewusst KEINEN name: die Liste ist
+  filterbar, und weggefilterte (unmountete) Checkboxen würden ihre Auswahl
+  sonst still aus dem Submit verlieren.
 */
 type Ziel = { id: string; label: string };
 
-export function TippForm({
-  machineId,
-  modelle,
-  generationen,
-  vorauswahlModelId,
-}: {
+type Katalog = {
   machineId: string;
   modelle: {
     id: string;
@@ -34,11 +33,38 @@ export function TippForm({
   }[];
   generationen: { id: string; name: string }[];
   vorauswahlModelId: string;
-}) {
+};
+
+export function TippForm(props: Katalog) {
+  const [offen, setOffen] = useState(false);
+  return (
+    <>
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        onClick={() => setOffen(true)}
+      >
+        <Lightbulb size={14} /> Tipp hinzufügen
+      </Button>
+      {offen ? <TippDialog {...props} onClose={() => setOffen(false)} /> : null}
+    </>
+  );
+}
+
+function TippDialog({
+  machineId,
+  modelle,
+  generationen,
+  vorauswahlModelId,
+  onClose,
+}: Katalog & { onClose: () => void }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     createTipp,
     {},
   );
+  const [titel, setTitel] = useState("");
+  const [text, setText] = useState("");
   const [filter, setFilter] = useState("");
   const [modelIds, setModelIds] = useState<Set<string>>(
     () => new Set([vorauswahlModelId]),
@@ -77,16 +103,13 @@ export function TippForm({
   }
 
   const anzahlZiele = modelIds.size + generationIds.size;
+  // Speichern erst, wenn alles Pflichtige da ist (Titel, Text, mind. ein Ziel).
+  const unvollstaendig = !titel.trim() || !text.trim() || anzahlZiele === 0;
 
   return (
-    <details className="rounded-[var(--radius)] border border-[var(--color-border)]">
-      <summary className="flex cursor-pointer items-center gap-1.5 px-3 py-2 text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]">
-        <Lightbulb size={14} /> Tipp hinzufügen
-      </summary>
-      <form
-        action={formAction}
-        className="space-y-3 border-t border-[var(--color-border)] p-3"
-      >
+    <ActionDialog onClose={onClose} ok={Boolean(state.message)} breit>
+      <form action={formAction} className="space-y-3 p-5">
+        <h3 className="text-base font-semibold">Tipp hinzufügen</h3>
         <input type="hidden" name="machineId" value={machineId} />
         {/* Die eigentliche Ziel-Auswahl (siehe Kommentar oben). */}
         {[...modelIds].map((id) => (
@@ -100,6 +123,8 @@ export function TippForm({
           <Input
             name="titel"
             required
+            value={titel}
+            onChange={(e) => setTitel(e.target.value)}
             placeholder="z. B. Flipperfinger-Gummis regelmäßig tauschen"
           />
         </Field>
@@ -111,6 +136,8 @@ export function TippForm({
             name="text"
             required
             rows={5}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
             placeholder="Was hilft, worauf achten, was vermeiden …"
           />
         </Field>
@@ -211,22 +238,17 @@ export function TippForm({
           </span>
         </div>
 
-        <Field
-          label="Sichtbarkeit"
-          hint="Lässt sich am Eintrag jederzeit ändern."
-        >
-          <Select name="visibility" defaultValue="privat">
-            <option value="privat">privat (nur ich)</option>
-            <option value="oeffentlich">öffentlich (alle Nutzer)</option>
-          </Select>
-        </Field>
+        <VisibilityField objekt="diesen Tipp" />
 
-        <Button type="submit" disabled={pending || anzahlZiele === 0}>
-          {pending ? <Loader2 size={16} className="animate-spin" /> : null}
-          {pending ? "Speichere…" : "Tipp speichern"}
-        </Button>
         <FormFeedback state={state} />
+        <div className="flex justify-end gap-2">
+          <DialogAbbrechen />
+          <Button type="submit" size="sm" disabled={pending || unvollstaendig}>
+            {pending ? <Loader2 size={16} className="animate-spin" /> : null}
+            {pending ? "Speichere…" : "Tipp speichern"}
+          </Button>
+        </div>
       </form>
-    </details>
+    </ActionDialog>
   );
 }

@@ -31,29 +31,37 @@ test.describe("Standard-Wartungsplan", () => {
 
     // 1) Einen benannten Plan aus der Vorlage anlegen.
     await page.goto("/wartungsplaene");
-    await page.getByLabel("Neuer Plan").fill("E2E Standard");
-    await page.getByLabel("aus Standard-Vorlage").check();
-    await page.getByRole("button", { name: /Anlegen/ }).click();
+    await page.getByRole("button", { name: "Neuer Plan" }).click();
+    const neu = page.locator("dialog[open]");
+    await neu.getByLabel("Name").fill("E2E Standard");
+    await neu.getByLabel(/aus Standard-Vorlage/).check();
+    await neu.getByRole("button", { name: /Anlegen/ }).click();
+    await expect(page.locator("dialog[open]")).toHaveCount(0);
     await expect(page.getByText(/20 Punkte/)).toBeVisible();
 
     // 2) Maschine mit dem Plan verknüpfen (aus dem Picker gewählt).
     await page.goto(`/machines/${machineId}?bereich=wartung`);
     await page.getByRole("button", { name: "Verknüpfen" }).click();
     await expect(page.getByText(/Verknüpft mit/)).toBeVisible();
-    await expect(page.getByText("Batterien tauschen")).toBeVisible();
-    // Verwaltete Punkte: kein „Bearbeiten"-Link an der Maschine.
-    await expect(page.getByText("Vom Standard verwaltet").first()).toBeVisible();
+    await expect(page.getByText("Batterien tauschen").first()).toBeVisible();
+    // Verwaltete Punkte: der Stift ist an der Maschine gesperrt (Grund im Tooltip).
+    const stift = page.getByRole("button", { name: "Batterien tauschen bearbeiten" });
+    await expect(stift).toBeDisabled();
+    await expect(stift).toHaveAttribute("title", /vom Standard verwaltet/);
 
     // 3) Punkt IM Plan umbenennen …
     await page.goto("/wartungsplaene");
     const zeile = page.locator("li", { hasText: "Batterien tauschen" });
     await zeile.getByLabel("Bearbeiten").click();
-    await zeile.getByLabel("Titel").fill("Batterien tauschen (E2E)");
-    await zeile.getByRole("button", { name: "Speichern" }).click();
-    await expect(page.getByText("Batterien tauschen (E2E)")).toBeVisible();
+    const dialog = zeile.locator("dialog[open]");
+    // Speichern ist erst aktiv, wenn sich etwas geändert hat.
+    await expect(dialog.getByRole("button", { name: "Speichern" })).toBeDisabled();
+    await dialog.getByLabel("Titel").fill("Batterien tauschen (E2E)");
+    await dialog.getByRole("button", { name: "Speichern" }).click();
+    await expect(page.getByText("Batterien tauschen (E2E)").first()).toBeVisible();
 
     // 4) … und die Maschine zeigt die Änderung (Propagation).
     await page.goto(`/machines/${machineId}?bereich=wartung`);
-    await expect(page.getByText("Batterien tauschen (E2E)")).toBeVisible();
+    await expect(page.getByText("Batterien tauschen (E2E)").first()).toBeVisible();
   });
 });

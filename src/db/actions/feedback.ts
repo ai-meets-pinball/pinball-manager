@@ -110,15 +110,22 @@ export async function updateFeedback(
   }
 
   revalidatePath("/feedback");
-  return { message: "Gespeichert." };
+  // `ok` statt Text: der Bearbeiten-Dialog schließt bei Erfolg (ActionDialog).
+  return { ok: true };
 }
 
 /** Meldung löschen (nur Super-Admin; ConfirmButton-Formular). */
-export async function deleteFeedback(formData: FormData): Promise<void> {
+export async function deleteFeedback(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
   const currentUser = await requireUser();
-  if (!isSuperAdmin(currentUser)) return;
+  if (!isSuperAdmin(currentUser)) {
+    return { error: "Nur Super-Admins dürfen Meldungen löschen" };
+  }
 
   const id = String(formData.get("id") ?? "");
   await db.delete(feedback).where(eq(feedback.id, id));
   revalidatePath("/feedback");
+  return { ok: true };
 }

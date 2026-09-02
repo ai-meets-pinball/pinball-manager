@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { History, Loader2 } from "lucide-react";
 import { MachineDataTables } from "@/components/machine-data-tables";
 import { TroubleshootingGuideView } from "@/components/troubleshooting-guide";
+import { ActionDialog, DialogAbbrechen } from "@/components/ui/action-dialog";
 import { inhaltToFacts } from "@/lib/import-facts";
 import { loadKnowledgeRevisions } from "@/db/actions/knowledge";
 
@@ -11,9 +12,11 @@ import { loadKnowledgeRevisions } from "@/db/actions/knowledge";
   Bearbeitungs-Verlauf eines EIGENEN Wissenseintrags (Phase 5): jede Revision
   ist der Stand VOR einer Änderung (In-Place-Edit oder Neu-Generierung). Nur
   ansehen, kein Wiederherstellen (v1) — und nur für den Autor sichtbar (das
-  Server-Gate liegt in loadKnowledgeRevisions). Die Stände werden erst beim
-  Aufklappen geladen und mit den bestehenden Renderern angezeigt.
+  Server-Gate liegt in loadKnowledgeRevisions). Ein kleiner Text-Link im Kopf
+  des Eintrags öffnet einen Dialog; die Stände werden erst dann geladen und mit
+  den bestehenden Renderern angezeigt.
 */
+type Typ = "handbuch_fakten" | "troubleshooting" | "tipp";
 type Revision = {
   id: string;
   titel: string;
@@ -30,35 +33,57 @@ export function KnowledgeVerlauf({
 }: {
   knowledgeId: string;
   anzahl: number;
-  typ: "handbuch_fakten" | "troubleshooting" | "tipp";
+  typ: Typ;
 }) {
-  const [revisionen, setRevisionen] = useState<Revision[] | null>(null);
-  const [laedt, setLaedt] = useState(false);
-
+  const [offen, setOffen] = useState(false);
   if (anzahl === 0) return null;
 
-  async function laden() {
-    if (revisionen || laedt) return;
-    setLaedt(true);
-    try {
-      setRevisionen(await loadKnowledgeRevisions(knowledgeId));
-    } finally {
-      setLaedt(false);
-    }
-  }
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => setOffen(true)}
+        className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)]"
+      >
+        <History size={13} /> Verlauf ({anzahl})
+      </button>
+      {offen ? (
+        <VerlaufDialog
+          knowledgeId={knowledgeId}
+          typ={typ}
+          onClose={() => setOffen(false)}
+        />
+      ) : null}
+    </>
+  );
+}
+
+/* Nur gemountet, solange offen — lädt die Revisionen beim Öffnen (lazy). */
+function VerlaufDialog({
+  knowledgeId,
+  typ,
+  onClose,
+}: {
+  knowledgeId: string;
+  typ: Typ;
+  onClose: () => void;
+}) {
+  const [revisionen, setRevisionen] = useState<Revision[] | null>(null);
+  useEffect(() => {
+    let aktiv = true;
+    loadKnowledgeRevisions(knowledgeId).then((r) => {
+      if (aktiv) setRevisionen(r);
+    });
+    return () => {
+      aktiv = false;
+    };
+  }, [knowledgeId]);
 
   return (
-    <details
-      className="rounded-[var(--radius)] border border-[var(--color-border)]"
-      onToggle={(e) => {
-        if ((e.target as HTMLDetailsElement).open) void laden();
-      }}
-    >
-      <summary className="flex cursor-pointer items-center gap-1.5 px-3 py-2 text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]">
-        <History size={14} /> Verlauf ({anzahl})
-      </summary>
-      <div className="space-y-4 border-t border-[var(--color-border)] p-3">
-        {laedt ? (
+    <ActionDialog onClose={onClose} breit>
+      <div className="space-y-4 p-5">
+        <h3 className="text-base font-semibold">Verlauf</h3>
+        {revisionen === null ? (
           <p className="flex items-center gap-2 text-sm text-[var(--color-muted)]">
             <Loader2 size={14} className="animate-spin" /> Lade Verlauf…
           </p>
@@ -78,8 +103,11 @@ export function KnowledgeVerlauf({
             <RevisionInhalt typ={typ} inhalt={r.inhalt} editedAt={r.editedAt} />
           </div>
         ))}
+        <div className="flex justify-end">
+          <DialogAbbrechen>Schließen</DialogAbbrechen>
+        </div>
       </div>
-    </details>
+    </ActionDialog>
   );
 }
 
@@ -88,7 +116,7 @@ function RevisionInhalt({
   inhalt,
   editedAt,
 }: {
-  typ: "handbuch_fakten" | "troubleshooting" | "tipp";
+  typ: Typ;
   inhalt: unknown;
   editedAt: Date;
 }) {

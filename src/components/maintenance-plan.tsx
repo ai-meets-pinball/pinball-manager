@@ -3,6 +3,8 @@ import { Link2Off, ListChecks, Plus } from "lucide-react";
 import { LinkStandardForm } from "@/components/link-standard-form";
 import { MaintenanceGuideImport } from "@/components/maintenance-guide-import";
 import { MaintenanceTasks, type Task } from "@/components/maintenance-tasks";
+import { ActionForm } from "@/components/ui/action-form";
+import { ButtonLink } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import type { AiProvider } from "@/lib/ai/provider";
 import { unlinkMachineFromStandard } from "@/db/actions/maintenance-plans";
@@ -10,7 +12,8 @@ import { unlinkMachineFromStandard } from "@/db/actions/maintenance-plans";
 /*
   Interaktiver Wartungsplan je Gerät: Verknüpfung mit einem Standard-Plan bzw.
   eigene Punkte + Guide-Import. Die eigentliche Wartungspunkt-Liste (Fälligkeit,
-  Erledigt-Eintrag, Historie und Sammel-Erledigen) rendert MaintenanceTasks.
+  Erledigt-Eintrag, Historie, Sammel-Erledigen — und der Leerfall) rendert
+  MaintenanceTasks.
 */
 export function MaintenancePlan({
   tasks,
@@ -53,7 +56,7 @@ export function MaintenancePlan({
             >
               Standard bearbeiten
             </Link>
-            <form action={unlinkMachineFromStandard} className="ml-auto">
+            <ActionForm action={unlinkMachineFromStandard} className="ml-auto">
               <input type="hidden" name="machineId" value={machineId} />
               <ConfirmButton
                 question="Verknüpfung lösen? Alle Punkte werden eigene, frei editierbare Kopien."
@@ -61,7 +64,7 @@ export function MaintenancePlan({
               >
                 <Link2Off size={13} /> Verknüpfung lösen
               </ConfirmButton>
-            </form>
+            </ActionForm>
           </div>
         ) : (
           <LinkStandardForm machineId={machineId} plans={plans} />
@@ -78,29 +81,21 @@ export function MaintenancePlan({
             />
           ) : null}
 
-          <Link
+          <ButtonLink
+            variant="secondary"
+            size="sm"
             href={`/machines/${machineId}/maintenance/new`}
-            className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 text-sm hover:bg-[var(--color-border)]/40"
           >
-            <Plus size={15} /> Neuer Wartungspunkt
-          </Link>
+            <Plus size={14} /> Neuer Wartungspunkt
+          </ButtonLink>
         </div>
       ) : null}
 
-      {tasks.length === 0 ? (
-        <p className="text-sm text-[var(--color-muted)]">
-          Noch keine Wartungspunkte.{" "}
-          {schreibbar
-            ? "Übernimm den Standard-Wartungsplan, importiere aus dem Guide oder lege eigene Punkte an."
-            : ""}
-        </p>
-      ) : (
-        <MaintenanceTasks
-          tasks={tasks}
-          machineId={machineId}
-          schreibbar={schreibbar}
-        />
-      )}
+      <MaintenanceTasks
+        tasks={tasks}
+        machineId={machineId}
+        schreibbar={schreibbar}
+      />
     </div>
   );
 }

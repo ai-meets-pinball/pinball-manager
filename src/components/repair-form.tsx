@@ -4,7 +4,9 @@ import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
 import { FormLeaveGuard } from "@/components/ui/form-leave-guard";
+import { KiVorschlagHolen } from "@/components/repair-suggest-button";
 import type { FormState } from "@/db/actions/form-state";
+import type { AiProvider } from "@/lib/ai/provider";
 
 type Fault = { id: string; beschreibung: string; status: string };
 
@@ -23,17 +25,18 @@ export function RepairForm({
   machineId,
   faults,
   repair,
-  defaults,
   selectedFaultIds = [],
+  kiVorschlag,
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   machineId: string;
   faults: Fault[];
   repair?: RepairValues;
-  /** Vorbelegung für eine NEUE Reparatur (z. B. KI-Vorschlag). */
-  defaults?: { diagnose?: string; massnahme?: string; teile?: string };
   /** Vorausgewählte Fehler (Bearbeiten: die verknüpften; Neu: aus ?faultId). */
   selectedFaultIds?: string[];
+  /** Neue Reparatur zu EINEM Fehler mit verfügbarer KI: bietet „Vorschlag von
+      der KI holen" an, der Diagnose/Maßnahme/Teile vorfüllt. */
+  kiVorschlag?: { faultId: string; providers: AiProvider[]; centralKey: boolean };
 }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     action,
@@ -51,94 +54,116 @@ export function RepairForm({
       return next;
     });
 
+  // Nur die drei Felder, die der KI-Vorschlag füllt, sind controlled — die
+  // übrigen bleiben unkontrolliert wie zuvor.
+  const [diagnose, setDiagnose] = useState(repair?.diagnose ?? "");
+  const [massnahme, setMassnahme] = useState(repair?.massnahme ?? "");
+  const [teile, setTeile] = useState(repair?.teile ?? "");
+
   return (
-    <form action={formAction} className="flex max-w-lg flex-col gap-4">
-      <input type="hidden" name="machineId" value={machineId} />
-      {repair ? <input type="hidden" name="id" value={repair.id} /> : null}
-
-      <Field
-        label="Behobene Fehler (optional)"
-        hint="Eine Reparatur mit Status „erledigt“ setzt alle gewählten Fehler auf „behoben“."
-      >
-        {faults.length === 0 ? (
-          <p className="text-sm text-[var(--color-muted)]">
-            Für diese Maschine sind keine Fehler erfasst.
-          </p>
-        ) : (
-          <div className="space-y-1.5">
-            {faults.map((f) => (
-              <label key={f.id} className="flex items-start gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  name="faultIds"
-                  value={f.id}
-                  checked={checked.has(f.id)}
-                  onChange={() => toggle(f.id)}
-                  className="mt-1 accent-[var(--color-accent)]"
-                />
-                <span>
-                  <span className="text-xs text-[var(--color-muted)]">
-                    [{f.status}]
-                  </span>{" "}
-                  {f.beschreibung}
-                </span>
-              </label>
-            ))}
-          </div>
-        )}
-      </Field>
-
-      <Field label="Diagnose">
-        <Textarea
-          name="diagnose"
-          defaultValue={repair?.diagnose ?? defaults?.diagnose ?? ""}
+    <div className="flex max-w-lg flex-col gap-4">
+      {kiVorschlag ? (
+        <KiVorschlagHolen
+          {...kiVorschlag}
+          onVorschlag={(v) => {
+            setDiagnose(v.diagnose);
+            setMassnahme(v.massnahme);
+            setTeile(v.teile);
+          }}
         />
-      </Field>
-      <Field label="Maßnahme">
-        <Textarea
-          name="massnahme"
-          defaultValue={repair?.massnahme ?? defaults?.massnahme ?? ""}
-        />
-      </Field>
-      <Field label="Verbaute Teile">
-        <Input
-          name="teile"
-          defaultValue={repair?.teile ?? defaults?.teile ?? ""}
-        />
-      </Field>
-
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <Field label="Kosten (€)">
-          <Input
-            name="kosten"
-            type="number"
-            step="0.01"
-            defaultValue={repair?.kosten ?? ""}
-          />
-        </Field>
-        <Field label="Zeitaufwand (Minuten)">
-          <Input name="zeit" type="number" defaultValue={repair?.zeit ?? ""} />
-        </Field>
-      </div>
-
-      <Field label="Status">
-        <Select name="status" defaultValue={repair?.status ?? "offen"}>
-          <option value="offen">offen</option>
-          <option value="in Arbeit">in Arbeit</option>
-          <option value="erledigt">erledigt</option>
-        </Select>
-      </Field>
-
-      {state.error ? (
-        <p className="text-sm text-[var(--color-danger)]">{state.error}</p>
       ) : null}
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" disabled={pending}>
-          {pending ? "Speichern…" : "Speichern"}
-        </Button>
-        <FormLeaveGuard backHref={`/machines/${machineId}?bereich=reparaturen`} />
-      </div>
-    </form>
+      <form action={formAction} className="flex flex-col gap-4">
+        <input type="hidden" name="machineId" value={machineId} />
+        {repair ? <input type="hidden" name="id" value={repair.id} /> : null}
+
+        <Field
+          label="Behobene Fehler (optional)"
+          hint="Eine Reparatur mit Status „erledigt“ setzt alle gewählten Fehler auf „behoben“."
+        >
+          {faults.length === 0 ? (
+            <p className="text-sm text-[var(--color-muted)]">
+              Für diese Maschine sind keine Fehler erfasst.
+            </p>
+          ) : (
+            <div className="space-y-1.5">
+              {faults.map((f) => (
+                <label key={f.id} className="flex items-start gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    name="faultIds"
+                    value={f.id}
+                    checked={checked.has(f.id)}
+                    onChange={() => toggle(f.id)}
+                    className="mt-1 accent-[var(--color-accent)]"
+                  />
+                  <span>
+                    <span className="text-xs text-[var(--color-muted)]">
+                      [{f.status}]
+                    </span>{" "}
+                    {f.beschreibung}
+                  </span>
+                </label>
+              ))}
+            </div>
+          )}
+        </Field>
+
+        <Field label="Diagnose">
+          <Textarea
+            name="diagnose"
+            value={diagnose}
+            onChange={(e) => setDiagnose(e.target.value)}
+          />
+        </Field>
+        <Field label="Maßnahme">
+          <Textarea
+            name="massnahme"
+            value={massnahme}
+            onChange={(e) => setMassnahme(e.target.value)}
+          />
+        </Field>
+        <Field label="Verbaute Teile">
+          <Input
+            name="teile"
+            value={teile}
+            onChange={(e) => setTeile(e.target.value)}
+          />
+        </Field>
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Kosten (€)">
+            <Input
+              name="kosten"
+              type="number"
+              step="0.01"
+              defaultValue={repair?.kosten ?? ""}
+            />
+          </Field>
+          <Field label="Zeitaufwand (Minuten)">
+            <Input name="zeit" type="number" defaultValue={repair?.zeit ?? ""} />
+          </Field>
+        </div>
+
+        <Field label="Status">
+          <Select name="status" defaultValue={repair?.status ?? "offen"}>
+            <option value="offen">offen</option>
+            <option value="in Arbeit">in Arbeit</option>
+            <option value="erledigt">erledigt</option>
+          </Select>
+        </Field>
+
+        {state.error ? (
+          <p className="text-sm text-[var(--color-danger)]">{state.error}</p>
+        ) : null}
+
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="submit" disabled={pending}>
+            {pending ? "Speichern…" : "Speichern"}
+          </Button>
+          <FormLeaveGuard backHref={`/machines/${machineId}?bereich=reparaturen`} />
+        </div>
+      </form>
+    </div>
   );
 }

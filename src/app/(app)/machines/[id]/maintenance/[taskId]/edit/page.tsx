@@ -6,6 +6,9 @@ import { PageHeader } from "@/components/ui/page-header";
 import { db } from "@/db";
 import { maintenanceTasks } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
+import Link from "next/link";
+import { Card } from "@/components/ui/card";
+import { wartungspunktGesperrt } from "@/lib/faelligkeit";
 
 export default async function EditMaintenanceTaskPage({
   params,
@@ -22,6 +25,8 @@ export default async function EditMaintenanceTaskPage({
     ),
   });
   if (!task) notFound();
+  // Standard-verwaltet: kein Formular, das erst beim Speichern scheitert.
+  const gesperrt = wartungspunktGesperrt(task);
 
   return (
     <div className="space-y-6">
@@ -30,7 +35,19 @@ export default async function EditMaintenanceTaskPage({
         backHref={`/machines/${id}?bereich=wartung`}
         backLabel="Zur Maschine"
       />
-      <MaintenanceTaskForm action={updateTask} machineId={id} task={task} />
+      {gesperrt ? (
+        <Card className="space-y-2">
+          <p className="text-sm">{gesperrt}</p>
+          <Link
+            href="/wartungsplaene"
+            className="text-sm text-[var(--color-accent)] underline"
+          >
+            Zu den Wartungsplänen
+          </Link>
+        </Card>
+      ) : (
+        <MaintenanceTaskForm action={updateTask} machineId={id} task={task} />
+      )}
     </div>
   );
 }

@@ -1,96 +1,115 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useState, type ReactNode } from "react";
 import { Pencil, Trash2 } from "lucide-react";
+import { ActionDialog, DialogAbbrechen } from "@/components/ui/action-dialog";
+import { ActionForm } from "@/components/ui/action-form";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { FormFeedback } from "@/components/ui/form-feedback";
+import { ICON_BTN } from "@/components/ui/icon-button";
+import { Field, Input } from "@/components/ui/input";
 import { deletePlan, renamePlan } from "@/db/actions/maintenance-plans";
 import type { FormState } from "@/db/actions/form-state";
 
 /*
-  Kopf eines Plans (nur für Manager): der Name wird als TITEL angezeigt, nicht in
-  einem offenen Eingabefeld (das wirkte wie ein leeres Feld, obwohl der Titel
-  schon feststand). Der Stift schaltet auf Bearbeiten (Autofokus, Escape/
-  Abbrechen verwerfen, Speichern schließt bei Erfolg) — Muster wie GenerationRow.
-  Löschen entkoppelt verknüpfte Maschinen (ihre Punkte werden eigene Kopien).
+  Kopf eines Plans (nur für Manager): Name als Titel, daneben Stift (Umbenennen
+  im Dialog) und Papierkorb (ConfirmButton) als Icon-Aktionen; rechts der Slot
+  für „Punkt hinzufügen" (kommt von der Seite). Vorher tauschte der Stift den
+  Titel gegen ein Inline-Eingabefeld — das dritte Bearbeiten-Muster auf einer
+  Seite. Löschen entkoppelt verknüpfte Maschinen (ihre Punkte werden eigene
+  Kopien).
 */
 export function PlanHeader({
   planId,
   name,
+  children,
 }: {
   planId: string;
   name: string;
+  /** Aktionen rechts (z. B. „Punkt hinzufügen"). */
+  children?: ReactNode;
 }) {
-  const [bearbeiten, setBearbeiten] = useState(false);
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
-    renamePlan,
-    {},
-  );
-
-  // Bei Erfolg schließen (die Seite zeigt nach revalidatePath den neuen Namen).
-  // „adjust state during render": neues state-Objekt = Antwort kam, kein useEffect.
-  const [prevState, setPrevState] = useState(state);
-  if (state !== prevState) {
-    setPrevState(state);
-    if (state.message) setBearbeiten(false);
-  }
+  const [umbenennen, setUmbenennen] = useState(false);
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
-      {bearbeiten ? (
-        <form
-          action={formAction}
-          className="flex flex-wrap items-center gap-2"
-        >
-          <input type="hidden" name="planId" value={planId} />
-          <Input
-            name="name"
-            defaultValue={name}
-            autoFocus
-            aria-label="Neuer Name"
-            maxLength={80}
-            className="max-w-56"
-            onKeyDown={(e) => {
-              if (e.key === "Escape") setBearbeiten(false);
-            }}
-          />
-          <Button type="submit" variant="secondary" size="sm" disabled={pending}>
-            {pending ? "Speichern…" : "Speichern"}
-          </Button>
-          <button
-            type="button"
-            onClick={() => setBearbeiten(false)}
-            className="text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-          >
-            Abbrechen
-          </button>
-          <FormFeedback state={state} />
-        </form>
-      ) : (
-        <>
-          <h2 className="text-lg font-semibold">{name}</h2>
-          <button
-            type="button"
-            onClick={() => setBearbeiten(true)}
-            aria-label="Umbenennen"
-            title="Umbenennen"
-            className="text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-          >
-            <Pencil size={16} />
-          </button>
-        </>
-      )}
-      <form action={deletePlan} className="ml-auto">
+    <div className="flex flex-wrap items-center gap-2">
+      <h2 className="text-lg font-semibold">{name}</h2>
+      <button
+        type="button"
+        onClick={() => setUmbenennen(true)}
+        aria-label="Plan umbenennen"
+        title="Umbenennen"
+        className={ICON_BTN}
+      >
+        <Pencil size={14} />
+      </button>
+      <ActionForm action={deletePlan}>
         <input type="hidden" name="planId" value={planId} />
         <ConfirmButton
           question="Plan löschen? Verknüpfte Maschinen werden entkoppelt — ihre Punkte werden eigene, editierbare Kopien; die Historie bleibt."
           confirmLabel="Ja, löschen"
+          aria-label="Plan löschen"
+          title="Plan löschen"
+          className={`${ICON_BTN} hover:text-[var(--color-danger)]`}
         >
-          <Trash2 size={13} /> Plan löschen
+          <Trash2 size={14} />
         </ConfirmButton>
-      </form>
+      </ActionForm>
+      {children ? (
+        <div className="ml-auto flex items-center gap-2">{children}</div>
+      ) : null}
+      {umbenennen ? (
+        <UmbenennenDialog
+          planId={planId}
+          name={name}
+          onClose={() => setUmbenennen(false)}
+        />
+      ) : null}
     </div>
+  );
+}
+
+/* Speichern erst, wenn der Name sich unterscheidet (und nicht leer ist). */
+function UmbenennenDialog({
+  planId,
+  name,
+  onClose,
+}: {
+  planId: string;
+  name: string;
+  onClose: () => void;
+}) {
+  const [state, formAction, pending] = useActionState<FormState, FormData>(
+    renamePlan,
+    {},
+  );
+  const [wert, setWert] = useState(name);
+  const unveraendert = wert.trim() === "" || wert.trim() === name;
+
+  return (
+    <ActionDialog onClose={onClose} ok={Boolean(state.ok)}>
+      <form action={formAction} className="space-y-4 p-5">
+        <h3 className="text-base font-semibold">Plan umbenennen</h3>
+        <input type="hidden" name="planId" value={planId} />
+        <Field label="Name">
+          <Input
+            name="name"
+            value={wert}
+            onChange={(e) => setWert(e.target.value)}
+            maxLength={80}
+            required
+            autoFocus
+          />
+        </Field>
+        <FormFeedback state={state} />
+        <div className="flex justify-end gap-2">
+          <DialogAbbrechen />
+          <Button type="submit" size="sm" disabled={pending || unveraendert}>
+            {pending ? "…" : "Speichern"}
+          </Button>
+        </div>
+      </form>
+    </ActionDialog>
   );
 }

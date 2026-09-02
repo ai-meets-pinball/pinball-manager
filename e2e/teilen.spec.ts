@@ -127,6 +127,8 @@ test.describe("Teilen", () => {
 
     await loginAs(page, USERS.owner);
     await page.goto(`/machines/${ownerMachine}/edit`);
+    // Beim Bearbeiten ist das Modell read-only; „Manuell anpassen" gibt die Felder frei.
+    await page.getByRole("button", { name: "Manuell anpassen" }).click();
     await page.getByLabel("OPDB-Referenz").fill("E2E8-MANDERS");
     await page.getByRole("button", { name: /speichern|aktualisieren/i }).click();
     await page.waitForURL(`**/machines/${ownerMachine}`);

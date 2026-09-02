@@ -9,8 +9,8 @@ import { Input } from "@/components/ui/input";
   /admin/modelle). Ein GET-Formular OHNE action — es submittet auf die aktuelle
   URL und funktioniert damit ohne JS auf jeder Seite. `keep` hält weitere
   Query-Parameter (z. B. die Sortierung) über eine neue Suche hinweg; `children`
-  ist der Filter-Slot (z. B. ein <Select name="…">) IM selben Formular — „Suchen"
-  wendet Suche und Filter gemeinsam an. `resetHref` zeigt den
+  ist der Filter-/Sortier-Slot (z. B. ein AutoSubmitSelect) IM selben Formular,
+  rechts vom Suchfeld — Suche und Filter reisen gemeinsam. `resetHref` zeigt den
   „zurücksetzen"-Link nur, wenn etwas aktiv ist (`aktiv` übersteuert die
   Automatik, wenn Filter im children-Slot stecken).
 */
@@ -21,6 +21,8 @@ export function SearchToolbar({
   keep = {},
   resetHref,
   aktiv,
+  ohneButton = false,
+  breite = "w-64",
   children,
 }: {
   placeholder: string;
@@ -33,7 +35,11 @@ export function SearchToolbar({
   resetHref?: string;
   /** Übersteuert die „ist etwas aktiv?"-Automatik (für children-Filter). */
   aktiv?: boolean;
-  /** Filter-Slot im selben GET-Formular (z. B. ein Select). */
+  /** Ohne „Suchen"-Knopf: Enter submittet, Selects im Slot submitten selbst. */
+  ohneButton?: boolean;
+  /** Breite des Suchfelds (Tailwind-Klasse). */
+  breite?: string;
+  /** Filter-/Sortier-Slot im selben GET-Formular (rechts vom Suchfeld). */
   children?: ReactNode;
 }) {
   const istAktiv =
@@ -43,7 +49,6 @@ export function SearchToolbar({
       {Object.entries(keep).map(([k, v]) => (
         <input key={k} type="hidden" name={k} value={v} />
       ))}
-      {children}
       <div className="relative">
         <Search
           size={16}
@@ -54,12 +59,15 @@ export function SearchToolbar({
           defaultValue={defaultValue}
           placeholder={placeholder}
           aria-label={label}
-          className="w-64 pl-9"
+          className={`${breite} pl-9`}
         />
       </div>
-      <Button type="submit" variant="secondary">
-        Suchen
-      </Button>
+      {children}
+      {ohneButton ? null : (
+        <Button type="submit" variant="secondary">
+          Suchen
+        </Button>
+      )}
       {resetHref && istAktiv ? (
         <Link
           href={resetHref}

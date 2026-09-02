@@ -2,6 +2,12 @@ import { List, ListRow } from "@/components/ui/list";
 import { Pagination } from "@/components/ui/pagination";
 import { getWhatsappProtokoll } from "@/db/queries/whatsapp";
 import { whatsappVersandAktiv } from "@/lib/whatsapp/provider";
+import { AlignLeft, Rows3 } from "lucide-react";
+import { cookies } from "next/headers";
+import { RememberParams } from "@/components/remember-params";
+import { Badge } from "@/components/ui/badge";
+import { ViewToggle } from "@/components/ui/view-toggle";
+import { klebrig } from "@/lib/sticky-view";
 
 /*
   Versand-Protokoll aller WhatsApp-Benachrichtigungen (whatsapp_log): wann, an
@@ -14,10 +20,17 @@ const PRO_SEITE = 50;
 export default async function WhatsappProtokollPage({
   searchParams,
 }: {
-  searchParams: Promise<{ seite?: string }>;
+  searchParams: Promise<{ seite?: string; ansicht?: string }>;
 }) {
   const sp = await searchParams;
   const seite = Math.max(1, Number(sp.seite) || 1);
+  // Kompakt (nur Kopfzeile) oder voll (mit Text) — URL gewinnt, sonst Cookie.
+  const ansicht = klebrig(
+    sp.ansicht,
+    (await cookies()).get("whatsappView")?.value,
+    (v) => v === "kompakt" || v === "voll",
+    "kompakt",
+  ) as "kompakt" | "voll";
 
   const { rows, gesamt } = await getWhatsappProtokoll({
     seite,
@@ -25,9 +38,11 @@ export default async function WhatsappProtokollPage({
   });
   const pages = Math.max(1, Math.ceil(gesamt / PRO_SEITE));
   const aktiv = whatsappVersandAktiv();
+  const ansichtHref = (a: "kompakt" | "voll") => `/admin/whatsapp?ansicht=${a}`;
 
   return (
     <section className="space-y-4">
+      <div className="flex flex-wrap items-start justify-between gap-2">
       <div className="space-y-1">
         <h2 className="text-lg font-semibold">WhatsApp-Protokoll ({gesamt})</h2>
         <p className="text-sm text-[var(--color-muted)]">
@@ -35,15 +50,39 @@ export default async function WhatsappProtokollPage({
           Text.
         </p>
         {aktiv ? (
-          <p className="text-xs text-[var(--color-success)]">
-            Versand aktiv (WHATSAPP_PROVIDER=twilio, Twilio konfiguriert).
+          <p
+            className="text-xs text-[var(--color-success)]"
+            title="WHATSAPP_PROVIDER=twilio und Twilio-Zugangsdaten gesetzt"
+          >
+            Versand aktiv (Twilio).
           </p>
         ) : (
-          <p className="text-xs text-[var(--color-faint)]">
-            Versand deaktiviert — die Einträge zeigen nur, was rausgehen würde
-            (WHATSAPP_PROVIDER≠twilio oder Twilio nicht vollständig konfiguriert).
+          <p
+            className="text-xs text-[var(--color-faint)]"
+            title="WHATSAPP_PROVIDER ist nicht „twilio“ oder die Twilio-Zugangsdaten fehlen"
+          >
+            Versand deaktiviert — Twilio ist nicht konfiguriert; die Einträge
+            zeigen nur, was rausgehen würde.
           </p>
         )}
+      </div>
+      <RememberParams path="/admin/whatsapp" params={{ whatsappView: ansicht }} />
+      <ViewToggle
+        options={[
+          {
+            href: ansichtHref("kompakt"),
+            label: "Kompakt (nur Kopfzeilen)",
+            icon: <Rows3 size={16} />,
+            active: ansicht === "kompakt",
+          },
+          {
+            href: ansichtHref("voll"),
+            label: "Voll (mit Text)",
+            icon: <AlignLeft size={16} />,
+            active: ansicht === "voll",
+          },
+        ]}
+      />
       </div>
 
       <List empty="Noch keine WhatsApp-Nachrichten protokolliert." kompakt>
@@ -59,20 +98,13 @@ export default async function WhatsappProtokollPage({
             }
             meta={
               r.erfolg ? (
-                <span className="text-xs text-[var(--color-success)]">
-                  gesendet
-                </span>
-              ) : (
-                <span
-                  className="text-xs text-[var(--color-danger)]"
-                  title={r.fehler ?? undefined}
-                >
-                  Fehler
-                </span>
-              )
+                  <Badge tone="success">gesendet</Badge>
+                ) : (
+                  <Badge tone="danger">Fehler</Badge>
+                )
             }
           >
-            {r.inhalt ? (
+            {ansicht === "voll" && r.inhalt ? (
               <p className="whitespace-pre-line break-words text-sm text-[var(--color-muted)]">
                 {r.inhalt}
               </p>
@@ -84,7 +116,7 @@ export default async function WhatsappProtokollPage({
         ))}
       </List>
 
-      <Pagination page={seite} pages={pages} basePath="/admin/whatsapp" params={{}} />
+      <Pagination page={seite} pages={pages} basePath="/admin/whatsapp" params={{ ansicht }} />
     </section>
   );
 }

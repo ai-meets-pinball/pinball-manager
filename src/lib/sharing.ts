@@ -37,3 +37,58 @@ export function herkunftLabel(
 ): string {
   return share.anonym ? "anonym geteilt" : (ownerName ?? "unbekannt");
 }
+
+/*
+  Reine Regeln für den Teilen-Dialog — UI (Knopf deaktiviert + Grund) und
+  Action (Ablehnung als FormState) prüfen dasselbe.
+*/
+
+/** Eine Freigabe, wie Dialog und Action sie sehen: Reichweite, Flags, Ziele. */
+export type FreigabeEntwurf = {
+  scope: ShareScope;
+  anonym: boolean;
+  zeigeKosten: boolean;
+  clubIds: string[];
+  emails: string[];
+};
+
+/** Kommagetrennte E-Mail-Eingabe → normalisierte Liste (klein, ohne Leere). */
+export function emailsAusText(text: string): string[] {
+  return text
+    .split(",")
+    .map((s) => s.trim().toLowerCase())
+    .filter(Boolean);
+}
+
+/** Fehlt der Freigabe ein Empfänger? Grund als Text, sonst null. */
+export function freigabeZielFehlt(e: {
+  scope: ShareScope;
+  clubIds: string[];
+  emails: string[];
+}): string | null {
+  if (e.scope === "club" && e.clubIds.length === 0)
+    return "Bitte mindestens einen Club wählen.";
+  if (e.scope === "users" && e.emails.length === 0)
+    return "Bitte mindestens eine E-Mail angeben.";
+  return null;
+}
+
+/** Entspricht der Entwurf der gespeicherten Freigabe? Reihenfolge der Ziele
+    ist egal; Ziele der jeweils anderen Reichweiten zählen nicht mit. */
+export function freigabeUnveraendert(
+  aktuell: FreigabeEntwurf,
+  entwurf: FreigabeEntwurf,
+): boolean {
+  if (aktuell.scope !== entwurf.scope) return false;
+  if (aktuell.anonym !== entwurf.anonym) return false;
+  if (aktuell.zeigeKosten !== entwurf.zeigeKosten) return false;
+  if (entwurf.scope === "club") return gleicheMenge(aktuell.clubIds, entwurf.clubIds);
+  if (entwurf.scope === "users") return gleicheMenge(aktuell.emails, entwurf.emails);
+  return true;
+}
+
+function gleicheMenge(a: string[], b: string[]): boolean {
+  const sa = new Set(a);
+  const sb = new Set(b);
+  return sa.size === sb.size && [...sa].every((x) => sb.has(x));
+}

@@ -17,7 +17,7 @@ export default async function EditMachinePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const { user, machine } = await requireMachineWrite(id);
+  const { user, machine, darf } = await requireMachineWrite(id);
   const clubs = await getUserClubs(user.id);
   const besitzerKatalog = await getBesitzerKatalog(user);
   const mitglieder = await getBesitzerNutzerKatalog(user);
@@ -35,6 +35,7 @@ export default async function EditMachinePage({
         action={updateMachine}
         backHref={`/machines/${machine.id}`}
         clubs={clubs}
+        clubAenderbar={darf.loeschen}
         besitzerKatalog={besitzerKatalog}
         mitglieder={mitglieder}
         aktuellerNutzer={{ id: user.id, name: user.name }}

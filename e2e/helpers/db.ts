@@ -77,9 +77,12 @@ export async function createMachine(opts: {
   modell?: string;
 }) {
   const opdbRef = opts.opdbRef ?? "E2E1-MTEST";
+  // Familienschlüssel wie lib/opdb-ref.ts: erste zwei Segmente, sonst NULL.
+  const [gruppe, maschine] = opdbRef.split("-");
+  const familie = gruppe && maschine ? `${gruppe}-${maschine}` : null;
   const [model] = await sql`
-    INSERT INTO machine_models (opdb_ref, opdb_group_ref, hersteller, modell)
-    VALUES (${opdbRef}, ${opdbRef.split("-")[0]}, 'E2E Werke', ${opts.modell ?? "E2E Automat"})
+    INSERT INTO machine_models (opdb_ref, opdb_group_ref, opdb_machine_ref, hersteller, modell)
+    VALUES (${opdbRef}, ${gruppe}, ${familie}, 'E2E Werke', ${opts.modell ?? "E2E Automat"})
     ON CONFLICT (opdb_ref) DO UPDATE SET opdb_ref = EXCLUDED.opdb_ref
     RETURNING id`;
 

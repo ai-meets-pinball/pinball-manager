@@ -1,108 +1,185 @@
 "use client";
 
-import { LogOut, UserMinus } from "lucide-react";
+import { LogOut, Pencil, Trash2 } from "lucide-react";
+import { useActionState, useState } from "react";
+import { ActionDialog, DialogAbbrechen } from "@/components/ui/action-dialog";
+import { ActionForm } from "@/components/ui/action-form";
+import { Button } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
-import { useActionState } from "react";
-import { Select } from "@/components/ui/input";
-import { ROLE_LABEL, StatusBadge } from "@/components/ui/status-badge";
+import { FormFeedback } from "@/components/ui/form-feedback";
+import { ICON_BTN } from "@/components/ui/icon-button";
+import { Field, Select } from "@/components/ui/input";
+import { ROLE_LABEL } from "@/components/ui/status-badge";
 import { changeMemberRole, leaveClub, removeMember } from "@/db/actions/clubs";
 import type { FormState } from "@/db/actions/form-state";
+import { rolleEntfernenGesperrt } from "@/lib/rechte";
 import { CLUB_ROLES, type ClubRole } from "@/lib/validators";
 
 /*
-  Rollen- und Mitgliedschaftssteuerung je Mitglied. Bewusst explizit:
-  - Manager (Owner/Admin) sehen eine Rollen-Auswahl + Entfernen.
-  - Die Owner-Rolle ist nur wählbar/entfernbar, wenn der Betrachter Owner ist.
-  - Der eigene Eintrag zeigt „Club verlassen" (die Owner-Invariante prüft die Action).
+  Zeilen-Aktionen je Mitglied — dasselbe Muster wie die Rollen im Admin
+  (admin-user-roles.tsx): rechts kleine Icons, die Rolle steht als Badge in der
+  Zeile (setzt die Seite). Stift öffnet den Rollen-Dialog, Papierkorb entfernt,
+  am eigenen Eintrag steht stattdessen „Verlassen".
+  - Owner darf nur anfassen, wer selbst Owner (oder Super-Admin) ist.
+  - Letzter Owner: weder herabstufen noch entfernen noch austreten — dieselbe
+    Regel, mit der die Actions ablehnen (rolleEntfernenGesperrt); hier graut sie
+    die Icons aus und sagt im Tooltip warum.
 */
 export function MemberActions({
   clubId,
   memberId,
+  name,
   rolle,
   isSelf,
   canManage,
   canManageOwner,
+  ownerAnzahl,
 }: {
   clubId: string;
   memberId: string;
+  name: string;
   rolle: ClubRole;
   isSelf: boolean;
   canManage: boolean;
   canManageOwner: boolean;
+  /** Owner im Club — für die „mind. 1 Owner"-Sperre (lib/rechte.ts). */
+  ownerAnzahl: number;
 }) {
-  const [state, action, pending] = useActionState<FormState, FormData>(
-    changeMemberRole,
-    {},
-  );
+  const [dialog, setDialog] = useState(false);
 
-  // Owner darf nur ein Owner (oder Super-Admin) anfassen.
   const editable =
     canManage && !isSelf && (rolle !== "owner" || canManageOwner);
   const roleOptions: ClubRole[] = canManageOwner
     ? [...CLUB_ROLES]
     : CLUB_ROLES.filter((r) => r !== "owner");
+  const sperre = rolleEntfernenGesperrt({ scope: "club", rolle, ownerAnzahl });
 
   return (
-    <div className="flex flex-col items-end gap-1">
-      <div className="flex items-center gap-2">
-        {editable ? (
-          <form action={action} className="flex items-center gap-1">
-            <input type="hidden" name="clubId" value={clubId} />
-            <input type="hidden" name="userId" value={memberId} />
-            <Select
-              name="rolle"
-              defaultValue={rolle}
-              className="w-auto py-1 text-xs"
-            >
-              {roleOptions.map((r) => (
-                <option key={r} value={r}>
-                  {ROLE_LABEL[r]}
-                </option>
-              ))}
-            </Select>
-            <button
-              type="submit"
-              disabled={pending}
-              className="rounded-[var(--radius)] border border-[var(--color-border)] px-2 py-1 text-xs hover:bg-[var(--color-border)]/40 disabled:opacity-50"
-            >
-              {pending ? "…" : "Speichern"}
-            </button>
-          </form>
-        ) : (
-          <StatusBadge value={rolle} />
-        )}
-
-        {editable ? (
-          <form action={removeMember}>
-            <input type="hidden" name="clubId" value={clubId} />
-            <input type="hidden" name="userId" value={memberId} />
-            <ConfirmButton
-              question="Dieses Mitglied aus dem Club entfernen?"
-              confirmLabel="Ja, entfernen"
-              aria-label="Mitglied entfernen"
-              className="text-[var(--color-muted)] hover:text-[var(--color-danger)]"
-            >
-              <UserMinus size={16} />
-            </ConfirmButton>
-          </form>
-        ) : null}
-
-        {isSelf ? (
-          <form action={leaveClub}>
-            <input type="hidden" name="clubId" value={clubId} />
-            <ConfirmButton
-              question="Diesen Club verlassen?"
-              confirmLabel="Ja, verlassen"
-              className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)] hover:text-[var(--color-danger)]"
-            >
-              <LogOut size={14} /> Verlassen
-            </ConfirmButton>
-          </form>
-        ) : null}
-      </div>
-      {state.error ? (
-        <p className="text-xs text-[var(--color-danger)]">{state.error}</p>
+    <span className="flex items-center gap-1">
+      {sperre ? (
+        <span className="hidden text-xs text-[var(--color-faint)] sm:inline">
+          letzter Owner
+        </span>
       ) : null}
-    </div>
+
+      {editable ? (
+        <>
+          {/* Beim letzten Owner gesperrt: das einzige erlaubte Ziel wäre
+              wieder Owner. */}
+          <button
+            type="button"
+            onClick={() => setDialog(true)}
+            disabled={sperre !== null}
+            aria-label={`Rolle von ${name} ändern`}
+            title={sperre ?? "Rolle ändern"}
+            className={ICON_BTN}
+          >
+            <Pencil size={14} />
+          </button>
+          <ActionForm action={removeMember}>
+            <input type="hidden" name="clubId" value={clubId} />
+            <input type="hidden" name="userId" value={memberId} />
+            <ConfirmButton
+              question={`${name} aus dem Club entfernen? Die Person verliert den Zugriff auf die Club-Maschinen.`}
+              confirmLabel="Ja, entfernen"
+              disabled={sperre !== null}
+              aria-label={`${name} aus dem Club entfernen`}
+              title={sperre ?? "Mitglied entfernen"}
+              className={`${ICON_BTN} hover:text-[var(--color-danger)]`}
+            >
+              <Trash2 size={14} />
+            </ConfirmButton>
+          </ActionForm>
+        </>
+      ) : null}
+
+      {isSelf ? (
+        <ActionForm action={leaveClub}>
+          <input type="hidden" name="clubId" value={clubId} />
+          <ConfirmButton
+            question="Diesen Club verlassen? Du verlierst den Zugriff auf die Club-Maschinen."
+            confirmLabel="Ja, verlassen"
+            disabled={sperre !== null}
+            aria-label="Club verlassen"
+            title={sperre ?? "Club verlassen"}
+            className={`${ICON_BTN} hover:text-[var(--color-danger)]`}
+          >
+            <LogOut size={14} />
+          </ConfirmButton>
+        </ActionForm>
+      ) : null}
+
+      {dialog ? (
+        <RollenDialog
+          clubId={clubId}
+          memberId={memberId}
+          name={name}
+          rolle={rolle}
+          roleOptions={roleOptions}
+          onClose={() => setDialog(false)}
+        />
+      ) : null}
+    </span>
+  );
+}
+
+/* Nur gemountet, solange offen (siehe ActionDialog): jede Öffnung startet mit
+   frischem Zustand; Erfolg (state.ok) schließt. */
+function RollenDialog({
+  clubId,
+  memberId,
+  name,
+  rolle,
+  roleOptions,
+  onClose,
+}: {
+  clubId: string;
+  memberId: string;
+  name: string;
+  rolle: ClubRole;
+  roleOptions: ClubRole[];
+  onClose: () => void;
+}) {
+  const [state, action, pending] = useActionState<FormState, FormData>(
+    changeMemberRole,
+    {},
+  );
+  const [neu, setNeu] = useState<ClubRole>(rolle);
+
+  return (
+    <ActionDialog onClose={onClose} ok={Boolean(state.ok)}>
+      <form action={action} className="space-y-4 p-5">
+        <h3 className="text-base font-semibold">Rolle ändern</h3>
+        <p className="text-sm">
+          <span className="text-[var(--color-muted)]">Mitglied:</span> {name}
+        </p>
+
+        <input type="hidden" name="clubId" value={clubId} />
+        <input type="hidden" name="userId" value={memberId} />
+
+        <Field label="Rolle">
+          <Select
+            name="rolle"
+            value={neu}
+            onChange={(e) => setNeu(e.target.value as ClubRole)}
+          >
+            {roleOptions.map((r) => (
+              <option key={r} value={r}>
+                {ROLE_LABEL[r] ?? r}
+              </option>
+            ))}
+          </Select>
+        </Field>
+
+        <FormFeedback state={state} />
+
+        <div className="flex justify-end gap-2">
+          <DialogAbbrechen />
+          <Button type="submit" size="sm" disabled={pending || neu === rolle}>
+            {pending ? "…" : "Speichern"}
+          </Button>
+        </div>
+      </form>
+    </ActionDialog>
   );
 }

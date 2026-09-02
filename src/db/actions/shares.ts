@@ -6,7 +6,12 @@ import { z } from "zod";
 import { db } from "@/db";
 import { repairs, shareTargets, shares, user } from "@/db/schema";
 import { isClubMember, requireMachineAccess } from "@/lib/session";
-import { SHARE_SCOPES, type ShareScope } from "@/lib/sharing";
+import {
+  emailsAusText,
+  freigabeZielFehlt,
+  SHARE_SCOPES,
+  type ShareScope,
+} from "@/lib/sharing";
 import type { FormState } from "@/db/actions/form-state";
 
 /*
@@ -39,13 +44,13 @@ async function zieleAufloesen(
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-  const emails = (data.emails ?? "")
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
+  const emails = emailsAusText(data.emails ?? "");
+
+  // Dieselbe Regel deaktiviert im Dialog den Teilen-Knopf.
+  const fehlt = freigabeZielFehlt({ scope, clubIds, emails });
+  if (fehlt) return { error: fehlt };
 
   if (scope === "club") {
-    if (clubIds.length === 0) return { error: "Bitte mindestens einen Club wählen." };
     for (const clubId of clubIds) {
       if (!(await isClubMember(userId, clubId))) {
         return { error: "Du kannst nur mit Clubs teilen, in denen du Mitglied bist." };
@@ -55,7 +60,6 @@ async function zieleAufloesen(
   }
 
   if (scope === "users") {
-    if (emails.length === 0) return { error: "Bitte mindestens eine E-Mail angeben." };
     const gefunden = await db.query.user.findMany({
       where: inArray(user.email, emails),
       columns: { id: true, email: true },
@@ -142,15 +146,19 @@ export async function shareRepair(
   });
 
   revalidatePath(`/machines/${machineId}`);
-  return { message: "Reparatur geteilt." };
+  // ok schließt den Teilen-Dialog; die Meldung bleibt für Aufrufer ohne Dialog.
+  return { ok: true, message: "Reparatur geteilt." };
 }
 
 /** Freigabe einer Reparatur aufheben. */
-export async function unshareRepair(formData: FormData): Promise<void> {
+export async function unshareRepair(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
   const machineId = String(formData.get("machineId"));
   const repairId = String(formData.get("repairId"));
   const { darf } = await requireMachineAccess(machineId);
-  if (!darf.teilen) throw new Error("Nur Eigentümer oder Club-Manager dürfen das");
+  if (!darf.teilen) return { error: "Nur Eigentümer oder Club-Manager dürfen das" };
 
   /*
     Die Reparatur MUSS zu dieser Maschine gehören. Vorher wurde gegen
@@ -162,11 +170,12 @@ export async function unshareRepair(formData: FormData): Promise<void> {
     where: and(eq(repairs.id, repairId), eq(repairs.machineId, machineId)),
     columns: { id: true },
   });
-  if (!reparatur) throw new Error("Reparatur nicht gefunden");
+  if (!reparatur) return { error: "Reparatur nicht gefunden" };
 
   await db
     .delete(shares)
     .where(and(eq(shares.artefaktTyp, "repair"), eq(shares.artefaktId, repairId)));
 
   revalidatePath(`/machines/${machineId}`);
+  return { ok: true };
 }

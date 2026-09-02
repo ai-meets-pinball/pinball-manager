@@ -151,7 +151,10 @@ export async function updateDokument(
   redirect(`/machines/${machineId}?bereich=dokumente`);
 }
 
-export async function deleteDokument(formData: FormData): Promise<void> {
+export async function deleteDokument(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
   const machineId = String(formData.get("machineId"));
   const id = String(formData.get("id"));
   await requireMachineWrite(machineId);
@@ -178,4 +181,5 @@ export async function deleteDokument(formData: FormData): Promise<void> {
     );
 
   revalidatePath(`/machines/${machineId}`);
+  return { ok: true };
 }

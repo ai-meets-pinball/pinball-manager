@@ -379,6 +379,20 @@
       "when": 1787835929724,
       "tag": "0053_slimy_spot",
       "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1788357917852,
+      "tag": "0054_youthful_red_ghost",
+      "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1788357919836,
+      "tag": "0055_opdb_machine_ref_backfill",
+      "breakpoints": true
     }
   ]
 }

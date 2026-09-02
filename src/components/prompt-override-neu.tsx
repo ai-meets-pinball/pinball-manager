@@ -8,6 +8,7 @@ import { Field, Select, Textarea } from "@/components/ui/input";
 import { FormFeedback } from "@/components/ui/form-feedback";
 import { savePrompt } from "@/db/actions/prompts";
 import type { FormState } from "@/db/actions/form-state";
+import { overrideBelegt, type OverrideRow } from "@/lib/prompts";
 
 /*
   Neuen Hersteller-/Generation-Override zu einem Prompt anlegen. Bereich ist
@@ -21,6 +22,7 @@ export function PromptOverrideNeu({
   generationen,
   herstellerScoped,
   generationScoped,
+  belegt,
 }: {
   promptKey: string;
   standard: string;
@@ -28,12 +30,23 @@ export function PromptOverrideNeu({
   generationen: { id: string; name: string }[];
   herstellerScoped: boolean;
   generationScoped: boolean;
+  /** Bereiche, die schon einen Override haben — die stehen nicht zur Wahl. */
+  belegt: OverrideRow[];
 }) {
   const router = useRouter();
   const [typ, setTyp] = useState<"hersteller" | "generation">(
     herstellerScoped ? "hersteller" : "generation",
   );
   const [wert, setWert] = useState("");
+  // Was schon belegt ist, lässt sich nicht „neu anlegen" (sonst stilles Überschreiben).
+  const freieHersteller = hersteller.filter(
+    (h) => !overrideBelegt(belegt, { hersteller: h, generationId: null }),
+  );
+  const freieGenerationen = generationen.filter(
+    (g) => !overrideBelegt(belegt, { hersteller: null, generationId: g.id }),
+  );
+  const nichtsFrei =
+    (typ === "hersteller" ? freieHersteller : freieGenerationen).length === 0;
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     async (prev, fd) => {
       const res = await savePrompt(prev, fd);
@@ -53,6 +66,8 @@ export function PromptOverrideNeu({
       </summary>
       <form action={formAction} className="space-y-3 p-3 pt-0">
         <input type="hidden" name="key" value={promptKey} />
+        {/* „neu": die Action lehnt ab, wenn der Bereich schon belegt ist. */}
+        <input type="hidden" name="modus" value="neu" />
         {/* Exklusiver Bereich: genau eines der beiden Felder wird gefüllt. */}
         <input
           type="hidden"
@@ -90,12 +105,12 @@ export function PromptOverrideNeu({
             >
               <option value="">— wählen —</option>
               {typ === "hersteller"
-                ? hersteller.map((h) => (
+                ? freieHersteller.map((h) => (
                     <option key={h} value={h}>
                       {h}
                     </option>
                   ))
-                : generationen.map((g) => (
+                : freieGenerationen.map((g) => (
                     <option key={g.id} value={g.id}>
                       {g.name}
                     </option>
@@ -112,7 +127,18 @@ export function PromptOverrideNeu({
           className="font-mono text-xs"
         />
         <FormFeedback state={state} />
-        <Button type="submit" size="sm" disabled={pending || !wert}>
+        {nichtsFrei ? (
+          <p className="text-xs text-[var(--color-muted)]">
+            {typ === "hersteller"
+              ? hersteller.length === 0
+                ? "Noch keine Hersteller im Katalog."
+                : "Für alle Hersteller gibt es schon einen Override — oben bearbeiten."
+              : generationen.length === 0
+                ? "Noch keine Generationen angelegt."
+                : "Für alle Generationen gibt es schon einen Override — oben bearbeiten."}
+          </p>
+        ) : null}
+        <Button type="submit" size="sm" disabled={pending || !wert || nichtsFrei}>
           {pending ? "Speichere…" : "Override anlegen"}
         </Button>
       </form>

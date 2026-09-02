@@ -6,6 +6,8 @@ import {
   intervallLabel,
   naechsterMonatsTermin,
   naechsterTermin,
+  faelligLabel,
+  wartungspunktGesperrt,
 } from "@/lib/faelligkeit";
 
 /*
@@ -183,5 +185,24 @@ describe("SQL-Grenzen", () => {
       const perRegel = faelligkeit(punkt(termin), jetzt).status === "faellig";
       expect(termin <= grenze).toBe(perRegel);
     }
+  });
+});
+
+describe("faelligLabel", () => {
+  it("formuliert Fälligkeit einheitlich, mit richtigem Plural", () => {
+    expect(faelligLabel("faellig", -1)).toEqual({ text: "überfällig seit 1 Tag", ton: "danger" });
+    expect(faelligLabel("faellig", -3)).toEqual({ text: "überfällig seit 3 Tagen", ton: "danger" });
+    expect(faelligLabel("faellig", 0)).toEqual({ text: "heute fällig", ton: "danger" });
+    expect(faelligLabel("bald", 5)).toEqual({ text: "in 5 Tagen", ton: "warn" });
+    expect(faelligLabel("ok", 1)).toEqual({ text: "in 1 Tag", ton: "success" });
+    expect(faelligLabel("ok", null)).toEqual({ text: "ok", ton: "success" });
+    expect(faelligLabel("kein-termin", null)).toEqual({ text: "kein Termin", ton: "muted" });
+  });
+});
+
+describe("wartungspunktGesperrt", () => {
+  it("sperrt nur Standard-verwaltete Punkte", () => {
+    expect(wartungspunktGesperrt({ planItemId: "abc" })).toMatch(/vom Standard verwaltet/);
+    expect(wartungspunktGesperrt({ planItemId: null })).toBeNull();
   });
 });

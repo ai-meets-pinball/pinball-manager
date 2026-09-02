@@ -24,7 +24,12 @@ export function MachineCard({
   /** Anzahl fälliger Wartungen — zeigt eine „needs attention"-Badge. */
   wartungFaellig?: number;
   /** Gesetzt = Auswahlmodus: die Karte wird zum Auswahl-Umschalter statt Link. */
-  selection?: { selected: boolean; onToggle: () => void };
+  selection?: {
+    selected: boolean;
+    onToggle: () => void;
+    /** Grund, warum die Karte nicht anhakbar ist — oder null. */
+    gesperrt?: string | null;
+  };
   /** Optionaler Status-Chip, z. B. „bereits zugewiesen" im Zuweisungs-Modus. */
   hinweis?: string;
 }) {
@@ -79,7 +84,9 @@ export function MachineCard({
         type="button"
         onClick={selection.onToggle}
         aria-pressed={selection.selected}
-        className={`relative flex gap-4 rounded-[var(--radius)] border bg-[var(--color-surface)] p-3 text-left transition-colors ${
+        disabled={Boolean(selection.gesperrt)}
+        title={selection.gesperrt ?? undefined}
+        className={`relative flex gap-4 rounded-[var(--radius)] border bg-[var(--color-surface)] p-3 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
           selection.selected
             ? "border-[var(--color-primary)] ring-1 ring-[var(--color-primary)]"
             : "border-[var(--color-border)] hover:border-[var(--color-primary)]"

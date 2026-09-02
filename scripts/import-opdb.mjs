@@ -54,6 +54,13 @@ console.log(`${entries.length} Einträge geladen.`);
 
 // Nur Editionen (entryType "machine"); Gruppen/Titel und Aliase überspringen —
 // die App-Granularität ist die Edition (opdb_ref wie "G2Lkd-MNEdK").
+// Familienschlüssel = erste zwei Segmente; Quelle der Regel ist
+// src/lib/opdb-ref.ts (familienSchluessel) — hier nur nachgebaut, weil dieses
+// Skript kein TypeScript importiert. Leeres zweites Segment → null.
+function familienSchluessel(ref) {
+  const [gruppe, maschine] = String(ref).trim().split("-");
+  return gruppe && maschine ? `${gruppe}-${maschine}` : null;
+}
 const rows = [];
 let mitBild = 0;
 for (const e of entries) {
@@ -67,6 +74,7 @@ for (const e of entries) {
   rows.push({
     opdb_ref: opdbRef,
     opdb_group_ref: e.opdbGroup ?? opdbRef.split("-")[0],
+    opdb_machine_ref: familienSchluessel(opdbRef),
     hersteller,
     modell,
     baujahr: Number.isInteger(e.year) ? e.year : null,
@@ -79,6 +87,7 @@ console.log(`${rows.length} Editionen zum Upsert (davon ${mitBild} mit Bild).`);
 const cols = [
   "opdb_ref",
   "opdb_group_ref",
+  "opdb_machine_ref",
   "hersteller",
   "modell",
   "baujahr",
@@ -95,6 +104,7 @@ for (let i = 0; i < rows.length; i += CHUNK) {
     INSERT INTO machine_models ${sql(chunk, ...cols)}
     ON CONFLICT (opdb_ref) DO UPDATE SET
       opdb_group_ref = EXCLUDED.opdb_group_ref,
+      opdb_machine_ref = EXCLUDED.opdb_machine_ref,
       hersteller = EXCLUDED.hersteller,
       modell = EXCLUDED.modell,
       baujahr = EXCLUDED.baujahr,

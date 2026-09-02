@@ -110,21 +110,19 @@ export function EmailForm({ initialEmail }: { initialEmail: string }) {
   const [msg, setMsg] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [eingabe, setEingabe] = useState(initialEmail);
+  // Speichern erst, wenn die Adresse wirklich eine andere ist.
+  const unveraendert =
+    eingabe.trim().toLowerCase() === initialEmail.toLowerCase();
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setMsg(null);
     setError(null);
 
-    const neu = String(new FormData(event.currentTarget).get("email"))
-      .trim()
-      .toLowerCase();
+    const neu = eingabe.trim().toLowerCase();
     if (!neu) {
       setError("E-Mail ist erforderlich.");
-      return;
-    }
-    if (neu === initialEmail.toLowerCase()) {
-      setError("Das ist bereits deine aktuelle Adresse.");
       return;
     }
 
@@ -150,7 +148,8 @@ export function EmailForm({ initialEmail }: { initialEmail: string }) {
         <Input
           name="email"
           type="email"
-          defaultValue={initialEmail}
+          value={eingabe}
+          onChange={(e) => setEingabe(e.target.value)}
           required
           autoComplete="email"
         />
@@ -158,7 +157,7 @@ export function EmailForm({ initialEmail }: { initialEmail: string }) {
       {error ? <p className="text-sm text-[var(--color-danger)]">{error}</p> : null}
       {msg ? <p className="text-sm text-[var(--color-success)]">{msg}</p> : null}
       <div>
-        <Button type="submit" disabled={loading}>
+        <Button type="submit" disabled={loading || unveraendert}>
           {loading ? "Senden…" : "E-Mail ändern"}
         </Button>
       </div>

@@ -5,6 +5,8 @@ import {
   renderPrompt,
   waehleVorlage,
   type OverrideRow,
+  fehlendePlatzhalter,
+  overrideBelegt,
 } from "@/lib/prompts";
 
 describe("renderPrompt", () => {
@@ -69,5 +71,28 @@ describe("waehleVorlage", () => {
     const rows = [O("Bally", null, "BALLY")];
     const r = waehleVorlage("guide_system", rows, { hersteller: "Williams" });
     expect(r.quelle).toBe("standard");
+  });
+});
+
+describe("fehlendePlatzhalter", () => {
+  it("nennt genau die Platzhalter, die im Text fehlen", () => {
+    expect(fehlendePlatzhalter("Hallo {{modell}}", ["{{hersteller}}", "{{modell}}"])).toEqual([
+      "{{hersteller}}",
+    ]);
+    expect(fehlendePlatzhalter("{{a}} {{b}}", ["{{a}}", "{{b}}"])).toEqual([]);
+    expect(fehlendePlatzhalter("", [])).toEqual([]);
+  });
+});
+
+describe("overrideBelegt", () => {
+  const rows = [
+    { hersteller: "Bally", generationId: null, vorlage: "x" },
+    { hersteller: null, generationId: "g1", vorlage: "y" },
+  ];
+  it("erkennt belegte und freie Bereiche exakt", () => {
+    expect(overrideBelegt(rows, { hersteller: "Bally", generationId: null })).toBe(true);
+    expect(overrideBelegt(rows, { hersteller: null, generationId: "g1" })).toBe(true);
+    expect(overrideBelegt(rows, { hersteller: "Stern", generationId: null })).toBe(false);
+    expect(overrideBelegt(rows, { hersteller: null, generationId: null })).toBe(false);
   });
 });

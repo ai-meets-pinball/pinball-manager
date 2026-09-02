@@ -17,9 +17,19 @@ import {
   Unter-Navigation des Admin-Bereichs (gerendert vom admin/layout.tsx). Trennt die
   vormals eine lange Seite in geordnete Bereiche. Aktiv-Zustand aus dem Pfad.
 */
+/* Reihenfolge = Gruppen: Menschen (Nutzer, Clubs) · Katalog (Modelle,
+   Generationen) · KI (Prompts) · Kommunikation (Vorlagen, Protokolle). */
 const TABS = [
   { href: "/admin", label: "Nutzer & Rollen", icon: Users, exact: true },
   { href: "/admin/clubs", label: "Clubs", icon: Building2, exact: false },
+  { href: "/admin/modelle", label: "Modelle", icon: Boxes, exact: false },
+  {
+    href: "/admin/generationen",
+    label: "Generationen",
+    icon: Layers,
+    exact: false,
+  },
+  { href: "/admin/prompts", label: "Prompts", icon: Wand2, exact: false },
   {
     href: "/admin/vorlagen",
     label: "E-Mail-Vorlagen",
@@ -29,16 +39,8 @@ const TABS = [
   { href: "/admin/mails", label: "Mail-Protokoll", icon: Send, exact: false },
   {
     href: "/admin/whatsapp",
-    label: "WhatsApp",
+    label: "WhatsApp-Protokoll",
     icon: MessageCircle,
-    exact: false,
-  },
-  { href: "/admin/prompts", label: "Prompts", icon: Wand2, exact: false },
-  { href: "/admin/modelle", label: "Modelle", icon: Boxes, exact: false },
-  {
-    href: "/admin/generationen",
-    label: "Generationen",
-    icon: Layers,
     exact: false,
   },
 ] as const;

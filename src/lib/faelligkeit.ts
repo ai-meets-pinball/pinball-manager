@@ -155,3 +155,47 @@ export function baldBis(jetzt: Date): Date {
   const danach = tagesZahl(berlinerTag(jetzt)) + (BALD_TAGE + 1) * TAG_MS;
   return new Date(berlinerMitternacht(danach).getTime() - 1);
 }
+
+/* ── Wartungspunkte: Labels und Sperren ───────────────────────────────────── */
+
+/** Anzeigename je Intervall-Typ — statt roher Keys („zeit") in Auswahlfeldern. */
+export const INTERVALL_TYP_LABEL: Record<string, string> = {
+  zeit: "Zeitintervall",
+  spiele: "Nach Spielzahl",
+  bedarf: "Bei Bedarf",
+};
+
+/**
+ * Ein Wort für die Fälligkeit — dasselbe auf dem Wartungs-Reiter und bei den
+ * Terminen (vorher zwei Formulierungen: „überfällig (seit 3 T.)" vs.
+ * „überfällig seit 3 Tagen"). `ton` ist der semantische Badge-Ton.
+ */
+export function faelligLabel(
+  status: FaelligkeitsStatus,
+  tage: number | null,
+): { text: string; ton: "danger" | "warn" | "success" | "muted" } {
+  if (status === "kein-termin") return { text: "kein Termin", ton: "muted" };
+  if (status === "faellig") {
+    const n = tage != null ? Math.abs(tage) : 0;
+    return {
+      text: n > 0 ? `überfällig seit ${n} ${n === 1 ? "Tag" : "Tagen"}` : "heute fällig",
+      ton: "danger",
+    };
+  }
+  const text =
+    tage == null ? "ok" : tage === 0 ? "heute fällig" : `in ${tage} ${tage === 1 ? "Tag" : "Tagen"}`;
+  return { text, ton: status === "bald" ? "warn" : "success" };
+}
+
+/**
+ * Darf dieser Wartungspunkt an der Maschine bearbeitet oder gelöscht werden?
+ * Vom Standard (Wartungsplan) verwaltete Punkte werden im Standard gepflegt —
+ * oder die Maschine löst die Verknüpfung. Grund als Text oder null.
+ */
+export function wartungspunktGesperrt(task: {
+  planItemId: string | null;
+}): string | null {
+  return task.planItemId
+    ? "Dieser Punkt wird vom Standard verwaltet — im Standard bearbeiten oder die Verknüpfung lösen."
+    : null;
+}

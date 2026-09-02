@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
-import { Bug, ImageIcon } from "lucide-react";
+import { Bug, ImageIcon, Trash2 } from "lucide-react";
 import { FeedbackBearbeiten, FeedbackForm } from "@/components/feedback-form";
+import { ActionForm } from "@/components/ui/action-form";
 import { Card } from "@/components/ui/card";
 import { ChipFilter } from "@/components/ui/chip-filter";
 import { ConfirmButton } from "@/components/ui/confirm-button";
+import { ICON_BTN } from "@/components/ui/icon-button";
 import { List, ListRow } from "@/components/ui/list";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { deleteFeedback } from "@/db/actions/feedback";
@@ -13,6 +15,7 @@ import {
   getFeedbackMailLog,
   getMeinFeedback,
 } from "@/db/queries";
+import { FEEDBACK_STATUS_LABEL } from "@/lib/feedback-status";
 import { mailKategorieLabel } from "@/lib/mail-kategorie";
 import { isSuperAdmin, requireUser } from "@/lib/session";
 import { FEEDBACK_STATUS } from "@/lib/validators";
@@ -29,6 +32,22 @@ const TYP_LABEL: Record<string, string> = {
   fehler: "Fehler",
   verbesserung: "Verbesserungsvorschlag",
 };
+
+/* Screenshot als kleines Icon in der Meta-Zone (öffnet das Bild im neuen Tab). */
+function ScreenshotLink({ url }: { url: string }) {
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noreferrer"
+      aria-label="Screenshot ansehen"
+      title="Screenshot"
+      className={ICON_BTN}
+    >
+      <ImageIcon size={14} />
+    </a>
+  );
+}
 
 export default async function FeedbackPage({
   searchParams,
@@ -107,7 +126,7 @@ export default async function FeedbackPage({
     },
     ...FEEDBACK_STATUS.map((s) => ({
       key: s,
-      label: s,
+      label: FEEDBACK_STATUS_LABEL[s] ?? s,
       count: proStatus.get(s) ?? 0,
       href: statusHref(s),
       aktiv: statusFilter === s,
@@ -174,26 +193,23 @@ export default async function FeedbackPage({
                   <>
                     {TYP_LABEL[m.typ]} ·{" "}
                     {m.createdAt.toLocaleDateString("de-DE")}
-                    {m.antwort ? <> — Antwort: {m.antwort}</> : null}
                   </>
                 }
                 meta={
                   <>
-                    {m.screenshotUrl ? (
-                      <a
-                        href={m.screenshotUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        title="Screenshot ansehen"
-                        className="text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-                      >
-                        <ImageIcon size={15} />
-                      </a>
-                    ) : null}
                     <StatusBadge value={m.status} />
+                    {m.screenshotUrl ? (
+                      <ScreenshotLink url={m.screenshotUrl} />
+                    ) : null}
                   </>
                 }
-              />
+              >
+                {/* Die Antwort in voller Breite und umbrechend — im Untertitel
+                    würde sie abgeschnitten. */}
+                {m.antwort ? (
+                  <p className="break-words text-sm">Antwort: {m.antwort}</p>
+                ) : null}
+              </ListRow>
             ))}
           </List>
         </section>
@@ -227,70 +243,72 @@ export default async function FeedbackPage({
                 }
                 meta={
                   <>
-                    {m.screenshotUrl ? (
-                      <a
-                        href={m.screenshotUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        title="Screenshot ansehen"
-                        className="text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-                      >
-                        <ImageIcon size={15} />
-                      </a>
-                    ) : null}
                     <StatusBadge value={m.status} />
-                    {darfBearbeiten ? (
-                      <form action={deleteFeedback}>
-                        <input type="hidden" name="id" value={m.id} />
-                        <ConfirmButton
-                          question="Meldung wirklich löschen?"
-                          confirmLabel="Ja, löschen"
-                        >
-                          Löschen
-                        </ConfirmButton>
-                      </form>
+                    {m.screenshotUrl ? (
+                      <ScreenshotLink url={m.screenshotUrl} />
                     ) : null}
                   </>
                 }
-              >
-                <div className="space-y-2">
-                  <p className="whitespace-pre-line break-words text-sm text-[var(--color-muted)]">
-                    {m.beschreibung}
-                  </p>
-                  {m.userAgent ? (
-                    <p className="font-mono text-[10px] text-[var(--color-faint)]">
-                      {m.userAgent}
-                    </p>
-                  ) : null}
-                  {darfBearbeiten ? (
-                    <FeedbackBearbeiten
-                      id={m.id}
-                      status={m.status}
-                      antwort={m.antwort}
-                    />
-                  ) : m.antwort ? (
-                    <p className="text-sm">Antwort: {m.antwort}</p>
-                  ) : null}
-
-                  {(mailsProFeedback.get(m.id)?.length ?? 0) > 0 ? (
-                    <div className="space-y-1 border-t border-[var(--color-border)] pt-2">
-                      <p className="text-xs font-medium text-[var(--color-muted)]">
-                        Versand-Protokoll
-                      </p>
-                      {mailsProFeedback.get(m.id)!.map((r) => (
-                        <p
-                          key={r.id}
-                          className="text-xs text-[var(--color-muted)]"
+                actions={
+                  darfBearbeiten ? (
+                    <>
+                      <FeedbackBearbeiten
+                        id={m.id}
+                        status={m.status}
+                        antwort={m.antwort}
+                      />
+                      <ActionForm
+                        action={deleteFeedback}
+                        className="flex items-center gap-2"
+                      >
+                        <input type="hidden" name="id" value={m.id} />
+                        <ConfirmButton
+                          question={`„${m.titel}" löschen? Der Melder sieht die Meldung dann nicht mehr unter „Meine Meldungen".`}
+                          confirmLabel="Ja, löschen"
+                          aria-label="Meldung löschen"
+                          title="Löschen"
+                          className={`${ICON_BTN} hover:text-[var(--color-danger)]`}
                         >
-                          {r.gesendetAm.toLocaleString("de-DE")} ·{" "}
-                          {mailKategorieLabel(r.kategorie)} · an {r.empfaenger}
-                          {r.erfolg ? "" : " · FEHLER"}
-                          {r.inhalt ? <> — {r.inhalt}</> : null}
-                        </p>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
+                          <Trash2 size={14} />
+                        </ConfirmButton>
+                      </ActionForm>
+                    </>
+                  ) : undefined
+                }
+              >
+                <p className="whitespace-pre-line break-words text-sm text-[var(--color-muted)]">
+                  {m.beschreibung}
+                </p>
+                {m.userAgent ? (
+                  <p className="font-mono text-[10px] text-[var(--color-faint)]">
+                    {m.userAgent}
+                  </p>
+                ) : null}
+                {m.antwort ? (
+                  <p className="break-words text-sm">Antwort: {m.antwort}</p>
+                ) : null}
+
+                {(mailsProFeedback.get(m.id)?.length ?? 0) > 0 ? (
+                  <div className="space-y-0.5 border-t border-[var(--color-line)] pt-2">
+                    <p className="text-xs font-medium text-[var(--color-muted)]">
+                      Versand-Protokoll
+                    </p>
+                    {/* Eine Zeile je Mail; der Text ist abgeschnitten und steht
+                        voll im title. */}
+                    {mailsProFeedback.get(m.id)!.map((r) => (
+                      <p
+                        key={r.id}
+                        title={r.inhalt ?? undefined}
+                        className="truncate text-xs text-[var(--color-muted)]"
+                      >
+                        {r.gesendetAm.toLocaleString("de-DE")} ·{" "}
+                        {mailKategorieLabel(r.kategorie)} · an {r.empfaenger}
+                        {r.erfolg ? "" : " · Fehler"}
+                        {r.inhalt ? <> — {r.inhalt}</> : null}
+                      </p>
+                    ))}
+                  </div>
+                ) : null}
               </ListRow>
             ))}
           </List>

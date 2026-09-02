@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { eq, sql } from "drizzle-orm";
+import { AbmeldenButton } from "@/components/abmelden-button";
 import { Button } from "@/components/ui/button";
 import { acceptInvitation } from "@/db/actions/invitations";
 import { db } from "@/db";
 import { clubs, invitations, roles } from "@/db/schema";
 import { getCurrentUser } from "@/lib/session";
+import { ActionForm } from "@/components/ui/action-form";
 
 /*
   Einladungs-Landeseite. Der Token kommt aus der E-Mail.
@@ -44,7 +46,7 @@ export default async function InvitePage({
 
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-6">
-      <h1 className="text-2xl font-bold">Club-Einladung</h1>
+      <h1 className="text-2xl font-bold">{club ? "Club-Einladung" : "Einladung"}</h1>
 
       {!gueltig ? (
         <p className="text-sm text-[var(--color-muted)]">
@@ -85,17 +87,21 @@ export default async function InvitePage({
               </p>
             </div>
           ) : user.email.toLowerCase() !== invite!.email.toLowerCase() ? (
-            <p className="text-sm text-[var(--color-danger)]">
-              Du bist als {user.email} angemeldet, die Einladung gilt aber für{" "}
-              {invite!.email}. Bitte mit dem passenden Konto anmelden.
-            </p>
+            <div className="space-y-3">
+              <p className="text-sm text-[var(--color-danger)]">
+                Du bist als {user.email} angemeldet, die Einladung gilt aber für{" "}
+                {invite!.email}.
+              </p>
+              {/* Kein toter Hinweis: direkt abmelden, dann mit dem passenden Konto weiter. */}
+              <AbmeldenButton>Abmelden und mit dem passenden Konto anmelden</AbmeldenButton>
+            </div>
           ) : (
-            <form action={acceptInvitation}>
+            <ActionForm action={acceptInvitation}>
               <input type="hidden" name="token" value={token} />
               <Button type="submit" className="w-full">
                 Einladung annehmen
               </Button>
-            </form>
+            </ActionForm>
           )}
         </>
       )}

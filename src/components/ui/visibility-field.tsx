@@ -8,13 +8,16 @@ import { Field, Select } from "@/components/ui/input";
 */
 export function VisibilityField({
   defaultValue = "privat",
+  objekt = "diese Handbuch-Daten",
 }: {
   defaultValue?: "privat" | "oeffentlich";
+  /** Was sichtbar wird — „diesen Tipp", „diesen Guide" … (Objekt im Akkusativ). */
+  objekt?: string;
 }) {
   return (
     <Field
       label="Sichtbarkeit"
-      hint="Wer diese Handbuch-Daten sehen darf — später jederzeit änderbar."
+      hint={`Wer ${objekt} sehen darf — später jederzeit änderbar.`}
     >
       <Select name="visibility" defaultValue={defaultValue}>
         <option value="privat">privat — nur du</option>

@@ -1,7 +1,19 @@
 import type { ReactNode } from "react";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import Link from "next/link";
-import { ArrowLeft, Boxes, ExternalLink, Pencil, Plus, QrCode, Trash2, Users } from "lucide-react";
+import { cookies } from "next/headers";
+import {
+  ArrowLeft,
+  Boxes,
+  ExternalLink,
+  LayoutGrid,
+  List as ListIcon,
+  Pencil,
+  Plus,
+  QrCode,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { BesitzerZeile } from "@/components/besitzer-zeile";
 import { AusstattungListe } from "@/components/ausstattung-liste";
 import { FaultList } from "@/components/fault-list";
@@ -16,7 +28,9 @@ import {
 } from "@/components/machine-overview";
 import { MachineTabs, type MachineTab } from "@/components/machine-tabs";
 import { MaintenancePlan } from "@/components/maintenance-plan";
-import { ManualExtract } from "@/components/manual-extract";
+import { HandbuchAuswerten } from "@/components/handbuch-auswerten";
+import { GuideErstellen } from "@/components/guide-erstellen";
+import { RememberParams } from "@/components/remember-params";
 import { RepairList } from "@/components/repair-list";
 import { SharedRepairs } from "@/components/shared-repairs";
 import { StatusSeit } from "@/components/status-seit";
@@ -25,18 +39,18 @@ import { TerminListe } from "@/components/termin-liste";
 import { DokumenteListe } from "@/components/dokumente-liste";
 import { CountPill } from "@/components/ui/count-pill";
 import { ButtonLink } from "@/components/ui/button";
-import { TroubleshootingGenerate } from "@/components/troubleshooting-generate";
-import { TroubleshootingJsonImport } from "@/components/troubleshooting-json-import";
 import { Card } from "@/components/ui/card";
-import { CollapsibleSection } from "@/components/ui/collapsible-section";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { ViewToggle } from "@/components/ui/view-toggle";
 import { deleteMachine } from "@/db/actions/machines";
 import { getMachineDetail } from "@/db/machine-detail";
 import { getTippZielKatalog, resolvePrompt } from "@/db/queries";
+import { FEHLER_FILTER, FEHLER_FILTER_LABEL } from "@/lib/fehler-status";
 import { modellName, relativeZeit } from "@/lib/format";
 import { tageDazwischen } from "@/lib/faelligkeit";
 import { buildGuideImportPrompt } from "@/lib/import-guide";
 import { kannKuratieren } from "@/lib/session";
+import { klebrig } from "@/lib/sticky-view";
 import { availableProviders } from "@/lib/ai/provider";
 
 // KI-Server-Actions dieser Route (z. B. Troubleshooting-Guide) können Minuten
@@ -44,8 +58,6 @@ import { availableProviders } from "@/lib/ai/provider";
 // Wirkung). Die Handbuch-Extraktion selbst läuft separat in der streamenden
 // API-Route /api/machines/[id]/extract-manual.
 export const maxDuration = 300;
-
-const FAULT_FILTER = ["alle", "offen", "quittiert", "in Arbeit", "behoben"] as const;
 
 // Die Detailseite ist in Reiter (?bereich=<Blatt>) gegliedert statt in einen langen
 // Panel-Stapel — server-gerendert wie die Fehler-Status-Pills, also deep-linkbar und
@@ -69,10 +81,22 @@ export default async function MachineDetailPage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ faultStatus?: string; bereich?: string }>;
+  searchParams: Promise<{
+    faultStatus?: string;
+    bereich?: string;
+    ansicht?: string;
+  }>;
 }) {
   const { id } = await params;
-  const { faultStatus, bereich } = await searchParams;
+  const { faultStatus, bereich, ansicht } = await searchParams;
+  // Tipps-Ansicht (karten | liste): URL gewinnt, sonst Cookie, sonst Karten —
+  // dasselbe klebrige Muster wie die Nutzerliste im Admin.
+  const tippsAnsicht = klebrig(
+    ansicht,
+    (await cookies()).get("tippsView")?.value,
+    (v) => v === "karten" || v === "liste",
+    "karten",
+  ) as "karten" | "liste";
   // Laden UND Autorisierung liegen im Modul: was hier ankommt, ist freigegeben,
   // und die Zähler passen zu den Listen. `darf` trägt die Berechtigungsstufe,
   // damit die UI dieselben Regeln zeigt, die die Server Actions durchsetzen.
@@ -443,17 +467,15 @@ export default async function MachineDetailPage({
       {/* ── Übersicht: Foto und Status-Dashboard ─────────────────────────────── */}
       {active === "uebersicht" ? (
         <div className="space-y-4">
-          {/* Betriebsstatus an EINER Stelle: Status + „seit" + Grund + Steuerung
-              in einer betitelten Karte. Ziel der Status-Links (Kopf-Badge,
+          {/* Betriebsstatus an EINER Stelle: „seit" + Grund + Steuerung in
+              einer betitelten Karte. Den Status-Badge trägt nur der Seitenkopf
+              (keine Doppelanzeige, P6). Ziel der Status-Links (Kopf-Badge,
               Dashboard) per #status — so landet der Sprung auf einem in sich
               geschlossenen Block, nicht auf losen Steuer-Elementen. */}
           <Card id="status" className="scroll-mt-24 space-y-3">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h3 className="font-semibold">Betriebsstatus</h3>
-              <div className="flex items-center gap-2">
-                <StatusBadge value={machine.status} />
-                <StatusSeit seit={machine.statusSeit.toISOString()} />
-              </div>
+              <StatusSeit seit={machine.statusSeit.toISOString()} />
             </div>
 
             {/* WARUM ist die Maschine nicht spielbereit? Grund für ALLE sichtbar
@@ -519,7 +541,7 @@ export default async function MachineDetailPage({
               Der Filter hält den Reiter (bereich=fehler) und setzt ?faultStatus=. */}
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="flex flex-wrap gap-2 text-sm">
-              {FAULT_FILTER.map((f) => {
+              {FEHLER_FILTER.map((f) => {
                 const aktiv = (faultStatus ?? "alle") === f;
                 return (
                   <Link
@@ -535,7 +557,7 @@ export default async function MachineDetailPage({
                         : "border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-fg)]"
                     }`}
                   >
-                    {f}
+                    {FEHLER_FILTER_LABEL[f]}
                   </Link>
                 );
               })}
@@ -555,8 +577,6 @@ export default async function MachineDetailPage({
             faults={machineFaults}
             machineId={machine.id}
             schreibbar={darf.bearbeiten}
-            kiProviders={kiProviders}
-            kiCentralKey={kiCentralKey}
           />
         </div>
       ) : null}
@@ -596,12 +616,10 @@ export default async function MachineDetailPage({
           </div>
 
           {/* Reparaturdatenbank: von anderen Besitzern desselben Modells
-              geteilte Reparaturen (nur wenn vorhanden). */}
+              geteilte Reparaturen (nur wenn vorhanden). SharedRepairs bringt
+              seine Überschrift samt Zähler selbst mit. */}
           {geteilteReparaturen.length > 0 ? (
-            <div className="space-y-3">
-              <h2 className="text-lg font-semibold">Geteilte Reparaturen</h2>
-              <SharedRepairs eintraege={geteilteReparaturen} />
-            </div>
+            <SharedRepairs eintraege={geteilteReparaturen} />
           ) : null}
         </div>
       ) : null}
@@ -668,16 +686,30 @@ export default async function MachineDetailPage({
       {active === "handbuch" ? (
         <section className="mx-[calc(50%-50vw)] px-4 sm:px-6">
           <div className="mx-auto max-w-[1440px] space-y-3">
-            {/* Instanz → Klasse: zum Modell mit allem geteilten Wissen. */}
-            {machine.modelId ? (
-              <Link
-                href={`/modelle/${machine.modelId}`}
-                className="inline-flex items-center gap-1.5 text-sm text-[var(--color-primary)] hover:underline"
-              >
-                <Boxes size={15} /> Modell: geteiltes Wissen zu{" "}
-                {modellName(machine)}
-              </Link>
-            ) : null}
+            {/* Reiterkopf: links Instanz → Klasse (zum Modell mit allem
+                geteilten Wissen), rechts der kompakte Knopf „Handbuch
+                auswerten" (Dialog mit App-KI ODER eigenem ChatGPT-/Claude-Abo)
+                — statt einer Vollbreiten-Klappe unter den Fakten. */}
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              {machine.modelId ? (
+                <Link
+                  href={`/modelle/${machine.modelId}`}
+                  className="inline-flex items-center gap-1.5 text-sm text-[var(--color-primary)] hover:underline"
+                >
+                  <Boxes size={15} /> Modell: geteiltes Wissen zu{" "}
+                  {modellName(machine)}
+                </Link>
+              ) : (
+                <span />
+              )}
+              {darf.bearbeiten ? (
+                <HandbuchAuswerten
+                  machineId={machine.id}
+                  providers={kiProviders}
+                  centralKey={kiCentralKey}
+                />
+              ) : null}
+            </div>
             {/* Handbuch-Fakten als Modell-Wissen (eigene + sichtbare fremde),
                 je Eintrag mit Autor + Sichtbarkeit. */}
             <KnowledgeFacts
@@ -686,18 +718,6 @@ export default async function MachineDetailPage({
               machineId={machine.id}
               kannKuratieren={kannKuratieren(currentUser)}
             />
-
-            {/* Beide Wege sind KI-Extraktion aus dem Handbuch (App-intern ODER
-                mit eigenem ChatGPT-/Claude-Abo) — ein Bereich, standardmäßig zu. */}
-            {darf.bearbeiten ? (
-              <CollapsibleSection title="Handbuch per KI auswerten">
-                <ManualExtract
-                  machineId={machine.id}
-                  providers={kiProviders}
-                  centralKey={kiCentralKey}
-                />
-              </CollapsibleSection>
-            ) : null}
           </div>
         </section>
       ) : null}
@@ -705,6 +725,21 @@ export default async function MachineDetailPage({
       {/* ── Troubleshooting-Guide (Phase 2: Modell-Wissen) ───────────────────── */}
       {active === "guide" && guideSichtbar ? (
         <div className="space-y-3">
+          {/* Reiterkopf: EIN Knopf „Guide erstellen/ersetzen" — der Dialog
+              trägt den Modus-Schalter (per KI erzeugen | JSON importieren). */}
+          {darf.bearbeiten ? (
+            <div className="flex justify-end">
+              <GuideErstellen
+                machineId={machine.id}
+                vorhanden={eigenerGuide}
+                providers={kiProviders}
+                centralKey={kiCentralKey}
+                generation={guideGeneration}
+                prompt={guideImportPrompt ?? ""}
+              />
+            </div>
+          ) : null}
+
           {guides.length > 0 ? (
             <KnowledgeGuides
               eintraege={guides}
@@ -721,33 +756,10 @@ export default async function MachineDetailPage({
               {ollamaVerfuegbar
                 ? " Das lokale Modell (Ollama) arbeitet ohne Websuche — der Guide wird dann entsprechend gekennzeichnet."
                 : ""}{" "}
-              Alternativ lässt sich ein fertiger Guide als JSON importieren
-              (Prompt unten kopieren).
+              Alternativ lässt sich ein fertiger Guide als JSON importieren —
+              beides über »Guide erstellen«.
             </p>
           )}
-
-          {darf.bearbeiten ? (
-            <TroubleshootingGenerate
-              machineId={machine.id}
-              vorhanden={eigenerGuide}
-              providers={kiProviders}
-              centralKey={kiCentralKey}
-              generation={guideGeneration}
-            />
-          ) : null}
-
-          {/* Alternative ohne KI-Verarbeitung: fertiges Guide-JSON importieren
-              (gleiches Prinzip wie beim Handbuch-Fakten-Import). */}
-          {darf.bearbeiten ? (
-            <Card className="space-y-3">
-              <TroubleshootingJsonImport
-                machineId={machine.id}
-                prompt={guideImportPrompt ?? ""}
-                vorhanden={eigenerGuide}
-                generation={guideGeneration}
-              />
-            </Card>
-          ) : null}
         </div>
       ) : null}
 
@@ -756,20 +768,53 @@ export default async function MachineDetailPage({
         <div className="space-y-3">
           {machine.modelId ? (
             <>
+              {/* Reiterkopf: links „Tipp hinzufügen" (Dialog), rechts der
+                  Karten/Listen-Umschalter — Ansicht klebt in URL + Cookie. */}
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                {tippKatalog ? (
+                  <TippForm
+                    machineId={machine.id}
+                    modelle={tippKatalog.modelle}
+                    generationen={tippKatalog.generationen}
+                    vorauswahlModelId={
+                      // Der Picker zeigt je Familie EINEN Eintrag — den treffen,
+                      // der die eigene Edition enthält.
+                      tippKatalog.modelle.find((m) =>
+                        m.ids.includes(machine.modelId ?? ""),
+                      )?.id ?? machine.modelId
+                    }
+                  />
+                ) : (
+                  <span />
+                )}
+                <RememberParams
+                  path="/machines"
+                  params={{ tippsView: tippsAnsicht }}
+                />
+                <ViewToggle
+                  options={[
+                    {
+                      href: `/machines/${machine.id}?bereich=tipps&ansicht=karten`,
+                      label: "Kartenansicht",
+                      icon: <LayoutGrid size={16} />,
+                      active: tippsAnsicht === "karten",
+                    },
+                    {
+                      href: `/machines/${machine.id}?bereich=tipps&ansicht=liste`,
+                      label: "Listenansicht",
+                      icon: <ListIcon size={16} />,
+                      active: tippsAnsicht === "liste",
+                    },
+                  ]}
+                />
+              </div>
               <KnowledgeTipps
                 eintraege={tipps}
                 currentUserId={currentUser.id}
                 machineId={machine.id}
                 kannKuratieren={kannKuratieren(currentUser)}
+                ansicht={tippsAnsicht}
               />
-              {tippKatalog ? (
-                <TippForm
-                  machineId={machine.id}
-                  modelle={tippKatalog.modelle}
-                  generationen={tippKatalog.generationen}
-                  vorauswahlModelId={machine.modelId}
-                />
-              ) : null}
             </>
           ) : (
             <p className="text-sm text-[var(--color-muted)]">

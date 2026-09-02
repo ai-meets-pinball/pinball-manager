@@ -66,7 +66,11 @@ function RegisterForm() {
         <p className="text-sm text-[var(--color-danger)]">{state.error}</p>
       ) : null}
 
-      <Button type="submit" disabled={pending}>
+      <Button
+        type="submit"
+        disabled={pending || !invite}
+        title={!invite ? "Ein Konto lässt sich nur mit Einladung anlegen" : undefined}
+      >
         {pending ? "Konto wird erstellt…" : "Registrieren"}
       </Button>
 

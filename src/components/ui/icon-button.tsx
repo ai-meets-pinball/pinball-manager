@@ -37,3 +37,11 @@ export function IconButtonLink({
     <Link className={`${iconButtonStyles(active)} ${className}`} {...props} />
   );
 }
+
+/*
+  Kleine, eckige Icon-Schaltfläche für Zeilen-Aktionen (Stift/Papierkorb, 14 px)
+  — das Gegenstück zur runden Topbar-Variante oben. Deaktiviert bleibt sie
+  sichtbar (ausgegraut) und trägt den Grund im `title`.
+*/
+export const ICON_BTN =
+  "inline-flex h-7 w-7 items-center justify-center rounded-[var(--radius)] text-[var(--color-muted)] transition-colors hover:bg-[var(--color-overlay)] hover:text-[var(--color-fg)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[var(--color-muted)]";

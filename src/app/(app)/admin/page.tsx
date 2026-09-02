@@ -1,22 +1,27 @@
 import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
-import Link from "next/link";
-import { ChevronDown, FlaskConical } from "lucide-react";
-import { AdminClubRoles } from "@/components/admin-club-roles";
+import { LayoutGrid, List as ListIcon } from "lucide-react";
+import { cookies } from "next/headers";
+import { RememberParams } from "@/components/remember-params";
+import { NutzerLoeschen } from "@/components/admin-user-delete";
+import {
+  AdminUserRoles,
+  NutzerZeile,
+  RolleHinzufuegen,
+} from "@/components/admin-user-roles";
 import { InviteUserForm } from "@/components/invite-user-form";
 import { RoleInfo } from "@/components/role-info";
-import { Button } from "@/components/ui/button";
 import { AddDisclosure } from "@/components/ui/add-disclosure";
 import { Card, cardSurface } from "@/components/ui/card";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { List, ListRow } from "@/components/ui/list";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { setGlobalRole } from "@/db/actions/admin";
+import { ViewToggle } from "@/components/ui/view-toggle";
 import { revokePlatformInvitation } from "@/db/actions/invitations";
 import { getAllClubsBasic, getClubRolesByUser } from "@/db/queries";
 import { db } from "@/db";
 import { invitations, roleAssignments, roles, user } from "@/db/schema";
 import { requireUser } from "@/lib/session";
-import { KURATOR_ROLE, SUPERADMIN_ROLE } from "@/lib/validators";
+import { klebrig } from "@/lib/sticky-view";
+import { SUPERADMIN_ROLE } from "@/lib/validators";
 
 /* Anzeige-Label für den `scope` im Rollen-Katalog. */
 const SCOPE_LABEL: Record<string, string> = {
@@ -48,9 +53,22 @@ const ACHSEN: { scope: string; titel: string; hinweis: string }[] = [
   },
 ];
 
-/* Nutzer & Rollen (Super-Admin). Guard + Rahmen/Navigation im admin/layout.tsx. */
-export default async function AdminPage() {
+/* Nutzer & Rollen (Super-Admin). Guard + Rahmen/Navigation im admin/layout.tsx.
+   Query-Parameter: ansicht (karten | liste) — Karten zeigen je Person die
+   Rollen-Verwaltung offen, die Liste ist die kompakte Übersicht. */
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ ansicht?: string }>;
+}) {
   const me = await requireUser();
+  const sp = await searchParams;
+  const ansicht = klebrig(
+    sp.ansicht,
+    (await cookies()).get("nutzerView")?.value,
+    (v) => v === "karten" || v === "liste",
+    "karten",
+  ) as "karten" | "liste";
 
   const users = await db
     .select({ id: user.id, name: user.name, email: user.email })
@@ -82,6 +100,14 @@ export default async function AdminPage() {
     ]);
   }
   const allClubs = await getAllClubsBasic();
+
+  // Zähler für die Sperr-Regeln (rolleEntfernenGesperrt): Owner je Club und
+  // Super-Admins insgesamt — damit der Papierkorb schon im UI sagt, warum nicht.
+  const ownerAnzahl: Record<string, number> = {};
+  for (const r of clubRoleRows) {
+    if (r.rolle === "owner") ownerAnzahl[r.clubId] = (ownerAnzahl[r.clubId] ?? 0) + 1;
+  }
+  const superAdminAnzahl = globalRoles.filter((r) => r.key === SUPERADMIN_ROLE).length;
 
   // Rollen-Katalog (Daten statt Enum) — zur Orientierung, nach Achsen gruppiert.
   const katalog = await db.select().from(roles).orderBy(roles.scope, roles.rang);
@@ -147,26 +173,70 @@ export default async function AdminPage() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="flex items-center gap-1.5 text-lg font-semibold">
-          Nutzer ({users.length})
-          <RoleInfo
-            roles={katalog.filter((r) => r.scope === "global")}
-            titel="Globale Rollen"
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="flex items-center gap-1.5 text-lg font-semibold">
+            Nutzer ({users.length})
+            <RoleInfo
+              roles={katalog.filter((r) => r.scope === "global")}
+              titel="Globale Rollen"
+            />
+          </h2>
+          <RememberParams path="/admin" params={{ nutzerView: ansicht }} />
+          <ViewToggle
+            options={[
+              {
+                href: "/admin?ansicht=karten",
+                label: "Kartenansicht",
+                icon: <LayoutGrid size={16} />,
+                active: ansicht === "karten",
+              },
+              {
+                href: "/admin?ansicht=liste",
+                label: "Listenansicht",
+                icon: <ListIcon size={16} />,
+                active: ansicht === "liste",
+              },
+            ]}
           />
-        </h2>
+        </div>
         <p className="text-sm text-[var(--color-muted)]">
           Jede Person kann mehrere Rollen halten: globale (Kurator/Super-Admin)
-          und je Club eine Club-Rolle. Verwalten über „Rollen verwalten".
-          &bdquo;Sichtbarkeit&ldquo; ist ein temporäres Debug-Werkzeug.
+          und je Club eine Club-Rolle. Karten zeigen sie offen unter der Person;
+          in der Liste klappt der Stift die Bearbeitung auf.
         </p>
-        <List empty="Noch keine Nutzer.">
+        <List empty="Noch keine Nutzer." kompakt={ansicht === "liste"}>
           {users.map((u) => {
             const meineRollen = rolesByUser.get(u.id) ?? [];
-            const istSuper = meineRollen.includes(SUPERADMIN_ROLE);
-            const istKurator = meineRollen.includes(KURATOR_ROLE);
             const meineClubRollen = clubRolesByUser.get(u.id) ?? [];
-            const hatKeineRolle =
-              !istSuper && !istKurator && meineClubRollen.length === 0;
+            const rollenProps = {
+              userId: u.id,
+              istSelbst: u.id === me.id,
+              globalRoles: meineRollen,
+              clubRoles: meineClubRollen,
+              allClubs,
+              ownerAnzahl,
+              superAdminAnzahl,
+            };
+            // Liste: kompakte Zeile, Stift klappt den Editor auf.
+            const loeschen = (
+              <NutzerLoeschen
+                userId={u.id}
+                name={u.name}
+                istSelbst={u.id === me.id}
+              />
+            );
+            if (ansicht === "liste") {
+              return (
+                <NutzerZeile
+                  key={u.id}
+                  name={u.name}
+                  email={u.email}
+                  aktionen={loeschen}
+                  {...rollenProps}
+                />
+              );
+            }
+            // Karte: Rollen offen, keine Klappe — eine Zeile je Rolle.
             return (
               <ListRow
                 key={u.id}
@@ -174,119 +244,14 @@ export default async function AdminPage() {
                 subtitle={u.email}
                 meta={
                   <>
-                    {/* TEMPORÄR (Debug): Sichtbarkeits-Ansicht — siehe
-                        admin/visibility/[userId]/page.tsx. Später mit entfernen. */}
-                    <Link
-                      href={`/admin/visibility/${u.id}`}
-                      title="Debug: Welche Maschinen sieht dieser Nutzer?"
-                      className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-                    >
-                      <FlaskConical size={14} /> Sichtbarkeit
-                    </Link>
-                    {istSuper ? <StatusBadge value="superadmin" /> : null}
-                    {istKurator ? <StatusBadge value="kurator" /> : null}
-                    {meineClubRollen.map((c) => (
-                      <span
-                        key={c.clubId}
-                        className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)]"
-                      >
-                        {c.clubName} <StatusBadge value={c.rolle} />
-                      </span>
-                    ))}
-                    {hatKeineRolle ? (
-                      <span className="text-xs text-[var(--color-faint)]">
-                        keine Rolle
-                      </span>
-                    ) : null}
+                    <RolleHinzufuegen {...rollenProps} />
+                    {loeschen}
                   </>
                 }
               >
-                {/* Verwaltung, eingeklappt: globale Rollen + Club-Rollen. */}
-                <details className="group mt-1 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)]">
-                  <summary className="flex cursor-pointer list-none items-center justify-between gap-2 px-3 py-2 text-sm font-medium hover:bg-[var(--color-inset)] [&::-webkit-details-marker]:hidden">
-                    Rollen verwalten
-                    <ChevronDown
-                      size={16}
-                      className="text-[var(--color-muted)] transition-transform group-open:rotate-180"
-                    />
-                  </summary>
-                  <div className="space-y-3 border-t border-[var(--color-border)] px-3 py-3">
-                    <div className="space-y-2">
-                      <p className="text-xs font-medium text-[var(--color-faint)]">
-                        Globale Rollen
-                      </p>
-                      {u.id !== me.id ? (
-                        <div className="flex flex-wrap items-center gap-2">
-                          {/* VERGEBEN ist reversibel → Button; ENTZIEHEN → ConfirmButton. */}
-                          <form action={setGlobalRole}>
-                            <input type="hidden" name="userId" value={u.id} />
-                            <input
-                              type="hidden"
-                              name="rolle"
-                              value="superadmin"
-                            />
-                            <input
-                              type="hidden"
-                              name="grant"
-                              value={istSuper ? "false" : "true"}
-                            />
-                            {istSuper ? (
-                              <ConfirmButton
-                                question="Super-Admin wirklich entziehen?"
-                                confirmLabel="Ja, entziehen"
-                              >
-                                Super-Admin entziehen
-                              </ConfirmButton>
-                            ) : (
-                              <Button type="submit" variant="secondary" size="sm">
-                                Zum Super-Admin
-                              </Button>
-                            )}
-                          </form>
-                          <form action={setGlobalRole}>
-                            <input type="hidden" name="userId" value={u.id} />
-                            <input type="hidden" name="rolle" value="kurator" />
-                            <input
-                              type="hidden"
-                              name="grant"
-                              value={istKurator ? "false" : "true"}
-                            />
-                            {istKurator ? (
-                              <ConfirmButton
-                                question="Kurator wirklich entziehen?"
-                                confirmLabel="Ja, entziehen"
-                              >
-                                Kurator entziehen
-                              </ConfirmButton>
-                            ) : (
-                              <Button type="submit" variant="secondary" size="sm">
-                                Zum Kurator
-                              </Button>
-                            )}
-                          </form>
-                        </div>
-                      ) : (
-                        <p className="text-xs text-[var(--color-faint)]">
-                          Die eigene globale Rolle lässt sich hier nicht ändern.
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="space-y-2">
-                      <p className="text-xs font-medium text-[var(--color-faint)]">
-                        Club-Rollen{" "}
-                        <span className="font-normal">
-                          (immer in genau einem Club)
-                        </span>
-                      </p>
-                      <AdminClubRoles
-                        userId={u.id}
-                        clubRoles={meineClubRollen}
-                        allClubs={allClubs}
-                      />
-                    </div>
-                  </div>
-                </details>
+                <div className="border-t border-[var(--color-line)] pt-1">
+                  <AdminUserRoles {...rollenProps} />
+                </div>
               </ListRow>
             );
           })}

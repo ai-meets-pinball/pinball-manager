@@ -1,6 +1,5 @@
 import { count, eq, inArray } from "drizzle-orm";
 import { PageHeader } from "@/components/ui/page-header";
-import { AddDisclosure } from "@/components/ui/add-disclosure";
 import { MachineTabs, type MachineTab } from "@/components/machine-tabs";
 import { PlanCreate } from "@/components/plan-create";
 import { PlanHeader } from "@/components/plan-header";
@@ -8,6 +7,7 @@ import { PlanItemCreate, PlanItemRow } from "@/components/plan-items";
 import { List } from "@/components/ui/list";
 import { db } from "@/db";
 import { mindestens } from "@/lib/rechte";
+import { anzahl } from "@/lib/format";
 import { machines, maintenancePlanItems } from "@/db/schema";
 import { getClubPlans, getUserClubs, getUserPlans } from "@/db/queries";
 import { requireUser } from "@/lib/session";
@@ -19,6 +19,8 @@ import { requireUser } from "@/lib/session";
   VERKNÜPFTEN Maschinen; Maschinen mit eigener Kopie bleiben unberührt.
 
   Die Pläne liegen hinter REITERN (?plan=<planId>) — nur der aktive wird geladen.
+  Neu/Ändern (Plan, Punkt, Umbenennen) laufen in Dialogen; die Zeilen tragen
+  Icon-Aktionen — kein Formular steht vor dem Inhalt.
 */
 type PlanEintrag = {
   planId: string;
@@ -109,19 +111,18 @@ export default async function WartungsplaenePage({
       <PageHeader
         title="Wartungspläne"
         description="Benannte Standards als Vorlage — beliebig viele je Nutzer bzw. Club. Einmal gepflegt, auf beliebig vielen Maschinen verknüpft; Änderungen hier wirken sofort auf alle verknüpften Maschinen. Maschinen mit eigener Kopie bleiben unberührt."
+        actions={
+          <PlanCreate
+            clubs={meineClubs
+              .filter((c) => mindestens(c.rolle, "admin"))
+              .map((c) => ({ id: c.id, name: c.name }))}
+          />
+        }
       />
-
-      <AddDisclosure label="Neuer Plan">
-        <PlanCreate
-          clubs={meineClubs
-            .filter((c) => mindestens(c.rolle, "admin"))
-            .map((c) => ({ id: c.id, name: c.name }))}
-        />
-      </AddDisclosure>
 
       {eintraege.length === 0 ? (
         <p className="text-sm text-[var(--color-muted)]">
-          Noch keine Pläne — leg oben einen an.
+          Noch keine Pläne — lege mit »Neuer Plan« einen an.
         </p>
       ) : (
         <>
@@ -133,22 +134,35 @@ export default async function WartungsplaenePage({
                   {aktiv.ownerLabel}
                 </span>
                 <span className="text-sm text-[var(--color-muted)]">
-                  {aktivItems.length} Punkte · {verknuepft} Maschine(n) verknüpft
-                  {aktiv.manager ? "" : " · nur lesend"}
+                  {anzahl(aktivItems.length, "Punkt", "Punkte")} ·{" "}
+                  {anzahl(verknuepft, "Maschine", "Maschinen")} verknüpft
+                  {aktiv.manager ? null : (
+                    <span title="Nur Club-Owner/-Admins bearbeiten Club-Pläne">
+                      {" "}
+                      · nur lesend
+                    </span>
+                  )}
                 </span>
               </div>
 
               {aktiv.manager ? (
-                <PlanHeader planId={aktiv.planId} name={aktiv.label} />
+                <PlanHeader planId={aktiv.planId} name={aktiv.label}>
+                  <PlanItemCreate planId={aktiv.planId} />
+                </PlanHeader>
               ) : null}
 
-              <List empty="Noch keine Punkte — füge unten welche hinzu.">
+              <List
+                kompakt
+                empty={
+                  aktiv.manager
+                    ? "Noch keine Punkte — lege mit »Punkt hinzufügen« welche an."
+                    : "Noch keine Punkte."
+                }
+              >
                 {aktivItems.map((i) => (
                   <PlanItemRow key={i.id} item={i} schreibbar={aktiv.manager} />
                 ))}
               </List>
-
-              {aktiv.manager ? <PlanItemCreate planId={aktiv.planId} /> : null}
             </section>
           ) : null}
         </>

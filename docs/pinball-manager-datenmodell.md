@@ -23,6 +23,8 @@ Ein Modell gehört zu genau einer Generation. Ein Flipper ist eine Instanz genau
 
 **Modell = OPDB-Machine, nicht OPDB-Group.** Monster Bash und Monster Bash Remake sind damit zwei getrennte Modelle mit getrennten Handbüchern und unterschiedlichen Generationen. Das ist gewollt.
 
+**Familie = die ersten zwei Segmente der OPDB-Referenz.** OPDB-Referenzen sind `Gruppe-Maschine[-Alias]`; technisch relevant sind nur Gruppe und Maschine. Alle Modelle mit demselben Familienschlüssel (`opdb_machine_ref`, z. B. `GV8wB-MRjKd`) sind **baugleich** — Editionen wie Pokémon LE, Premium und Premium/LE. Sie teilen Handbuchfakten, Guides, Tipps, geteilte Reparaturen und die Generation; gelesen wird über `queries/familie.ts`, die Regel steht rein in `lib/opdb-ref.ts`. Die Zeilen selbst bleiben getrennt und die Referenzen unverändert: OPDB-Referenzen sind vorgegeben und werden nicht zusammengelegt. Pokémon Pro (`GV8wB-Mq12N`) ist eine andere Maschine und nicht baugleich.
+
 **Baugruppen** (Flipperspulen, Optos, Netzteile) sind eine mögliche vierte Ebene, werden aber jetzt nicht gebaut. Das Modell ist so angelegt, dass sie später ohne Datenmigration ergänzt werden kann.
 
 ---
@@ -119,7 +121,8 @@ create table generations (
 create table models (
   id                    uuid primary key,
   opdb_id               text not null unique,
-  opdb_group_id         text,           -- mitgeführt, aktuell ungenutzt
+  opdb_group_id         text,           -- OPDB-Titel (Pro + Premium + LE)
+  opdb_machine_ref      text,           -- Familienschlüssel (erste zwei Segmente), indiziert
   name                  text not null,
   hersteller            text,
   jahr                  int,
@@ -259,7 +262,7 @@ Das Feld `knowledge.source_type` dient genau diesem Zweck: bei einer Anfrage las
 | Punkt | Warum jetzt nicht | Was heute schon vorbereitet ist |
 |---|---|---|
 | Baugruppen als 4. Ebene | keine Datenquelle vorhanden | Check-Constraint erweiterbar, keine Migration nötig |
-| Stern Pro/Premium/LE zusammenführen | Problem noch nicht real | `models.opdb_group_id` wird mitgeschrieben |
+| Stern Pro/Premium/LE zusammenführen | Gelöst ohne Zusammenlegen: Premium/LE-Editionen bilden eine **Familie** (gleiche ersten zwei OPDB-Segmente) und teilen ihr Wissen; Pro bleibt eigene Maschine (§2) | `opdb_machine_ref` + `queries/familie.ts` |
 | Echte Moderation und Rollen | kein Missbrauch, keine Masse | Revisionen und Signale ab Tag eins |
 | Zweiwege-Sync mit externen Quellen | offene API-Fragen | Import- und Manual-Feld getrennt |
 
@@ -267,6 +270,6 @@ Das Feld `knowledge.source_type` dient genau diesem Zweck: bei einer Anfrage las
 
 ## 10. Offene Punkte
 
-- Verhalten bei Modellwechsel eines Flippers (Umbau, Fehlzuordnung): Overrides und Gerätewissen mitnehmen oder verwerfen?
+- Verhalten bei Modellwechsel eines Flippers (Umbau, Fehlzuordnung): Overrides und Gerätewissen mitnehmen oder verwerfen? (Ein Wechsel innerhalb der Familie, z. B. LE → Premium/LE, ist baugleich und widerruft keine Freigaben; nur ein echter Wechsel tut das.) Bekannt: eigene Einträge, die vor der Familienregel auf zwei Editionen entstanden, bleiben zwei sichtbare Einträge.
 - Standard-Sichtbarkeit für neu extrahierte Handbuchfakten: `privat` oder `club`? Der Default entscheidet in der Praxis mehr über das Verhalten als die Auswahlmöglichkeit.
 - Sollen Signale („stimmt so nicht") ab einem Schwellwert automatisch etwas auslösen, oder bleibt das rein informativ?

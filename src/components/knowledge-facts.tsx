@@ -97,17 +97,28 @@ export function KnowledgeFacts({
       label,
       panel: (
         <Card className="space-y-3">
+          {/* Kopfzeile: Herkunft links; rechts Signale, dann die Autor-Aktionen
+              (Sichtbarkeit speichert beim Ändern, Verlauf-Link, Stift → Dialog)
+              bzw. „Ausblenden" für Fremde. Die Sichtbarkeit steht bei eigenen
+              Einträgen nur im Auswahlfeld — keine Doppelanzeige. */}
           <div className="flex flex-wrap items-center justify-between gap-2">
+            {/* Titel des Eintrags (editierbar, im Verlauf nachvollziehbar) + Herkunft. */}
             <p className="text-sm text-[var(--color-muted)]">
-              {eigen
-                ? "Deine Handbuch-Daten"
-                : `Geteilt von ${e.autorName ?? "unbekannt"}`}
+              <span className="font-medium text-[var(--color-fg)]">{e.titel}</span>
               {" · "}
-              <span className="inline-flex items-center gap-1">
-                <S.Icon size={13} /> {S.label}
-              </span>
+              {eigen ? (
+                "Deine Handbuch-Daten"
+              ) : (
+                <>
+                  Geteilt von {e.autorName ?? "unbekannt"}
+                  {" · "}
+                  <span className="inline-flex items-center gap-1">
+                    <S.Icon size={13} /> {S.label}
+                  </span>
+                </>
+              )}
             </p>
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <KnowledgeSignals
                 knowledgeId={e.id}
                 machineId={machineId}
@@ -117,11 +128,25 @@ export function KnowledgeFacts({
                 eigen={eigen}
               />
               {eigen ? (
-                <SetVisibility
-                  knowledgeId={e.id}
-                  machineId={machineId}
-                  current={e.visibility}
-                />
+                <>
+                  <SetVisibility
+                    knowledgeId={e.id}
+                    machineId={machineId}
+                    current={e.visibility}
+                  />
+                  <KnowledgeVerlauf
+                    knowledgeId={e.id}
+                    anzahl={e.revisionen}
+                    typ="handbuch_fakten"
+                  />
+                  <KnowledgeEdit
+                    knowledgeId={e.id}
+                    machineId={machineId}
+                    typ="handbuch_fakten"
+                    titel={e.titel}
+                    inhalt={e.inhalt}
+                  />
+                </>
               ) : (
                 <KnowledgeHide
                   knowledgeId={e.id}
@@ -147,22 +172,6 @@ export function KnowledgeFacts({
           ) : null}
           <KnowledgeGemeldet hilfreich={e.hilfreich} falsch={e.falsch} />
           <MachineDataTables facts={inhaltToFacts(e.inhalt)} />
-          {eigen ? (
-            <>
-              <KnowledgeEdit
-                knowledgeId={e.id}
-                machineId={machineId}
-                typ="handbuch_fakten"
-                titel={e.titel}
-                inhalt={e.inhalt}
-              />
-              <KnowledgeVerlauf
-                knowledgeId={e.id}
-                anzahl={e.revisionen}
-                typ="handbuch_fakten"
-              />
-            </>
-          ) : null}
         </Card>
       ),
     };

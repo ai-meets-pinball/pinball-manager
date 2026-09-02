@@ -10,6 +10,8 @@ import { PromptRefinery } from "@/components/prompt-refinery";
 import { resetPrompt, savePrompt } from "@/db/actions/prompts";
 import type { FormState } from "@/db/actions/form-state";
 import type { AiProvider } from "@/lib/ai/provider";
+import { fehlendePlatzhalter } from "@/lib/prompts";
+import { Badge } from "@/components/ui/badge";
 
 /*
   Editor für EINEN Prompt-Override (global oder auf einen Hersteller/eine
@@ -62,6 +64,17 @@ export function PromptEditor({
     {},
   );
 
+  // Speichern nur, wenn sich etwas geändert hat UND alle Platzhalter da sind —
+  // dieselbe Regel, mit der savePrompt ablehnt (lib/prompts.ts).
+  const fehlend = fehlendePlatzhalter(text, platzhalter);
+  const unveraendert = text === vorlage;
+  const sperre =
+    fehlend.length > 0
+      ? `Platzhalter fehlen: ${fehlend.join(", ")}`
+      : unveraendert
+        ? "Keine Änderung"
+        : null;
+
   const zeigeBeispielFelder =
     platzhalter.includes("{{hersteller}}") ||
     platzhalter.includes("{{symptom}}");
@@ -69,21 +82,15 @@ export function PromptEditor({
   return (
     <div className="space-y-2 rounded-[var(--radius)] border border-[var(--color-border)] p-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
+        {/* Ein Name (Bereich) + ein Status — statt Label, Chip UND „Standard". */}
         <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="font-medium">{label}</span>
-          {scopeChip ? (
-            <span className="rounded-full border border-[var(--color-accent)] px-2 py-0.5 text-xs text-[var(--color-accent)]">
-              {scopeChip}
-            </span>
+          <span className="font-medium">{scopeChip ?? label}</span>
+          {existiert ? (
+            <Badge tone="accent">angepasst</Badge>
           ) : (
-            <span className="rounded-full border border-[var(--color-border)] px-2 py-0.5 text-xs text-[var(--color-muted)]">
-              global
-            </span>
+            <Badge tone="muted">Standard</Badge>
           )}
         </div>
-        {existiert ? null : (
-          <span className="text-xs text-[var(--color-muted)]">Standard</span>
-        )}
       </div>
 
       <form action={formAction} className="space-y-2">
@@ -99,9 +106,22 @@ export function PromptEditor({
           className="font-mono text-xs"
         />
         <FormFeedback state={state} />
-        <Button type="submit" size="sm" disabled={pending}>
-          {pending ? "Speichere…" : "Speichern"}
-        </Button>
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            type="submit"
+            size="sm"
+            disabled={pending || sperre !== null}
+            title={sperre ?? undefined}
+          >
+            {pending ? "Speichere…" : "Speichern"}
+          </Button>
+          {fehlend.length > 0 ? (
+            <span className="text-xs text-[var(--color-danger)]">
+              Platzhalter fehlen:{" "}
+              <span className="font-mono">{fehlend.join(" ")}</span>
+            </span>
+          ) : null}
+        </div>
       </form>
 
       {/* Zurücksetzen/Löschen als EIGENES Server-Formular. */}

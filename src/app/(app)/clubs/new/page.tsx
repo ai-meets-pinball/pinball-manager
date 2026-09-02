@@ -10,7 +10,7 @@ export default async function NewClubPage() {
     <div className="space-y-6">
       <PageHeader
         title="Neuer Club"
-        description="Als Ersteller wirst du automatisch Admin."
+        description="Als Ersteller wirst du automatisch Owner."
         backHref="/clubs"
         backLabel="Zu den Clubs"
       />
