@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { MarketingFooter, MarketingNav } from "@/components/site-chrome";
-import { STAMMTISCH_URL } from "@/lib/links";
 
 /*
   Öffentliche Startseite — editorial Rebrand (Claude-Design-Handoff v2).
-  Texte wie im Design (deutsch). Alles über Tokens → hell/dunkel funktioniert.
+  Texte deutsch, alles über Tokens → hell/dunkel funktioniert.
+
+  Positionierung: Verwaltungs- und Reparatursoftware für alle, die Flipper
+  betreiben — Verein, Location oder privat. Kein Stammtisch-Projekt, keine reine
+  Sammler-Katalogisierung. Der Funktionsumfang hier spiegelt /preview; die
+  Langfassung steht auf /features.
 */
 
 const heroStats = [
@@ -16,21 +20,23 @@ const heroStats = [
 const mockFields = [
   { label: "Hersteller", value: "Williams" },
   { label: "Baujahr", value: "1997" },
-  { label: "Standort", value: "Keller" },
-  { label: "Zustand", value: "Sehr gut" },
+  { label: "Offene Fehler", value: "0" },
+  { label: "Nächste Wartung", value: "in 12 Tagen" },
 ];
 
 const mockMachines = [
-  { name: "Attack From Mars", status: "OK", tone: "var(--color-success)" },
-  { name: "Twilight Zone", status: "REPARATUR", tone: "var(--color-warn)" },
-  { name: "Godzilla", status: "OK", tone: "var(--color-success)" },
+  { name: "Attack From Mars", status: "SPIELBEREIT", tone: "var(--color-success)" },
+  { name: "Twilight Zone", status: "EINGESCHRÄNKT", tone: "var(--color-warn)" },
+  { name: "Godzilla", status: "SPIELBEREIT", tone: "var(--color-success)" },
 ];
 
 const features = [
-  { num: "01", title: "Inventar & Stammdaten", desc: "Hersteller, Baujahr, Zustand, Standort und Fotos je Maschine.", roadmap: false },
-  { num: "02", title: "Standorte & Mitgliederliste", desc: "Gemeinsamer Bestand für Vereine, mit Eigentümerzuordnung.", roadmap: false },
-  { num: "03", title: "Fehler & Reparaturen", desc: "Symptome, Ursachen, Teile und Kosten je Reparatur protokolliert.", roadmap: false },
-  { num: "04", title: "KI-Diagnose", desc: "Ursachenvorschläge auf Basis von Handbüchern und Historie.", roadmap: true },
+  { num: "01", title: "Maschinen & Stammdaten", desc: "Modell aus dem Katalog wählen — Hersteller, Baujahr und Foto kommen automatisch. Eigene Fotos, Notizen und Dateien je Gerät." },
+  { num: "02", title: "Fehler & Reparaturen", desc: "Symptom, Ursache, Teile und Kosten je Reparatur — mit Fotos und durchsuchbarer Historie." },
+  { num: "03", title: "Betrieb & Wartung", desc: "Betriebsstatus je Maschine, Wartungspläne mit Fälligkeiten und Termine — jeweils mit Erinnerung." },
+  { num: "04", title: "Club-Modus", desc: "Maschinen und Wissen im Verein oder in der Location teilen — mit Rollen für Mitglieder." },
+  { num: "05", title: "Handbücher per KI", desc: "Ein PDF-Handbuch wird zu Referenztabellen: Spulen, Schalter, Lampen, Sicherungen, Teile. Das PDF selbst wird nicht gespeichert." },
+  { num: "06", title: "Melden per QR", desc: "QR-Etikett am Gerät — auch Gäste ohne Konto melden einen Fehler direkt vor Ort." },
 ];
 
 const clubRows = [
@@ -45,12 +51,12 @@ const audiences = [
     desc: "Alle Geräte an einem Ort, gemeinsam gepflegt: wer hat welchen Fehler gemeldet, wer was repariert, was ist bald fällig — mit Rollen und QR-Code zum Melden direkt am Gerät.",
   },
   {
-    title: "Sammler",
-    desc: "Die ganze Sammlung sauber katalogisiert — Modell, Baujahr, Zustand, dazu Handbücher und die komplette Reparatur- und Wartungshistorie je Automat.",
+    title: "Betreiber & Locations",
+    desc: "Welche Maschine ist spielbereit, welche eingeschränkt? Gäste melden Fehler per QR, das Team sieht Prioritäten, Wartung und Reparatur-Historie je Gerät.",
   },
   {
-    title: "Einzelne Besitzer",
-    desc: "Auch bei ein, zwei Automaten den Überblick behalten: Fehler notieren, Wartung mit Erinnerung planen — griffbereit am Handy, direkt an der Maschine.",
+    title: "Private Besitzer",
+    desc: "Ob eine Maschine oder eine ganze Sammlung: Fehler notieren, Wartung mit Erinnerung planen, Handbuch-Fakten griffbereit — am Handy, direkt an der Maschine.",
   },
 ];
 
@@ -67,7 +73,7 @@ export default function HomePage() {
       <section className="mx-auto grid max-w-[1240px] items-center gap-10 px-5 pb-16 pt-16 sm:px-12 md:grid-cols-[1.05fr_0.95fr] md:gap-14 md:pt-[88px]">
         <div>
           <div className="mb-[22px] font-mono text-xs uppercase tracking-[1px] text-[var(--color-faint)]">
-            Verwaltungssoftware für Flipperautomaten
+            Verwaltung, Wartung und Reparatur für Flipperautomaten
           </div>
 
           <h1 className="mb-[22px] text-[34px] font-bold leading-[1.18] tracking-[-0.5px] sm:text-[46px]">
@@ -75,20 +81,18 @@ export default function HomePage() {
           </h1>
 
           <p className="mb-[34px] max-w-[480px] text-[17px] leading-[1.7] text-[var(--color-muted)]">
-            Pinball Manager erfasst Stammdaten, Standorte und Historie jeder
-            Maschine in deiner Sammlung oder deinem Club. Fehlererfassung und
-            Reparatur-Log sind Teil davon — nicht der Ausgangspunkt.
+            Pinball Manager führt Stammdaten, Betriebsstatus, Wartung und
+            Reparatur-Historie jeder Maschine — ob im Verein, in der Location
+            oder im eigenen Keller. Handbücher werden per KI zu Referenztabellen.
           </p>
 
           <div className="mb-12 flex flex-wrap gap-3">
-            <a
-              href={STAMMTISCH_URL}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              href="/preview"
               className="rounded-[var(--radius)] bg-[var(--color-primary)] px-[26px] py-3.5 font-semibold text-[var(--color-primary-fg)] transition-colors hover:bg-[var(--color-accent)]"
             >
-              Beim Stammtisch mitmachen ↗
-            </a>
+              Einladung anfragen
+            </Link>
             <Link
               href="/login"
               className="rounded-[var(--radius)] border border-[var(--color-border)] px-[26px] py-3.5 font-medium transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
@@ -118,13 +122,13 @@ export default function HomePage() {
             </div>
             <div className="border-b border-[var(--color-line)] px-5 pb-4 pt-1">
               <div className="mb-1.5 text-[11px] uppercase tracking-[1px] text-[var(--color-faint)]">
-                Meine Sammlung
+                Meine Maschinen
               </div>
               <div className="text-[19px] font-bold">Medieval Madness</div>
               <div className="mt-2 flex items-center gap-1.5">
                 <span className="h-[7px] w-[7px] rounded-full bg-[var(--color-success)]" />
                 <span className="text-xs font-semibold text-[var(--color-success)]">
-                  Betriebsbereit
+                  Spielbereit
                 </span>
               </div>
             </div>
@@ -176,21 +180,20 @@ export default function HomePage() {
             Vom Inventar bis zur Reparatur-Historie.
           </h2>
           <p className="text-[15px] leading-[1.65] text-[var(--color-muted)]">
-            Verwaltung steht im Zentrum. Fehlererfassung und KI-Diagnose bauen
-            darauf auf.
+            Verwaltung steht im Zentrum. Fehlererfassung, Wartung und KI bauen
+            darauf auf.{" "}
+            <Link
+              href="/features"
+              className="font-medium text-[var(--color-accent)] underline underline-offset-2 hover:opacity-80"
+            >
+              Alle Funktionen im Detail
+            </Link>
           </p>
         </div>
 
-        <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 ${hairlineGrid}`}>
+        <div className={`grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 ${hairlineGrid}`}>
           {features.map((f) => (
-            <div
-              key={f.num}
-              className={`px-[22px] py-[26px] ${
-                f.roadmap
-                  ? "bg-[var(--color-surface-2)]"
-                  : "bg-[var(--color-surface)]"
-              }`}
-            >
+            <div key={f.num} className="bg-[var(--color-surface)] px-[22px] py-[26px]">
               <div className="mb-2.5 font-mono text-[11px] text-[var(--color-faint)]">
                 {f.num}
               </div>
@@ -198,11 +201,6 @@ export default function HomePage() {
               <p className="text-[13px] leading-[1.6] text-[var(--color-muted)]">
                 {f.desc}
               </p>
-              {f.roadmap ? (
-                <div className="mt-4 inline-block rounded-[4px] border border-dashed border-[var(--color-border)] px-2 py-[3px] font-mono text-[10px] uppercase tracking-[0.5px] text-[var(--color-faint)]">
-                  In Entwicklung · Phase 3
-                </div>
-              ) : null}
             </div>
           ))}
         </div>
@@ -215,11 +213,11 @@ export default function HomePage() {
             Für wen
           </div>
           <h2 className="mb-3.5 text-[26px] font-bold tracking-[-0.3px] sm:text-[30px]">
-            Ob ein Automat oder ein ganzer Vereinsbestand.
+            Ob ein Automat oder ein ganzer Bestand.
           </h2>
           <p className="text-[15px] leading-[1.65] text-[var(--color-muted)]">
-            Egal ob ein Gerät zu Hause oder ein geteilter Bestand im Verein —
-            dieselbe App wächst mit.
+            Egal ob ein Gerät zu Hause, eine Location oder ein geteilter Bestand
+            im Verein — dieselbe App wächst mit.
           </p>
         </div>
 
@@ -246,11 +244,12 @@ export default function HomePage() {
             Club-Modus
           </div>
           <h3 className="mb-3 text-[21px] font-bold">
-            Gemeinsamer Maschinenbestand für den Verein.
+            Gemeinsamer Maschinenbestand für Verein oder Location.
           </h3>
           <p className="mb-[22px] text-sm leading-[1.65] text-[var(--color-muted)]">
-            Mitglieder sehen den vollständigen Bestand eines Standorts, inklusive
-            Eigentümer und Zustand.
+            Mitglieder sehen den vollständigen Bestand, inklusive Eigentümer und
+            Betriebsstatus. Rollen regeln, wer eintragen, reparieren oder nur
+            melden darf.
           </p>
           <div className="flex flex-col gap-px bg-[var(--color-line)]">
             {clubRows.map((row) => (
@@ -284,20 +283,21 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ===== KI-AUSBLICK ===== */}
+      {/* ===== KI ===== */}
       <section className="mx-auto max-w-[1200px] px-5 pb-[70px] sm:px-12">
-        <div className="grid grid-cols-1 items-center gap-6 rounded-[10px] border border-dashed border-[var(--color-border)] bg-[var(--color-surface-2)] p-9 sm:grid-cols-[auto_1fr] sm:gap-8">
-          <div className="w-fit rounded-[4px] border border-dashed border-[var(--color-border)] px-2.5 py-[5px] font-mono text-[11px] uppercase tracking-[1px] text-[var(--color-faint)]">
-            Roadmap · Phase 3
+        <div className="grid grid-cols-1 items-center gap-6 rounded-[10px] border border-[var(--color-accent)]/40 bg-[var(--color-surface-2)] p-9 sm:grid-cols-[auto_1fr] sm:gap-8">
+          <div className="w-fit rounded-[4px] border border-[var(--color-accent)]/40 px-2.5 py-[5px] font-mono text-[11px] uppercase tracking-[1px] text-[var(--color-accent)]">
+            KI · im Einsatz
           </div>
           <div>
             <h3 className="mb-2 text-[18px] font-bold">
-              KI-gestützte Diagnose (geplant)
+              Handbuch-Fakten und Reparaturvorschläge.
             </h3>
             <p className="text-sm leading-[1.65] text-[var(--color-muted)]">
-              Auf Basis von Handbüchern und dokumentierten Reparaturen soll die
-              Anwendung künftig wahrscheinliche Ursachen und passende Ersatzteile
-              zu einem beschriebenen Symptom vorschlagen.
+              Aus einem PDF-Handbuch werden Spulen-, Schalter- und Teiletabellen
+              je Modell. Zu einem gemeldeten Fehler schlägt die KI Diagnose,
+              Maßnahme und Teile vor — aus dem vorhandenen Maschinen-Wissen.
+              Als Nächstes: Bauteil-Erkennung per Foto.
             </p>
           </div>
         </div>
@@ -306,19 +306,18 @@ export default function HomePage() {
       {/* ===== CTA ===== */}
       <section className="mx-auto max-w-[1200px] border-t border-[var(--color-border)] px-5 pb-24 pt-[60px] text-center sm:px-12">
         <h2 className="mb-3.5 text-[26px] font-bold">
-          Gemeinsam mit dem Stammtisch entwickelt.
+          In der Preview — auf Einladung.
         </h2>
         <p className="mb-6 text-[15px] text-[var(--color-muted)]">
-          Aktuell kostenlos nutzbar. Zugang läuft über den Stammtisch.
+          Aktuell kostenlos nutzbar. Eine kurze Nachricht genügt, dann bekommst
+          du einen persönlichen Einladungslink.
         </p>
-        <a
-          href={STAMMTISCH_URL}
-          target="_blank"
-          rel="noopener noreferrer"
+        <Link
+          href="/preview"
           className="inline-block rounded-[var(--radius)] bg-[var(--color-primary)] px-[30px] py-[15px] font-semibold text-[var(--color-primary-fg)] transition-colors hover:bg-[var(--color-accent)]"
         >
-          Beim Stammtisch mitmachen ↗
-        </a>
+          Einladung anfragen
+        </Link>
       </section>
 
       <MarketingFooter />

@@ -137,7 +137,7 @@ export default async function LogPage() {
     [
       { name: "Godzilla (Pro)", url: `${baseUrl()}/features` },
       { name: "Medieval Madness", url: baseUrl() },
-      { name: "Attack From Mars", url: `${baseUrl()}/preise` },
+      { name: "Attack From Mars", url: `${baseUrl()}/preview` },
     ].map(async (b) => ({ ...b, svg: await erzeugeQrSvgFuerUrl(b.url) })),
   );
 

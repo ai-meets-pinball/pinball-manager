@@ -5,11 +5,11 @@ import {
   CalendarClock,
   FileText,
   Home,
-  Library,
   MailPlus,
   MessagesSquare,
   QrCode,
   ShieldCheck,
+  Store,
   Users,
   Wrench,
 } from "lucide-react";
@@ -18,9 +18,10 @@ import { STAMMTISCH_URL } from "@/lib/links";
 
 /*
   Öffentliche „Mitmachen"-Seite — die Langfassung der Preview-Einladung, auf die
-  der Flippermarkt-Thread verlinkt. Editorial-Stil wie /features (Tokens, Hairline-
-  Raster), bewusst mit dezenten Lucide-Icons statt Emojis. Ton: selbstbewusst,
-  Feedback erwünscht.
+  Startseite, Funktionen-Seite und der Flippermarkt-Thread verlinken. Editorial-
+  Stil wie /features (Tokens, Hairline-Raster), bewusst mit dezenten Lucide-Icons
+  statt Emojis. Ton: selbstbewusst, Feedback erwünscht. Der Stammtisch ist hier
+  nur noch ein Kontaktweg, nicht die Rahmung.
 */
 export const metadata = {
   title: "Mitmachen · Preview · Pinball Manager",
@@ -71,14 +72,14 @@ const fuerWen = [
     desc: "Alle Geräte an einem Ort, gemeinsam gepflegt: wer hat welchen Fehler gemeldet, wer was repariert, was ist bald fällig. Mit Rollen (Owner/Admin/Mitglied) und QR-Codes am Gerät, über die sogar Gäste ohne Konto melden.",
   },
   {
-    icon: Library,
-    title: "Sammler",
-    desc: "Die ganze Sammlung sauber katalogisiert — Modell, Baujahr, Zustand, dazu Handbücher und die komplette Reparatur- und Wartungshistorie je Automat.",
+    icon: Store,
+    title: "Betreiber & Locations",
+    desc: "Welche Maschine ist spielbereit, welche eingeschränkt? Gäste melden Fehler per QR, das Team sieht Prioritäten, Wartung und Reparatur-Historie je Gerät.",
   },
   {
     icon: Home,
-    title: "Einzelne Besitzer",
-    desc: "Auch bei ein, zwei Automaten den Überblick behalten: Fehler notieren, Wartung mit Erinnerung planen — griffbereit am Handy, direkt an der Maschine.",
+    title: "Private Besitzer",
+    desc: "Ob eine Maschine oder eine ganze Sammlung: Fehler notieren, Wartung mit Erinnerung planen, Handbuch-Fakten griffbereit — am Handy, direkt an der Maschine.",
   },
 ];
 
@@ -104,11 +105,11 @@ export default function PreviewPage() {
             Teste Pinball Manager mit.
           </h1>
           <p className="mb-7 text-[16px] leading-[1.7] text-[var(--color-muted)]">
-            Aus unseren „KI meets Pinball"-Stammtisch-Runden ist etwas Handfestes
-            geworden: eine Web-App, um die eigene(n) Maschine(n) zu verwalten. Wir
-            haben sie als Team gebaut, sie läuft stabil genug für den Alltag — und
-            wir öffnen sie jetzt für ein paar Leute aus der Community. Der Zugang
-            läuft auf Einladung, die Nutzung ist in dieser Phase kostenlos.
+            Pinball Manager ist eine Web-App, um Flipperautomaten zu verwalten:
+            Stammdaten, Betriebsstatus, Wartung, Fehler und Reparaturen, dazu
+            Handbuch-Fakten per KI. Sie läuft stabil genug für den Alltag — und
+            wir öffnen sie jetzt Schritt für Schritt für weitere Nutzer. Der
+            Zugang läuft auf Einladung, die Nutzung ist in dieser Phase kostenlos.
           </p>
           <div className="flex flex-wrap gap-3">
             <a
@@ -118,15 +119,12 @@ export default function PreviewPage() {
               <MailPlus size={17} strokeWidth={1.9} />
               Einladung anfragen
             </a>
-            <a
-              href={STAMMTISCH_URL}
-              target="_blank"
-              rel="noopener noreferrer"
+            <Link
+              href="/features"
               className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-border)] px-6 py-3 text-sm font-medium transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
             >
-              Zum Stammtisch-Thread
-              <ArrowUpRight size={16} strokeWidth={1.9} />
-            </a>
+              Alle Funktionen im Detail
+            </Link>
           </div>
         </div>
 

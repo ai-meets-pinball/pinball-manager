@@ -7,14 +7,13 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { useSession } from "@/lib/auth-client";
 
 /*
-  Öffentliche Marketing-Chrome (Nav + Footer) für Start / Funktionen / Preise.
+  Öffentliche Marketing-Chrome (Nav + Footer) für Start / Funktionen / Mitmachen.
   Getrennt von der App-Nav (components/nav.tsx), die nur angemeldet erscheint.
 */
 
 const navItems = [
   { href: "/", label: "Start" },
   { href: "/features", label: "Funktionen" },
-  { href: "/preise", label: "Nutzung" },
   { href: "/preview", label: "Mitmachen" },
 ];
 

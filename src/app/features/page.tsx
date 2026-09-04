@@ -1,5 +1,5 @@
+import Link from "next/link";
 import { MarketingFooter, MarketingNav } from "@/components/site-chrome";
-import { STAMMTISCH_URL } from "@/lib/links";
 import { baseUrl, erzeugeQrSvgFuerUrl } from "@/lib/qr-code";
 
 /*
@@ -10,21 +10,21 @@ import { baseUrl, erzeugeQrSvgFuerUrl } from "@/lib/qr-code";
 const deepFeatures = [
   {
     tag: "Inventar & Stammdaten", roadmap: false,
-    title: "Vollständige Stammdaten je Maschine.",
-    desc: "Hersteller, Baujahr, Seriennummer, Zustand, Marktwert und Standort werden pro Maschine geführt und lassen sich exportieren.",
-    points: ["Fotos und technische Daten", "Standort- und Eigentumshistorie", "Export für Versicherung oder Inventur"],
+    title: "Stammdaten je Maschine — aus dem Katalog.",
+    desc: "Modell aus über 2.200 Katalogeinträgen wählen: Hersteller, Baujahr und Foto kommen automatisch mit. Dazu eigene Fotos, Notizen, Links und Dateien je Gerät.",
+    points: ["Modell aus dem Katalog, Foto inklusive", "Eigene Fotos, Notizen und Dokumente je Gerät", "Betriebsstatus und offene Fehler auf einen Blick"],
   },
   {
-    tag: "Standorte & Mitgliederliste", roadmap: false,
-    title: "Gemeinsamer Bestand für Vereine.",
-    desc: "Mitglieder sehen den vollständigen Maschinenbestand eines Standorts inklusive Eigentümer und Zustand.",
-    points: ["Rollenbasierter Zugriff für Mitglieder", "Bestandsübersicht je Standort", "Gemeinsamer Wartungskalender"],
+    tag: "Verein & Mitglieder", roadmap: false,
+    title: "Gemeinsamer Bestand für Verein oder Location.",
+    desc: "Mitglieder sehen den vollständigen Maschinenbestand inklusive Eigentümer und Betriebsstatus. Rollen regeln, wer eintragen, reparieren oder nur melden darf.",
+    points: ["Rollen: Owner, Admin, Mitglied", "Bestandsübersicht mit Eigentümerzuordnung", "Fällige Wartungen aller Maschinen im Überblick"],
   },
   {
     tag: "Fehler & Reparaturen", roadmap: false,
     title: "Reparatur-Historie je Maschine.",
     desc: "Jede Reparatur wird mit Datum, Ursache, verwendeten Teilen und Kosten protokolliert und ist durchsuchbar.",
-    points: ["Teile- und Kostenerfassung", "Durchsuchbare Historie", "Hinweise bei wiederkehrenden Fehlern"],
+    points: ["Teile- und Kostenerfassung", "Durchsuchbare Historie", "Fotos an jeder Fehlermeldung"],
   },
   {
     tag: "Handbuch-Daten per KI", roadmap: false,
@@ -162,24 +162,21 @@ export default async function FeaturesPage() {
         <div className="border-t border-[var(--color-border)] py-14 text-center">
           <h3 className="mb-3 text-[22px] font-bold">…und vieles mehr.</h3>
           <p className="mx-auto mb-6 max-w-[520px] text-sm leading-[1.7] text-[var(--color-muted)]">
-            Der Funktionsumfang wächst gemeinsam mit unserem
-            &bdquo;KI meets Pinball&ldquo;-Stammtisch. Ideen oder Wünsche? Wir
-            freuen uns über deine Nachricht.
+            Der Funktionsumfang wächst mit den Leuten, die Pinball Manager
+            nutzen. Ideen oder Wünsche? Wir freuen uns über deine Nachricht.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
-            <a
-              href="mailto:frg@silverballmania.com?subject=Idee%20f%C3%BCr%20Pinball%20Manager"
+            <Link
+              href="/preview"
               className="inline-block rounded-[var(--radius)] bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-[var(--color-primary-fg)] transition-colors hover:bg-[var(--color-accent)]"
             >
-              Kontaktiere uns
-            </a>
+              Einladung anfragen
+            </Link>
             <a
-              href={STAMMTISCH_URL}
-              target="_blank"
-              rel="noopener noreferrer"
+              href="mailto:frg@silverballmania.com?subject=Idee%20f%C3%BCr%20Pinball%20Manager"
               className="inline-block rounded-[var(--radius)] border border-[var(--color-border)] px-6 py-3 text-sm font-medium transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
             >
-              Zum Stammtisch-Thread ↗
+              Kontaktiere uns
             </a>
           </div>
         </div>

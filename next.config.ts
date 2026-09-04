@@ -27,6 +27,8 @@ const nextConfig: NextConfig = {
     return [
       { source: "/typen", destination: "/modelle", permanent: true },
       { source: "/typen/:id", destination: "/modelle/:id", permanent: true },
+      // Die „Nutzung"-Seite (/preise) wurde entfernt — alte Links landen auf Start.
+      { source: "/preise", destination: "/", permanent: true },
     ];
   },
   // Ergänzende Sicherheits-Header (statisch, für alle Routen). Die
