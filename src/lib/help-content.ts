@@ -24,11 +24,11 @@ export const ANLEITUNG: HilfeSektion[] = [
     key: "erste-schritte",
     titel: "Erste Schritte",
     einleitung:
-      "Konto anlegen (nur mit Einladung), anmelden, Passwort zurücksetzen.",
+      "Konto anlegen, E-Mail bestätigen, anmelden, Passwort zurücksetzen.",
     schritte: [
       {
-        titel: "Konto anlegen — nur mit Einladung",
-        text: "Eine Registrierung ist ausschließlich über einen Einladungslink möglich. Den bekommst du per E-Mail: entweder als Club-Einladung oder als allgemeine Einladung von einem Super-Admin. Über den Link gibst du Name, E-Mail und Passwort ein — mindestens 8 Zeichen mit Groß- und Kleinbuchstaben sowie einer Zahl, dazu die Wiederholung. Mit dem Augen-Symbol lässt sich das Passwort anzeigen oder verbergen.",
+        titel: "Konto anlegen und E-Mail bestätigen",
+        text: "Unter »Konto erstellen« gibst du Name, E-Mail und Passwort ein — mindestens 8 Zeichen mit Groß- und Kleinbuchstaben sowie einer Zahl, dazu die Wiederholung. Mit dem Augen-Symbol lässt sich das Passwort anzeigen oder verbergen. Danach bekommst du einen Bestätigungslink per E-Mail; erst nach dem Klick kannst du dich anmelden. Kein Link angekommen oder abgelaufen? Einfach einmal anmelden — das schickt automatisch einen neuen.",
       },
       {
         titel: "Anmelden",
@@ -36,7 +36,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Per Einladung beitreten",
-        text: "Wurdest du eingeladen, öffne den Link aus der E-Mail. Hast du noch kein Konto, registrierst du dich direkt darüber und trittst dem Club automatisch bei.",
+        text: "Wurdest du eingeladen, öffne den Link aus der E-Mail. Hast du noch kein Konto, registrierst du dich direkt darüber und trittst dem Club automatisch bei — die Bestätigung der Adresse entfällt, der Einladungslink belegt sie bereits.",
       },
       {
         titel: "Wo finde ich was?",
@@ -627,7 +627,7 @@ export const ADMIN_HILFE: HilfeSektion[] = [
     titel: "Nutzer einladen",
     nurSuperAdmin: true,
     einleitung:
-      "Die Registrierung ist nur mit Einladung möglich — neue Personen lädst du hier ein.",
+      "Registrieren kann sich jeder selbst. Eine Einladung von hier erspart der Person die E-Mail-Bestätigung.",
     schritte: [
       {
         titel: "Einladen",

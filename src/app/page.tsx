@@ -14,20 +14,17 @@ import { MarketingFooter, MarketingNav } from "@/components/site-chrome";
 const heroStats = [
   { value: "2.200+", label: "Modelle im Katalog" },
   { value: "0 €", label: "Aktuell kostenlos" },
-  { value: "Preview", label: "Zugang auf Einladung" },
+  { value: "Preview", label: "Offen für alle" },
 ];
 
-const mockFields = [
-  { label: "Hersteller", value: "Williams" },
-  { label: "Baujahr", value: "1997" },
-  { label: "Offene Fehler", value: "0" },
-  { label: "Nächste Wartung", value: "in 12 Tagen" },
-];
-
+/*
+  Mockup der Maschinenliste — dieselbe Karte wie components/machine-card.tsx
+  (Foto, Modellname, Baujahr, Club-Zeile, „Wartung fällig"-Pille), nur ohne Daten.
+*/
 const mockMachines = [
-  { name: "Attack From Mars", status: "SPIELBEREIT", tone: "var(--color-success)" },
-  { name: "Twilight Zone", status: "EINGESCHRÄNKT", tone: "var(--color-warn)" },
-  { name: "Godzilla", status: "SPIELBEREIT", tone: "var(--color-success)" },
+  { name: "Medieval Madness", baujahr: "1997", club: "FlipperFreunde", faellig: 0 },
+  { name: "Twilight Zone", baujahr: "1993", club: null, faellig: 1 },
+  { name: "Attack From Mars", baujahr: "1995", club: "FlipperFreunde", faellig: 0 },
 ];
 
 const features = [
@@ -88,10 +85,10 @@ export default function HomePage() {
 
           <div className="mb-12 flex flex-wrap gap-3">
             <Link
-              href="/preview"
+              href="/register"
               className="rounded-[var(--radius)] bg-[var(--color-primary)] px-[26px] py-3.5 font-semibold text-[var(--color-primary-fg)] transition-colors hover:bg-[var(--color-accent)]"
             >
-              Einladung anfragen
+              Konto erstellen
             </Link>
             <Link
               href="/login"
@@ -120,49 +117,39 @@ export default function HomePage() {
               <span>9:41</span>
               <span>●●●</span>
             </div>
-            <div className="border-b border-[var(--color-line)] px-5 pb-4 pt-1">
-              <div className="mb-1.5 text-[11px] uppercase tracking-[1px] text-[var(--color-faint)]">
-                Meine Maschinen
+            <div className="flex items-end justify-between px-5 pb-3 pt-1">
+              <div>
+                <div className="text-[19px] font-bold">Maschinen</div>
+                <div className="text-[11px] text-[var(--color-muted)]">3 Maschinen</div>
               </div>
-              <div className="text-[19px] font-bold">Medieval Madness</div>
-              <div className="mt-2 flex items-center gap-1.5">
-                <span className="h-[7px] w-[7px] rounded-full bg-[var(--color-success)]" />
-                <span className="text-xs font-semibold text-[var(--color-success)]">
-                  Spielbereit
-                </span>
-              </div>
+              <span className="rounded-[var(--radius)] bg-[var(--color-primary)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--color-primary-fg)]">
+                + Neu
+              </span>
             </div>
-            <div className="m-5 rounded-lg border border-[var(--color-line)] bg-[var(--color-surface-2)] p-3.5">
-              <div className="mb-2.5 font-mono text-[10px] uppercase tracking-[1px] text-[var(--color-faint)]">
-                Stammdaten
-              </div>
-              <div className="grid grid-cols-2 gap-2 text-xs">
-                {mockFields.map((f) => (
-                  <div key={f.label}>
-                    <div className="text-[10px] text-[var(--color-faint)]">
-                      {f.label}
-                    </div>
-                    <div className="mt-0.5 font-semibold">{f.value}</div>
-                  </div>
-                ))}
-              </div>
+            <div className="mx-5 mb-3 rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-2 text-[11px] text-[var(--color-faint)]">
+              Suchen …
             </div>
             <div className="flex flex-col gap-2 px-5 pb-5">
               {mockMachines.map((m) => (
                 <div
                   key={m.name}
-                  className="flex items-center justify-between rounded-md bg-[var(--color-surface-2)] px-3 py-2.5"
+                  className="flex gap-3 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] p-2.5"
                 >
-                  <span className="text-[13px]">{m.name}</span>
-                  <span
-                    className="rounded-[4px] px-2 py-[3px] text-[11px] font-semibold"
-                    style={{
-                      color: m.tone,
-                      background: `color-mix(in srgb, ${m.tone} 14%, transparent)`,
-                    }}
-                  >
-                    {m.status}
-                  </span>
+                  <div className="h-12 w-12 shrink-0 rounded-[var(--radius)] bg-[var(--color-border)]/40" />
+                  <div className="min-w-0">
+                    <div className="truncate text-[13px] font-medium">{m.name}</div>
+                    <div className="text-[11px] text-[var(--color-muted)]">{m.baujahr}</div>
+                    {m.club ? (
+                      <div className="mt-0.5 text-[10px] text-[var(--color-muted)]">
+                        ⚇ {m.club}
+                      </div>
+                    ) : null}
+                    {m.faellig > 0 ? (
+                      <span className="mt-1 inline-flex rounded-full border border-[var(--color-danger)]/40 bg-[var(--color-danger)]/10 px-1.5 py-0.5 text-[9px] font-semibold leading-none text-[var(--color-danger)]">
+                        {m.faellig} Wartung fällig
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
               ))}
             </div>
@@ -295,9 +282,12 @@ export default function HomePage() {
             </h3>
             <p className="text-sm leading-[1.65] text-[var(--color-muted)]">
               Aus einem PDF-Handbuch werden Spulen-, Schalter- und Teiletabellen
-              je Modell. Zu einem gemeldeten Fehler schlägt die KI Diagnose,
-              Maßnahme und Teile vor — aus dem vorhandenen Maschinen-Wissen.
-              Als Nächstes: Bauteil-Erkennung per Foto.
+              je Modell, dazu ein generierter Troubleshooting-Guide, per
+              Websuche gegen Community-Quellen geprüft. Zu einem gemeldeten
+              Fehler schlägt die KI Diagnose, Maßnahme und Teile vor. Gelungene
+              Reparaturen lassen sich teilen — im Club oder öffentlich, damit
+              andere mit demselben Modell davon profitieren. Als Nächstes:
+              Bauteil-Erkennung per Foto.
             </p>
           </div>
         </div>
@@ -306,17 +296,17 @@ export default function HomePage() {
       {/* ===== CTA ===== */}
       <section className="mx-auto max-w-[1200px] border-t border-[var(--color-border)] px-5 pb-24 pt-[60px] text-center sm:px-12">
         <h2 className="mb-3.5 text-[26px] font-bold">
-          In der Preview — auf Einladung.
+          In der Preview — in zwei Minuten dabei.
         </h2>
         <p className="mb-6 text-[15px] text-[var(--color-muted)]">
-          Aktuell kostenlos nutzbar. Eine kurze Nachricht genügt, dann bekommst
-          du einen persönlichen Einladungslink.
+          Aktuell kostenlos nutzbar. Konto anlegen, E-Mail bestätigen, erste
+          Maschine eintragen.
         </p>
         <Link
-          href="/preview"
+          href="/register"
           className="inline-block rounded-[var(--radius)] bg-[var(--color-primary)] px-[30px] py-[15px] font-semibold text-[var(--color-primary-fg)] transition-colors hover:bg-[var(--color-accent)]"
         >
-          Einladung anfragen
+          Konto erstellen
         </Link>
       </section>
 

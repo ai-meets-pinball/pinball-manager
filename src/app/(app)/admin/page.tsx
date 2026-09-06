@@ -130,8 +130,9 @@ export default async function AdminPage({
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Nutzer einladen</h2>
         <p className="text-sm text-[var(--color-muted)]">
-          Die Registrierung ist nur mit Einladung möglich. Wer hier eingeladen
-          wird, kann sich über den Link ein Konto anlegen — eine Club-Zuordnung
+          Jeder kann sich selbst registrieren und muss dann die E-Mail-Adresse
+          bestätigen. Wer hier eingeladen wird, überspringt die Bestätigung —
+          der Link aus der Einladung belegt das Postfach. Eine Club-Zuordnung
           passiert dabei nicht (dafür lädst du im jeweiligen Club ein).
         </p>
         <Card className="space-y-4">

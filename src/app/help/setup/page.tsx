@@ -276,10 +276,10 @@ const abschnitte: Abschnitt[] = [
           "Zeigt die Oberfläche einen Knopf, den die Server-Aktion später ablehnt, ist das ein Fehler — bei uns war „Löschen\" lange für jedes Clubmitglied sichtbar.",
       },
       {
-        titel: "Registrierung nur mit Einladung",
-        text: "Die Prüfung hängt am Einladungs-TOKEN aus der E-Mail, nicht an der Adresse. Der Ablauf: Server-Aktion prüft den Token, markiert die Einladung als „wird eingelöst\", erst dann wird das Konto angelegt.",
+        titel: "Offene Registrierung mit Pflicht-Bestätigung",
+        text: "Jeder darf sich registrieren, anmelden aber erst mit bestätigter Adresse (`requireEmailVerification`). Der Nachweis „das Postfach gehört dir\" kommt entweder über den Bestätigungslink oder über einen Einladungs-TOKEN: Server-Aktion prüft den Token, markiert die Einladung als „wird eingelöst\", und ein Datenbank-Hook legt das Konto direkt als bestätigt an.",
         falle:
-          "Nur zu prüfen, ob für eine Adresse eine Einladung existiert, reicht NICHT: Wer die eingeladene Adresse kennt, registriert sie sonst selbst. Genau dieser Fehler steckte hier drin und wurde erst im Sicherheits-Review gefunden.",
+          "Nur zu prüfen, ob für eine Adresse eine Einladung existiert, reicht NICHT: Wer die eingeladene Adresse kennt, registriert sie sonst selbst und sammelt die Club-Rolle ein. Genau dieser Fehler steckte hier drin und wurde erst im Sicherheits-Review gefunden. Heute bleibt so ein Konto unbestätigt und die Einladung offen.",
       },
     ],
   },

@@ -167,10 +167,10 @@ export default async function FeaturesPage() {
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             <Link
-              href="/preview"
+              href="/register"
               className="inline-block rounded-[var(--radius)] bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-[var(--color-primary-fg)] transition-colors hover:bg-[var(--color-accent)]"
             >
-              Einladung anfragen
+              Konto erstellen
             </Link>
             <a
               href="mailto:frg@silverballmania.com?subject=Idee%20f%C3%BCr%20Pinball%20Manager"

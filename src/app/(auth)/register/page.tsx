@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useActionState, useEffect } from "react";
+import { MailCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/input";
 import { PasswordField } from "@/components/ui/password-field";
@@ -12,9 +13,10 @@ import { PASSWORD_HINT } from "@/lib/validators";
 
 /*
   Registrierung läuft über die Server Action registerAccount(), nicht über
-  signUp.email() im Client: nur so kann der Einladungs-TOKEN geprüft werden,
-  bevor ein Konto entsteht. Ohne gültigen Token (oder leere Installation)
-  lehnt der Auth-Hook den Sign-up ohnehin ab.
+  signUp.email() im Client: nur so kann ein Einladungs-TOKEN geprüft werden,
+  bevor ein Konto entsteht. Ohne Einladung ist das Sign-up offen — angemeldet
+  wird dann erst nach dem Klick auf den Bestätigungslink (`message`); mit
+  Einladung sofort (`ok`).
 */
 function RegisterForm() {
   const router = useRouter();
@@ -26,24 +28,30 @@ function RegisterForm() {
     {},
   );
 
-  // Nach erfolgreicher Registrierung ist die Session gesetzt → weiterleiten.
+  // Eingeladene sind nach dem Sign-up angemeldet → direkt in die App.
   useEffect(() => {
-    if (state.message) {
+    if (state.ok) {
       router.push("/machines");
       router.refresh();
     }
-  }, [state.message, router]);
+  }, [state.ok, router]);
+
+  if (state.message) {
+    return (
+      <div className="flex flex-col gap-3 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
+        <MailCheck size={22} className="text-[var(--color-accent)]" />
+        <p className="text-sm">{state.message}</p>
+        <p className="text-xs text-[var(--color-muted)]">
+          Keine Mail bekommen? Prüfe den Spam-Ordner. Der Link ist eine Stunde
+          gültig — danach schickt dir ein Anmeldeversuch automatisch einen neuen.
+        </p>
+      </div>
+    );
+  }
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
       {invite ? <input type="hidden" name="invite" value={invite} /> : null}
-
-      {!invite ? (
-        <p className="rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-3 text-sm text-[var(--color-muted)]">
-          Ein Konto lässt sich nur mit Einladung anlegen. Nutze bitte den Link
-          aus deiner Einladungs-E-Mail.
-        </p>
-      ) : null}
 
       <Field label="Name">
         <Input name="name" required autoComplete="name" />
@@ -66,15 +74,14 @@ function RegisterForm() {
         <p className="text-sm text-[var(--color-danger)]">{state.error}</p>
       ) : null}
 
-      <Button
-        type="submit"
-        disabled={pending || !invite}
-        title={!invite ? "Ein Konto lässt sich nur mit Einladung anlegen" : undefined}
-      >
+      <Button type="submit" disabled={pending}>
         {pending ? "Konto wird erstellt…" : "Registrieren"}
       </Button>
 
       <p className="text-xs text-[var(--color-muted)]">
+        {invite
+          ? "Deine Einladung bestätigt die Adresse — du bist danach direkt angemeldet. "
+          : "Du bekommst einen Bestätigungslink per E-Mail. "}
         Mit der Registrierung akzeptierst du die{" "}
         <Link href="/datenschutz" className="text-[var(--color-accent)] underline">
           Datenschutzerklärung

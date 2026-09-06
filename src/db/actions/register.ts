@@ -1,30 +1,31 @@
 "use server";
 
-import { and, count, eq, gt } from "drizzle-orm";
+import { and, eq, gt } from "drizzle-orm";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { db } from "@/db";
 import { verknuepfeBesitzerMitKonto } from "@/db/besitzer-link";
-import { invitations, roleAssignments, user } from "@/db/schema";
+import { invitations, roleAssignments } from "@/db/schema";
 import { auth } from "@/lib/auth";
-import { istSuperAdminEmail } from "@/lib/super-admins";
 import { validatePassword } from "@/lib/validators";
 import type { FormState } from "@/db/actions/form-state";
 
 /*
   Registrierung — bewusst über eine eigene Action statt über den Client-Aufruf
-  von signUp.email().
+  von signUp.email(): nur so lässt sich ein Einladungs-TOKEN prüfen, BEVOR ein
+  Konto entsteht.
 
-  Warum: Das frühere Gate prüfte nur, ob für die angegebene E-MAIL eine offene
-  Einladung existiert. Wer eine eingeladene Adresse kannte, konnte sie fremd
-  registrieren (es gibt keine E-Mail-Verifikation) und anschließend die
-  Einladung annehmen. Der Besitz des Postfachs wurde nie belegt.
+  Zwei Ausgänge (siehe FormState):
+  - Mit Einladung: der Token stand nur in der Einladungs-Mail, das Postfach ist
+    damit belegt. Das Konto wird bestätigt angelegt (databaseHook in
+    lib/auth.ts), die Person sofort angemeldet → `ok`.
+  - Ohne Einladung: offenes Sign-up. Better Auth schickt den Bestätigungslink,
+    angemeldet wird erst nach dem Klick (`requireEmailVerification`) → `message`.
 
-  Jetzt zählt der TOKEN: er steht nur in der Einladungs-Mail. Diese Action
-  prüft ihn, setzt die Einladung atomar auf `claiming` und ruft erst dann
-  Better Auth auf. Der Hook in lib/auth.ts lässt Sign-up ausschließlich für
-  Einladungen in genau diesem Zustand zu — ein direkter POST auf
-  /api/auth/sign-up/email findet nur `pending` vor und scheitert.
+  Warum der Token und nicht die Adresse zählt: Wer eine eingeladene Adresse
+  kennt, könnte sie sonst fremd registrieren und die Club-Rolle der Einladung
+  einsammeln. Mit Token bleibt eine fremd registrierte Adresse ein
+  unbestätigtes Konto ohne Club — und die Einladung bleibt `pending`.
 */
 
 const schema = z.object({
@@ -34,6 +35,9 @@ const schema = z.object({
   passwordConfirm: z.string(),
   invite: z.string().trim().optional(),
 });
+
+/** Wohin der Bestätigungslink bzw. die Anmeldung nach dem Sign-up führt. */
+const ZIEL_NACH_REGISTRIERUNG = "/machines";
 
 export async function registerAccount(
   _prev: FormState,
@@ -51,18 +55,6 @@ export async function registerAccount(
   if (policy) return { error: policy };
   if (password !== passwordConfirm) {
     return { error: "Die Passwörter stimmen nicht überein." };
-  }
-
-  /* Bootstrap: eine leere Installation muss startbar sein. Nur dann darf sich
-     eine Adresse aus SUPER_ADMIN_EMAILS ohne Einladung registrieren. */
-  const [{ anzahl }] = await db.select({ anzahl: count() }).from(user);
-  const istBootstrap = anzahl === 0 && istSuperAdminEmail(email);
-
-  if (!invite && !istBootstrap) {
-    return {
-      error:
-        "Registrierung ist nur mit Einladung möglich. Bitte nutze den Link aus deiner Einladungs-E-Mail.",
-    };
   }
 
   let einladungId: string | null = null;
@@ -101,7 +93,7 @@ export async function registerAccount(
 
   try {
     const res = await auth.api.signUpEmail({
-      body: { name, email, password },
+      body: { name, email, password, callbackURL: ZIEL_NACH_REGISTRIERUNG },
       headers: await headers(),
     });
     const neueUserId = res.user?.id;
@@ -132,7 +124,20 @@ export async function registerAccount(
       await verknuepfeBesitzerMitKonto(neueUserId, email);
     }
 
-    return { message: "Konto erstellt." };
+    // Bestätigt (Einladung oder Bootstrap): Better Auth legt bei Pflicht-
+    // Verifikation keine Session an — daher hier anmelden. Der Cookie wird
+    // über das nextCookies-Plugin gesetzt.
+    if (res.user?.emailVerified) {
+      await auth.api.signInEmail({
+        body: { email, password },
+        headers: await headers(),
+      });
+      return { ok: true };
+    }
+
+    return {
+      message: `Fast geschafft: Wir haben einen Bestätigungslink an ${email} geschickt. Nach dem Klick bist du angemeldet.`,
+    };
   } catch (e) {
     // Fehlgeschlagene Registrierung darf die Einladung nicht verbrennen.
     if (einladungId) {

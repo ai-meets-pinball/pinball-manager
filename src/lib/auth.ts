@@ -28,17 +28,72 @@ export const auth = betterAuth({
   // Globale Rollen liegen bewusst NICHT am user-Datensatz, sondern in
   // role_assignments (siehe lib/session.ts) — ein Modell für globale und Club-Rollen.
   /*
-    E-Mail-Verifikation ist die Voraussetzung dafür, dass Better Auth den
-    E-Mail-Wechsel überhaupt zulässt (siehe update-user-Route: ohne
-    `emailVerification.sendVerificationEmail` wirft /change-email pauschal
-    "Verification email isn't enabled").
+    Offene Registrierung, Anmeldung erst nach bestätigter Adresse.
 
-    ACHTUNG: `requireEmailVerification` wird bewusst NICHT gesetzt — das würde
-    bestehende Konten aussperren.
+    Der Nachweis „das Postfach gehört dir" kommt auf zwei Wegen:
+    - Einladung: der TOKEN stand nur in der Einladungs-Mail → das Konto wird
+      sofort als bestätigt angelegt (databaseHooks unten), keine zweite Mail.
+    - Selbstregistrierung: Better Auth schickt den Bestätigungslink direkt nach
+      dem Sign-up (`sendOnSignUp`) und bei jedem Anmeldeversuch eines noch
+      unbestätigten Kontos erneut (`sendOnSignIn`) — so kommt auch wieder rein,
+      wessen Link abgelaufen ist. Nach dem Klick ist die Person angemeldet
+      (`autoSignInAfterVerification`) und landet auf der callbackURL.
+
+    Bestehende Konten wurden per Migration 0056 als bestätigt markiert — sie
+    kamen alle über einen Einladungs-Token.
   */
   emailVerification: {
-    sendVerificationEmail: async ({ user, url }) => {
+    sendOnSignUp: true,
+    sendOnSignIn: true,
+    autoSignInAfterVerification: true,
+    sendVerificationEmail: async ({ user, url }, request) => {
+      /*
+        Sign-up einer Eingeladenen (oder Bootstrap): die Adresse ist schon
+        bestätigt, keine Mail. Erkennbar am Pfad — bzw. am FEHLENDEN Request,
+        denn registerAccount() ruft auth.api.signUpEmail() serverseitig ohne
+        HTTP-Request auf. Beim E-Mail-Wechsel dagegen (GET /verify-email nach
+        Bestätigung der alten Adresse) übergibt Better Auth den bestätigten
+        Nutzer mit der NEUEN Adresse — dort muss der Link raus.
+      */
+      const pfad = request ? new URL(request.url).pathname : null;
+      const istSignUp = pfad === null || pfad.endsWith("/sign-up/email");
+      if (user.emailVerified && istSignUp) return;
       await sendVerifyEmail(user.email, url);
+    },
+  },
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (neu) => {
+          const email = neu.email.trim().toLowerCase();
+          const [{ anzahl }] = await db.select({ anzahl: count() }).from(user);
+          // Bootstrap: die erste Adresse aus SUPER_ADMIN_EMAILS auf einer
+          // leeren Installation — dort kann niemand einladen oder mailen.
+          const istBootstrap = anzahl === 0 && istSuperAdminEmail(email);
+          // Einladung: registerAccount() hat den Token geprüft und die
+          // Einladung auf `claiming` gesetzt — nur dann gilt sie als eingelöst.
+          const eingeloest = await db.query.invitations.findFirst({
+            where: and(
+              eq(invitations.email, email),
+              eq(invitations.status, "claiming"),
+              gt(invitations.expiresAt, new Date()),
+            ),
+          });
+          if (istBootstrap || eingeloest) {
+            return { data: { ...neu, emailVerified: true } };
+          }
+        },
+      },
+    },
+  },
+  // Offener Sign-up braucht eine Bremse gegen Massenanmeldungen. Better Auth
+  // limitiert in Produktion standardmäßig (10 s / 100 Anfragen je IP); hier
+  // enger für die beiden Endpunkte, die Konten anlegen bzw. Mails auslösen.
+  // In der Entwicklung (und damit in der E2E-Suite) ist das Limit aus.
+  rateLimit: {
+    customRules: {
+      "/sign-up/email": { window: 60, max: 5 },
+      "/send-verification-email": { window: 60, max: 3 },
     },
   },
   user: {
@@ -60,6 +115,8 @@ export const auth = betterAuth({
     enabled: true,
     // Offene Selbstregistrierung (zusätzlich gibt es den Einladungsfluss).
     disableSignUp: false,
+    // Anmelden erst mit bestätigter Adresse — siehe emailVerification oben.
+    requireEmailVerification: true,
     minPasswordLength: PASSWORD_MIN,
     maxPasswordLength: 128,
     // Better Auth erzeugt Token + Link; wir verschicken ihn per Resend.
@@ -70,52 +127,21 @@ export const auth = betterAuth({
   },
   hooks: {
     before: createAuthMiddleware(async (ctx) => {
-      // 1. Passwort-Policy serverseitig erzwingen — dieselbe validatePassword()
-      //    wie im Client. Greift bei Sign-up und Passwort-Reset.
+      // Passwort-Policy serverseitig erzwingen — dieselbe validatePassword()
+      // wie im Client. Greift bei Sign-up und Passwort-Reset.
       const pwPaths = ["/sign-up/email", "/reset-password"];
       if (pwPaths.includes(ctx.path)) {
         const pw = ctx.body?.password ?? ctx.body?.newPassword;
         const problem = validatePassword(pw);
         if (problem) throw new APIError("BAD_REQUEST", { message: problem });
       }
-
       /*
-        2. Registrierung NUR mit eingelöster Einladung.
-
-        `disableSignUp: true` wäre hier falsch — es würde den Endpoint komplett
-        sperren und damit auch Eingeladene aussperren. DAS hier ist die echte
-        Grenze (lesbares TS, PRD §7).
-
-        Wichtig: Es genügt NICHT zu prüfen, ob für die E-Mail eine Einladung
-        existiert — wer eine eingeladene Adresse kennt, hätte sie sonst fremd
-        registriert (es gibt keine E-Mail-Verifikation). Erlaubt ist Sign-up nur
-        für Einladungen im Zustand `claiming`; dorthin bringt sie ausschließlich
-        registerAccount() nach Prüfung des TOKENS aus der Einladungs-Mail.
+        Frühere Grenze „Sign-up nur mit eingelöster Einladung" ist weg: Wer eine
+        fremde Adresse registriert, bekommt jetzt ein UNBESTÄTIGTES Konto, mit
+        dem sich nichts anfangen lässt — weder anmelden noch eine Einladung
+        annehmen. Die Inhaberin der Adresse kommt über „Passwort vergessen"
+        + Bestätigungslink an ihr Konto.
       */
-      if (ctx.path === "/sign-up/email") {
-        const email = String(ctx.body?.email ?? "").trim().toLowerCase();
-
-        // Bootstrap NUR auf einer leeren Installation: dort kann niemand
-        // einladen. Danach braucht auch ein Super-Admin eine Einladung —
-        // sonst wäre jede noch kontenlose Adresse aus SUPER_ADMIN_EMAILS
-        // von Fremden registrierbar und damit sofort Super-Admin.
-        const [{ anzahl }] = await db.select({ anzahl: count() }).from(user);
-        if (anzahl === 0 && istSuperAdminEmail(email)) return;
-
-        const eingeloest = await db.query.invitations.findFirst({
-          where: and(
-            eq(invitations.email, email),
-            eq(invitations.status, "claiming"),
-            gt(invitations.expiresAt, new Date()),
-          ),
-        });
-        if (!eingeloest) {
-          throw new APIError("FORBIDDEN", {
-            message:
-              "Registrierung ist nur mit Einladung möglich. Bitte nutze den Link aus deiner Einladungs-E-Mail.",
-          });
-        }
-      }
     }),
   },
   // nextCookies muss als letztes Plugin stehen, damit Server Actions Cookies setzen können.

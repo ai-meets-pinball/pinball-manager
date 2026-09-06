@@ -37,11 +37,19 @@ function LoginForm() {
     const { error } = await signIn.email({
       email: String(form.get("email")),
       password: String(form.get("password")),
+      // Landet im Bestätigungslink, falls die Adresse noch unbestätigt ist.
+      callbackURL: ziel,
     });
 
     setLoading(false);
     if (error) {
-      setError(error.message ?? "Anmeldung fehlgeschlagen");
+      // 403 = Passwort stimmt, Adresse ist aber noch nicht bestätigt. Better
+      // Auth hat in diesem Moment einen frischen Link verschickt (sendOnSignIn).
+      setError(
+        error.status === 403
+          ? "Deine E-Mail-Adresse ist noch nicht bestätigt. Wir haben dir gerade einen neuen Bestätigungslink geschickt — bitte prüfe dein Postfach."
+          : (error.message ?? "Anmeldung fehlgeschlagen"),
+      );
       return;
     }
     router.push(ziel);
