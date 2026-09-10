@@ -27,6 +27,16 @@ id und Signale bleiben erhalten).
 
 ## Offen, aber aktuell geringer Nutzen
 
+- **Review 09/2026 — verbliebene Ermessenspunkte** (Code-Review nach 1.35, Fixes
+  in 1.36): der Rollen-Dialog (`admin-user-roles.tsx` ↔ `member-actions.tsx`) und
+  der Umbenennen-Dialog (`plan-header.tsx` ↔ `generation-row.tsx`) sind je zweimal
+  gebaut; der Freigabe-Entwurf `{scope, anonym, zeigeKosten, clubIds, emails}` ist
+  viermal typisiert (`lib/sharing.FreigabeEntwurf` sollte die eine Quelle sein);
+  Dialoge schließen teils bei `state.ok`, teils bei `state.message`; `ROLE_LABEL`
+  in `status-badge.tsx` trägt längst alle Status-Labels und heißt noch nach den
+  Rollen. Alles ohne Verhaltensänderung — beim nächsten Anfassen der Stellen
+  mitnehmen.
+
 - **Fork** (`knowledge_overrides` `typ='fork'` + vorhandenes
   `knowledge.forked_from_id`): einen fremden Eintrag als eigenen übernehmen.
   *Bewusst zurückgestellt (Entscheidung 2026-07-31).* Mit dem vorhandenen
