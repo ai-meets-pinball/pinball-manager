@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withRedlining } from "redlining/next";
 
 const nextConfig: NextConfig = {
   experimental: {
@@ -52,4 +53,6 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default nextConfig;
+// Redlining: Entwicklungs-Overlay (Alt+R) zum Annotieren der laufenden App.
+// Der Loader läuft NUR im Dev-Server; der Production-Build bleibt unberührt.
+export default withRedlining(nextConfig);

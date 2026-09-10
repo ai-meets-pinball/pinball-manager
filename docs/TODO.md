@@ -27,6 +27,13 @@ id und Signale bleiben erhalten).
 
 ## Offen, aber aktuell geringer Nutzen
 
+- **E2E-Lauf mit geladenem Redlining-Overlay.** Seit 2026-09-10 ist das
+  Redlining-Overlay eingerichtet (`withRedlining` in `next.config.ts`,
+  `<Redlining />` im Root-Layout, Route `src/app/api/redlining/route.ts`). Die
+  Playwright-Suite fährt `next dev`, das Overlay ist dort also mitgeladen —
+  im Shadow DOM und unsichtbar bis Alt+R, Selektoren sollten unberührt bleiben.
+  Ein `npm run e2e` zur Bestätigung steht noch aus (braucht die Test-DB).
+
 - **Review 09/2026 — verbliebene Ermessenspunkte** (Code-Review nach 1.35, Fixes
   in 1.36): der Rollen-Dialog (`admin-user-roles.tsx` ↔ `member-actions.tsx`) und
   der Umbenennen-Dialog (`plan-header.tsx` ↔ `generation-row.tsx`) sind je zweimal

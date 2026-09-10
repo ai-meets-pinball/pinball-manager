@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Space_Grotesk, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/theme-provider";
+import { Redlining } from "redlining";
 
 /*
   Schriften (Claude-Design-Handoff v2):
@@ -44,6 +45,11 @@ export default function RootLayout({
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
           {children}
         </ThemeProvider>
+        {/*
+          Redlining-Overlay (Alt+R): nur im Dev-Server aktiv, im Production-Build
+          rendert die Komponente nichts.
+        */}
+        <Redlining />
       </body>
     </html>
   );
