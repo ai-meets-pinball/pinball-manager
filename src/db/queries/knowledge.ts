@@ -315,12 +315,16 @@ export async function getKnowledgeModels(currentUser: SessionUser) {
       modell: machineModels.modell,
       baujahr: machineModels.baujahr,
       imageUrl: machineModels.imageUrl,
+      generation: generations.name,
       eintraege: sql<number>`count(*)::int`,
     })
     .from(knowledge)
     .innerJoin(machineModels, eq(machineModels.id, knowledge.modelId))
+    // Die Generation hängt am Modell und darf fehlen (nicht jedes Modell ist
+    // einer zugeordnet) — deshalb LEFT JOIN.
+    .leftJoin(generations, eq(generations.id, machineModels.generationId))
     .where(sichtbar)
-    .groupBy(machineModels.id)
+    .groupBy(machineModels.id, generations.name)
     .orderBy(machineModels.modell, machineModels.hersteller);
 
   // Die Familie ist eine Katalog-Eigenschaft, kein Wissens-Zufall: auch
@@ -340,8 +344,10 @@ export async function getKnowledgeModels(currentUser: SessionUser) {
             modell: machineModels.modell,
             baujahr: machineModels.baujahr,
             imageUrl: machineModels.imageUrl,
+            generation: generations.name,
           })
           .from(machineModels)
+          .leftJoin(generations, eq(generations.id, machineModels.generationId))
           .where(inArray(machineModels.opdbMachineRef, schluessel));
   const bekannt = new Set(zeilen.map((z) => z.id));
   const alle = [
@@ -359,6 +365,12 @@ export async function getKnowledgeModels(currentUser: SessionUser) {
     modell: f.vertreter.modell,
     baujahr: f.vertreter.baujahr,
     imageUrl: f.vertreter.imageUrl ?? f.mitglieder.find((m) => m.imageUrl)?.imageUrl ?? null,
+    /* Baugleiche Editionen teilen die Plattform; steht sie am Vertreter nicht,
+       zählt die erste, die eine trägt. */
+    generation:
+      f.vertreter.generation ??
+      f.mitglieder.find((m) => m.generation)?.generation ??
+      null,
     eintraege: f.mitglieder.reduce((n, m) => n + m.eintraege, 0),
     editionen: f.mitglieder
       .filter((m) => m.id !== f.vertreter.id)

@@ -421,7 +421,7 @@ export const ANLEITUNG: HilfeSektion[] = [
     schritte: [
       {
         titel: "Der Katalog",
-        text: "»Wissensbasis« in der Navigation zeigt alle Modelle, zu denen für dich Wissen sichtbar ist (eigenes plus geteiltes) — mit Foto und Anzahl der Einträge. Baugleiche Editionen einer Maschine (z. B. Premium und LE — gleiche ersten zwei Teile der OPDB-Kennung) teilen ihr Wissen und erscheinen als ein Eintrag mit »auch …«; die Modellseite nennt sie unter »Baugleich mit«. Die Pro-Ausführung ist eine andere Maschine.",
+        text: "»Wissensbasis« in der Navigation zeigt alle Modelle, zu denen für dich Wissen sichtbar ist (eigenes plus geteiltes). Voreingestellt ist eine Tabelle: ein Klick auf »Modell«, »Baujahr« oder »Generation« sortiert danach, ein zweiter Klick dreht die Richtung um. Oben rechts schaltest du auf Karten mit Foto um; die Wahl bleibt gemerkt. Beide Ansichten nennen die Anzahl der Einträge. Baugleiche Editionen einer Maschine (z. B. Premium und LE — gleiche ersten zwei Teile der OPDB-Kennung) teilen ihr Wissen und erscheinen als ein Eintrag mit »auch …«; die Modellseite nennt sie unter »Baugleich mit«. Die Pro-Ausführung ist eine andere Maschine.",
       },
       {
         titel: "Modellseite",

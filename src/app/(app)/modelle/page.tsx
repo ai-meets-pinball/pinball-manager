@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { cookies } from "next/headers";
 import { PageHeader } from "@/components/ui/page-header";
-import { BookOpen, LayoutGrid, List as ListIcon } from "lucide-react";
+import { BookOpen, LayoutGrid, Table2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { CountPill } from "@/components/ui/count-pill";
-import { List, ListRow } from "@/components/ui/list";
 import { RememberParams } from "@/components/remember-params";
+import { SortKopf } from "@/components/ui/sort-kopf";
 import { ViewToggle } from "@/components/ui/view-toggle";
 import { getKnowledgeModels } from "@/db/queries";
 import { requireUser } from "@/lib/session";
@@ -25,7 +25,7 @@ import { klebrig } from "@/lib/sticky-view";
 export default async function WissensbasisPage({
   searchParams,
 }: {
-  searchParams: Promise<{ ansicht?: string }>;
+  searchParams: Promise<{ ansicht?: string; sort?: string; dir?: string }>;
 }) {
   const currentUser = await requireUser();
   const modelle = await getKnowledgeModels(currentUser);
@@ -38,10 +38,61 @@ export default async function WissensbasisPage({
   const ansicht = klebrig(
     sp.ansicht,
     cookieStore.get("wissenView")?.value,
-    (v) => v === "karten" || v === "liste",
-    "liste",
-  ) as "karten" | "liste";
-  const ansichtHref = (a: "karten" | "liste") => `/modelle?ansicht=${a}`;
+    (v) => v === "karten" || v === "tabelle",
+    "tabelle",
+  ) as "karten" | "tabelle";
+  const sort = klebrig(
+    sp.sort,
+    cookieStore.get("wissenSort")?.value,
+    (v) => v === "name" || v === "jahr" || v === "generation",
+    "name",
+  ) as "name" | "jahr" | "generation";
+  const dir = klebrig(
+    sp.dir,
+    cookieStore.get("wissenDir")?.value,
+    (v) => v === "auf" || v === "ab",
+    "auf",
+  ) as "auf" | "ab";
+
+  /* Sortierung in-memory: die Liste entsteht ohnehin erst nach dem
+     Zusammenfassen der baugleichen Editionen, und sie ist kurz. Ohne Wert
+     (Baujahr, Generation) fällt ein Eintrag ans Ende — unabhängig von der
+     Richtung, wie auf der Maschinenliste. */
+  const sortiert = [...modelle];
+  const zuletzt = (a: unknown, b: unknown) =>
+    a == null && b == null ? 0 : a == null ? 1 : b == null ? -1 : null;
+  sortiert.sort((a, b) => {
+    if (sort === "jahr") {
+      const rand = zuletzt(a.baujahr, b.baujahr);
+      if (rand !== null) return rand;
+      return dir === "ab"
+        ? b.baujahr! - a.baujahr!
+        : a.baujahr! - b.baujahr!;
+    }
+    if (sort === "generation") {
+      const rand = zuletzt(a.generation, b.generation);
+      if (rand !== null) return rand;
+      const v = a.generation!.localeCompare(b.generation!, "de");
+      return dir === "ab" ? -v : v;
+    }
+    const v = modellName(a).localeCompare(modellName(b), "de");
+    return dir === "ab" ? -v : v;
+  });
+
+  // Steuer-Links tragen immer alle gemerkten Parameter (siehe klebrig()).
+  const href = (patch: { ansicht?: string; sort?: string; dir?: string }) =>
+    `/modelle?${new URLSearchParams({
+      ansicht: patch.ansicht ?? ansicht,
+      sort: patch.sort ?? sort,
+      dir: patch.dir ?? dir,
+    }).toString()}`;
+  const sortLink = (spalte: "name" | "jahr" | "generation") => ({
+    aktiv: sort === spalte,
+    href: href({
+      sort: spalte,
+      dir: sort === spalte ? (dir === "auf" ? "ab" : "auf") : "auf",
+    }),
+  });
 
   return (
     <div className="space-y-6">
@@ -53,23 +104,26 @@ export default async function WissensbasisPage({
             <ViewToggle
               options={[
                 {
-                  href: ansichtHref("karten"),
+                  href: href({ ansicht: "karten" }),
                   label: "Kartenansicht",
                   icon: <LayoutGrid size={16} />,
                   active: ansicht === "karten",
                 },
                 {
-                  href: ansichtHref("liste"),
-                  label: "Listenansicht",
-                  icon: <ListIcon size={16} />,
-                  active: ansicht === "liste",
+                  href: href({ ansicht: "tabelle" }),
+                  label: "Tabellenansicht",
+                  icon: <Table2 size={16} />,
+                  active: ansicht === "tabelle",
                 },
               ]}
             />
           ) : null
         }
       />
-      <RememberParams path="/modelle" params={{ wissenView: ansicht }} />
+      <RememberParams
+        path="/modelle"
+        params={{ wissenView: ansicht, wissenSort: sort, wissenDir: dir }}
+      />
 
       {modelle.length === 0 ? (
         <Card>
@@ -79,29 +133,69 @@ export default async function WissensbasisPage({
             Modell hier.
           </p>
         </Card>
-      ) : ansicht === "liste" ? (
-        /* Kompakte Liste — eine Zeile je Modell, wie auf den übrigen Seiten. */
-        <List empty="Keine Modelle." kompakt>
-          {modelle.map((m) => (
-            <ListRow
-              key={m.modelId}
-              kompakt
-              href={`/modelle/${m.modelId}`}
-              title={modellName(m)}
-              subtitle={`${m.baujahr ?? "—"}${
-                m.editionen.length > 0 ? ` · auch ${m.editionen.join(", ")}` : ""
-              }`}
-              meta={
-                <CountPill
-                  n={`${m.eintraege} Wissenseintr${m.eintraege === 1 ? "ag" : "äge"}`}
+      ) : ansicht === "tabelle" ? (
+        /* Kompakte Tabelle — die Spaltenköpfe sortieren (wie /machines). */
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-[var(--color-border)] text-left text-xs uppercase tracking-[0.06em] text-[var(--color-muted)]">
+                <SortKopf
+                  label="Modell"
+                  aktiv={sortLink("name").aktiv}
+                  dir={dir}
+                  href={sortLink("name").href}
                 />
-              }
-            />
-          ))}
-        </List>
+                <SortKopf
+                  label="Baujahr"
+                  aktiv={sortLink("jahr").aktiv}
+                  dir={dir}
+                  href={sortLink("jahr").href}
+                />
+                <SortKopf
+                  label="Generation"
+                  aktiv={sortLink("generation").aktiv}
+                  dir={dir}
+                  href={sortLink("generation").href}
+                />
+                <th className="py-2 font-medium">Wissen</th>
+              </tr>
+            </thead>
+            <tbody>
+              {sortiert.map((m) => (
+                <tr
+                  key={m.modelId}
+                  className="border-b border-[var(--color-border)] align-middle hover:bg-[var(--color-surface-2)]"
+                >
+                  <td className="py-2 pr-4">
+                    <Link
+                      href={`/modelle/${m.modelId}`}
+                      className="font-medium hover:underline"
+                    >
+                      {modellName(m)}
+                    </Link>
+                    {/* Baugleiche Editionen teilen diese Wissensbasis. */}
+                    {m.editionen.length > 0 ? (
+                      <span className="text-[var(--color-muted)]">
+                        {" "}
+                        · auch {m.editionen.join(", ")}
+                      </span>
+                    ) : null}
+                  </td>
+                  <td className="py-2 pr-4">{m.baujahr ?? "—"}</td>
+                  <td className="py-2 pr-4 text-[var(--color-muted)]">
+                    {m.generation ?? "—"}
+                  </td>
+                  <td className="py-2">
+                    <CountPill n={m.eintraege} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2">
-          {modelle.map((m) => (
+          {sortiert.map((m) => (
             <Link
               key={m.modelId}
               href={`/modelle/${m.modelId}`}
@@ -120,6 +214,7 @@ export default async function WissensbasisPage({
                   <p className="truncate font-semibold">{modellName(m)}</p>
                   <p className="truncate text-sm text-[var(--color-muted)]">
                     {m.baujahr ?? "—"}
+                    {m.generation ? ` · ${m.generation}` : ""}
                     {/* Baugleiche Editionen teilen diese Wissensbasis. */}
                     {m.editionen.length > 0 ? ` · auch ${m.editionen.join(", ")}` : ""}
                   </p>

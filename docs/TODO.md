@@ -16,6 +16,12 @@ id und Signale bleiben erhalten).
   Playwright-Suite fährt `next dev`, das Overlay ist also mitgeladen — mit
   `npm run e2e` bestätigt: 61 grün, die 6 roten (Kuratierung, Club-Löschen,
   Club-Zuordnung) sind vorbestehend und auch auf sauberem Stand rot.
+- **Redlining-Runde 3** (Notiz vom 2026-09-10, 17:08): die Wissensbasis
+  (/modelle) ist nach Modell, Baujahr und Generation sortierbar — die dichte
+  Ansicht ist dafür eine echte Tabelle mit `SortKopf` geworden (Karten bleiben
+  als zweite Ansicht). Die Generation stand dort vorher gar nicht zur
+  Verfügung: `getKnowledgeModels` holt sie jetzt per LEFT JOIN, für eine
+  Familie zählt die erste Edition, die eine trägt.
 - **Redlining-Runde 2** (Notizen vom 2026-09-10, 15:24): Kacheln der Übersicht
   gleich hoch mit oben bündigen Icons; die zwei Sammel-Leisten der
   Maschinenliste zu EINER zusammengefasst, Einstieg ist ein Knopf „Verwalten"
