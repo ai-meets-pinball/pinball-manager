@@ -42,6 +42,12 @@ Das Projekt ist gleichzeitig das durchgängige Lehrbeispiel der Gruppe **„KI m
 
 Voraussetzungen: **Node 20+** und ein **Supabase-Projekt** (für Postgres + Storage).
 
+> **Paketmanager: npm.** `package-lock.json` ist die eine Quelle — Vercel baut
+> damit. Bitte nicht mit pnpm oder yarn installieren: die lösen Versionen
+> innerhalb derselben Bereiche anders auf, und `npm ci` bricht ab, sobald
+> `package.json` und `package-lock.json` auseinanderlaufen. Fremde Lockdateien
+> sind deshalb in `.gitignore` gesperrt.
+
 ```bash
 # Repo klonen
 git clone https://github.com/<dein-user>/<dein-repo>.git

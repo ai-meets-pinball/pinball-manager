@@ -51,3 +51,10 @@ next-env.d.ts
 /blob-report/
 .env.e2e
 .redlining/
+
+# Dieses Projekt nutzt npm (package-lock.json ist die eine Quelle, Vercel baut
+# damit). Ein versehentliches `pnpm install` soll die Auflösung nicht still
+# verschieben — Begründung im README unter „Erste Schritte".
+pnpm-lock.yaml
+yarn.lock
+bun.lockb
