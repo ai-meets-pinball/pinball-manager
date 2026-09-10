@@ -1,4 +1,4 @@
-import { LayoutGrid, Plus, Table2 } from "lucide-react";
+import { CheckSquare, LayoutGrid, Plus, Table2 } from "lucide-react";
 import { MachinesBoard } from "@/components/machines-board";
 import { ButtonLink } from "@/components/ui/button";
 import { ChipFilter } from "@/components/ui/chip-filter";
@@ -36,6 +36,7 @@ export default async function MachinesPage({
     sort?: string;
     dir?: string;
     ansicht?: string;
+    verwalten?: string;
   }>;
 }) {
   const user = await requireUser();
@@ -58,8 +59,13 @@ export default async function MachinesPage({
     sp.ansicht,
     cookieStore.get("machinesView")?.value,
     (v) => v === "karten" || v === "tabelle",
-    "karten",
+    "tabelle",
   ) as "karten" | "tabelle";
+  /* Sammelaktionen (mehrere zuweisen/löschen) laufen als eigener Modus, der in
+     der URL steht — so kann der Schalter dafür hier oben in der Steuerzeile
+     sitzen, während die Auswahl selbst in der Tabelle passiert. Bewusst NICHT
+     gemerkt: ein Verwaltungsmodus soll nicht beim nächsten Besuch anspringen. */
+  const verwalten = sp.verwalten === "1";
 
   const machines = await getMeineMaschinen(user, q);
   // Fällige Wartungen je Maschine — für die „N fällig"-Badge.
@@ -162,6 +168,7 @@ export default async function MachinesPage({
     ansicht?: string;
     sort?: string;
     dir?: string;
+    verwalten?: boolean;
   }) => {
     const p = new URLSearchParams();
     // Steuer-Links tragen IMMER alle gemerkten Parameter (auch Defaults), damit
@@ -182,6 +189,7 @@ export default async function MachinesPage({
     p.set("sort", patch.sort ?? sort);
     p.set("dir", patch.dir ?? dir);
     p.set("ansicht", patch.ansicht ?? ansicht);
+    if (patch.verwalten ?? verwalten) p.set("verwalten", "1");
     return `/machines?${p.toString()}`;
   };
 
@@ -267,7 +275,19 @@ export default async function MachinesPage({
             }))}
           />
         ) : null}
-        <div className="ml-auto">
+        {/* Sammelaktionen: EIN Einstieg statt zweier Text-Links unter der
+            Steuerzeile. Führt in den Auswahlmodus; die Aktionen (zuweisen,
+            löschen) stehen danach in der Leiste über der Liste. */}
+        <div className="ml-auto flex items-center gap-2">
+          {items.length > 0 ? (
+            <ButtonLink
+              href={href({ verwalten: !verwalten })}
+              variant="secondary"
+              size="sm"
+            >
+              <CheckSquare size={14} /> {verwalten ? "Fertig" : "Verwalten"}
+            </ButtonLink>
+          ) : null}
           <ViewToggle
             options={[
               {
@@ -311,6 +331,8 @@ export default async function MachinesPage({
           ansicht={ansicht}
           sortLinks={sortLinks}
           dir={dir}
+          verwalten={verwalten}
+          beendenHref={href({ verwalten: false })}
         />
       )}
     </div>

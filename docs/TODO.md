@@ -16,6 +16,12 @@ id und Signale bleiben erhalten).
   Playwright-Suite fährt `next dev`, das Overlay ist also mitgeladen — mit
   `npm run e2e` bestätigt: 61 grün, die 6 roten (Kuratierung, Club-Löschen,
   Club-Zuordnung) sind vorbestehend und auch auf sauberem Stand rot.
+- **Redlining-Runde 2** (Notizen vom 2026-09-10, 15:24): Kacheln der Übersicht
+  gleich hoch mit oben bündigen Icons; die zwei Sammel-Leisten der
+  Maschinenliste zu EINER zusammengefasst, Einstieg ist ein Knopf „Verwalten"
+  in der Steuerzeile (Modus lebt in der URL, `?verwalten=1`, bewusst nicht
+  gemerkt); die Wissensbasis bekommt einen Karten/Listen-Umschalter (Cookie
+  `wissenView`) und startet als Liste; /machines startet ebenfalls als Tabelle.
 - **Redlining-Runde 1** (Notizen vom 2026-09-10): Sortierung sitzt im
   Tabellenkopf (`ui/sort-kopf.tsx`, `/machines` + `/admin/modelle`; Select nur
   noch in der Kartenansicht), neue Spalte „Hinzugefügt", einheitliche
@@ -30,8 +36,8 @@ id und Signale bleiben erhalten).
   geben `FormState` zurück statt zu werfen) — Spec mit den bewusst offenen
   Punkten: `docs/superpowers/specs/2026-09-02-ux-konsolidierung-design.md`.
   Offen dort: Prompts-Karte als Ganzes, doppeltes Anbieter-Feld in der
-  Prompt-Refinery, zwei Sammel-Leisten der Maschinenliste, Zurück-Link der
-  Modellseite.
+  Prompt-Refinery, Zurück-Link der Modellseite. (Die zwei Sammel-Leisten der
+  Maschinenliste sind mit Runde 2 zu einer zusammengefasst.)
 - **Modell-Familie**: baugleiche OPDB-Editionen (gleiche ersten zwei Segmente,
   `opdb_machine_ref`) teilen Wissen, Guides, Tipps, Freigaben und Generation,
   ohne dass Katalogzeilen verschmelzen (CONTEXT.md „Familie", Datenmodell §2).

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useActionState, useState } from "react";
-import { CheckSquare, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { MachineCard } from "@/components/machine-card";
 import { Button } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
@@ -37,23 +37,28 @@ type Item = {
   darfUmhaengen: boolean;
 };
 
+const LEERE_AUSWAHL: ReadonlySet<string> = new Set();
+
 const KEIN_RECHT =
   "Nur Eigentümer oder Club-Owner/-Admin dürfen diese Maschine umhängen oder löschen";
 
 const selectStyles =
   "rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-fg)] outline-none focus:border-[var(--color-primary)]";
 
-/* Die Zuweisungs-Leiste. Als eigene, per `key` neu montierte Komponente, damit
-   der useActionState-Zustand (Erfolg/Fehler-Meldung) bei jedem neuen Auswahl-
-   durchgang frisch startet. */
-function BulkAssignBar({
+/* EINE Sammel-Leiste für beide Aktionen. Vorher waren es zwei Leisten mit
+   doppelter Chrome („Alle auswählen", Zähler, „Fertig"); das teilt sich jetzt
+   den Rahmen. Die zwei Aktionen bleiben getrennte <form>s nebeneinander —
+   jede behält ihren eigenen useActionState (Erfolg/Fehler je Aktion), und
+   verschachtelte Formulare sind nicht erlaubt. Serverseitig wird je Maschine
+   geprüft; nicht Erlaubtes wird übersprungen. */
+function SammelLeiste({
   clubs,
   ids,
   zielClub,
   onZielClub,
   alleAusgewaehlt,
   onAlleUmschalten,
-  onDone,
+  beendenHref,
 }: {
   clubs: { id: string; name: string }[];
   ids: string[];
@@ -61,21 +66,24 @@ function BulkAssignBar({
   onZielClub: (v: string) => void;
   alleAusgewaehlt: boolean;
   onAlleUmschalten: () => void;
-  onDone: () => void;
+  /** Zurück in die normale Liste (Auswahlmodus lebt in der URL). */
+  beendenHref: string;
 }) {
-  const [state, formAction, pending] = useActionState<BulkAssignState, FormData>(
-    assignMachinesToClub,
-    {},
-  );
+  const [zuweisen, zuweisenAction, zuweisenLaeuft] = useActionState<
+    BulkAssignState,
+    FormData
+  >(assignMachinesToClub, {});
+  const [loeschen, loeschenAction, loeschenLaeuft] = useActionState<
+    BulkAssignState,
+    FormData
+  >(deleteMachines, {});
+
+  const ausgewaehlt = ids.length === 0;
+  const meldung = zuweisen.anzahl != null ? zuweisen : loeschen;
+  const verb = zuweisen.anzahl != null ? "zugewiesen" : "gelöscht";
 
   return (
-    <form
-      action={formAction}
-      className="flex flex-wrap items-center gap-3 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-3"
-    >
-      {ids.map((id) => (
-        <input key={id} type="hidden" name="machineIds" value={id} />
-      ))}
+    <div className="flex flex-wrap items-center gap-3 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-3">
       <button
         type="button"
         onClick={onAlleUmschalten}
@@ -84,112 +92,73 @@ function BulkAssignBar({
         {alleAusgewaehlt ? "Alle abwählen" : "Alle auswählen"}
       </button>
       <span className="text-sm font-medium">{ids.length} ausgewählt</span>
-      <select
-        name="clubId"
-        required
-        value={zielClub}
-        onChange={(e) => onZielClub(e.target.value)}
-        className={selectStyles}
-      >
-        <option value="" disabled>
-          Club wählen…
-        </option>
-        {clubs.map((c) => (
-          <option key={c.id} value={c.id}>
-            {c.name}
-          </option>
+
+      {/* Zuweisen nur sinnvoll, wenn der Nutzer überhaupt in einem Club ist. */}
+      {clubs.length > 0 ? (
+        <form action={zuweisenAction} className="flex items-center gap-2">
+          {ids.map((id) => (
+            <input key={id} type="hidden" name="machineIds" value={id} />
+          ))}
+          <select
+            name="clubId"
+            required
+            value={zielClub}
+            onChange={(e) => onZielClub(e.target.value)}
+            aria-label="Ziel-Club"
+            className={selectStyles}
+          >
+            <option value="" disabled>
+              Club wählen…
+            </option>
+            {clubs.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+            <option value="none">— Aus Club entfernen —</option>
+          </select>
+          <Button type="submit" disabled={zuweisenLaeuft || ausgewaehlt}>
+            {zuweisenLaeuft ? "Zuweisen…" : "Zuweisen"}
+          </Button>
+        </form>
+      ) : null}
+
+      <form action={loeschenAction}>
+        {ids.map((id) => (
+          <input key={id} type="hidden" name="machineIds" value={id} />
         ))}
-        <option value="none">— Aus Club entfernen —</option>
-      </select>
-      <Button type="submit" disabled={pending || ids.length === 0}>
-        {pending ? "Zuweisen…" : "Zuweisen"}
-      </Button>
-      <button
-        type="button"
-        onClick={onDone}
+        <ConfirmButton
+          question={`${ids.length} Maschine(n) endgültig löschen? Alle zugehörigen Fehler, Reparaturen und Wartungen werden mitgelöscht — das lässt sich nicht rückgängig machen.`}
+          confirmLabel="Endgültig löschen"
+          disabled={loeschenLaeuft || ausgewaehlt}
+          className="inline-flex items-center gap-1 rounded-[var(--radius)] border border-[var(--color-danger)] px-3 py-1.5 text-sm font-medium text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 disabled:opacity-50"
+        >
+          <Trash2 size={14} /> {loeschenLaeuft ? "Löschen…" : "Löschen"}
+        </ConfirmButton>
+      </form>
+
+      <Link
+        href={beendenHref}
         className="text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]"
       >
         Fertig
-      </button>
-      {state.error ? (
-        <span className="text-sm text-[var(--color-danger)]">{state.error}</span>
+      </Link>
+
+      {zuweisen.error || loeschen.error ? (
+        <span className="text-sm text-[var(--color-danger)]">
+          {zuweisen.error ?? loeschen.error}
+        </span>
       ) : null}
-      {state.anzahl != null ? (
+      {meldung.anzahl != null ? (
         <span className="text-sm text-[var(--color-success)]">
-          {state.anzahl} zugewiesen
-          {state.uebersprungen
-            ? `, ${state.uebersprungen} übersprungen (keine Berechtigung)`
+          {meldung.anzahl} {verb}
+          {meldung.uebersprungen
+            ? `, ${meldung.uebersprungen} übersprungen (keine Berechtigung)`
             : ""}
           .
         </span>
       ) : null}
-    </form>
-  );
-}
-
-/* Die Lösch-Leiste — dieselbe Auswahl-Mechanik wie beim Zuweisen, aber mit
-   Pflicht-Bestätigung (ConfirmButton) und danger-Rahmen. Serverseitig wird je
-   Maschine geprüft; nicht erlaubte werden übersprungen. */
-function BulkDeleteBar({
-  ids,
-  alleAusgewaehlt,
-  onAlleUmschalten,
-  onDone,
-}: {
-  ids: string[];
-  alleAusgewaehlt: boolean;
-  onAlleUmschalten: () => void;
-  onDone: () => void;
-}) {
-  const [state, formAction, pending] = useActionState<BulkAssignState, FormData>(
-    deleteMachines,
-    {},
-  );
-
-  return (
-    <form
-      action={formAction}
-      className="flex flex-wrap items-center gap-3 rounded-[var(--radius)] border border-[var(--color-danger)] bg-[var(--color-surface-2)] p-3"
-    >
-      {ids.map((id) => (
-        <input key={id} type="hidden" name="machineIds" value={id} />
-      ))}
-      <button
-        type="button"
-        onClick={onAlleUmschalten}
-        className="text-sm text-[var(--color-primary)] hover:underline"
-      >
-        {alleAusgewaehlt ? "Alle abwählen" : "Alle auswählen"}
-      </button>
-      <span className="text-sm font-medium">{ids.length} ausgewählt</span>
-      <ConfirmButton
-        question={`${ids.length} Maschine(n) endgültig löschen? Alle zugehörigen Fehler, Reparaturen und Wartungen werden mitgelöscht — das lässt sich nicht rückgängig machen.`}
-        confirmLabel="Endgültig löschen"
-        disabled={pending || ids.length === 0}
-        className="inline-flex items-center gap-1 rounded-[var(--radius)] border border-[var(--color-danger)] px-3 py-1.5 text-sm font-medium text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 disabled:opacity-50"
-      >
-        <Trash2 size={14} /> {pending ? "Löschen…" : "Löschen"}
-      </ConfirmButton>
-      <button
-        type="button"
-        onClick={onDone}
-        className="text-sm text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-      >
-        Fertig
-      </button>
-      {state.error ? (
-        <span className="text-sm text-[var(--color-danger)]">{state.error}</span>
-      ) : null}
-      {state.anzahl != null ? (
-        <span className="text-sm text-[var(--color-success)]">
-          {state.anzahl} gelöscht
-          {state.uebersprungen
-            ? `, ${state.uebersprungen} übersprungen (keine Berechtigung)`
-            : ""}
-          .
-        </span>
-      ) : null}
-    </form>
+    </div>
   );
 }
 
@@ -199,6 +168,8 @@ export function MachinesBoard({
   ansicht = "karten",
   sortLinks,
   dir,
+  verwalten,
+  beendenHref,
 }: {
   machines: Item[];
   clubs: { id: string; name: string }[];
@@ -211,40 +182,32 @@ export function MachinesBoard({
   */
   sortLinks: Record<"neu" | "name" | "jahr", { href: string; aktiv: boolean }>;
   dir: "auf" | "ab";
+  /* Der Auswahlmodus lebt in der URL (`?verwalten=1`), damit der Schalter
+     dafür oben in der Steuerzeile stehen kann (Server-Komponente) statt hier
+     unten über der Liste. */
+  verwalten: boolean;
+  /** Zurück in die normale Liste. */
+  beendenHref: string;
 }) {
-  const [auswahlModus, setAuswahlModus] = useState(false);
-  const [aktion, setAktion] = useState<"zuweisen" | "loeschen">("zuweisen");
-  const [auswahl, setAuswahl] = useState<Set<string>>(new Set());
+  const [gewaehlteIds, setGewaehlteIds] = useState<Set<string>>(new Set());
   const [zielClub, setZielClub] = useState("");
-  // Wird bei jedem Start eines Auswahldurchgangs erhöht → frischer Action-State.
-  const [sitzung, setSitzung] = useState(0);
+  /* Außerhalb des Verwalten-Modus zählt keine Auswahl — abgeleitet statt in
+     einem Effekt zurückgesetzt. */
+  const auswahl = verwalten ? gewaehlteIds : LEERE_AUSWAHL;
 
   /* Hängen alle sichtbaren Maschinen im selben Bereich, wiederholt die
      Club-Spalte nur den Filter darüber — dann weg damit. Im Auswahlmodus
      bleibt sie stehen: dort hängt der Hinweis „bereits zugewiesen" daran. */
   const clubSpalte =
-    auswahlModus || !spalteEinheitlich(machines, (m) => m.club?.name ?? "privat");
+    verwalten || !spalteEinheitlich(machines, (m) => m.club?.name ?? "privat");
 
   function toggle(id: string) {
-    setAuswahl((prev) => {
+    setGewaehlteIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  }
-
-  function starten(a: "zuweisen" | "loeschen") {
-    setAktion(a);
-    setAuswahl(new Set());
-    setZielClub("");
-    setSitzung((k) => k + 1);
-    setAuswahlModus(true);
-  }
-
-  function beenden() {
-    setAuswahlModus(false);
-    setAuswahl(new Set());
   }
 
   // „Alle" bezieht sich auf die aktuell angezeigten (ggf. gefilterten) Maschinen
@@ -253,55 +216,26 @@ export function MachinesBoard({
   const alleAusgewaehlt =
     anhakbar.length > 0 && auswahl.size === anhakbar.length;
   function alleUmschalten() {
-    setAuswahl(alleAusgewaehlt ? new Set() : new Set(anhakbar.map((m) => m.id)));
+    setGewaehlteIds(
+      alleAusgewaehlt ? new Set() : new Set(anhakbar.map((m) => m.id)),
+    );
   }
 
   return (
     <div className="space-y-4">
-      {/* Sammelaktionen — bewusst leise (Text-Links): seltene Verwaltung soll die
-         Liste nicht dominieren. Die Rechte werden serverseitig je Maschine geprüft. */}
-      {auswahlModus ? (
-        aktion === "zuweisen" ? (
-          <BulkAssignBar
-            key={sitzung}
-            clubs={clubs}
-            ids={[...auswahl]}
-            zielClub={zielClub}
-            onZielClub={setZielClub}
-            alleAusgewaehlt={alleAusgewaehlt}
-            onAlleUmschalten={alleUmschalten}
-            onDone={beenden}
-          />
-        ) : (
-          <BulkDeleteBar
-            key={sitzung}
-            ids={[...auswahl]}
-            alleAusgewaehlt={alleAusgewaehlt}
-            onAlleUmschalten={alleUmschalten}
-            onDone={beenden}
-          />
-        )
-      ) : (
-        <div className="flex flex-wrap items-center gap-4">
-          {/* Zuweisen nur sinnvoll, wenn der Nutzer überhaupt in einem Club ist. */}
-          {clubs.length > 0 ? (
-            <button
-              type="button"
-              onClick={() => starten("zuweisen")}
-              className="inline-flex items-center gap-1.5 text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-            >
-              <CheckSquare size={13} /> Mehrere einem Club zuweisen
-            </button>
-          ) : null}
-          <button
-            type="button"
-            onClick={() => starten("loeschen")}
-            className="inline-flex items-center gap-1.5 text-xs text-[var(--color-muted)] hover:text-[var(--color-danger)]"
-          >
-            <Trash2 size={13} /> Mehrere löschen
-          </button>
-        </div>
-      )}
+      {/* Sammelaktionen: EINE Leiste, sichtbar nur im Verwalten-Modus. Der
+          Einstieg dazu sitzt oben in der Steuerzeile (Knopf „Verwalten"). */}
+      {verwalten ? (
+        <SammelLeiste
+          clubs={clubs}
+          ids={[...auswahl]}
+          zielClub={zielClub}
+          onZielClub={setZielClub}
+          alleAusgewaehlt={alleAusgewaehlt}
+          onAlleUmschalten={alleUmschalten}
+          beendenHref={beendenHref}
+        />
+      ) : null}
 
       {ansicht === "tabelle" ? (
         /* Kompakte Tabellen-Ansicht (ohne Bilder) — schnelles Scannen; die
@@ -310,7 +244,7 @@ export function MachinesBoard({
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr className="border-b border-[var(--color-border)] text-left text-xs uppercase tracking-[0.06em] text-[var(--color-muted)]">
-                {auswahlModus ? <th className="w-8 py-2" /> : null}
+                {verwalten ? <th className="w-8 py-2" /> : null}
                 <SortKopf
                   label="Modell"
                   aktiv={sortLinks.name.aktiv}
@@ -341,7 +275,7 @@ export function MachinesBoard({
                   key={m.id}
                   className="border-b border-[var(--color-border)] align-middle hover:bg-[var(--color-surface-2)]"
                 >
-                  {auswahlModus ? (
+                  {verwalten ? (
                     <td className="py-2">
                       <input
                         type="checkbox"
@@ -369,7 +303,7 @@ export function MachinesBoard({
                   {clubSpalte ? (
                     <td className="py-2 pr-4 text-[var(--color-muted)]">
                       {m.club?.name ?? "privat"}
-                      {auswahlModus &&
+                      {verwalten &&
                       zielClub !== "" &&
                       zielClub !== "none" &&
                       m.clubId === zielClub
@@ -397,7 +331,7 @@ export function MachinesBoard({
               machine={m}
               wartungFaellig={m.wartungFaellig}
               selection={
-                auswahlModus
+                verwalten
                   ? {
                       selected: auswahl.has(m.id),
                       onToggle: () => toggle(m.id),
@@ -407,7 +341,7 @@ export function MachinesBoard({
               }
               hinweis={
                 // Im Zuweisungsmodus markieren, was schon im gewählten Ziel-Club ist.
-                auswahlModus &&
+                verwalten &&
                 zielClub !== "" &&
                 zielClub !== "none" &&
                 m.clubId === zielClub

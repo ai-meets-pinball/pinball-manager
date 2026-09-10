@@ -358,10 +358,13 @@ export default async function DashboardPage({
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
         {kpis.map((k) => (
           <Link key={k.label} href={k.href} className="group min-w-0">
-            <Card className="flex min-w-0 items-center gap-2 p-2.5 transition-colors group-hover:border-[var(--color-primary)] sm:p-3">
+            {/* `h-full`: die Kachel füllt die Rasterzeile, damit alle fünf
+                gleich hoch sind — auch wenn ein Label zweizeilig umbricht.
+                `items-start`: Icon und Zahl stehen oben bündig. */}
+            <Card className="flex h-full min-w-0 items-start gap-2 p-2.5 transition-colors group-hover:border-[var(--color-primary)] sm:p-3">
               <k.icon
                 size={18}
-                className={`hidden shrink-0 sm:block ${k.tone || "text-[var(--color-muted)]"}`}
+                className={`mt-0.5 hidden shrink-0 sm:block ${k.tone || "text-[var(--color-muted)]"}`}
               />
               <div className="min-w-0">
                 <p className={`text-xl font-bold leading-none sm:text-2xl ${k.tone}`}>
