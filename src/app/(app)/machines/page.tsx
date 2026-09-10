@@ -14,6 +14,7 @@ import { cookies } from "next/headers";
 import { RememberParams } from "@/components/remember-params";
 import { requireUser } from "@/lib/session";
 import { klebrig } from "@/lib/sticky-view";
+import { bereichKeys } from "@/lib/bereich";
 import { darfMaschine } from "@/lib/rechte";
 import { AutoSubmitSelect } from "@/components/ui/auto-submit-select";
 import { SortRichtung } from "@/components/ui/sort-richtung";
@@ -30,6 +31,7 @@ export default async function MachinesPage({
 }: {
   searchParams: Promise<{
     q?: string;
+    bereich?: string;
     club?: string;
     sort?: string;
     dir?: string;
@@ -76,6 +78,7 @@ export default async function MachinesPage({
     hersteller: m.hersteller,
     modell: m.modell,
     baujahr: m.baujahr,
+    createdAt: m.createdAt,
     fotoUrl: m.fotoUrl,
     clubId: m.clubId,
     club: m.club,
@@ -96,43 +99,41 @@ export default async function MachinesPage({
     }
   }
 
-  /* Bereichs-Auswahl merken: die URL (?club=) gewinnt, sonst das zuletzt in
-     einem Cookie gemerkte (überlebt Navigation UND Sessions). „alle" ist ein
-     expliziter Wert, damit man bewusst dorthin zurück kann. Ein ungültiger/
-     veralteter Wert (gelöschter Club) fällt auf „alle" zurück. */
-  const gueltigeBereiche = new Set<string>([
-    "alle",
-    "privat",
-    ...clubTabs.keys(),
-  ]);
-  const rawClub = klebrig(
-    sp.club,
-    cookieStore.get("machinesScope")?.value,
-    (v) => gueltigeBereiche.has(v),
-    "alle",
-  );
-  const clubFilter = rawClub === "alle" ? "" : rawClub;
-
+  /* Bereichs-Auswahl wie auf dem Dashboard: MEHRERE Bereiche gleichzeitig,
+     leer = alle (deshalb kein eigener Chip „Alle" mehr). Gemerkt wird sie im
+     app-weiten Cookie `bereich`, damit dieselbe Wahl auf beiden Seiten gilt.
+     `?club=` bleibt lesbar — alte Links und Lesezeichen sollen weiter gehen;
+     ein veralteter Wert (verlassener Club) fällt auf „alle" zurück. */
+  const bereichKey = (clubId: string | null) => clubId ?? "privat";
   const tabs = [
-    { key: "alle", label: "Alle", count: alle.length },
-    {
-      key: "privat",
-      label: "Privat",
-      count: alle.filter((m) => m.clubId === null).length,
-    },
+    ...(alle.some((m) => m.clubId === null)
+      ? [
+          {
+            key: "privat",
+            label: "Privat",
+            count: alle.filter((m) => m.clubId === null).length,
+          },
+        ]
+      : []),
     ...[...clubTabs].map(([id, name]) => ({
       key: id,
       label: name,
       count: alle.filter((m) => m.clubId === id).length,
     })),
   ];
+  const gueltigeBereiche = new Set(tabs.map((t) => t.key));
+  const bereichRoh =
+    sp.bereich !== undefined
+      ? sp.bereich
+      : sp.club !== undefined
+        ? sp.club === "alle"
+          ? ""
+          : sp.club
+        : cookieStore.get("bereich")?.value;
+  const gewaehlt = bereichKeys(bereichRoh, gueltigeBereiche);
+  const aktiv = new Set(gewaehlt.length ? gewaehlt : tabs.map((t) => t.key));
 
-  const gefiltert =
-    clubFilter === "privat"
-      ? alle.filter((m) => m.clubId === null)
-      : clubFilter
-        ? alle.filter((m) => m.clubId === clubFilter)
-        : alle;
+  const gefiltert = alle.filter((m) => aktiv.has(bereichKey(m.clubId)));
 
   /* Sortierung in-memory. "neu" = Reihenfolge der Query (neueste zuerst; „ab"
      dreht auf älteste zuerst). Baujahr ohne Wert fällt ans Ende. */
@@ -157,7 +158,7 @@ export default async function MachinesPage({
 
   // URL-Helfer: jede Änderung erhält die übrigen Parameter.
   const href = (patch: {
-    club?: string;
+    bereich?: string[];
     ansicht?: string;
     sort?: string;
     dir?: string;
@@ -167,11 +168,44 @@ export default async function MachinesPage({
     // jeder Wert wieder wählbar ist; weggelassene fallen serverseitig auf den
     // gemerkten Cookie-Wert zurück (siehe klebrig()).
     if (q) p.set("q", q);
-    p.set("club", patch.club ?? rawClub);
+    // "" = alle Bereiche; eine volle Auswahl ist dasselbe wie keine.
+    const bereiche = patch.bereich ?? gewaehlt;
+    p.set(
+      "bereich",
+      bereiche.length && bereiche.length < tabs.length
+        ? tabs
+            .map((t) => t.key)
+            .filter((k) => bereiche.includes(k))
+            .join(",")
+        : "",
+    );
     p.set("sort", patch.sort ?? sort);
     p.set("dir", patch.dir ?? dir);
     p.set("ansicht", patch.ansicht ?? ansicht);
     return `/machines?${p.toString()}`;
+  };
+
+  // Bereich-Toggle: schaltet EINEN Bereich in der Auswahl an/aus.
+  const toggleHref = (key: string) => {
+    const cur = new Set(gewaehlt.length ? gewaehlt : tabs.map((t) => t.key));
+    if (cur.has(key)) cur.delete(key);
+    else cur.add(key);
+    return href({ bereich: tabs.map((t) => t.key).filter((k) => cur.has(k)) });
+  };
+
+  /* Ziele für die sortierbaren Tabellenköpfe: eine inaktive Spalte übernimmt
+     die Sortierung (aufsteigend), die aktive dreht nur die Richtung. */
+  const sortLink = (spalte: "neu" | "name" | "jahr") => ({
+    aktiv: sort === spalte,
+    href: href({
+      sort: spalte,
+      dir: sort === spalte ? (dir === "auf" ? "ab" : "auf") : "auf",
+    }),
+  });
+  const sortLinks = {
+    neu: sortLink("neu"),
+    name: sortLink("name"),
+    jahr: sortLink("jahr"),
   };
 
   return (
@@ -192,37 +226,44 @@ export default async function MachinesPage({
           placeholder="Suchen…"
           defaultValue={q ?? ""}
           label="Maschinen suchen"
-          keep={{ club: rawClub, dir, ansicht }}
+          keep={{ bereich: gewaehlt.join(","), dir, ansicht }}
           resetHref="/machines"
           aktiv={Boolean(q)}
           ohneButton
           breite="w-44 sm:w-56"
         >
-          <AutoSubmitSelect
-            name="sort"
-            defaultValue={sort}
-            aria-label="Sortieren"
-            className="w-auto"
-          >
-            <option value="neu">Neueste</option>
-            <option value="name">Name</option>
-            <option value="jahr">Baujahr</option>
-          </AutoSubmitSelect>
-          <SortRichtung
-            dir={dir}
-            href={href({ dir: dir === "auf" ? "ab" : "auf" })}
-          />
+          {/* Nur in der Kartenansicht: dort gibt es keinen Tabellenkopf zum
+              Klicken. In der Tabelle sortieren die Spaltenköpfe (SortKopf) —
+              das hält die Steuerzeile auf dem Desktop einzeilig. */}
+          {ansicht === "karten" ? (
+            <>
+              <AutoSubmitSelect
+                name="sort"
+                defaultValue={sort}
+                aria-label="Sortieren"
+                className="w-auto"
+              >
+                <option value="neu">Neueste</option>
+                <option value="name">Name</option>
+                <option value="jahr">Baujahr</option>
+              </AutoSubmitSelect>
+              <SortRichtung
+                dir={dir}
+                href={href({ dir: dir === "auf" ? "ab" : "auf" })}
+              />
+            </>
+          ) : null}
         </SearchToolbar>
         {/* Bereichs-Filter: Alle · Privat · je Club (nur, wenn es etwas zu filtern gibt). */}
-        {tabs.length > 2 || tabs[1].count > 0 ? (
+        {tabs.length > 1 ? (
           <ChipFilter
-            ariaLabel="Nach Club filtern"
+            ariaLabel="Nach Bereich filtern"
             options={tabs.map((t) => ({
               key: t.key,
               label: t.label,
               count: t.count,
-              href: href({ club: t.key }),
-              aktiv: rawClub === t.key,
+              href: toggleHref(t.key),
+              aktiv: aktiv.has(t.key),
             }))}
           />
         ) : null}
@@ -245,10 +286,12 @@ export default async function MachinesPage({
           />
         </div>
       </div>
+      {/* `bereich` gilt app-weit (Default-path "/"), damit die Wahl auch auf
+          dem Dashboard gilt; Sortierung und Ansicht bleiben seitenspezifisch. */}
+      <RememberParams params={{ bereich: gewaehlt.join(",") }} />
       <RememberParams
         path="/machines"
         params={{
-          machinesScope: rawClub,
           machinesSort: sort,
           machinesDir: dir,
           machinesView: ansicht,
@@ -257,7 +300,7 @@ export default async function MachinesPage({
 
       {items.length === 0 ? (
         <p className="text-[var(--color-muted)]">
-          {q || clubFilter
+          {q || gewaehlt.length
             ? "Keine Maschinen gefunden."
             : "Noch keine Maschinen. Lege deine erste an."}
         </p>
@@ -266,6 +309,8 @@ export default async function MachinesPage({
           machines={items}
           clubs={meineClubs.map((c) => ({ id: c.id, name: c.name }))}
           ansicht={ansicht}
+          sortLinks={sortLinks}
+          dir={dir}
         />
       )}
     </div>

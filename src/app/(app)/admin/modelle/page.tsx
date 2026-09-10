@@ -15,6 +15,7 @@ import { db } from "@/db";
 import { generations, machineModels } from "@/db/schema";
 import { modellName } from "@/lib/format";
 import { SortRichtung } from "@/components/ui/sort-richtung";
+import { SortKopf } from "@/components/ui/sort-kopf";
 
 /*
   Modelle (Super-Admin): der Modell-Katalog — durchsuchbar (Text), filterbar
@@ -174,6 +175,18 @@ export default async function AdminModellePage({
     ...params,
     dir: dir === "auf" ? "ab" : "auf",
   });
+  /* Ziele für die sortierbaren Tabellenköpfe: inaktive Spalte übernimmt die
+     Sortierung (aufsteigend), die aktive dreht die Richtung. Seite fällt wie
+     beim Pfeil auf 1 zurück. */
+  const sortLink = (spalte: "name" | "jahr") => ({
+    aktiv: sort === spalte,
+    href: `/admin/modelle?${new URLSearchParams({
+      ...params,
+      sort: spalte,
+      dir: sort === spalte ? (dir === "auf" ? "ab" : "auf") : "auf",
+    }).toString()}`,
+  });
+
   /* Ansicht-Umschalter (Karten mit Bild / kompakte Tabelle) — Zustand lebt in
      der URL wie alles andere; Seite und Filter bleiben erhalten. */
   const ansichtHref = (a: "karten" | "tabelle") => {
@@ -224,16 +237,25 @@ export default async function AdminModellePage({
                   </option>
                 ))}
               </AutoSubmitSelect>
-              <AutoSubmitSelect
-                name="sort"
-                defaultValue={sort}
-                aria-label="Sortieren"
-                className="w-auto"
-              >
-                <option value="name">Name</option>
-                <option value="jahr">Baujahr</option>
-              </AutoSubmitSelect>
-              <SortRichtung dir={dir} href={`/admin/modelle?${dirHref.toString()}`} />
+              {/* Nur in der Kartenansicht — in der Tabelle sortieren die
+                  Spaltenköpfe (SortKopf). */}
+              {ansicht === "karten" ? (
+                <>
+                  <AutoSubmitSelect
+                    name="sort"
+                    defaultValue={sort}
+                    aria-label="Sortieren"
+                    className="w-auto"
+                  >
+                    <option value="name">Name</option>
+                    <option value="jahr">Baujahr</option>
+                  </AutoSubmitSelect>
+                  <SortRichtung
+                    dir={dir}
+                    href={`/admin/modelle?${dirHref.toString()}`}
+                  />
+                </>
+              ) : null}
             </SearchToolbar>
             <RememberParams
               path="/admin/modelle"
@@ -274,9 +296,19 @@ export default async function AdminModellePage({
               <table className="w-full border-collapse text-sm">
                 <thead>
                   <tr className="border-b border-[var(--color-border)] text-left text-xs uppercase tracking-[0.06em] text-[var(--color-muted)]">
-                    <th className="py-2 pr-4 font-medium">Modell</th>
+                    <SortKopf
+                      label="Modell"
+                      aktiv={sortLink("name").aktiv}
+                      dir={dir}
+                      href={sortLink("name").href}
+                    />
                     <th className="py-2 pr-4 font-medium">Hersteller</th>
-                    <th className="py-2 pr-4 font-medium">Baujahr</th>
+                    <SortKopf
+                      label="Baujahr"
+                      aktiv={sortLink("jahr").aktiv}
+                      dir={dir}
+                      href={sortLink("jahr").href}
+                    />
                     <th className="py-2 pr-4 font-medium">OPDB-Ref</th>
                     <th className="py-2 font-medium">Generation</th>
                   </tr>

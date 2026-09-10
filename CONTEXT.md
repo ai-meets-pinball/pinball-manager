@@ -121,6 +121,14 @@ Eine Gruppe, die Maschinen gemeinsam betreut. Mitglieder tragen dort eine Rolle:
 `owner`, `admin` oder `member`.
 _Avoid_: Verein, Team, Organisation
 
+**Bereich**:
+Womit Übersicht und Maschinenliste ihre Zahlen einschränken: die eigene
+private Sammlung („Privat") und/oder einzelne Clubs. Mehrere gleichzeitig
+möglich, alle aktiv heißt „kein Filter". Die Wahl gilt seitenübergreifend
+(Cookie `bereich`). Nicht zu verwechseln mit dem **Geltungsbereich** — der
+sagt, für welche Maschinen ein Wissenseintrag gilt.
+_Avoid_: Scope (auch wenn der URL-Parameter historisch so hieß), Ansicht
+
 **Kurator**:
 Globale Rolle, die geteilte Wissenseinträge nachträglich verbergen darf. Greift
 erst nach der Veröffentlichung — es gibt bewusst keine vorgelagerte Freigabe.

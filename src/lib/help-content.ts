@@ -52,7 +52,7 @@ export const ANLEITUNG: HilfeSektion[] = [
     schritte: [
       {
         titel: "Kennzahlen",
-        text: "Oben stehen vier Kacheln: Anzahl deiner Maschinen, wie viele davon NICHT spielbereit sind, die offenen Fehler und die anstehenden (bzw. fälligen) Wartungen — jeweils über alle Maschinen, die du siehst (eigene plus Club-Maschinen). Ein Klick auf eine Kachel springt zum passenden Abschnitt.",
+        text: "Oben stehen fünf Kacheln: Anzahl deiner Maschinen, wie viele davon NICHT spielbereit sind, die offenen Fehler, die anstehenden (bzw. fälligen) Wartungen und die anstehenden Termine — jeweils über alle Maschinen, die du siehst (eigene plus Club-Maschinen). Ein Klick auf eine Kachel springt zum passenden Abschnitt. Abschnitte ohne Einträge werden ausgeblendet.",
       },
       {
         titel: "Nach Bereich filtern",

@@ -9,7 +9,21 @@ Melde-Warnung bleibt rein anzeigend) und **In-Place-Editor + Bearbeitungs-
 Verlauf** (`knowledge_revisions`; Neu-Generierung/Import aktualisiert in place —
 id und Signale bleiben erhalten).
 
-## Umgesetzt 09/2026 (Stand 2026-09-02)
+## Umgesetzt 09/2026 (Stand 2026-09-10)
+
+- **Redlining-Overlay** eingerichtet (Alt+R → `/redline`); dev-only, im
+  Production-Build kein `data-rl`, die Route antwortet dort mit 403. Die
+  Playwright-Suite fährt `next dev`, das Overlay ist also mitgeladen — mit
+  `npm run e2e` bestätigt: 61 grün, die 6 roten (Kuratierung, Club-Löschen,
+  Club-Zuordnung) sind vorbestehend und auch auf sauberem Stand rot.
+- **Redlining-Runde 1** (Notizen vom 2026-09-10): Sortierung sitzt im
+  Tabellenkopf (`ui/sort-kopf.tsx`, `/machines` + `/admin/modelle`; Select nur
+  noch in der Kartenansicht), neue Spalte „Hinzugefügt", einheitliche
+  Club-Spalte wird ausgeblendet (`lib/tabelle.ts`), Dashboard startet als
+  Liste, fünf Kacheln in einer Zeile, leere Abschnitte weg (mit
+  „Alles erledigt"-Zeile), Bereichswahl gilt seitenübergreifend
+  (`lib/bereich.ts`, Cookie `bereich` mit `path=/`; `/machines` jetzt
+  mehrfach wählbar wie das Dashboard).
 
 - **UX-Konsolidierung** aller Seiten auf ein Muster (kompakte Zeilen, Icon-
   Aktionen, Neu/Ändern im `<dialog>`, Unmögliches ausgegraut mit Grund, Actions
@@ -26,13 +40,6 @@ id und Signale bleiben erhalten).
   Spec: `docs/superpowers/specs/2026-09-02-migrationslog-abgleich-design.md`.
 
 ## Offen, aber aktuell geringer Nutzen
-
-- **E2E-Lauf mit geladenem Redlining-Overlay.** Seit 2026-09-10 ist das
-  Redlining-Overlay eingerichtet (`withRedlining` in `next.config.ts`,
-  `<Redlining />` im Root-Layout, Route `src/app/api/redlining/route.ts`). Die
-  Playwright-Suite fährt `next dev`, das Overlay ist dort also mitgeladen —
-  im Shadow DOM und unsichtbar bis Alt+R, Selektoren sollten unberührt bleiben.
-  Ein `npm run e2e` zur Bestätigung steht noch aus (braucht die Test-DB).
 
 - **Review 09/2026 — verbliebene Ermessenspunkte** (Code-Review nach 1.35, Fixes
   in 1.36): der Rollen-Dialog (`admin-user-roles.tsx` ↔ `member-actions.tsx`) und

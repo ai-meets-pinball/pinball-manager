@@ -2,6 +2,7 @@ import Link from "next/link";
 import {
   AlertTriangle,
   CalendarClock,
+  CheckCircle2,
   Joystick,
   LayoutGrid,
   List as ListIcon,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { ChipFilter } from "@/components/ui/chip-filter";
+import { EmptyState } from "@/components/ui/empty-state";
 import { List, ListRow } from "@/components/ui/list";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { QuelleBadge } from "@/components/ui/quelle-badge";
@@ -32,6 +34,7 @@ import { ButtonLink } from "@/components/ui/button";
 import { cookies } from "next/headers";
 import { RememberParams } from "@/components/remember-params";
 import { klebrig } from "@/lib/sticky-view";
+import { bereichKeys } from "@/lib/bereich";
 import { mindestens } from "@/lib/rechte";
 import { requireUser } from "@/lib/session";
 
@@ -44,7 +47,7 @@ import { requireUser } from "@/lib/session";
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ scope?: string; ansicht?: string }>;
+  searchParams: Promise<{ bereich?: string; scope?: string; ansicht?: string }>;
 }) {
   const user = await requireUser();
   const alleMaschinen = await getMeineMaschinen(user);
@@ -95,21 +98,25 @@ export default async function DashboardPage({
   const sp = await searchParams;
   const cookieStore = await cookies();
   const gueltig = new Set(scopes.map((s) => s.key));
-  // Bereich merken: URL gewinnt, sonst der gemerkte Cookie-Wert (überlebt
-  // Navigation UND Sessions). "" = alle Bereiche.
-  const scopeSource =
-    sp.scope !== undefined
-      ? sp.scope
-      : (cookieStore.get("dashboardScope")?.value ?? "");
-  const gewaehlt = scopeSource.split(",").filter((k) => gueltig.has(k));
+  /* Bereich merken: URL gewinnt, sonst der gemerkte Cookie-Wert. Der Cookie
+     heißt `bereich` und gilt für die GANZE App (path=/), damit dieselbe Wahl
+     auch die Maschinenliste bedient. `?scope=` bleibt lesbar — alte Links und
+     Lesezeichen sollen weiter funktionieren. "" = alle Bereiche. */
+  const bereichRoh =
+    sp.bereich !== undefined
+      ? sp.bereich
+      : sp.scope !== undefined
+        ? sp.scope
+        : cookieStore.get("bereich")?.value;
+  const gewaehlt = bereichKeys(bereichRoh, gueltig);
   const aktiv = new Set(gewaehlt.length ? gewaehlt : scopes.map((s) => s.key));
 
-  // Ansicht: Karten (voreingestellt) oder kompakte Liste — ebenfalls gemerkt.
+  // Ansicht: kompakte Liste (voreingestellt) oder Karten — ebenfalls gemerkt.
   const ansicht = klebrig(
     sp.ansicht,
     cookieStore.get("dashboardView")?.value,
     (v) => v === "karten" || v === "liste",
-    "karten",
+    "liste",
   ) as "karten" | "liste";
   const kompakt = ansicht === "liste";
 
@@ -117,16 +124,16 @@ export default async function DashboardPage({
   // jeweils andere). Volle/leere Bereichswahl und die Karten-Ansicht sind der
   // parameterfreie Normalfall.
   const href = (naechste: {
-    scope?: string[];
+    bereich?: string[];
     ansicht?: "karten" | "liste";
   }) => {
-    const bereiche = naechste.scope ?? gewaehlt;
+    const bereiche = naechste.bereich ?? gewaehlt;
     const a = naechste.ansicht ?? ansicht;
     const p = new URLSearchParams();
     // Immer explizit (auch Defaults), damit jede Auswahl wieder wählbar ist;
     // "" = alle Bereiche.
     p.set(
-      "scope",
+      "bereich",
       bereiche.length && bereiche.length < scopes.length
         ? scopes
             .map((s) => s.key)
@@ -152,7 +159,7 @@ export default async function DashboardPage({
     const cur = new Set(gewaehlt.length ? gewaehlt : scopes.map((s) => s.key));
     if (cur.has(key)) cur.delete(key);
     else cur.add(key);
-    return href({ scope: scopes.map((s) => s.key).filter((k) => cur.has(k)) });
+    return href({ bereich: scopes.map((s) => s.key).filter((k) => cur.has(k)) });
   };
 
   // Pillen-Optionen für den Bereichsfilter (mit Maschinenzahl je Bereich).
@@ -230,10 +237,10 @@ export default async function DashboardPage({
 
   return (
     <div className="space-y-8">
-      <RememberParams
-        path="/dashboard"
-        params={{ dashboardScope: gewaehlt.join(","), dashboardView: ansicht }}
-      />
+      {/* `bereich` gilt für die ganze App (Default-path "/"), damit die Wahl
+          auch auf /machines gilt; die Ansicht bleibt seitenspezifisch. */}
+      <RememberParams params={{ bereich: gewaehlt.join(",") }} />
+      <RememberParams path="/dashboard" params={{ dashboardView: ansicht }} />
       <PageHeader
         title="Übersicht"
         actions={
@@ -346,8 +353,9 @@ export default async function DashboardPage({
       {turnierAktiv ? <AutoRefresh intervalMs={25000} /> : null}
 
       {/* KPI-Kacheln — verlinken in Verwaltung bzw. zu den Abschnitten unten. */}
-      {/* Immer EINE Zeile (auch am Handy): Zahl groß, Label klein darunter. */}
-      <div className="grid grid-cols-4 gap-2">
+      {/* Zahl groß, Label klein darunter. Es sind FÜNF Kacheln: am Desktop in
+          einer Zeile, darunter zwei bzw. drei je Zeile statt 4 + Waise. */}
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
         {kpis.map((k) => (
           <Link key={k.label} href={k.href} className="group min-w-0">
             <Card className="flex min-w-0 items-center gap-2 p-2.5 transition-colors group-hover:border-[var(--color-primary)] sm:p-3">
@@ -359,7 +367,10 @@ export default async function DashboardPage({
                 <p className={`text-xl font-bold leading-none sm:text-2xl ${k.tone}`}>
                   {k.wert}
                 </p>
-                <p className="truncate text-xs text-[var(--color-muted)] sm:text-sm">
+                {/* Kein `truncate`: bei fünf Spalten ist die Kachel schmal,
+                    „anstehende Wartungen" würde sonst abgeschnitten. Lieber
+                    zweizeilig — das Grid gleicht die Höhen ohnehin an. */}
+                <p className="text-xs leading-tight text-[var(--color-muted)] sm:text-sm">
                   {k.label}
                 </p>
               </div>
@@ -369,6 +380,7 @@ export default async function DashboardPage({
       </div>
 
       {/* Nicht spielbereite Maschinen zuerst — die dringendste Betriebslage. */}
+      {nichtSpielbereit.length > 0 ? (
       <section id="status" className="scroll-mt-20 space-y-3">
         <h2 className="text-lg font-semibold">
           Nicht spielbereite Maschinen ({nichtSpielbereit.length})
@@ -388,7 +400,9 @@ export default async function DashboardPage({
           ))}
         </List>
       </section>
+      ) : null}
 
+      {wartungen.length > 0 ? (
       <section id="wartung" className="scroll-mt-20 space-y-3">
         <h2 className="text-lg font-semibold">
           Anstehende Wartungen ({wartungen.length})
@@ -425,7 +439,9 @@ export default async function DashboardPage({
           ))}
         </List>
       </section>
+      ) : null}
 
+      {termine.length > 0 ? (
       <section id="termine" className="scroll-mt-20 space-y-3">
         <h2 className="text-lg font-semibold">
           Anstehende Termine ({termine.length})
@@ -460,7 +476,9 @@ export default async function DashboardPage({
           })}
         </List>
       </section>
+      ) : null}
 
+      {fehler.length > 0 ? (
       <section id="fehler" className="scroll-mt-20 space-y-3">
         <h2 className="text-lg font-semibold">
           Offene Fehler ({fehler.length})
@@ -484,6 +502,21 @@ export default async function DashboardPage({
           ))}
         </List>
       </section>
+      ) : null}
+
+      {/* Alle vier Abschnitte leer: nicht wortlos aufhören, sondern es einmal
+          ausdrücklich sagen. Der Leerfall wandert damit von den einzelnen
+          Listen (List `empty`) eine Ebene höher auf die Seite. */}
+      {alleMaschinen.length > 0 &&
+      nichtSpielbereit.length === 0 &&
+      wartungen.length === 0 &&
+      termine.length === 0 &&
+      fehler.length === 0 ? (
+        <EmptyState icon={CheckCircle2}>
+          Alles erledigt — keine offenen Fehler, keine fälligen Wartungen, keine
+          anstehenden Termine.
+        </EmptyState>
+      ) : null}
     </div>
   );
 }

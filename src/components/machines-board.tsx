@@ -13,6 +13,8 @@ import {
   type BulkAssignState,
 } from "@/db/actions/machines";
 import { modellName } from "@/lib/format";
+import { spalteEinheitlich } from "@/lib/tabelle";
+import { SortKopf } from "@/components/ui/sort-kopf";
 
 /*
   Maschinen-Raster mit optionalem Auswahlmodus, um mehrere Maschinen auf einmal
@@ -26,6 +28,7 @@ type Item = {
   hersteller: string;
   modell: string;
   baujahr: number | null;
+  createdAt: Date;
   fotoUrl: string | null;
   clubId: string | null;
   club: { name: string } | null;
@@ -194,11 +197,20 @@ export function MachinesBoard({
   machines,
   clubs,
   ansicht = "karten",
+  sortLinks,
+  dir,
 }: {
   machines: Item[];
   clubs: { id: string; name: string }[];
   /** Karten (mit Foto) oder kompakte Tabelle (ohne Bilder). */
   ansicht?: "karten" | "tabelle";
+  /*
+    Fertig gebaute Ziele je sortierbarer Spalte. Die Seite kennt den
+    URL-Bauer; hierher kommt nur das Ergebnis, weil Funktionen nicht von einer
+    Server- in eine Client-Komponente reichen.
+  */
+  sortLinks: Record<"neu" | "name" | "jahr", { href: string; aktiv: boolean }>;
+  dir: "auf" | "ab";
 }) {
   const [auswahlModus, setAuswahlModus] = useState(false);
   const [aktion, setAktion] = useState<"zuweisen" | "loeschen">("zuweisen");
@@ -206,6 +218,12 @@ export function MachinesBoard({
   const [zielClub, setZielClub] = useState("");
   // Wird bei jedem Start eines Auswahldurchgangs erhöht → frischer Action-State.
   const [sitzung, setSitzung] = useState(0);
+
+  /* Hängen alle sichtbaren Maschinen im selben Bereich, wiederholt die
+     Club-Spalte nur den Filter darüber — dann weg damit. Im Auswahlmodus
+     bleibt sie stehen: dort hängt der Hinweis „bereits zugewiesen" daran. */
+  const clubSpalte =
+    auswahlModus || !spalteEinheitlich(machines, (m) => m.club?.name ?? "privat");
 
   function toggle(id: string) {
     setAuswahl((prev) => {
@@ -293,9 +311,27 @@ export function MachinesBoard({
             <thead>
               <tr className="border-b border-[var(--color-border)] text-left text-xs uppercase tracking-[0.06em] text-[var(--color-muted)]">
                 {auswahlModus ? <th className="w-8 py-2" /> : null}
-                <th className="py-2 pr-4 font-medium">Modell</th>
-                <th className="py-2 pr-4 font-medium">Baujahr</th>
-                <th className="py-2 pr-4 font-medium">Club</th>
+                <SortKopf
+                  label="Modell"
+                  aktiv={sortLinks.name.aktiv}
+                  dir={dir}
+                  href={sortLinks.name.href}
+                />
+                <SortKopf
+                  label="Baujahr"
+                  aktiv={sortLinks.jahr.aktiv}
+                  dir={dir}
+                  href={sortLinks.jahr.href}
+                />
+                <SortKopf
+                  label="Hinzugefügt"
+                  aktiv={sortLinks.neu.aktiv}
+                  dir={dir}
+                  href={sortLinks.neu.href}
+                />
+                {clubSpalte ? (
+                  <th className="py-2 pr-4 font-medium">Club</th>
+                ) : null}
                 <th className="py-2 font-medium">Wartung</th>
               </tr>
             </thead>
@@ -328,14 +364,19 @@ export function MachinesBoard({
                   </td>
                   <td className="py-2 pr-4">{m.baujahr ?? "—"}</td>
                   <td className="py-2 pr-4 text-[var(--color-muted)]">
-                    {m.club?.name ?? "privat"}
-                    {auswahlModus &&
-                    zielClub !== "" &&
-                    zielClub !== "none" &&
-                    m.clubId === zielClub
-                      ? " · bereits zugewiesen"
-                      : ""}
+                    {m.createdAt.toLocaleDateString("de-DE")}
                   </td>
+                  {clubSpalte ? (
+                    <td className="py-2 pr-4 text-[var(--color-muted)]">
+                      {m.club?.name ?? "privat"}
+                      {auswahlModus &&
+                      zielClub !== "" &&
+                      zielClub !== "none" &&
+                      m.clubId === zielClub
+                        ? " · bereits zugewiesen"
+                        : ""}
+                    </td>
+                  ) : null}
                   <td className="py-2">
                     {m.wartungFaellig > 0 ? (
                       <CountPill n={`${m.wartungFaellig} fällig`} tone="danger" />
