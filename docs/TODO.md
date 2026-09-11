@@ -16,6 +16,13 @@ id und Signale bleiben erhalten).
   Playwright-Suite fährt `next dev`, das Overlay ist also mitgeladen — mit
   `npm run e2e` bestätigt: 61 grün, die 6 roten (Kuratierung, Club-Löschen,
   Club-Zuordnung) sind vorbestehend und auch auf sauberem Stand rot.
+- **/tour** (2026-09-11): englischer One-Pager zum Weitergeben — öffentlich,
+  aber NICHT in der Navigation verlinkt und mit `robots: noindex` (Vorbild:
+  /log). Zeigt Betrieb zuerst (Inventar, Fehler/Reparaturen, Wartung, QR am
+  Gerät mit echtem Etikett- und Scorecard-Beispiel, Turniermodus, KI) und
+  benennt in einem eigenen Abschnitt ehrlich, was fehlt. Einzige englische
+  Fläche im Repo; eine englische App-Version wäre eine eigene Edition, keine
+  Übersetzung.
 - **Redlining-Runde 3** (Notiz vom 2026-09-10, 17:08): die Wissensbasis
   (/modelle) ist nach Modell, Baujahr und Generation sortierbar — die dichte
   Ansicht ist dafür eine echte Tabelle mit `SortKopf` geworden (Karten bleiben
