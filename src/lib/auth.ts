@@ -82,6 +82,18 @@ export const auth = betterAuth({
           if (istBootstrap || eingeloest) {
             return { data: { ...neu, emailVerified: true } };
           }
+
+          /* Zugang läuft über eine EINLADUNG (Entscheidung 2026-09-11). Die
+             Sperre sitzt hier und nicht in `emailAndPassword.disableSignUp`:
+             jener Schalter prüft im Endpunkt-Handler, den der Einladungsfluss
+             über auth.api.signUpEmail() SELBST aufruft — er würde also auch
+             Einladungen töten. Dieser Hook läuft dagegen bei JEDER Konto-
+             Anlage, also auch am rohen POST /api/auth/sign-up/email. */
+          throw new APIError("BAD_REQUEST", {
+            message:
+              "Der Zugang läuft derzeit über eine Einladung. Bitte frg@silverballmania.com anschreiben.",
+            code: "INVITATION_REQUIRED",
+          });
         },
       },
     },
@@ -113,7 +125,10 @@ export const auth = betterAuth({
   },
   emailAndPassword: {
     enabled: true,
-    // Offene Selbstregistrierung (zusätzlich gibt es den Einladungsfluss).
+    /* MUSS false bleiben: auth.api.signUpEmail() aus registerAccount() läuft
+       durch denselben Endpunkt-Handler, den dieser Schalter sperrt — true
+       würde also den Einladungsfluss mit abschalten. Die eigentliche Sperre
+       („nur mit Einladung") sitzt im databaseHook oben. */
     disableSignUp: false,
     // Anmelden erst mit bestätigter Adresse — siehe emailVerification oben.
     requireEmailVerification: true,

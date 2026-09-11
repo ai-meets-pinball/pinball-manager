@@ -3,7 +3,9 @@ import { createInvitation, sql, userIdByEmail } from "./helpers/db";
 import { BASE_URL, TEST_PASSWORD, USERS } from "./helpers/auth";
 
 /*
-  Registrierung ist offen — angemeldet wird erst mit bestätigter Adresse.
+  Zugang NUR mit Einladung (Entscheidung 2026-09-11). Die Sperre sitzt im
+  databaseHook in lib/auth.ts, damit sie auch am rohen Endpunkt greift und
+  nicht nur in der Server Action — diese Tests sind ihr Sicherheitsnetz.
 
   Der erste Test ist die Regression zum schwerwiegendsten Fund des
   Security-Reviews: früher genügte es, eine EINGELADENE ADRESSE zu kennen —
@@ -27,7 +29,7 @@ async function signIn(request: APIRequestContext, email: string) {
 }
 
 test.describe("Registrierung", () => {
-  test("Fremdregistrierung einer eingeladenen Adresse ohne Token bleibt unbestätigt und löst die Einladung nicht ein", async ({
+  test("Fremdregistrierung einer eingeladenen Adresse ohne Token legt kein Konto an und löst die Einladung nicht ein", async ({
     request,
   }) => {
     const opfer = "e2e-opfer@e2e.local";
@@ -36,37 +38,36 @@ test.describe("Registrierung", () => {
       invitedBy: await userIdByEmail(USERS.admin),
     });
 
+    // Die Einladung liegt auf `pending` — der Token stand nur in der Mail.
+    // Wer bloß die ADRESSE kennt, darf damit nichts anfangen können.
     const res = await signUp(request, opfer, "Angreifer");
-    expect(res.ok(), "offenes Sign-up legt ein Konto an").toBe(true);
+    expect(res.ok(), "ohne Einladung entsteht kein Konto").toBe(false);
 
-    const [konto] = await sql`SELECT email_verified FROM "user" WHERE email = ${opfer}`;
-    expect(konto.email_verified, "ohne Token ist die Adresse NICHT bestätigt").toBe(false);
+    const konten = await sql`SELECT id FROM "user" WHERE email = ${opfer}`;
+    expect(konten.length, "kein Konto auf die fremde Adresse").toBe(0);
 
     const login = await signIn(request, opfer);
-    expect(login.status(), "unbestätigt darf sich nicht anmelden").toBe(403);
+    expect(login.ok(), "es gibt nichts, womit man sich anmelden könnte").toBe(
+      false,
+    );
 
     const [inv] = await sql`SELECT status FROM invitations WHERE token = ${token}`;
     expect(inv.status, "die Einladung bleibt offen").toBe("pending");
 
-    await sql`DELETE FROM "user" WHERE email = ${opfer}`;
     await sql`DELETE FROM invitations WHERE email = ${opfer}`;
   });
 
-  test("Offene Registrierung: Anmeldung erst nach Bestätigung der Adresse", async ({
+  test("Der rohe Sign-up-Endpunkt legt ohne Einladung kein Konto an", async ({
     request,
   }) => {
     const email = "e2e-offen@e2e.local";
 
+    // Das ist der Weg AM Formular vorbei — genau den muss die Sperre decken.
     const res = await signUp(request, email, "Offen");
-    expect(res.ok()).toBe(true);
-    expect((await signIn(request, email)).status()).toBe(403);
+    expect(res.ok(), "Endpunkt muss ablehnen").toBe(false);
 
-    // Den Klick auf den Bestätigungslink simulieren (der Token steckt in der
-    // Mail, die die Suite nicht sieht).
-    await sql`UPDATE "user" SET email_verified = true WHERE email = ${email}`;
-    expect((await signIn(request, email)).ok(), "bestätigt → Anmeldung klappt").toBe(true);
-
-    await sql`DELETE FROM "user" WHERE email = ${email}`;
+    const konten = await sql`SELECT id FROM "user" WHERE email = ${email}`;
+    expect(konten.length, "kein Konto in der Datenbank").toBe(0);
   });
 
   test("Registrierung mit gültigem Token: sofort bestätigt, angemeldet, Einladung eingelöst", async ({
@@ -96,22 +97,18 @@ test.describe("Registrierung", () => {
     await sql`DELETE FROM invitations WHERE email = ${email}`;
   });
 
-  test("Offene Registrierung über die Maske zeigt den Mail-Hinweis statt anzumelden", async ({
+  test("Ohne Einladungs-Token zeigt /register gar kein Formular", async ({
     page,
   }) => {
-    const email = "e2e-maske@e2e.local";
-
     await page.goto("/register");
-    await page.getByLabel("Name").fill("Maske");
-    await page.getByLabel("E-Mail").fill(email);
-    await page.locator('input[name="password"]').fill(TEST_PASSWORD);
-    await page.locator('input[name="passwordConfirm"]').fill(TEST_PASSWORD);
-    await page.getByRole("button", { name: "Registrieren" }).click();
 
-    await expect(page.getByText(/Bestätigungslink an/)).toBeVisible();
-    expect(page.url(), "keine Weiterleitung in die App").not.toContain("/machines");
-
-    await sql`DELETE FROM "user" WHERE email = ${email}`;
+    await expect(
+      page.getByRole("heading", { name: "Zugang auf Einladung" }),
+    ).toBeVisible();
+    await expect(page.getByText(/offene Selbstregistrierung/)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Registrieren" })).toHaveCount(
+      0,
+    );
   });
 
   test("Token einer anderen Adresse lässt sich nicht umwidmen", async ({ page }) => {
