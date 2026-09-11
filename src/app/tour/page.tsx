@@ -33,6 +33,9 @@ export const metadata = {
 const hairlineGrid =
   "gap-px border border-[var(--color-border)] bg-[var(--color-border)]";
 
+const KONTAKT =
+  "mailto:frg@silverballmania.com?subject=Pinball%20Manager%20%E2%80%93%20a%20look%20from%20the%20US";
+
 const EYEBROW =
   "mb-3 font-mono text-xs uppercase tracking-[1px] text-[var(--color-faint)]";
 
@@ -108,7 +111,7 @@ const mockMachines = [
 const honest = [
   "The interface is in German. This page is the only English one — if that is a blocker, say so and it moves up the list.",
   "AI repair suggestions from a reported fault work today — they pre-fill a repair for a human to check and save. Photo-based part recognition is planned, not built.",
-  "It is free right now, and there is no paid plan waiting behind a curtain.",
+  "Access is by invitation rather than open sign-up — ask Frank and he will set you up. It is free, and there is no paid plan waiting behind a curtain.",
   "Plenty can still be added, or is simply not implemented yet — a publicly shared collection, links to rulesets, video, whatever turns out to be useful. A proper English version belongs on that list, and it would likely be its own edition rather than a translation: repair vocabulary this specific rarely survives being translated.",
 ];
 
@@ -157,17 +160,17 @@ export default async function TourPage() {
           </p>
 
           <div className="mb-12 flex flex-wrap gap-3">
-            <Link
-              href="/register"
+            <a
+              href={KONTAKT}
               className="rounded-[var(--radius)] bg-[var(--color-primary)] px-[26px] py-3.5 font-semibold text-[var(--color-primary-fg)] transition-colors hover:bg-[var(--color-accent)]"
             >
-              Create an account
-            </Link>
+              Ask for a look
+            </a>
             <Link
-              href="/preview"
+              href="/features"
               className="rounded-[var(--radius)] border border-[var(--color-border)] px-[26px] py-3.5 font-medium transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
             >
-              About the preview (German)
+              All features (German)
             </Link>
           </div>
 
@@ -182,12 +185,6 @@ export default async function TourPage() {
               <div className="font-mono text-xl font-bold">$0</div>
               <div className="mt-1 text-xs text-[var(--color-faint)]">
                 Free while in preview
-              </div>
-            </div>
-            <div>
-              <div className="font-mono text-xl font-bold">Open</div>
-              <div className="mt-1 text-xs text-[var(--color-faint)]">
-                Anyone can sign up
               </div>
             </div>
           </div>
@@ -508,25 +505,26 @@ export default async function TourPage() {
       {/* ===== ABSCHLUSS ===== */}
       <section className="mx-auto max-w-[1200px] border-t border-[var(--color-border)] px-5 py-[70px] sm:px-12">
         <h2 className="mb-3.5 max-w-[620px] text-[26px] font-bold tracking-[-0.3px] sm:text-[30px]">
-          Have a look around.
+          Want a look inside?
         </h2>
         <p className="mb-8 max-w-[560px] text-[15px] leading-[1.65] text-[var(--color-muted)]">
-          An account is free, takes a minute, and needs nothing but a confirmed
-          email address. Everything past this page is in German — happy to walk
-          you through it if that gets in the way.
+          Access runs by invitation at the moment, so getting in goes through
+          Frank — drop him a line and he will set you up. Everything past this
+          page is in German; he is happy to walk you through it if that gets in
+          the way.
         </p>
         <div className="flex flex-wrap gap-3">
-          <Link
-            href="/register"
+          <a
+            href={KONTAKT}
             className="rounded-[var(--radius)] bg-[var(--color-primary)] px-[26px] py-3.5 font-semibold text-[var(--color-primary-fg)] transition-colors hover:bg-[var(--color-accent)]"
           >
-            Create an account
-          </Link>
+            Ask for a look
+          </a>
           <Link
-            href="/preview"
+            href="/features"
             className="rounded-[var(--radius)] border border-[var(--color-border)] px-[26px] py-3.5 font-medium transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
           >
-            About the preview (German)
+            All features (German)
           </Link>
         </div>
       </section>

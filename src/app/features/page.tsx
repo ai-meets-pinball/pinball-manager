@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { MarketingFooter, MarketingNav } from "@/components/site-chrome";
 import { baseUrl, erzeugeQrSvgFuerUrl } from "@/lib/qr-code";
 
@@ -166,12 +165,12 @@ export default async function FeaturesPage() {
             nutzen. Ideen oder Wünsche? Wir freuen uns über deine Nachricht.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
-            <Link
-              href="/register"
+            <a
+              href="mailto:frg@silverballmania.com?subject=Pinball%20Manager%20%E2%80%93%20Zugang%20anfragen"
               className="inline-block rounded-[var(--radius)] bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-[var(--color-primary-fg)] transition-colors hover:bg-[var(--color-accent)]"
             >
-              Konto erstellen
-            </Link>
+              Zugang anfragen
+            </a>
             <a
               href="mailto:frg@silverballmania.com?subject=Idee%20f%C3%BCr%20Pinball%20Manager"
               className="inline-block rounded-[var(--radius)] border border-[var(--color-border)] px-6 py-3 text-sm font-medium transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"

@@ -16,6 +16,12 @@ id und Signale bleiben erhalten).
   Playwright-Suite fährt `next dev`, das Overlay ist also mitgeladen — mit
   `npm run e2e` bestätigt: 61 grün, die 6 roten (Kuratierung, Club-Löschen,
   Club-Zuordnung) sind vorbestehend und auch auf sauberem Stand rot.
+- **Zugang wieder auf Einladung** (2026-09-11): Selbst-Registrierung ist nicht
+  mehr möglich. Alle sechs „Konto erstellen"-Stellen auf Start, Funktionen,
+  Preview, Login und /tour zeigen jetzt „Zugang anfragen" (mailto); /register
+  zeigt ohne Einladungs-Token kein Formular; `registerAccount()` lehnt ohne
+  Einladung ab (Ausnahme: Bootstrap auf leerer Installation). Der rohe
+  Better-Auth-Endpunkt ist noch offen — siehe „Offen" unten.
 - **/tour** (2026-09-11): englischer One-Pager zum Weitergeben — öffentlich,
   aber NICHT in der Navigation verlinkt und mit `robots: noindex` (Vorbild:
   /log). Zeigt Betrieb zuerst (Inventar, Fehler/Reparaturen, Wartung, QR am
@@ -59,6 +65,18 @@ id und Signale bleiben erhalten).
   Spec: `docs/superpowers/specs/2026-09-02-migrationslog-abgleich-design.md`.
 
 ## Offen, aber aktuell geringer Nutzen
+
+- **Sign-up-Endpunkt schließen.** Seit 2026-09-11 läuft der Zugang über eine
+  Einladung: die öffentlichen Seiten werben nicht mehr mit „Konto erstellen",
+  /register zeigt ohne Token kein Formular, und `registerAccount()` lehnt ohne
+  Einladung ab. **Better Auths eigener Endpunkt `/api/auth/sign-up/email` ist
+  aber weiter offen.** `disableSignUp: true` hilft nicht — die Prüfung sitzt im
+  Endpunkt-Handler, den `auth.api.signUpEmail()` aus dem Einladungsfluss selbst
+  aufruft (im better-auth-Quelltext nachgesehen); der Schalter würde Einladungen
+  mit abräumen. Nötig: ein `before`-Hook in `lib/auth.ts`, der ohne
+  `claiming`-Einladung ablehnt — und dazu die drei Tests in
+  `e2e/registrierung.spec.ts` umschreiben, die heute offenes Sign-up behaupten
+  (sie sind das Sicherheitsnetz für den Hook).
 
 - **Review 09/2026 — verbliebene Ermessenspunkte** (Code-Review nach 1.35, Fixes
   in 1.36): der Rollen-Dialog (`admin-user-roles.tsx` ↔ `member-actions.tsx`) und

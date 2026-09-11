@@ -14,7 +14,7 @@ import { MarketingFooter, MarketingNav } from "@/components/site-chrome";
 const heroStats = [
   { value: "2.200+", label: "Modelle im Katalog" },
   { value: "0 €", label: "Aktuell kostenlos" },
-  { value: "Preview", label: "Offen für alle" },
+  { value: "Preview", label: "Zugang auf Einladung" },
 ];
 
 /*
@@ -84,12 +84,12 @@ export default function HomePage() {
           </p>
 
           <div className="mb-12 flex flex-wrap gap-3">
-            <Link
-              href="/register"
+            <a
+              href="mailto:frg@silverballmania.com?subject=Pinball%20Manager%20%E2%80%93%20Zugang%20anfragen"
               className="rounded-[var(--radius)] bg-[var(--color-primary)] px-[26px] py-3.5 font-semibold text-[var(--color-primary-fg)] transition-colors hover:bg-[var(--color-accent)]"
             >
-              Konto erstellen
-            </Link>
+              Zugang anfragen
+            </a>
             <Link
               href="/login"
               className="rounded-[var(--radius)] border border-[var(--color-border)] px-[26px] py-3.5 font-medium transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
@@ -296,18 +296,18 @@ export default function HomePage() {
       {/* ===== CTA ===== */}
       <section className="mx-auto max-w-[1200px] border-t border-[var(--color-border)] px-5 pb-24 pt-[60px] text-center sm:px-12">
         <h2 className="mb-3.5 text-[26px] font-bold">
-          In der Preview — in zwei Minuten dabei.
+          In der Preview — auf Einladung.
         </h2>
         <p className="mb-6 text-[15px] text-[var(--color-muted)]">
-          Aktuell kostenlos nutzbar. Konto anlegen, E-Mail bestätigen, erste
-          Maschine eintragen.
+          Aktuell kostenlos. Die Anmeldung läuft derzeit über eine Einladung —
+          schreib uns kurz, dann richten wir dir den Zugang ein.
         </p>
-        <Link
-          href="/register"
+        <a
+          href="mailto:frg@silverballmania.com?subject=Pinball%20Manager%20%E2%80%93%20Zugang%20anfragen"
           className="inline-block rounded-[var(--radius)] bg-[var(--color-primary)] px-[30px] py-[15px] font-semibold text-[var(--color-primary-fg)] transition-colors hover:bg-[var(--color-accent)]"
         >
-          Konto erstellen
-        </Link>
+          Zugang anfragen
+        </a>
       </section>
 
       <MarketingFooter />

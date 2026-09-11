@@ -86,10 +86,11 @@ function LoginForm() {
         </Link>
       </p>
       <p className="text-sm text-[var(--color-muted)]">
-        Kein Konto?{" "}
-        <Link href="/register" className="text-[var(--color-accent)] underline">
-          Jetzt registrieren
-        </Link>
+        Kein Konto? Der Zugang läuft derzeit über eine Einladung —{" "}
+        <a href="mailto:frg@silverballmania.com?subject=Pinball%20Manager%20%E2%80%93%20Zugang%20anfragen" className="text-[var(--color-accent)] underline">
+          kurz anfragen
+        </a>
+        .
       </p>
     </main>
   );

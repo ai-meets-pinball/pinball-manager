@@ -18,7 +18,7 @@ import { STAMMTISCH_URL } from "@/lib/links";
 export const metadata = {
   title: "Mitmachen · Preview · Pinball Manager",
   description:
-    "Pinball Manager ist in der Preview — kostenlos, offen für alle. Konto anlegen, E-Mail bestätigen, loslegen.",
+    "Pinball Manager ist in der Preview — kostenlos, Zugang derzeit auf Einladung. Kurz anfragen, dann geht es los.",
 };
 
 const MAILTO =
@@ -31,8 +31,8 @@ const gesucht = [
 ];
 
 const schritte = [
-  ["01 · Konto", "Name, E-Mail, Passwort — dauert eine Minute."],
-  ["02 · Bestätigen", "Link aus der E-Mail anklicken, damit bist du angemeldet."],
+  ["01 · Anfragen", "Kurze Mail — wir richten die Einladung ein."],
+  ["02 · Konto", "Über den Einladungslink Name und Passwort setzen — eine Minute."],
   ["03 · Loslegen", "Erste Maschine aus dem Katalog wählen, Foto kommt automatisch."],
 ];
 
@@ -54,7 +54,8 @@ export default function PreviewPage() {
           <p className="mb-7 text-[16px] leading-[1.7] text-[var(--color-muted)]">
             Die App läuft stabil genug für den Alltag, und wir öffnen sie jetzt
             für alle, die Flipper betreiben — im Verein, in der Location oder
-            zu Hause. Die Nutzung ist in dieser Phase kostenlos. Was die App
+            zu Hause. Die Nutzung ist in dieser Phase kostenlos; der Zugang läuft
+            derzeit über eine Einladung — schreib uns kurz. Was die App
             kann, steht auf der{" "}
             <Link
               href="/features"
@@ -65,13 +66,13 @@ export default function PreviewPage() {
             .
           </p>
           <div className="flex flex-wrap gap-3">
-            <Link
-              href="/register"
+            <a
+              href="mailto:frg@silverballmania.com?subject=Pinball%20Manager%20%E2%80%93%20Zugang%20anfragen"
               className="inline-flex items-center gap-2 rounded-[var(--radius)] bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-[var(--color-primary-fg)] transition-colors hover:bg-[var(--color-accent)]"
             >
               <UserPlus size={17} strokeWidth={1.9} />
-              Konto erstellen
-            </Link>
+              Zugang anfragen
+            </a>
             <Link
               href="/features"
               className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-border)] px-6 py-3 text-sm font-medium transition-colors hover:border-[var(--color-accent)] hover:text-[var(--color-accent)]"
@@ -134,13 +135,13 @@ export default function PreviewPage() {
               ))}
             </ol>
             <div className="flex flex-wrap gap-3">
-              <Link
-                href="/register"
+              <a
+                href="mailto:frg@silverballmania.com?subject=Pinball%20Manager%20%E2%80%93%20Zugang%20anfragen"
                 className="inline-flex items-center gap-2 rounded-[var(--radius)] bg-[var(--color-primary)] px-6 py-3 text-sm font-semibold text-[var(--color-primary-fg)] transition-colors hover:bg-[var(--color-accent)]"
               >
                 <UserPlus size={17} strokeWidth={1.9} />
-                Konto erstellen
-              </Link>
+                Zugang anfragen
+              </a>
             </div>
             <p className="mt-6 max-w-[620px] text-sm leading-[1.7] text-[var(--color-muted)]">
               Fragen vorab, oder du willst gleich einen ganzen Verein anlegen?

@@ -38,20 +38,53 @@ function RegisterForm() {
 
   if (state.message) {
     return (
-      <div className="flex flex-col gap-3 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
-        <MailCheck size={22} className="text-[var(--color-accent)]" />
-        <p className="text-sm">{state.message}</p>
-        <p className="text-xs text-[var(--color-muted)]">
-          Keine Mail bekommen? Prüfe den Spam-Ordner. Der Link ist eine Stunde
-          gültig — danach schickt dir ein Anmeldeversuch automatisch einen neuen.
-        </p>
-      </div>
+      <>
+        <h1 className="text-2xl font-bold">Fast geschafft</h1>
+        <div className="flex flex-col gap-3 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
+          <MailCheck size={22} className="text-[var(--color-accent)]" />
+          <p className="text-sm">{state.message}</p>
+          <p className="text-xs text-[var(--color-muted)]">
+            Keine Mail bekommen? Prüfe den Spam-Ordner. Der Link ist eine Stunde
+            gültig — danach schickt dir ein Anmeldeversuch automatisch einen
+            neuen.
+          </p>
+        </div>
+      </>
+    );
+  }
+
+  /* Ohne Einladungs-Token gibt es kein Formular: der Zugang läuft derzeit über
+     eine Einladung. Serverseitig lehnt registerAccount() ohne Token ohnehin ab —
+     das hier erspart den Fehlversuch. */
+  if (!invite) {
+    return (
+      <>
+        <h1 className="text-2xl font-bold">Zugang auf Einladung</h1>
+        <div className="flex flex-col gap-3 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-4">
+          <MailCheck size={22} className="text-[var(--color-accent)]" />
+          <p className="text-sm">
+            Der Zugang läuft derzeit über eine Einladung — eine offene
+            Selbstregistrierung gibt es momentan nicht.
+          </p>
+          <p className="text-xs text-[var(--color-muted)]">
+            Schreib uns kurz, dann richten wir dir den Zugang ein:{" "}
+            <a
+              href="mailto:frg@silverballmania.com?subject=Pinball%20Manager%20%E2%80%93%20Zugang%20anfragen"
+              className="text-[var(--color-accent)] underline"
+            >
+              frg@silverballmania.com
+            </a>
+            . Hast du bereits eine Einladung, nutze den Link aus der E-Mail.
+          </p>
+        </div>
+      </>
     );
   }
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
-      {invite ? <input type="hidden" name="invite" value={invite} /> : null}
+      <h1 className="text-2xl font-bold">Konto erstellen</h1>
+      <input type="hidden" name="invite" value={invite} />
 
       <Field label="Name">
         <Input name="name" required autoComplete="name" />
@@ -79,11 +112,14 @@ function RegisterForm() {
       </Button>
 
       <p className="text-xs text-[var(--color-muted)]">
-        {invite
-          ? "Deine Einladung bestätigt die Adresse — du bist danach direkt angemeldet. "
-          : "Du bekommst einen Bestätigungslink per E-Mail. "}
+        {
+          "Deine Einladung bestätigt die Adresse — du bist danach direkt angemeldet. "
+        }
         Mit der Registrierung akzeptierst du die{" "}
-        <Link href="/datenschutz" className="text-[var(--color-accent)] underline">
+        <Link
+          href="/datenschutz"
+          className="text-[var(--color-accent)] underline"
+        >
           Datenschutzerklärung
         </Link>
         .
@@ -95,7 +131,6 @@ function RegisterForm() {
 export default function RegisterPage() {
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-6">
-      <h1 className="text-2xl font-bold">Konto erstellen</h1>
       <Suspense fallback={null}>
         <RegisterForm />
       </Suspense>

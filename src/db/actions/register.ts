@@ -1,13 +1,14 @@
 "use server";
 
-import { and, eq, gt } from "drizzle-orm";
+import { and, count, eq, gt } from "drizzle-orm";
 import { headers } from "next/headers";
 import { z } from "zod";
 import { db } from "@/db";
 import { verknuepfeBesitzerMitKonto } from "@/db/besitzer-link";
-import { invitations, roleAssignments } from "@/db/schema";
+import { invitations, roleAssignments, user } from "@/db/schema";
 import { auth } from "@/lib/auth";
 import { validatePassword } from "@/lib/validators";
+import { istSuperAdminEmail } from "@/lib/super-admins";
 import type { FormState } from "@/db/actions/form-state";
 
 /*
@@ -55,6 +56,27 @@ export async function registerAccount(
   if (policy) return { error: policy };
   if (password !== passwordConfirm) {
     return { error: "Die Passwörter stimmen nicht überein." };
+  }
+
+  /* Zugang läuft über eine EINLADUNG (Entscheidung 2026-09-11): ohne gültigen
+     Token entsteht kein Konto. Einzige Ausnahme ist der Bootstrap — die erste
+     Adresse aus SUPER_ADMIN_EMAILS auf einer leeren Installation, wo niemand
+     einladen könnte (dieselbe Bedingung wie im databaseHook in lib/auth.ts).
+
+     ACHTUNG, bewusste Lücke: Better Auths eigener Endpunkt
+     /api/auth/sign-up/email prüft das NICHT — `disableSignUp` ist keine Option,
+     weil auth.api.signUpEmail() denselben Handler aufruft und damit auch der
+     Einladungsfluss stürbe. Diese Action ist der Weg, den die Oberfläche geht;
+     den rohen Endpunkt muss ein Hook in lib/auth.ts schließen. */
+  if (!invite) {
+    const [{ anzahl }] = await db.select({ anzahl: count() }).from(user);
+    const istBootstrap = anzahl === 0 && istSuperAdminEmail(email);
+    if (!istBootstrap) {
+      return {
+        error:
+          "Der Zugang läuft derzeit über eine Einladung. Schreib uns kurz an frg@silverballmania.com, dann richten wir dir einen Zugang ein.",
+      };
+    }
   }
 
   let einladungId: string | null = null;
