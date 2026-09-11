@@ -58,9 +58,34 @@ export default async function GeraetetypPage({
     { key: "tipps", label: "Tipps", anzahl: tipps.length },
     { key: "reparaturen", label: "Reparaturen", anzahl: reparaturen.length },
   ];
+
+  /*
+    Auf dieser Seite wird nichts angelegt — jeder Einstieg dazu sitzt an der
+    eigenen MASCHINE dieses Modells (Handbuch auswerten, Guide erzeugen, Tipp
+    schreiben, Reparatur freigeben). Weil das Wissen aber am MODELL hängt und
+    für alle gilt, ist die häufigste offene Frage hier: „lohnt sich ein
+    zweiter Eintrag?" — und die Antwort ist je Bereich verschieden. Deshalb
+    ein Satz je Reiter statt eines allgemeinen Hinweises.
+
+    ACHTUNG beim Formulieren: GELTUNGSBEREICH und SICHTBARKEIT sind zwei
+    getrennte Achsen (CONTEXT.md). „Gilt fürs ganze Modell" heißt NICHT „sehen
+    alle" — Tipps etwa stehen zunächst auf privat. Diese Sätze haben das schon
+    einmal verwechselt.
+  */
+  const hinweise: Record<string, string> = {
+    handbuch:
+      "Handbuch-Daten hängen am MODELL, nicht an der einzelnen Maschine — wer sie zu sehen bekommt, entscheidet davon unabhängig die Sichtbarkeit des Eintrags. Ein weiteres Handbuch wertest du an deiner eigenen Maschine dieses Modells aus; nötig ist das nur, wenn im vorhandenen Auszug Tabellen fehlen.",
+    guide:
+      "Ein Guide gilt ebenfalls fürs ganze Modell; wer ihn sieht, steuert die Sichtbarkeit am Eintrag. An deiner eigenen Maschine lässt sich ein weiterer erzeugen oder ein fertiger als JSON einspielen — nötig ist das nur, wenn der vorhandene etwas Wesentliches übergeht.",
+    tipps:
+      "Tipps schreibst du an deiner eigenen Maschine dieses Modells. Sie stehen zunächst auf privat — andere sehen sie erst, wenn du sie öffentlich stellst. Anders als beim Handbuch-Auszug ergänzen sich mehrere Tipps, hier lohnt sich ein weiterer fast immer.",
+    reparaturen:
+      "Hier stehen Reparaturen, die andere für dieses Modell freigegeben haben. Eigene kommen dazu, indem du sie an deiner Maschine dokumentierst und anschließend freigibst — je mehr Wege zu einem Fehler dokumentiert sind, desto besser.",
+  };
   const leer = bereiche.every((b) => b.anzahl === 0);
 
-  const active = bereiche.some((b) => b.key === bereich) ? bereich : "handbuch";
+  const active =
+    bereich && bereiche.some((b) => b.key === bereich) ? bereich : "handbuch";
 
   const tabs: MachineTab[] = bereiche.map((b) => ({
     key: b.key,
@@ -123,6 +148,12 @@ export default async function GeraetetypPage({
       ) : (
         <>
           <MachineTabs primary={tabs} />
+
+          {hinweise[active] ? (
+            <p className="max-w-3xl text-[13px] leading-[1.6] text-[var(--color-muted)]">
+              {hinweise[active]}
+            </p>
+          ) : null}
 
           {active === "handbuch" ? (
             <KnowledgeFacts

@@ -157,12 +157,16 @@ test.describe("Familie (baugleiche Editionen)", () => {
     ).toBeVisible();
 
     await page.goto("/modelle");
-    // Ein Eintrag je Familie: der editionsneutrale Vertreter, die LE als „auch …".
-    const karte = page.locator("a", { hasText: "E2E Familie (Premium/LE)" });
-    await expect(karte).toHaveCount(1);
-    await expect(karte.getByText(/auch E2E Familie \(LE\)/)).toBeVisible();
+    /* Ein Eintrag je Familie: der editionsneutrale Vertreter, die LE als
+       „auch …". Bewusst NICHT am Link festgemacht — seit der Tabellenansicht
+       steht der Editions-Zusatz neben dem Link statt darin; geprüft wird die
+       Aussage, nicht das Markup. */
     await expect(
-      page.locator("a", { hasText: "E2E Familie (LE) | E2E Werke" }),
+      page.getByRole("link", { name: /E2E Familie \(Premium\/LE\)/ }),
+    ).toHaveCount(1);
+    await expect(page.getByText(/auch E2E Familie \(LE\)/)).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: /^E2E Familie \(LE\) \| E2E Werke/ }),
     ).toHaveCount(0);
   });
 });
