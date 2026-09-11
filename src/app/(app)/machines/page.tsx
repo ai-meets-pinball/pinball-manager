@@ -279,13 +279,16 @@ export default async function MachinesPage({
             Steuerzeile. Führt in den Auswahlmodus; die Aktionen (zuweisen,
             löschen) stehen danach in der Leiste über der Liste. */}
         <div className="ml-auto flex items-center gap-2">
-          {items.length > 0 ? (
+          {/* Nur der EINSTIEG steht hier. Im Verwalten-Modus führt die
+              Sammel-Leiste über der Liste wieder heraus („Fertig") — zwei
+              Ausstiege mit derselben Beschriftung wären Doppelanzeige. */}
+          {items.length > 0 && !verwalten ? (
             <ButtonLink
-              href={href({ verwalten: !verwalten })}
+              href={href({ verwalten: true })}
               variant="secondary"
               size="sm"
             >
-              <CheckSquare size={14} /> {verwalten ? "Fertig" : "Verwalten"}
+              <CheckSquare size={14} /> Verwalten
             </ButtonLink>
           ) : null}
           <ViewToggle
