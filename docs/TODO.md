@@ -16,6 +16,16 @@ id und Signale bleiben erhalten).
   Playwright-Suite fährt `next dev`, das Overlay ist also mitgeladen — mit
   `npm run e2e` bestätigt: 61 grün, die 6 roten (Kuratierung, Club-Löschen,
   Club-Zuordnung) sind vorbestehend und auch auf sauberem Stand rot.
+- **Sign-up-Endpunkt geschlossen** (2026-09-11): der databaseHook in
+  `lib/auth.ts` lehnt jede Konto-Anlage ohne `claiming`-Einladung ab (Ausnahme:
+  Bootstrap). Damit greift die Sperre auch am rohen
+  `POST /api/auth/sign-up/email`, den die Server Action nicht abdeckt.
+  `disableSignUp` bleibt bewusst `false` — der Schalter sitzt im selben
+  Endpunkt-Handler, den der Einladungsfluss selbst aufruft. Die drei Tests in
+  `e2e/registrierung.spec.ts` behaupten jetzt Einladungspflicht.
+- **Sichtbarkeit wirkt sofort** (2026-09-11): zwei Ursachen — die Action
+  revalidierte die Modellseite gar nicht, und React 19 setzte das Formular
+  zurück. Beides behoben, Regressionstest `e2e/sichtbarkeit.spec.ts`.
 - **Zugang wieder auf Einladung** (2026-09-11): Selbst-Registrierung ist nicht
   mehr möglich. Alle sechs „Konto erstellen"-Stellen auf Start, Funktionen,
   Preview, Login und /tour zeigen jetzt „Zugang anfragen" (mailto); /register
@@ -65,6 +75,20 @@ id und Signale bleiben erhalten).
   Spec: `docs/superpowers/specs/2026-09-02-migrationslog-abgleich-design.md`.
 
 ## Offen, aber aktuell geringer Nutzen
+
+- **`status-steuerung.tsx` auf den Form-Reset prüfen.** Am 2026-09-11 zeigte
+  sich: React 19 setzt ein `<form action={…}>` nach der Action zurück, wodurch
+  GESTEUERTE Felder den alten Wert zeigen („ändert sich erst nach Neuladen") —
+  behoben in `set-visibility.tsx` (Muster: ungesteuert + `key`, Regressionstest
+  `e2e/sichtbarkeit.spec.ts`). Alle 54 Action-Formulare wurden durchgesehen;
+  `whatsapp-settings-form` und `share-settings-form` sind nachweislich sauber.
+  NUR `status-steuerung.tsx` blieb ungeprüft — gleiche Bauart, das Steuerelement
+  war im Testlauf nicht auffindbar. Dort mit offener Seite nachsehen.
+
+- **Redlining-Overlay stürzt in Formularen mit `<input name="id">` ab**
+  („id.replace is not a function"). Fehler liegt im Paket (`cssPath` prüft
+  Truthiness statt Typ), betrifft 0.7.4 UND 0.7.5. Bericht samt Repro und
+  Einzeiler-Fix: /tmp/rl-bug.md — an upstream schicken.
 
 - **Sign-up-Endpunkt schließen.** Seit 2026-09-11 läuft der Zugang über eine
   Einladung: die öffentlichen Seiten werben nicht mehr mit „Konto erstellen",
