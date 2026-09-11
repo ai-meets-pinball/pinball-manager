@@ -55,7 +55,17 @@ export async function setKnowledgeVisibility(
     )
     .where(eq(knowledge.id, id));
 
+  /* Beide Orte auffrischen, an denen der Eintrag steht. Die Maschinenseite
+     kennt der Aufrufer; die MODELLSEITE nicht — sie reicht `machineId=""`
+     durch, weshalb dort früher gar nichts revalidiert wurde und die neue
+     Sichtbarkeit erst nach manuellem Neuladen erschien. */
   if (machineId) revalidatePath(`/machines/${machineId}`);
+  const [eintrag] = await db
+    .select({ modelId: knowledge.modelId })
+    .from(knowledge)
+    .where(eq(knowledge.id, id))
+    .limit(1);
+  if (eintrag?.modelId) revalidatePath(`/modelle/${eintrag.modelId}`);
   return { message: "Sichtbarkeit geändert." };
 }
 
