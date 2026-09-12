@@ -27,6 +27,11 @@ id und Signale bleiben erhalten).
   `showModal()` „already open as a non-modal dialog" (Knoten wird umgehängt,
   `open` bleibt stehen); behoben per `removeAttribute("open")`, bewusst NICHT
   per `close()` (feuert das close-Event → Dialog unmontiert sich sofort).
+- **Redlining 0.7.8** (2026-09-12): der Absturz „id.replace is not a function"
+  beim Annotieren in Formularen mit `<input name="id">` ist upstream in 0.7.6
+  behoben (`cssPath` prüft jetzt `typeof id === "string"`); hier angehoben —
+  Manifest und Lockdatei zusammen, nach einem versehentlichen `pnpm add`
+  einmal `node_modules` neu aufgebaut.
 - **Review-Reste 09/2026 abgeräumt** (2026-09-12, verhaltensneutral, Specs
   unverändert grün): `ROLE_LABEL` → `ENUM_LABEL`; `lib/sharing.FreigabeEntwurf`
   ist die eine Quelle (`queries/shares.ts` liefert `ShareScope`, zwei Casts
@@ -97,14 +102,6 @@ id und Signale bleiben erhalten).
   Spec: `docs/superpowers/specs/2026-09-02-migrationslog-abgleich-design.md`.
 
 ## Offen, aber aktuell geringer Nutzen
-
-- **Redlining-Overlay stürzt in Formularen mit `<input name="id">` ab**
-  („id.replace is not a function"). Fehler liegt im Paket (`cssPath` prüft
-  Truthiness statt Typ), betrifft 0.7.4 UND 0.7.5. Das Paket ist unser eigenes
-  Repo (`26-redlining`); der Fix wird DORT gemacht, nicht von hier aus — ein
-  fertiger Prompt (Regressionstest, Einzeiler, Release 0.7.6) wurde am
-  2026-09-12 übergeben. Sobald 0.7.6 auf npm ist: `npm install -D
-  redlining@0.7.6` (Manifest und Lockdatei zusammen).
 
 - **Review 09/2026 — was nach dem Abräumen bewusst blieb:** der Rollen-Dialog
   (`admin-user-roles.tsx` ↔ `member-actions.tsx`) bleibt zweimal gebaut — eine

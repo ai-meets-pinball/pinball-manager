@@ -50,7 +50,7 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
-    "redlining": "^0.7.5",
+    "redlining": "^0.7.8",
     "tailwindcss": "^4.3.2",
     "tsx": "^4.23.12",
     "typescript": "^5",
