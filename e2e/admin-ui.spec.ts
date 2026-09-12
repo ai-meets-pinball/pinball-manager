@@ -28,21 +28,23 @@ test.describe("Admin: Lösch-Bestätigung", () => {
     const zeile = page.locator("li", { hasText: "E2E Löschclub" });
     await expect(zeile).toBeVisible();
 
-    // 1. Klick bewaffnet nur — nichts wird gelöscht.
+    // 1. Klick bewaffnet nur — nichts wird gelöscht. Die Frage nennt seit der
+    // UX-Konsolidierung den Club beim Namen und die Folgen — deshalb lose.
+    const frage = /E2E Löschclub.*löschen\?/;
     await zeile.getByLabel("Club löschen").click();
-    await expect(zeile.getByText("Club wirklich löschen?")).toBeVisible();
+    await expect(zeile.getByText(frage)).toBeVisible();
 
-    // Abbrechen: Frage verschwindet, Club bleibt.
+    // Abbrechen: der native <dialog> schließt (bleibt aber im DOM montiert —
+    // deshalb „nicht sichtbar", nicht „nicht vorhanden"), Club bleibt.
     await zeile.getByRole("button", { name: "Abbrechen" }).click();
-    await expect(zeile.getByText("Club wirklich löschen?")).toHaveCount(0);
+    await expect(zeile.getByText(frage)).not.toBeVisible();
     await expect(zeile).toBeVisible();
 
-    // Erneut bewaffnen und bestätigen → Club ist weg (Action leitet nach /clubs).
-    // Exakter Pfad-Match: "**/clubs" würde auch /admin/clubs matchen und damit
-    // sofort auflösen, bevor die Server-Action fertig ist.
+    // Erneut bewaffnen und bestätigen → Zeile ist weg. deleteClubByAdmin bleibt
+    // bewusst auf /admin/clubs (kein Sprung nach /clubs wie beim Selbstlöschen).
     await zeile.getByLabel("Club löschen").click();
     await zeile.getByRole("button", { name: "Ja, löschen" }).click();
-    await page.waitForURL((url) => url.pathname === "/clubs");
+    await expect(zeile).toHaveCount(0);
 
     await page.goto("/admin/clubs");
     await expect(page.getByText("E2E Löschclub")).toHaveCount(0);

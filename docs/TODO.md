@@ -9,13 +9,35 @@ Melde-Warnung bleibt rein anzeigend) und **In-Place-Editor + Bearbeitungs-
 Verlauf** (`knowledge_revisions`; Neu-Generierung/Import aktualisiert in place —
 id und Signale bleiben erhalten).
 
-## Umgesetzt 09/2026 (Stand 2026-09-10)
+## Umgesetzt 09/2026 (Stand 2026-09-12)
 
 - **Redlining-Overlay** eingerichtet (Alt+R → `/redline`); dev-only, im
   Production-Build kein `data-rl`, die Route antwortet dort mit 403. Die
   Playwright-Suite fährt `next dev`, das Overlay ist also mitgeladen — mit
-  `npm run e2e` bestätigt: 61 grün, die 6 roten (Kuratierung, Club-Löschen,
-  Club-Zuordnung) sind vorbestehend und auch auf sauberem Stand rot.
+  `npm run e2e` bestätigt, es stört nicht.
+- **E2E-Suite wieder komplett grün** (2026-09-12, 70 Tests): sechs Specs waren
+  seit der UX-Konsolidierung (562c1a3) rot — reine Test-Drift, kein App-Fehler
+  („Für alle verbergen" und das Club-Select sind jetzt `disabled`, die
+  Löschfrage und ein Label haben neuen Wortlaut, Club-Löschen bleibt auf
+  `/admin/clubs`). Dazu `actionTimeout: 10_000` in `playwright.config.ts`,
+  damit ein stale Selektor im Test selbst scheitert statt den Worker neu zu
+  starten und Folgetests mitzureißen. Neu: `e2e/umbenennen.spec.ts` (Plan-
+  und Generations-Umbenennung, Konfliktfall behält die Eingabe) — der Spec fand
+  einen echten Fehler: `ActionDialog` warf nach einer Revalidierung
+  `showModal()` „already open as a non-modal dialog" (Knoten wird umgehängt,
+  `open` bleibt stehen); behoben per `removeAttribute("open")`, bewusst NICHT
+  per `close()` (feuert das close-Event → Dialog unmontiert sich sofort).
+- **Review-Reste 09/2026 abgeräumt** (2026-09-12, verhaltensneutral, Specs
+  unverändert grün): `ROLE_LABEL` → `ENUM_LABEL`; `lib/sharing.FreigabeEntwurf`
+  ist die eine Quelle (`queries/shares.ts` liefert `ShareScope`, zwei Casts
+  weg); `createTipp`, `updateKnowledge`, `hideKnowledge` geben `{ ok: true }`
+  zurück, ihre drei Dialoge schließen auf `state.ok`; `ui/rename-dialog.tsx`
+  ersetzt die zwei byte-gleichen Umbenennen-Dialoge. Was bewusst blieb: siehe
+  „Offen".
+- **`status-steuerung.tsx` geprüft** (2026-09-12): sauber — das Formular sitzt
+  hinter „Status manuell setzen" und unmontiert sich bei Erfolg, der
+  Fehlerpfad lässt die Eingabe stehen. Der Form-Reset-Audit ist damit komplett
+  (54 Action-Formulare, betroffen war nur `set-visibility.tsx`).
 - **Sign-up-Endpunkt geschlossen** (2026-09-11): der databaseHook in
   `lib/auth.ts` lehnt jede Konto-Anlage ohne `claiming`-Einladung ab (Ausnahme:
   Bootstrap). Damit greift die Sperre auch am rohen
@@ -30,8 +52,8 @@ id und Signale bleiben erhalten).
   mehr möglich. Alle sechs „Konto erstellen"-Stellen auf Start, Funktionen,
   Preview, Login und /tour zeigen jetzt „Zugang anfragen" (mailto); /register
   zeigt ohne Einladungs-Token kein Formular; `registerAccount()` lehnt ohne
-  Einladung ab (Ausnahme: Bootstrap auf leerer Installation). Der rohe
-  Better-Auth-Endpunkt ist noch offen — siehe „Offen" unten.
+  Einladung ab (Ausnahme: Bootstrap auf leerer Installation). Den rohen
+  Better-Auth-Endpunkt schließt der databaseHook (Eintrag oben).
 - **/tour** (2026-09-11): englischer One-Pager zum Weitergeben — öffentlich,
   aber NICHT in der Navigation verlinkt und mit `robots: noindex` (Vorbild:
   /log). Zeigt Betrieb zuerst (Inventar, Fehler/Reparaturen, Wartung, QR am
@@ -76,41 +98,21 @@ id und Signale bleiben erhalten).
 
 ## Offen, aber aktuell geringer Nutzen
 
-- **`status-steuerung.tsx` auf den Form-Reset prüfen.** Am 2026-09-11 zeigte
-  sich: React 19 setzt ein `<form action={…}>` nach der Action zurück, wodurch
-  GESTEUERTE Felder den alten Wert zeigen („ändert sich erst nach Neuladen") —
-  behoben in `set-visibility.tsx` (Muster: ungesteuert + `key`, Regressionstest
-  `e2e/sichtbarkeit.spec.ts`). Alle 54 Action-Formulare wurden durchgesehen;
-  `whatsapp-settings-form` und `share-settings-form` sind nachweislich sauber.
-  NUR `status-steuerung.tsx` blieb ungeprüft — gleiche Bauart, das Steuerelement
-  war im Testlauf nicht auffindbar. Dort mit offener Seite nachsehen.
-
 - **Redlining-Overlay stürzt in Formularen mit `<input name="id">` ab**
   („id.replace is not a function"). Fehler liegt im Paket (`cssPath` prüft
-  Truthiness statt Typ), betrifft 0.7.4 UND 0.7.5. Bericht samt Repro und
-  Einzeiler-Fix: /tmp/rl-bug.md — an upstream schicken.
+  Truthiness statt Typ), betrifft 0.7.4 UND 0.7.5. Das Paket ist unser eigenes
+  Repo (`26-redlining`); der Fix wird DORT gemacht, nicht von hier aus — ein
+  fertiger Prompt (Regressionstest, Einzeiler, Release 0.7.6) wurde am
+  2026-09-12 übergeben. Sobald 0.7.6 auf npm ist: `npm install -D
+  redlining@0.7.6` (Manifest und Lockdatei zusammen).
 
-- **Sign-up-Endpunkt schließen.** Seit 2026-09-11 läuft der Zugang über eine
-  Einladung: die öffentlichen Seiten werben nicht mehr mit „Konto erstellen",
-  /register zeigt ohne Token kein Formular, und `registerAccount()` lehnt ohne
-  Einladung ab. **Better Auths eigener Endpunkt `/api/auth/sign-up/email` ist
-  aber weiter offen.** `disableSignUp: true` hilft nicht — die Prüfung sitzt im
-  Endpunkt-Handler, den `auth.api.signUpEmail()` aus dem Einladungsfluss selbst
-  aufruft (im better-auth-Quelltext nachgesehen); der Schalter würde Einladungen
-  mit abräumen. Nötig: ein `before`-Hook in `lib/auth.ts`, der ohne
-  `claiming`-Einladung ablehnt — und dazu die drei Tests in
-  `e2e/registrierung.spec.ts` umschreiben, die heute offenes Sign-up behaupten
-  (sie sind das Sicherheitsnetz für den Hook).
-
-- **Review 09/2026 — verbliebene Ermessenspunkte** (Code-Review nach 1.35, Fixes
-  in 1.36): der Rollen-Dialog (`admin-user-roles.tsx` ↔ `member-actions.tsx`) und
-  der Umbenennen-Dialog (`plan-header.tsx` ↔ `generation-row.tsx`) sind je zweimal
-  gebaut; der Freigabe-Entwurf `{scope, anonym, zeigeKosten, clubIds, emails}` ist
-  viermal typisiert (`lib/sharing.FreigabeEntwurf` sollte die eine Quelle sein);
-  Dialoge schließen teils bei `state.ok`, teils bei `state.message`; `ROLE_LABEL`
-  in `status-badge.tsx` trägt längst alle Status-Labels und heißt noch nach den
-  Rollen. Alles ohne Verhaltensänderung — beim nächsten Anfassen der Stellen
-  mitnehmen.
+- **Review 09/2026 — was nach dem Abräumen bewusst blieb:** der Rollen-Dialog
+  (`admin-user-roles.tsx` ↔ `member-actions.tsx`) bleibt zweimal gebaut — eine
+  Extraktion bräuchte ≥ 8 Props, und das „Wo?"-Select koppelt `setOrt` an
+  `setRolle`; netto null Zeilen bei einer Datei mehr. `add-member-form` und
+  `invite-user-form` schließen weiter auf `ok || message`, weil `inviteMember`
+  legitim eine lesbare `message` liefert. Die Dialog-Fußzeile (Abbrechen +
+  Submit) steht in 14 Formularen gleich — Nachbarcode, eigene Entscheidung.
 
 - **Fork** (`knowledge_overrides` `typ='fork'` + vorhandenes
   `knowledge.forked_from_id`): einen fremden Eintrag als eigenen übernehmen.

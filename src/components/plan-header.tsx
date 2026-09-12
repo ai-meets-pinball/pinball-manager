@@ -1,16 +1,12 @@
 "use client";
 
-import { useActionState, useState, type ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { Pencil, Trash2 } from "lucide-react";
-import { ActionDialog, DialogAbbrechen } from "@/components/ui/action-dialog";
+import { RenameDialog } from "@/components/ui/rename-dialog";
 import { ActionForm } from "@/components/ui/action-form";
-import { Button } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
-import { FormFeedback } from "@/components/ui/form-feedback";
 import { ICON_BTN } from "@/components/ui/icon-button";
-import { Field, Input } from "@/components/ui/input";
 import { deletePlan, renamePlan } from "@/db/actions/maintenance-plans";
-import type { FormState } from "@/db/actions/form-state";
 
 /*
   Kopf eines Plans (nur für Manager): Name als Titel, daneben Stift (Umbenennen
@@ -60,56 +56,16 @@ export function PlanHeader({
         <div className="ml-auto flex items-center gap-2">{children}</div>
       ) : null}
       {umbenennen ? (
-        <UmbenennenDialog
-          planId={planId}
+        <RenameDialog
+          action={renamePlan}
+          titel="Plan umbenennen"
+          feldName="planId"
+          feldWert={planId}
           name={name}
+          maxLength={80}
           onClose={() => setUmbenennen(false)}
         />
       ) : null}
     </div>
-  );
-}
-
-/* Speichern erst, wenn der Name sich unterscheidet (und nicht leer ist). */
-function UmbenennenDialog({
-  planId,
-  name,
-  onClose,
-}: {
-  planId: string;
-  name: string;
-  onClose: () => void;
-}) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
-    renamePlan,
-    {},
-  );
-  const [wert, setWert] = useState(name);
-  const unveraendert = wert.trim() === "" || wert.trim() === name;
-
-  return (
-    <ActionDialog onClose={onClose} ok={Boolean(state.ok)}>
-      <form action={formAction} className="space-y-4 p-5">
-        <h3 className="text-base font-semibold">Plan umbenennen</h3>
-        <input type="hidden" name="planId" value={planId} />
-        <Field label="Name">
-          <Input
-            name="name"
-            value={wert}
-            onChange={(e) => setWert(e.target.value)}
-            maxLength={80}
-            required
-            autoFocus
-          />
-        </Field>
-        <FormFeedback state={state} />
-        <div className="flex justify-end gap-2">
-          <DialogAbbrechen />
-          <Button type="submit" size="sm" disabled={pending || unveraendert}>
-            {pending ? "…" : "Speichern"}
-          </Button>
-        </div>
-      </form>
-    </ActionDialog>
   );
 }

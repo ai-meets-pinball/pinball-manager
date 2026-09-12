@@ -9,7 +9,11 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { ShareRepairControl } from "@/components/share-repair-control";
 import { deleteRepair } from "@/db/actions/repairs";
 import type { ShareDefaults } from "@/lib/share-defaults";
-import { SCOPE_LABEL, type ShareScope } from "@/lib/sharing";
+import {
+  SCOPE_LABEL,
+  type FreigabeEntwurf,
+  type ShareScope,
+} from "@/lib/sharing";
 
 type Repair = {
   id: string;
@@ -29,16 +33,7 @@ type Repair = {
 type TeilenProps = {
   clubs: { id: string; name: string }[];
   defaults: ShareDefaults;
-  shares: Record<
-    string,
-    {
-      scope: string;
-      anonym: boolean;
-      zeigeKosten: boolean;
-      clubIds: string[];
-      emails: string[];
-    }
-  >;
+  shares: Record<string, FreigabeEntwurf>;
 };
 
 /* Reparaturen eines Geräts als List/ListRow — der Reiter-Kopf (＋ Neue

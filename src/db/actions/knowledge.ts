@@ -207,7 +207,7 @@ export async function updateKnowledge(
   });
 
   if (machineId) revalidatePath(`/machines/${machineId}`);
-  return { message: "Eintrag gespeichert." };
+  return { ok: true };
 }
 
 /** Verlauf eines Wissenseintrags — nur für den Autor (oder Super-Admin): alte
@@ -255,7 +255,7 @@ export async function hideKnowledge(
 
   if (machineId) revalidatePath(`/machines/${machineId}`);
   revalidatePath("/kuratierung");
-  return { message: "Eintrag verborgen." };
+  return { ok: true };
 }
 
 /** Einen verborgenen Wissenseintrag wiederherstellen (Kurator/Super-Admin). */

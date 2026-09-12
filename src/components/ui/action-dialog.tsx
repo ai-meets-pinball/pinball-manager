@@ -26,7 +26,25 @@ export function ActionDialog({
 }) {
   const ref = useRef<HTMLDialogElement>(null);
   useEffect(() => {
-    ref.current?.showModal();
+    const el = ref.current;
+    if (!el) return;
+    /* showModal() wirft „already open as a non-modal dialog", wenn das <dialog>
+       noch `open` trägt, aber nicht mehr im Top-Layer ist. Das passiert real:
+       die Action revalidiert die Seite, React baut den Zeilen-Baum neu auf und
+       hängt den Dialog-Knoten um — Umhängen wirft ihn aus dem Top-Layer, das
+       Attribut bleibt. Der Fehler war uncaught und riss die Seite in „This page
+       couldn't load" (e2e/umbenennen.spec.ts, Generation umbenennen).
+
+       Altlast per removeAttribute("open") räumen, NICHT per close(): close()
+       feuert das close-Event, das <dialog onClose> an den Aufrufer reicht, der
+       den Dialog daraufhin unmontiert — mit close() im Cleanup schloss sich
+       jeder Dialog sofort wieder (StrictMode läuft den Effekt im Dev-Modus
+       doppelt). removeAttribute schließt laut Spec OHNE close-Event. */
+    if (el.open) el.removeAttribute("open");
+    el.showModal();
+    return () => {
+      if (el.open) el.removeAttribute("open");
+    };
   }, []);
   useEffect(() => {
     if (ok) onClose();

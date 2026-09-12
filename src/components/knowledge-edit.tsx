@@ -106,7 +106,7 @@ function EditorDialog({
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     async (prev, fd) => {
       const res = await updateKnowledge(prev, fd);
-      if (res.message) router.refresh();
+      if (res.ok) router.refresh();
       return res;
     },
     {},
@@ -148,7 +148,7 @@ function EditorDialog({
   }
 
   return (
-    <ActionDialog onClose={onClose} ok={Boolean(state.message)} breit>
+    <ActionDialog onClose={onClose} ok={Boolean(state.ok)} breit>
       <form action={formAction} className="space-y-3 p-5">
         <h3 className="text-base font-semibold">Eintrag bearbeiten</h3>
         <input type="hidden" name="knowledgeId" value={knowledgeId} />

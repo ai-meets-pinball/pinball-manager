@@ -7,7 +7,7 @@ import { FormLeaveGuard } from "@/components/ui/form-leave-guard";
 import { KiVorschlagHolen } from "@/components/repair-suggest-button";
 import type { FormState } from "@/db/actions/form-state";
 import type { AiProvider } from "@/lib/ai/provider";
-import { ROLE_LABEL, StatusBadge } from "@/components/ui/status-badge";
+import { ENUM_LABEL, StatusBadge } from "@/components/ui/status-badge";
 
 type Fault = { id: string; beschreibung: string; status: string };
 
@@ -147,7 +147,7 @@ export function RepairForm({
           <Select name="status" defaultValue={repair?.status ?? "offen"}>
             {(["offen", "in Arbeit", "erledigt"] as const).map((st) => (
               <option key={st} value={st}>
-                {ROLE_LABEL[st] ?? st}
+                {ENUM_LABEL[st] ?? st}
               </option>
             ))}
           </Select>

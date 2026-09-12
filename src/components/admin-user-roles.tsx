@@ -8,7 +8,7 @@ import { ConfirmButton } from "@/components/ui/confirm-button";
 import { FormFeedback } from "@/components/ui/form-feedback";
 import { Field, Select } from "@/components/ui/input";
 import { ListRow } from "@/components/ui/list";
-import { ROLE_LABEL, StatusBadge } from "@/components/ui/status-badge";
+import { ENUM_LABEL, StatusBadge } from "@/components/ui/status-badge";
 import { removeUserRole, setUserRole } from "@/db/actions/admin";
 import type { FormState } from "@/db/actions/form-state";
 import { rolleEntfernenGesperrt } from "@/lib/rechte";
@@ -190,7 +190,7 @@ export function AdminUserRoles({
         <input type="hidden" name="clubId" value={z.clubId} />
         <input type="hidden" name="rolle" value={z.rolle} />
         <ConfirmButton
-          question={`Rolle „${ROLE_LABEL[z.rolle] ?? z.rolle}" in ${z.ort} entfernen?`}
+          question={`Rolle „${ENUM_LABEL[z.rolle] ?? z.rolle}" in ${z.ort} entfernen?`}
           confirmLabel="Ja, entfernen"
           disabled={z.sperre !== null}
           aria-label={`Rolle in ${z.ort} entfernen`}
@@ -282,7 +282,7 @@ export function NutzerZeile({
                 className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] px-2 py-0.5 text-xs"
               >
                 <span className="text-[var(--color-muted)]">{c.ort}</span>
-                <span className="font-medium">{ROLE_LABEL[c.rolle] ?? c.rolle}</span>
+                <span className="font-medium">{ENUM_LABEL[c.rolle] ?? c.rolle}</span>
               </span>
             ))
           )}
@@ -393,7 +393,7 @@ function RollenDialog({
           >
             {rollenZurWahl.map((r) => (
               <option key={r} value={r}>
-                {ROLE_LABEL[r] ?? r}
+                {ENUM_LABEL[r] ?? r}
               </option>
             ))}
           </Select>

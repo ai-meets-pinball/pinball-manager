@@ -96,7 +96,7 @@ export async function createTipp(
   });
 
   revalidatePath(`/machines/${machineId}`);
-  return { message: "Tipp angelegt." };
+  return { ok: true };
 }
 
 /** Eigenen Tipp löschen (Autor oder Super-Admin). Ziele, Signale, Overrides

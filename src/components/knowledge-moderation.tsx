@@ -121,14 +121,14 @@ function VerbergenDialog({
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     async (prev, fd) => {
       const res = await hideKnowledge(prev, fd);
-      if (res.message) router.refresh();
+      if (res.ok) router.refresh();
       return res;
     },
     {},
   );
 
   return (
-    <ActionDialog onClose={onClose} ok={Boolean(state.message)}>
+    <ActionDialog onClose={onClose} ok={Boolean(state.ok)}>
       <form action={formAction} className="space-y-4 p-5">
         <h3 className="text-base font-semibold">Für alle verbergen</h3>
         <p className="text-sm text-[var(--color-muted)]">

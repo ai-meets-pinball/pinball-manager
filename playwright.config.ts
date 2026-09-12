@@ -37,6 +37,11 @@ export default defineConfig({
     baseURL: BASE_URL,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
+    // Ohne Grenze wartet ein einzelner veralteter Selektor (click auf einen
+    // deaktivierten Knopf) die vollen 30 s des Tests ab; der Worker startet
+    // neu, afterAll läuft zu früh, und aus EINEM Drift werden vier rote Tests
+    // derselben Datei. So scheitert er nach 10 s IM Test, mit klarer Meldung.
+    actionTimeout: 10_000,
   },
 
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],

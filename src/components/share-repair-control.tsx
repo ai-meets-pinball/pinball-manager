@@ -18,6 +18,7 @@ import {
   SCOPE_HINWEIS,
   SCOPE_LABEL,
   SHARE_SCOPES,
+  type FreigabeEntwurf,
   type ShareScope,
 } from "@/lib/sharing";
 
@@ -36,14 +37,6 @@ import {
   freigabeZielFehlt) prüft die Action. „Freigabe aufheben" fragt nach (die
   Folge im Klartext) und schließt den Dialog bei Erfolg.
 */
-
-type Freigabe = {
-  scope: string;
-  anonym: boolean;
-  zeigeKosten: boolean;
-  clubIds: string[];
-  emails: string[];
-};
 
 type Vorschau = {
   diagnose: string | null;
@@ -64,7 +57,7 @@ export function ShareRepairControl({
   machineId: string;
   repairId: string;
   vorschau: Vorschau;
-  aktuell: Freigabe | null;
+  aktuell: FreigabeEntwurf | null;
   defaults: ShareDefaults;
   clubs: { id: string; name: string }[];
 }) {
@@ -112,7 +105,7 @@ function TeilenDialog({
   machineId: string;
   repairId: string;
   vorschau: Vorschau;
-  aktuell: Freigabe | null;
+  aktuell: FreigabeEntwurf | null;
   defaults: ShareDefaults;
   clubs: { id: string; name: string }[];
   onClose: () => void;
@@ -131,7 +124,7 @@ function TeilenDialog({
 
   const keinClub = clubs.length === 0;
   const [scope, setScope] = useState<ShareScope>(
-    (aktuell?.scope as ShareScope) ?? defaults.defaultScope,
+    aktuell?.scope ?? defaults.defaultScope,
   );
   const [anonym, setAnonym] = useState(aktuell?.anonym ?? defaults.defaultAnonym);
   const [zeigeKosten, setZeigeKosten] = useState(
@@ -151,10 +144,7 @@ function TeilenDialog({
   const zielFehlt = freigabeZielFehlt(entwurf);
   const unveraendert =
     aktuell !== null &&
-    freigabeUnveraendert(
-      { ...aktuell, scope: aktuell.scope as ShareScope },
-      entwurf,
-    );
+    freigabeUnveraendert(aktuell, entwurf);
   const gesperrt = zielFehlt ?? (unveraendert ? "Nichts geändert" : null);
 
   return (

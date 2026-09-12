@@ -6,14 +6,14 @@ import { ActionDialog, DialogAbbrechen } from "@/components/ui/action-dialog";
 import { Button } from "@/components/ui/button";
 import { FormFeedback } from "@/components/ui/form-feedback";
 import { Field, Input, Select, Textarea } from "@/components/ui/input";
-import { ROLE_LABEL } from "@/components/ui/status-badge";
+import { ENUM_LABEL } from "@/components/ui/status-badge";
 import { inviteMember } from "@/db/actions/invitations";
 import type { FormState } from "@/db/actions/form-state";
 import { CLUB_ROLES } from "@/lib/validators";
 
 /*
   „Mitglied einladen" — Button neben der Überschrift, das Formular im Dialog
-  (Prinzip: Neu im Dialog). Die Rollen kommen aus CLUB_ROLES/ROLE_LABEL statt
+  (Prinzip: Neu im Dialog). Die Rollen kommen aus CLUB_ROLES/ENUM_LABEL statt
   hart kodiert; Owner steht nur Ownern zur Wahl (die Action prüft dasselbe).
   Erfolg meldet die Action als `message` — der Dialog schließt, und die neue
   Einladung erscheint unter „Offene Einladungen".
@@ -72,7 +72,7 @@ function EinladenDialog({
           <Select name="rolle" defaultValue="member">
             {rollen.map((r) => (
               <option key={r} value={r}>
-                {ROLE_LABEL[r] ?? r}
+                {ENUM_LABEL[r] ?? r}
               </option>
             ))}
           </Select>

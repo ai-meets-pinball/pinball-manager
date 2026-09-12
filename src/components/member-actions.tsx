@@ -9,7 +9,7 @@ import { ConfirmButton } from "@/components/ui/confirm-button";
 import { FormFeedback } from "@/components/ui/form-feedback";
 import { ICON_BTN } from "@/components/ui/icon-button";
 import { Field, Select } from "@/components/ui/input";
-import { ROLE_LABEL } from "@/components/ui/status-badge";
+import { ENUM_LABEL } from "@/components/ui/status-badge";
 import { changeMemberRole, leaveClub, removeMember } from "@/db/actions/clubs";
 import type { FormState } from "@/db/actions/form-state";
 import { rolleEntfernenGesperrt } from "@/lib/rechte";
@@ -165,7 +165,7 @@ function RollenDialog({
           >
             {roleOptions.map((r) => (
               <option key={r} value={r}>
-                {ROLE_LABEL[r] ?? r}
+                {ENUM_LABEL[r] ?? r}
               </option>
             ))}
           </Select>

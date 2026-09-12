@@ -43,7 +43,7 @@ const tone: Record<string, BadgeTone> = {
 };
 
 /** Anzeigenamen für Enum-Werte, die nicht schon deutsch sind. */
-export const ROLE_LABEL: Record<string, string> = {
+export const ENUM_LABEL: Record<string, string> = {
   owner: "Owner",
   admin: "Admin",
   member: "Mitglied",
@@ -63,6 +63,6 @@ export const ROLE_LABEL: Record<string, string> = {
 export function StatusBadge({ value }: { value: string }) {
   // Enum-Werte (Rollen, Status) auf deutsche Labels abbilden; alles andere
   // (Fehler-/Reparatur-Status) ist bereits deutsch und bleibt unverändert.
-  const label = ROLE_LABEL[value] ?? value;
+  const label = ENUM_LABEL[value] ?? value;
   return <Badge tone={tone[value] ?? "muted"}>{label}</Badge>;
 }

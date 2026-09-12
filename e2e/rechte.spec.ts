@@ -42,11 +42,11 @@ test.describe("Maschinen-Rechte", () => {
     await loginAs(page, USERS.member);
     await page.goto(`/machines/${machineId}/edit`);
 
-    // Versuch, die Maschine in den eigenen Club zu ziehen.
+    // Die Club-Wahl ist für ein einfaches Mitglied deaktiviert (dummy-safe, P5):
+    // umhängen darf nur, wer löschen darf. Das IST die Aussage dieses Tests —
+    // ein selectOption() würde hier nur bis zum Timeout auf „enabled" warten.
     const clubSelect = page.getByLabel("Club");
-    await clubSelect.selectOption(fremdClubId).catch(() => {
-      /* Auswahl evtl. gar nicht angeboten — auch das ist ein gültiges Ergebnis */
-    });
+    await expect(clubSelect).toBeDisabled();
     await page.getByRole("button", { name: /speichern|aktualisieren/i }).click();
 
     const [m] = await sql`SELECT club_id FROM machines WHERE id = ${machineId}`;

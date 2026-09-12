@@ -65,12 +65,15 @@ test.describe("Kuratoren-Moderation", () => {
     await page.goto(`/modelle/${modelId}`);
 
     await page.getByRole("button", { name: "Verbergen" }).click();
-    // Ohne Begründung → Fehlermeldung, nichts verborgen.
-    await page.getByRole("button", { name: "Für alle verbergen" }).click();
-    await expect(page.getByText("Eine Begründung ist erforderlich.")).toBeVisible();
+    // Ohne Begründung ist der Dialog gar nicht absendbar — der Knopf ist
+    // deaktiviert (dummy-safe, P5). Die Server-Prüfung dahinter bleibt als
+    // zweite Linie, ist über die Oberfläche aber nicht mehr erreichbar.
+    await expect(
+      page.getByRole("button", { name: "Für alle verbergen" }),
+    ).toBeDisabled();
 
     await page
-      .getByPlaceholder(/Begründung/)
+      .getByLabel("Begründung (Pflicht)")
       .fill("E2E: Spulendaten nachweislich falsch");
     await page.getByRole("button", { name: "Für alle verbergen" }).click();
     await expect(page.getByText(/Von Kurator .* verborgen/)).toBeVisible();

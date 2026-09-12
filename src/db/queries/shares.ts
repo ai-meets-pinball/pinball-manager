@@ -10,6 +10,7 @@ import {
 } from "drizzle-orm";
 import { db } from "@/db";
 import { getFamilie } from "@/db/queries/familie";
+import type { ShareScope } from "@/lib/sharing";
 import {
   clubSettings,
   faults,
@@ -166,7 +167,9 @@ export async function getRepairShares(machineId: string) {
     zeilen.map((z) => [
       z.artefaktId,
       {
-        scope: z.scope,
+        // `shares.scope` ist text, kein pgEnum — hier EINMAL schmälern, damit
+        // Dialog und Liste den Kanon FreigabeEntwurf ohne Casts nutzen können.
+        scope: z.scope as ShareScope,
         anonym: z.anonym,
         zeigeKosten: z.zeigeKosten,
         clubIds: ziele

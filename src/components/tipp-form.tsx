@@ -107,7 +107,7 @@ function TippDialog({
   const unvollstaendig = !titel.trim() || !text.trim() || anzahlZiele === 0;
 
   return (
-    <ActionDialog onClose={onClose} ok={Boolean(state.message)} breit>
+    <ActionDialog onClose={onClose} ok={Boolean(state.ok)} breit>
       <form action={formAction} className="space-y-3 p-5">
         <h3 className="text-base font-semibold">Tipp hinzufügen</h3>
         <input type="hidden" name="machineId" value={machineId} />
