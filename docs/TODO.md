@@ -27,6 +27,15 @@ id und Signale bleiben erhalten).
   `showModal()` „already open as a non-modal dialog" (Knoten wird umgehängt,
   `open` bleibt stehen); behoben per `removeAttribute("open")`, bewusst NICHT
   per `close()` (feuert das close-Event → Dialog unmontiert sich sofort).
+- **Next 16.2.9 → 16.3.5** (2026-09-12): `npm audit` meldete elf Advisories
+  gegen 16.2.9, darunter Proxy-Bypass im App Router, DoS über Server Actions,
+  RCE in der Image-Optimierung (AVIF) — alle in 16.3.5 geschlossen. Gate:
+  tsc, 211 Unit-Tests, Build, E2E 70/70. Bekanntes Rauschen seitdem: der
+  Dev-Server loggt einen vom Client abgebrochenen RSC-Stream als
+  „⨯ Error: The destination stream closed early" (Next #96704; Fix #96715
+  gemerged, erst in 16.4) — in der E2E-Suite ~1× je Test, keine Auswirkung.
+  Restliche Audit-Einträge sind Dev-Ketten (`drizzle-kit → @esbuild-kit →
+  esbuild`, „Fix" wäre ein Downgrade) — bleiben.
 - **Redlining 0.7.8** (2026-09-12): der Absturz „id.replace is not a function"
   beim Annotieren in Formularen mit `<input name="id">` ist upstream in 0.7.6
   behoben (`cssPath` prüft jetzt `typeof id === "string"`); hier angehoben —
@@ -102,6 +111,14 @@ id und Signale bleiben erhalten).
   Spec: `docs/superpowers/specs/2026-09-02-migrationslog-abgleich-design.md`.
 
 ## Offen, aber aktuell geringer Nutzen
+
+- **`npm run lint` meldet 7 vorbestehende Fehler** (Stand 2026-09-12, auch auf
+  16.2.9): fünf `react/no-unescaped-entities` (rohe `"` in JSX auf
+  /datenschutz, /features, /log, /preview, /s/[code]) und zwei
+  `react-hooks/set-state-in-effect` in `qr-print.tsx` (localStorage-Restore
+  im Effekt). Kein Build-Blocker — Next 16 lintet im Build nicht mehr. Die
+  fünf Anführungszeichen sind Einzeiler; `qr-print` bräuchte ein
+  `useSyncExternalStore` oder einen Lazy-Initializer.
 
 - **Review 09/2026 — was nach dem Abräumen bewusst blieb:** der Rollen-Dialog
   (`admin-user-roles.tsx` ↔ `member-actions.tsx`) bleibt zweimal gebaut — eine
