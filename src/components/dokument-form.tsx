@@ -4,7 +4,8 @@ import { useActionState, useState } from "react";
 import { FileText, Link as LinkIcon, StickyNote } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UrheberHinweis } from "@/components/ui/urheber-hinweis";
-import { Field, Input, Textarea } from "@/components/ui/input";
+import { FormatTextarea } from "@/components/ui/format-textarea";
+import { Field, Input } from "@/components/ui/input";
 import { FormLeaveGuard } from "@/components/ui/form-leave-guard";
 import type { FormState } from "@/db/actions/form-state";
 
@@ -147,8 +148,11 @@ export function DokumentForm({
         </>
       ) : null}
 
-      <Field label={art === "notiz" ? "Notiz" : "Notiz (optional)"}>
-        <Textarea
+      <Field
+        label={art === "notiz" ? "Notiz" : "Notiz (optional)"}
+        hint="Formatierung: **fett**, _kursiv_, Aufzählung mit Bindestrich, [Text](https://…) — oder die Knöpfe oben."
+      >
+        <FormatTextarea
           name="notiz"
           required={art === "notiz"}
           placeholder={

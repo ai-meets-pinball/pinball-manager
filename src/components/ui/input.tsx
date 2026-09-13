@@ -1,7 +1,7 @@
 import type {
   InputHTMLAttributes,
   SelectHTMLAttributes,
-  TextareaHTMLAttributes,
+  ComponentProps,
   ReactNode,
 } from "react";
 
@@ -39,7 +39,7 @@ export function Input({
 export function Textarea({
   className = "",
   ...props
-}: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+}: ComponentProps<"textarea">) {
   return <textarea className={`${fieldStyles} min-h-24 ${className}`} {...props} />;
 }
 

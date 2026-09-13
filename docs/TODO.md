@@ -27,6 +27,25 @@ id und Signale bleiben erhalten).
   `showModal()` „already open as a non-modal dialog" (Knoten wird umgehängt,
   `open` bleibt stehen); behoben per `removeAttribute("open")`, bewusst NICHT
   per `close()` (feuert das close-Event → Dialog unmontiert sich sofort).
+- **Node-Systeme (Stern SPIKE) im Handbuch-Import** (2026-09-13, Rückmeldung
+  aus einem echten Prompt-Lauf): Schalter/Lampen hängen dort einzeln
+  adressiert an Nodes („8-SW-17", Lampen bis 288) — keine 8×8-Matrix. Der
+  Prompt sagt jetzt ausdrücklich „Column/Row leer lassen, nichts erfinden";
+  die Prüfung erkennt Node-Adressierung (`istNodeAdressiert`), meldet dann
+  keine fehlende Matrix und die Tipps verlangen keine Rasterpositionen; die
+  Vorschau zeigt „Node-System (keine Matrix — so richtig)".
+- **Verlassen-Warnung immer als eigenes Modal** (2026-09-13): der native
+  Browser-Prompt („Leave site?", beforeunload) ist aus `ui/form-leave-guard.tsx`
+  raus — er lässt sich weder übersetzen noch gestalten. Stattdessen fängt der
+  Guard bei ungespeicherten Änderungen jeden In-App-Link (Top-Nav, Zurück,
+  Reiter) ab und zeigt „Weiter bearbeiten / Verwerfen / Speichern"; Verwerfen
+  führt zum angeklickten Ziel. Tab schließen/Neuladen bleibt bewusst ungewarnt.
+- **Tipp als Seite + Basis-Formatierung** (Redlining 2026-09-13, 15:11):
+  „Tipp hinzufügen" ist eine eigene Seite (`/machines/[id]/tipps/new`) statt
+  eines Dialogs. Neues `ui/format-textarea.tsx`: Leiste für fett, kursiv,
+  Aufzählung, Link (setzt die Markdown-Zeichen aus `lib/mini-markdown`) plus
+  Vorschau mit demselben Renderer wie die Anzeige — im Tipp-Text und in der
+  Dokument-Notiz; Dokument-Notizen werden jetzt auch formatiert angezeigt.
 - **Tipp-Picker gestuft** (2026-09-13): erst dieses Gerät (vorausgewählt),
   dann weitere Editionen desselben Titels (gleiche OPDB-Gruppe, z. B. Pro ↔
   Premium/LE), dann — zugeklappt — andere Modelle, und getrennt davon ganze

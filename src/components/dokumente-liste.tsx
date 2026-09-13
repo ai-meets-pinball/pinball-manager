@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { ActionForm } from "@/components/ui/action-form";
 import { ConfirmButton } from "@/components/ui/confirm-button";
+import { FormatierterText } from "@/components/ui/formatted-text";
 import { ICON_BTN } from "@/components/ui/icon-button";
 import { List, ListRow } from "@/components/ui/list";
 import { deleteDokument } from "@/db/actions/dokumente";
@@ -122,9 +123,10 @@ export function DokumenteListe({
               </a>
             ) : null}
             {d.notiz ? (
-              <p className="whitespace-pre-wrap text-sm text-[var(--color-muted)]">
-                {d.notiz}
-              </p>
+              <FormatierterText
+                text={d.notiz}
+                className="space-y-1 text-sm text-[var(--color-muted)]"
+              />
             ) : null}
           </ListRow>
         );

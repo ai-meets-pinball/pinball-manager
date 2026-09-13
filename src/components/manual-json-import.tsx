@@ -183,7 +183,9 @@ function Vorschau({ check }: { check: ImportResult }) {
             >
               {r.columnsOk ? "✓ Spalten ok" : "⚠ Spalten abweichend"}
             </span>
-            {r.matrix !== null ? (
+            {r.node ? (
+              <span className="text-[var(--color-muted)]">· Node-System (keine Matrix — so richtig)</span>
+            ) : r.matrix !== null ? (
               <span className="text-[var(--color-muted)]">
                 {r.matrix ? "· Matrix ✓" : "· keine Matrix"}
               </span>

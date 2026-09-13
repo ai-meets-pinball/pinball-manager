@@ -103,4 +103,15 @@ body {
   [role="button"]:not([aria-disabled="true"]) {
     cursor: pointer;
   }
+
+  /* Native Auswahl-Elemente (Checkbox, Radio, Range, Progress) färbt der
+     Browser sonst in seinem Standard-Blau — hier überall der Markenakzent
+     (Bordeaux, im Dark Mode die helle Variante), wie ihn einzelne Felder
+     schon per accent-[…]-Utility trugen. */
+  input[type="checkbox"],
+  input[type="radio"],
+  input[type="range"],
+  progress {
+    accent-color: var(--color-accent);
+  }
 }

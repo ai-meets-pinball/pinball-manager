@@ -141,3 +141,45 @@ describe("tippsFuerGuide", () => {
     expect(t).toEqual({ tipps: [], nachfrage: null });
   });
 });
+
+describe("Node-Systeme (Stern SPIKE) — keine Matrix, keine falsche Nachfrage", () => {
+  it("erkennt Node-Adressen und verlangt keine Rasterposition", () => {
+    const raw = JSON.stringify({
+      coils: { columns: FACT_COLUMNS.coils, rows: [spule] },
+      fuses: { columns: FACT_COLUMNS.fuses, rows: [sicherung] },
+      switches: {
+        columns: FACT_COLUMNS.switches,
+        rows: [
+          ["8-SW-17", "", "", "mechanisch", "Left Flipper Button"],
+          ["8-SW-18", "", "", "mechanisch", "Right Flipper Button"],
+          ["9-SW-3", "", "", "opto", "Trough 1"],
+        ],
+      },
+      lamps: {
+        columns: FACT_COLUMNS.lamps,
+        rows: [["8-LP-24", "", "", "Left Spinner"], ["288", "", "", "Backbox GI"]],
+      },
+    });
+    const r = parseFactsText(raw);
+    expect(r.ok).toBe(true);
+    expect(r.warnings.some((w) => /Matrix/.test(w))).toBe(false);
+    expect(r.reports.find((x) => x.typ === "switches")).toMatchObject({ node: true, matrix: null });
+    expect(r.reports.find((x) => x.typ === "lamps")).toMatchObject({ node: true, matrix: null });
+    expect(tippsFuerFakten(raw, r)).toEqual({ tipps: [], nachfrage: null });
+  });
+
+  it("nagt bei einer echten Matrix ohne Positionen weiter — aber mit dem Vorbehalt", () => {
+    const raw = JSON.stringify({
+      coils: { columns: FACT_COLUMNS.coils, rows: [spule] },
+      fuses: { columns: FACT_COLUMNS.fuses, rows: [sicherung] },
+      switches: {
+        columns: FACT_COLUMNS.switches,
+        rows: [["11", "", "", "mechanisch", "A"], ["12", "", "", "mechanisch", "B"]],
+      },
+      lamps: { columns: FACT_COLUMNS.lamps, rows: [["11", "", "", "L"]] },
+    });
+    const r = parseFactsText(raw);
+    const t = tippsFuerFakten(raw, r);
+    expect(t.nachfrage).toMatch(/bei Node-Systemen .* bleiben sie leer/);
+  });
+});

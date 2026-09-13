@@ -8,6 +8,7 @@ import {
   ExternalLink,
   FileText,
   LayoutGrid,
+  Lightbulb,
   List as ListIcon,
   Pencil,
   Plus,
@@ -21,7 +22,6 @@ import { FaultList } from "@/components/fault-list";
 import { KnowledgeFacts } from "@/components/knowledge-facts";
 import { KnowledgeGuides } from "@/components/knowledge-guides";
 import { KnowledgeTipps } from "@/components/knowledge-tipps";
-import { TippForm } from "@/components/tipp-form";
 import { MachineFaultsPreview } from "@/components/machine-faults-preview";
 import {
   MachineOverview,
@@ -45,12 +45,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { ViewToggle } from "@/components/ui/view-toggle";
 import { deleteMachine } from "@/db/actions/machines";
 import { getMachineDetail } from "@/db/machine-detail";
-import {
-  getKiInDerApp,
-  getLoeschfolgen,
-  getTippZielKatalog,
-  resolvePrompt,
-} from "@/db/queries";
+import { getKiInDerApp, getLoeschfolgen, resolvePrompt } from "@/db/queries";
 import { FEHLER_FILTER, FEHLER_FILTER_LABEL } from "@/lib/fehler-status";
 import { modellName, relativeZeit } from "@/lib/format";
 import { tageDazwischen } from "@/lib/faelligkeit";
@@ -162,11 +157,6 @@ export default async function MachineDetailPage({
   const machineFaults = aktiverFilter
     ? alleFehler.filter((f) => f.status === aktiverFilter)
     : alleFehler;
-
-  // Ziel-Katalog für das Tipp-Anlege-Formular — nur wenn es gebraucht wird
-  // (wie availableProviders eine Formular-Zutat, kein Anzeige-Datum der Maschine).
-  const tippKatalog =
-    darf.bearbeiten && machine.modelId ? await getTippZielKatalog() : null;
 
   // Kopierbarer Guide-Import-Prompt mit dem AUFGELÖSTEN System-Prompt
   // (Registry/Override), damit die Kopiervorlage denselben Text nutzt wie die
@@ -806,24 +796,17 @@ export default async function MachineDetailPage({
         <div className="space-y-3">
           {machine.modelId ? (
             <>
-              {/* Reiterkopf: links „Tipp hinzufügen" (Dialog), rechts der
+              {/* Reiterkopf: links „Tipp hinzufügen" (eigene Seite), rechts der
                   Karten/Listen-Umschalter — Ansicht klebt in URL + Cookie. */}
               <div className="flex flex-wrap items-center justify-between gap-2">
-                {tippKatalog ? (
-                  <TippForm
-                    machineId={machine.id}
-                    modelle={tippKatalog.modelle}
-                    generationen={tippKatalog.generationen}
-                    vorauswahlModelId={
-                      // Der Picker zeigt je Familie EINEN Eintrag — den treffen,
-                      // der die eigene Edition enthält.
-                      tippKatalog.modelle.find((m) =>
-                        m.ids.includes(machine.modelId ?? ""),
-                      )?.id ?? machine.modelId
-                    }
-                    eigenerOpdbRef={machine.opdbRef}
-                    eigeneGeneration={guideGeneration}
-                  />
+                {darf.bearbeiten ? (
+                  <ButtonLink
+                    variant="secondary"
+                    size="sm"
+                    href={`/machines/${machine.id}/tipps/new`}
+                  >
+                    <Lightbulb size={14} /> Tipp hinzufügen
+                  </ButtonLink>
                 ) : (
                   <span />
                 )}

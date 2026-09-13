@@ -35,8 +35,12 @@ export type FactReport = {
   rows: number;
   /** Spalten stimmen exakt mit FACT_COLUMNS überein. */
   columnsOk: boolean;
-  /** switches/lamps: rendert als Matrix? Sonst null. */
+  /** switches/lamps: rendert als Matrix? Sonst null. Bei Node-Adressierung
+      (siehe `node`) bewusst null — dort GIBT es keine Matrix. */
   matrix: boolean | null;
+  /** switches/lamps: einzeln adressiert (Stern SPIKE „8-SW-17", Nummern > 88)
+      statt Matrix — dann sind leere Column/Row richtig, nicht mangelhaft. */
+  node: boolean;
 };
 
 export type ImportResult = {
@@ -81,9 +85,13 @@ Handbuch sie anders benennt; ordne die Werte zu, fehlende Werte = "":
 
 - coils    → ${JSON.stringify(FACT_COLUMNS.coils)}
 - switches → ${JSON.stringify(FACT_COLUMNS.switches)}
-             Column/Row = Rasterposition 1–9; bei Nicht-Matrix-Schaltern "". Typ = "opto" oder "mechanisch".
+             Column/Row = Rasterposition 1–9 — NUR bei einer echten Schalter-Matrix (WPC, System 11,
+             Bally/Stern-Klassiker, SAM). Bei Node-Systemen (Stern SPIKE/SPIKE 2, moderne JJP,
+             Spooky …) sind Schalter einzeln adressiert (z. B. "8-SW-17"): dann Sw/No = diese
+             Adresse und Column/Row = "" — nichts erfinden. Typ = "opto" oder "mechanisch".
 - lamps    → ${JSON.stringify(FACT_COLUMNS.lamps)}
-             Lampenmatrix 8×8; Lamp/No = Column×10 + Row (Column/Row aus der Nummer ableiten).
+             Matrix-Systeme: Lamp/No = Column×10 + Row (Column/Row aus der Nummer ableiten).
+             Node-Systeme (Adressen wie "8-LP-24", Nummern über 88): Column/Row = "".
 - fuses    → ${JSON.stringify(FACT_COLUMNS.fuses)}
 - parts    → ${JSON.stringify(FACT_COLUMNS.parts)}
 - rules    → ${JSON.stringify(FACT_COLUMNS.rules)}
@@ -176,6 +184,25 @@ function normTable(
   }
 
   return { table: { columns, rows }, warnings };
+}
+
+/**
+ * Node-System statt Matrix? Stern SPIKE (und andere moderne Plattformen)
+ * adressieren Schalter/Lampen einzeln an einem Node — „8-SW-17", „8-LP-24" —
+ * oder mit Nummern jenseits einer 8×8-Matrix (> 88). Dann gibt es keine
+ * Rasterposition, und leere Column/Row sind richtig (kein Grund zur Nachfrage).
+ * Entscheidet nach der Mehrheit der Kennungen in der ersten Spalte.
+ */
+export function istNodeAdressiert(table: FactTable): boolean {
+  if (table.rows.length === 0) return false;
+  let node = 0;
+  for (const r of table.rows) {
+    const id = (r[0] ?? "").trim();
+    if (!id) continue;
+    const n = Number(id);
+    if (/[A-Za-z]/.test(id) || (Number.isFinite(n) && n > 88)) node++;
+  }
+  return node * 2 > table.rows.length;
 }
 
 /** Spiegelt die Matrix-Regeln aus fact-table-view.tsx (buildMatrix): rendert die
@@ -271,16 +298,18 @@ export function parseFacts(data: unknown): ImportResult {
     ? FACT_TYPES.filter((t) => result[t].rows.length > 0)
     : [];
 
-  const reports: FactReport[] = present.map((typ) => ({
-    typ,
-    rows: result![typ].rows.length,
-    columnsOk:
-      JSON.stringify(result![typ].columns) === JSON.stringify(FACT_COLUMNS[typ]),
-    matrix:
-      typ === "switches" || typ === "lamps"
-        ? wouldRenderMatrix(result![typ])
-        : null,
-  }));
+  const reports: FactReport[] = present.map((typ) => {
+    const matrixTyp = typ === "switches" || typ === "lamps";
+    const node = matrixTyp && istNodeAdressiert(result![typ]);
+    return {
+      typ,
+      rows: result![typ].rows.length,
+      columnsOk:
+        JSON.stringify(result![typ].columns) === JSON.stringify(FACT_COLUMNS[typ]),
+      matrix: matrixTyp && !node ? wouldRenderMatrix(result![typ]) : null,
+      node,
+    };
+  });
   for (const r of reports) {
     if (r.matrix === false) {
       warnings.push(

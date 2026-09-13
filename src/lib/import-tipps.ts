@@ -140,9 +140,11 @@ export function tippsFuerFakten(raw: string, r: ImportResult): ImportTipps {
           `${LABEL[rep.typ]}: Verwende exakt diese Spalten in dieser Reihenfolge: ${JSON.stringify(FACT_COLUMNS[rep.typ])}.`,
         );
       }
-      if (rep.matrix === false) {
+      // Node-Systeme (Stern SPIKE „8-SW-17") HABEN keine Matrix — dort wäre die
+      // Nachfrage falsch und würde das Modell zum Erfinden verleiten.
+      if (rep.matrix === false && !rep.node) {
         probleme.push(
-          `${LABEL[rep.typ]}: Gib je Eintrag Column und Row als Rasterposition 1–9 an.`,
+          `${LABEL[rep.typ]}: Gib je Eintrag Column und Row als Rasterposition 1–9 an — falls das Gerät eine echte Schalter-/Lampenmatrix hat; bei Node-Systemen (Stern SPIKE u. ä.) bleiben sie leer.`,
         );
       }
     }
