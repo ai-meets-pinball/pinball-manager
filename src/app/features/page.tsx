@@ -98,7 +98,7 @@ export default async function FeaturesPage() {
               <span className="font-medium text-[var(--color-fg)]">Sammel-QR</span>{" "}
               für einen Club oder deine private Sammlung zeigt zuerst eine
               Geräteauswahl — solche Meldungen sind klar als „aus der Liste
-              gewählt" gekennzeichnet. Auf die Etiketten kommt dein Vereins- oder
+              gewählt&quot; gekennzeichnet. Auf die Etiketten kommt dein Vereins- oder
               persönliches Logo.
             </p>
           </div>
