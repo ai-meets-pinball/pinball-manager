@@ -282,9 +282,10 @@ export default function HomePage() {
             </h3>
             <p className="text-sm leading-[1.65] text-[var(--color-muted)]">
               Aus einem PDF-Handbuch werden Spulen-, Schalter- und Teiletabellen
-              je Modell, dazu ein generierter Troubleshooting-Guide, per
-              Websuche gegen Community-Quellen geprüft. Zu einem gemeldeten
-              Fehler schlägt die KI Diagnose, Maßnahme und Teile vor. Gelungene
+              je Modell, dazu ein Troubleshooting-Guide — über den Prompt-Weg:
+              Prompt aus der App im eigenen KI-Abo ausführen, Ergebnis
+              einfügen, die App prüft es. Zu einem gemeldeten Fehler schlägt
+              die KI in der App Diagnose, Maßnahme und Teile vor. Gelungene
               Reparaturen lassen sich teilen — im Club oder öffentlich, damit
               andere mit demselben Modell davon profitieren. Als Nächstes:
               Bauteil-Erkennung per Foto.

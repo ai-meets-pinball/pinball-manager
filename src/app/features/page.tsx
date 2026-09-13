@@ -28,8 +28,8 @@ const deepFeatures = [
   {
     tag: "Handbuch-Daten per KI", roadmap: false,
     title: "Handbücher werden zu Referenztabellen.",
-    desc: "Ein PDF-Handbuch wird per KI in durchsuchbare Tabellen umgewandelt — Spulen, Schalter, Lampen, Sicherungen, Teile, Regeln, Schrauben, Gummi, Elektronik. Das PDF wird dabei nicht gespeichert, nur die Fakten.",
-    points: ["PDF per KI auswerten oder JSON importieren", "Troubleshooting-Guides je Modell", "Wissen privat, im Club oder öffentlich teilen"],
+    desc: "Ein PDF-Handbuch wird per KI in durchsuchbare Tabellen umgewandelt — Spulen, Schalter, Lampen, Sicherungen, Teile, Regeln, Schrauben, Gummi, Elektronik. Den Prompt dafür liefert die App; ausgeführt wird er im eigenen KI-Abo, das Ergebnis wird eingefügt und geprüft. Das PDF wird nicht gespeichert, nur die Fakten.",
+    points: ["Prompt-Weg: Prompt kopieren, im eigenen KI-Abo ausführen, JSON einfügen", "Troubleshooting-Guides je Modell", "Wissen privat, im Club oder öffentlich teilen"],
   },
   {
     tag: "Betrieb & Wartung", roadmap: false,

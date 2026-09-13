@@ -62,7 +62,7 @@ const capabilities = [
   {
     num: "05",
     title: "Manuals become reference tables",
-    desc: "Upload a PDF manual and a model turns it into searchable tables — coils, switches, lamps, fuses, parts, rules. The PDF itself is never stored, only the facts.",
+    desc: "A PDF manual becomes searchable tables — coils, switches, lamps, fuses, parts, rules. The app hands you the prompt; you run it in your own AI subscription with the manual and paste the result back, and the app checks it. The PDF never leaves your computer; only the facts are stored.",
   },
   {
     num: "06",
@@ -454,13 +454,19 @@ export default async function TourPage() {
             </h3>
             <p className="text-sm leading-[1.65] text-[var(--color-muted)]">
               A PDF manual becomes coil, switch and parts tables for that model,
-              plus a generated troubleshooting guide checked against community
-              sources by web search. For a reported fault, the model proposes a
-              diagnosis, a fix and the parts involved — pre-filled into a repair that a person reviews before saving. A repair that worked can
-              be shared — inside your club or publicly — so the next person with
-              the same machine does not start over. The source PDF is held in
-              memory and never written to storage: only the extracted facts are
-              kept, never the copyrighted text.
+              plus a troubleshooting guide. Both take the prompt route: copy the
+              prompt the app prepares, run it in your own AI subscription
+              (Claude, ChatGPT, Gemini …) with the manual, paste the result
+              back — the app validates it and hands you a follow-up question
+              when something is missing. Running the model inside the app is
+              reserved for the operator: one manual costs euros, not cents, and
+              the volume is not plannable. For a reported fault, the model
+              proposes a diagnosis, a fix and the parts involved — that one
+              runs in the app for everyone, pre-filled into a repair that a
+              person reviews before saving. A repair that worked can be shared
+              — inside your club or publicly — so the next person with the same
+              machine does not start over. The manual PDF is never stored: only
+              the extracted facts are kept, never the copyrighted text.
             </p>
           </div>
         </div>
