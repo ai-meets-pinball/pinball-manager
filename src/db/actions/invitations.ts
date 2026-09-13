@@ -8,7 +8,12 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { verknuepfeBesitzerMitKonto } from "@/db/besitzer-link";
 import { clubs, invitations, roleAssignments, user } from "@/db/schema";
-import { sendInvitationEmail, sendPlatformInvitationEmail } from "@/lib/email";
+import {
+  sendInvitationEmail,
+  sendPlatformInvitationEmail,
+  sendPlatformInvitationTestmail,
+} from "@/lib/email";
+import { MAX_ADRESSEN, parseAdressen } from "@/lib/adressen";
 import { darfClub } from "@/lib/rechte";
 import {
   getClubRole,
@@ -108,26 +113,23 @@ export async function inviteMember(
 
 /** Plattform-Einladung (ohne Club): berechtigt nur zur Registrierung.
     Nur Super-Admins. */
-export async function invitePlatformUser(
-  _prev: FormState,
-  formData: FormData,
-): Promise<FormState> {
-  const currentUser = await requireSuperAdmin();
+type EinladungsErgebnis = "verschickt" | "konto-vorhanden" | "versand-fehlgeschlagen";
 
-  const parsed = z
-    .object({ email: z.string().trim().email("Gültige E-Mail erforderlich") })
-    .safeParse(Object.fromEntries(formData));
-  if (!parsed.success) {
-    return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
-  }
-  const email = parsed.data.email.toLowerCase();
-
+/*
+  Kern der Plattform-Einladung — EINE Adresse: offene Einladung ersetzen, Token
+  anlegen, Mail schicken. Von der Einzel-Einladung (Nutzer einladen) und der
+  Rundmail (mehrere Adressen) gemeinsam genutzt. Der Aufrufer hat das
+  Super-Admin-Gate schon passiert.
+*/
+async function ladePlattformNutzerEin(
+  currentUser: { id: string; name: string },
+  email: string,
+  message: string,
+): Promise<EinladungsErgebnis> {
   const vorhanden = await db.query.user.findFirst({
     where: eq(user.email, email),
   });
-  if (vorhanden) {
-    return { error: "Es gibt bereits ein Konto mit dieser E-Mail." };
-  }
+  if (vorhanden) return "konto-vorhanden";
 
   // Offene Plattform-Einladung für diese Adresse ersetzen.
   await db
@@ -157,18 +159,105 @@ export async function invitePlatformUser(
       email,
       `${baseUrl()}/register?invite=${token}`,
       currentUser.name,
-      String(formData.get("message") ?? ""),
+      message,
     );
   } catch (e) {
     console.error("[invite] platform email:", (e as Error).message);
+    return "versand-fehlgeschlagen";
+  }
+  return "verschickt";
+}
+
+export async function invitePlatformUser(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const currentUser = await requireSuperAdmin();
+
+  const parsed = z
+    .object({ email: z.string().trim().email("Gültige E-Mail erforderlich") })
+    .safeParse(Object.fromEntries(formData));
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
+  }
+  const email = parsed.data.email.toLowerCase();
+  const ergebnis = await ladePlattformNutzerEin(
+    currentUser,
+    email,
+    String(formData.get("message") ?? ""),
+  );
+  revalidatePath("/admin");
+  if (ergebnis === "konto-vorhanden") {
+    return { error: "Es gibt bereits ein Konto mit dieser E-Mail." };
+  }
+  if (ergebnis === "versand-fehlgeschlagen") {
     return {
       error:
         "Einladung gespeichert, aber der E-Mail-Versand ist fehlgeschlagen.",
     };
   }
+  return { message: `Einladung an ${email} verschickt.` };
+}
+
+/*
+  Einladungs-Rundmail: mehrere Adressen auf einmal (eine je Zeile, Komma oder
+  Semikolon — lib/adressen), dieselbe persönliche Nachricht für alle, je
+  Adresse ihr eigener Link. Das Ergebnis nennt jede Adresse mit Ausgang; eine
+  gespeicherte Einladung ohne Mail steht danach unter „Offene Einladungen".
+*/
+export async function invitePlatformUsers(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const currentUser = await requireSuperAdmin();
+  const { gueltig, ungueltig, zuViele } = parseAdressen(
+    String(formData.get("adressen") ?? ""),
+  );
+  if (gueltig.length === 0) {
+    return { error: "Keine gültige E-Mail-Adresse gefunden." };
+  }
+  const message = String(formData.get("message") ?? "");
+
+  const zeilen: string[] = [];
+  for (const email of gueltig) {
+    const ergebnis = await ladePlattformNutzerEin(currentUser, email, message);
+    zeilen.push(
+      `${email} — ${
+        ergebnis === "verschickt"
+          ? "verschickt"
+          : ergebnis === "konto-vorhanden"
+            ? "übersprungen (Konto vorhanden)"
+            : "Einladung gespeichert, Versand fehlgeschlagen"
+      }`,
+    );
+  }
+  for (const a of ungueltig) zeilen.push(`${a} — ungültige Adresse, übersprungen`);
+  if (zuViele > 0) {
+    zeilen.push(`${zuViele} weitere Adresse(n) nicht verarbeitet — höchstens ${MAX_ADRESSEN} je Durchgang.`);
+  }
 
   revalidatePath("/admin");
-  return { message: `Einladung an ${email} verschickt.` };
+  revalidatePath("/admin/rundmail");
+  return { message: zeilen.join("\n") };
+}
+
+/** Testmail der Einladungs-Vorlage an die eigene Adresse (Super-Admin). */
+export async function sendeRundmailTest(
+  _prev: FormState,
+  formData: FormData,
+): Promise<FormState> {
+  const currentUser = await requireSuperAdmin();
+  try {
+    await sendPlatformInvitationTestmail(
+      currentUser.email,
+      currentUser.name,
+      String(formData.get("message") ?? ""),
+    );
+  } catch (e) {
+    console.error("[invite] testmail:", (e as Error).message);
+    return { error: "Testmail konnte nicht gesendet werden (siehe Protokoll unter Mails)." };
+  }
+  return { message: `Testmail an ${currentUser.email} verschickt.` };
 }
 
 /** Gemeinsame Annahme-Logik. Legt (idempotent) die Mitgliedschaft an und markiert

@@ -665,6 +665,10 @@ export const ADMIN_HILFE: HilfeSektion[] = [
         titel: "Offene Einladungen",
         text: "Offene Einladungen stehen darunter und lassen sich jederzeit zurückziehen. Einladungen verfallen automatisch nach 7 Tagen.",
       },
+      {
+        titel: "Einladungs-Rundmail: Text in der App, mehrere auf einmal",
+        text: "Administration → »Einladungs-Rundmail«: Dort pflegst du den Einladungstext (Betreff und Einleitungstext der Vorlage »Einladung zur Plattform« — Klartext mit Absätzen; Web-Adressen werden automatisch anklickbar; der Knopf »Konto erstellen« mit dem persönlichen Link und der Gültigkeitshinweis kommen automatisch darunter), siehst eine Vorschau genau so, wie die Mail ankommt, schickst dir eine Testmail — und trägst dann die Adressen ein, eine je Zeile (auch Komma oder Semikolon). Jede Person bekommt ihren eigenen Link; das Ergebnis nennt je Adresse, ob verschickt, übersprungen (Konto vorhanden) oder gespeichert ohne Versand. Alles landet im Protokoll unter »Mails«, offene Einladungen stehen auf der Administrations-Seite.",
+      },
     ],
   },
   {

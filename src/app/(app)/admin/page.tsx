@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { and, desc, eq, gte, isNull, sql } from "drizzle-orm";
 import { LayoutGrid, List as ListIcon } from "lucide-react";
 import { cookies } from "next/headers";
@@ -130,10 +131,16 @@ export default async function AdminPage({
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">Nutzer einladen</h2>
         <p className="text-sm text-[var(--color-muted)]">
-          Jeder kann sich selbst registrieren und muss dann die E-Mail-Adresse
-          bestätigen. Wer hier eingeladen wird, überspringt die Bestätigung —
-          der Link aus der Einladung belegt das Postfach. Eine Club-Zuordnung
-          passiert dabei nicht (dafür lädst du im jeweiligen Club ein).
+          Konten entstehen nur über Einladungen — eine offene Registrierung
+          gibt es nicht. Wer hier eingeladen wird, bekommt einen persönlichen
+          Registrierungslink; der Link belegt das Postfach, eine extra
+          Bestätigung entfällt. Eine Club-Zuordnung passiert dabei nicht (dafür
+          lädst du im jeweiligen Club ein). Mehrere Personen auf einmal — mit
+          dem Einladungstext, den du in der App pflegst — lädst du über die{" "}
+          <Link href="/admin/rundmail" className="text-[var(--color-primary)] hover:underline">
+            Einladungs-Rundmail
+          </Link>{" "}
+          ein.
         </p>
         <Card className="space-y-4">
           <AddDisclosure label="Neue Einladung">

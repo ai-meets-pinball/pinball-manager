@@ -1,5 +1,10 @@
 # Onboarding-E-Mail für Friendly User
 
+> **Seit 1.68 lebt dieser Text in der App:** Administration → Einladungs-Rundmail
+> (Standardtext der Vorlage „Einladung zur Plattform"). Dort überarbeiten,
+> Vorschau prüfen, Testmail an sich selbst, dann mehrere Adressen auf einmal
+> einladen — jede mit eigenem Link. Diese Datei ist der Entwurf von 2026-09-13.
+
 Vorlage für die persönliche Einladung der ersten Tester:innen — zum
 Kopieren in den Mailer. Platzhalter in `{{…}}` vor dem Versand füllen; die
 Einladung selbst (Link) verschickt die App, diese Mail kommt dazu (davor

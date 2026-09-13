@@ -9,8 +9,19 @@ Melde-Warnung bleibt rein anzeigend) und **In-Place-Editor + Bearbeitungs-
 Verlauf** (`knowledge_revisions`; Neu-Generierung/Import aktualisiert in place —
 id und Signale bleiben erhalten).
 
-## Umgesetzt 09/2026 (Stand 2026-09-12)
+## Umgesetzt 09/2026 (Stand 2026-09-13)
 
+- **Einladungs-Rundmail** (2026-09-13, `/admin/rundmail`): Frank schreibt
+  Onboarding-/Einladungsmails selbst in der App und verschickt sie an mehrere
+  Adressen auf einmal, jede mit eigenem Registrierungslink. Der Text ist die
+  Vorlage `invite_platform` (Standard = Onboarding-Text aus
+  `docs/onboarding-email-friendly-users.md`, Klartext; `textToHtml` verlinkt
+  jetzt http(s)-URLs, escaped bleibt alles), Vorschau über denselben Renderer
+  wie der Versand (`renderPlatformInvitation`), Testmail an sich selbst,
+  Adressliste über `lib/adressen.ts` (Zeile/Komma/Semikolon, dedupliziert,
+  max. 50), Kern `ladePlattformNutzerEin` für Einzel- und Mehrfach-Einladung,
+  Ergebnis je Adresse. Bewusst kein HTML-/Markdown-Editor und keine Rundmail
+  an bestehende Nutzer (andere Empfängerquelle — bei Bedarf eigene Entscheidung).
 - **Redlining-Overlay** eingerichtet (Alt+R → `/redline`); dev-only, im
   Production-Build kein `data-rl`, die Route antwortet dort mit 403. Die
   Playwright-Suite fährt `next dev`, das Overlay ist also mitgeladen — mit

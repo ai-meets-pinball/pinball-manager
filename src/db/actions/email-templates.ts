@@ -41,6 +41,7 @@ export async function saveEmailTemplate(
     });
 
   revalidatePath("/admin/vorlagen");
+  revalidatePath("/admin/rundmail");
   return { message: "Vorlage gespeichert." };
 }
 
@@ -55,6 +56,7 @@ export async function resetEmailTemplate(
 
   await db.delete(emailTemplates).where(eq(emailTemplates.key, key));
   revalidatePath("/admin/vorlagen");
+  revalidatePath("/admin/rundmail");
   return { ok: true };
 }
 

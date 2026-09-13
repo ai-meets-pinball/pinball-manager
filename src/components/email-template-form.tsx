@@ -38,6 +38,8 @@ export function EmailTemplateForm({
   angepasst,
   ctaLabel,
   hinweis,
+  rows = 4,
+  inlineVorschau = true,
 }: {
   templateKey: string;
   label: string;
@@ -48,6 +50,10 @@ export function EmailTemplateForm({
   angepasst: boolean;
   ctaLabel: string;
   hinweis: string;
+  /** Höhe des Textfelds — die Rundmail-Seite zeigt den ganzen Onboarding-Text. */
+  rows?: number;
+  /** Aus, wenn die Seite selbst eine echte (gerenderte) Vorschau zeigt. */
+  inlineVorschau?: boolean;
 }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     saveEmailTemplate,
@@ -88,7 +94,7 @@ export function EmailTemplateForm({
         >
           <Textarea
             name="body"
-            rows={4}
+            rows={rows}
             value={text}
             onChange={(e) => setText(e.target.value)}
             required
@@ -96,6 +102,7 @@ export function EmailTemplateForm({
         </Field>
 
         {/* Vorschau mit Beispielwerten */}
+        {inlineVorschau ? (
         <div className="space-y-1">
           <p className="font-mono text-[10px] uppercase tracking-[0.5px] text-[var(--color-faint)]">
             Vorschau
@@ -118,6 +125,7 @@ export function EmailTemplateForm({
             <p className="mt-2 text-xs text-[var(--color-faint)]">{hinweis}</p>
           </div>
         </div>
+        ) : null}
 
         <FormFeedback state={state} />
 

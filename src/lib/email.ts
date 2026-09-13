@@ -296,28 +296,62 @@ export async function sendTerminReminderEmail(
 }
 
 /** Plattform-Einladung (ohne Club): berechtigt zur Registrierung. */
+/** Betreff + HTML der Plattform-Einladung — EIN Renderer für Versand,
+    Vorschau (Einladungs-Rundmail) und Testmail. */
+export async function renderPlatformInvitation(opts: {
+  url: string;
+  inviterName: string;
+  message?: string | null;
+}): Promise<{ subject: string; html: string }> {
+  const vorlage = await getTemplate("invite_platform");
+  const vars = { einlader: opts.inviterName };
+  return {
+    subject: renderPlaceholders(vorlage.subject, vars),
+    html: invitationHtml({
+      body: renderPlaceholders(vorlage.body, vars),
+      url: opts.url,
+      ctaLabel: "Konto erstellen",
+      hinweis:
+        "Eine Registrierung ist nur über diesen Link möglich. Er ist begrenzt gültig und gilt ausschließlich für diese E-Mail-Adresse.",
+      message: opts.message,
+    }),
+  };
+}
+
 export async function sendPlatformInvitationEmail(
   to: string,
   url: string,
   inviterName: string,
   message?: string | null,
 ) {
-  const vorlage = await getTemplate("invite_platform");
-  const vars = { einlader: inviterName };
-
+  const { subject, html } = await renderPlatformInvitation({ url, inviterName, message });
   await sendeMail({
     kategorie: "invite_platform",
     to,
-    subject: renderPlaceholders(vorlage.subject, vars),
+    subject,
     logText: `Plattform-Einladung von ${inviterName}`,
-    html: invitationHtml({
-      body: renderPlaceholders(vorlage.body, vars),
-      url,
-      ctaLabel: "Konto erstellen",
-      hinweis:
-        "Eine Registrierung ist nur über diesen Link möglich. Er ist begrenzt gültig und gilt ausschließlich für diese E-Mail-Adresse.",
-      message,
-    }),
+    html,
+  });
+}
+
+/** Testmail der Einladungs-Vorlage an den Super-Admin selbst — mit
+    Beispiel-Link, ohne Einladung in der DB. Protokolliert wie jede Mail. */
+export async function sendPlatformInvitationTestmail(
+  to: string,
+  inviterName: string,
+  message?: string | null,
+) {
+  const { subject, html } = await renderPlatformInvitation({
+    url: "https://pinball-manager.silverballmania.com/register?invite=BEISPIEL",
+    inviterName,
+    message,
+  });
+  await sendeMail({
+    kategorie: "invite_platform",
+    to,
+    subject: `[Test] ${subject}`,
+    logText: `Testmail der Einladungs-Vorlage an ${to}`,
+    html,
   });
 }
 
