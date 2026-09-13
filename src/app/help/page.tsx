@@ -1,3 +1,4 @@
+import Link from "next/link";
 import {
   HandbuchDownload,
   HilfeInhalt,
@@ -34,7 +35,12 @@ export default async function HelpPage() {
           <p className="text-[var(--color-muted)]">
             Schritt für Schritt durch alle Funktionen — von der Anmeldung über
             Maschinen, Fehler, Reparaturen und Wartungsplan bis zu Clubs,
-            Wissensbasis, Handbuch-Daten, Troubleshooting-Guide und Konto.
+            Wissensbasis, Handbuch-Daten, Troubleshooting-Guide und Konto. Neu
+            hier? Der{" "}
+            <Link href="/help/einstieg" className="text-[var(--color-primary)] hover:underline">
+              Einstieg
+            </Link>{" "}
+            ist der kurze Weg hinein.
           </p>
         </div>
         <HandbuchDownload />

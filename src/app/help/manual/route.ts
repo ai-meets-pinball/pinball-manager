@@ -1,5 +1,5 @@
 import { getCurrentUser, isSuperAdmin, kannKuratieren } from "@/lib/session";
-import { ADMIN_HILFE, ANLEITUNG } from "@/lib/help-content";
+import { ADMIN_HILFE, ANLEITUNG, EINSTIEG } from "@/lib/help-content";
 import { erzeugeHandbuchPdf } from "@/lib/manual-pdf";
 import { APP_VERSION } from "@/lib/version";
 
@@ -14,12 +14,14 @@ export async function GET(): Promise<Response> {
   const user = await getCurrentUser();
 
   const admin = user ? kannKuratieren(user) : false;
+  // Der Einstieg ist das erste Kapitel — im PDF mit allen Zielgruppen.
   const kapitel = admin
     ? [
+        ...EINSTIEG,
         ...ANLEITUNG,
         ...ADMIN_HILFE.filter((s) => !s.nurSuperAdmin || isSuperAdmin(user)),
       ]
-    : ANLEITUNG;
+    : [...EINSTIEG, ...ANLEITUNG];
 
   const pdf = await erzeugeHandbuchPdf({
     kapitel,

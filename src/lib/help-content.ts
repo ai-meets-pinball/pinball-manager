@@ -24,23 +24,23 @@ export const ANLEITUNG: HilfeSektion[] = [
     key: "erste-schritte",
     titel: "Erste Schritte",
     einleitung:
-      "Konto anlegen, E-Mail bestätigen, anmelden, Passwort zurücksetzen.",
+      "Zugang auf Einladung, anmelden, Passwort zurücksetzen — und wo was liegt.",
     schritte: [
       {
-        titel: "Konto anlegen und E-Mail bestätigen",
-        text: "Unter »Konto erstellen« gibst du Name, E-Mail und Passwort ein — mindestens 8 Zeichen mit Groß- und Kleinbuchstaben sowie einer Zahl, dazu die Wiederholung. Mit dem Augen-Symbol lässt sich das Passwort anzeigen oder verbergen. Danach bekommst du einen Bestätigungslink per E-Mail; erst nach dem Klick kannst du dich anmelden. Kein Link angekommen oder abgelaufen? Einfach einmal anmelden — das schickt automatisch einen neuen.",
+        titel: "Zugang auf Einladung",
+        text: "Der Pinball Manager hat derzeit KEINE offene Registrierung. Ein Konto entsteht über eine Einladung: entweder lädt dich ein Club-Owner/-Admin in seinen Club ein, oder der Betreiber schickt dir eine Plattform-Einladung. Beides kommt als E-Mail mit Link — darüber legst du Name und Passwort an (mindestens 8 Zeichen mit Groß- und Kleinbuchstaben sowie einer Zahl); der Einladungslink belegt deine Adresse, eine extra Bestätigung entfällt. Noch keine Einladung? Auf der Startseite steht unter »Zugang anfragen« die E-Mail-Adresse des Betreibers.",
       },
       {
         titel: "Anmelden",
-        text: "Danach mit E-Mail und Passwort anmelden. Passwort vergessen? Der Link auf der Anmeldeseite schickt dir eine E-Mail zum Zurücksetzen.",
+        text: "Danach mit E-Mail und Passwort anmelden. Mit dem Augen-Symbol lässt sich das Passwort anzeigen. Passwort vergessen? Der Link auf der Anmeldeseite schickt dir eine E-Mail zum Zurücksetzen.",
       },
       {
         titel: "Per Einladung beitreten",
-        text: "Wurdest du eingeladen, öffne den Link aus der E-Mail. Hast du noch kein Konto, registrierst du dich direkt darüber und trittst dem Club automatisch bei — die Bestätigung der Adresse entfällt, der Einladungslink belegt sie bereits.",
+        text: "Wurdest du in einen weiteren Club eingeladen und hast schon ein Konto, findest du die Einladung unter Konto → »Einladungen« (annehmen oder ablehnen) — oder du öffnest den Link aus der E-Mail.",
       },
       {
         titel: "Wo finde ich was?",
-        text: "Auf größeren Bildschirmen liegen oben links »Übersicht« (dein Dashboard), »Maschinen«, »Termine«, »Wissensbasis« (geteiltes Wissen je Modell) und »Hilfe«. Auf dem Handy erreichst du dieselben Hauptbereiche über die Leiste am unteren Bildschirmrand (in Daumenreichweite). Hinter dem Nutzer-Icon oben rechts findest du Clubs, Konto, Wartungspläne, Kuratierung (nur Kuratoren), Administration (nur Super-Admins) und Abmelden. Daneben liegen der Umschalter für helles/dunkles Design, ein Knopf zur öffentlichen Website und »Problem melden«.",
+        text: "Auf größeren Bildschirmen liegen oben links »Übersicht« (dein Dashboard), »Maschinen«, »Termine«, »Wissensbasis« (geteiltes Wissen je Modell) und »Hilfe«. Auf dem Handy erreichst du dieselben Hauptbereiche über die Leiste am unteren Bildschirmrand (in Daumenreichweite). Oben rechts liegen vier Knöpfe: der Globus führt zur öffentlichen Website, der KÄFER ist »Problem melden / Feedback« (nimmt die aktuelle Seite als Herkunft mit), dann der Umschalter für helles/dunkles Design, dann das Nutzer-Icon mit Clubs, Konto, Wartungspläne, Problem melden, Kuratierung (nur Kuratoren), Administration (nur Super-Admins) und Abmelden.",
       },
     ],
   },
@@ -52,15 +52,15 @@ export const ANLEITUNG: HilfeSektion[] = [
     schritte: [
       {
         titel: "Kennzahlen",
-        text: "Oben stehen fünf Kacheln: Anzahl deiner Maschinen, wie viele davon NICHT spielbereit sind, die offenen Fehler, die anstehenden (bzw. fälligen) Wartungen und die anstehenden Termine — jeweils über alle Maschinen, die du siehst (eigene plus Club-Maschinen). Ein Klick auf eine Kachel springt zum passenden Abschnitt. Abschnitte ohne Einträge werden ausgeblendet.",
+        text: "Oben stehen fünf Kacheln in einer Reihe: Anzahl deiner Maschinen, wie viele davon NICHT spielbereit sind, die offenen Fehler, die anstehenden (bzw. fälligen) Wartungen und die anstehenden Termine — jeweils über alle Maschinen, die du siehst (eigene plus Club-Maschinen). Ein Klick auf eine Kachel springt zum passenden Abschnitt. Abschnitte ohne Einträge werden ausgeblendet; ist gar nichts offen, steht dort eine einzige Zeile »Alles erledigt«.",
       },
       {
         titel: "Nach Bereich filtern",
-        text: "Bist du in mehreren Bereichen unterwegs — deine private Sammlung plus ein oder mehrere Clubs — erscheint eine Reihe Bereichs-Chips. Du kannst MEHRERE gleichzeitig aktiv lassen; Kennzahlen und Listen zeigen dann nur diese Bereiche. Sind alle aktiv, ist kein Filter gesetzt.",
+        text: "Bist du in mehreren Bereichen unterwegs — deine private Sammlung plus ein oder mehrere Clubs — erscheint eine Reihe Bereichs-Chips. Du kannst MEHRERE gleichzeitig aktiv lassen; Kennzahlen und Listen zeigen dann nur diese Bereiche. Sind alle aktiv, ist kein Filter gesetzt. Die Wahl gilt SEITENÜBERGREIFEND: Übersicht und Maschinenliste zeigen denselben Bereich, bis du ihn änderst.",
       },
       {
         titel: "Karten- oder Listenansicht",
-        text: "Oben rechts schaltest du die Abschnitte zwischen Kartenansicht (luftig) und kompakter Liste (dichte Zeilen) um.",
+        text: "Oben rechts schaltest du die Abschnitte zwischen kompakter Liste (dichte Zeilen — die Voreinstellung) und Kartenansicht (luftig) um; die Wahl bleibt gemerkt.",
       },
       {
         titel: "Nicht spielbereite Maschinen",
@@ -91,11 +91,11 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Filter & Ansichten",
-        text: "In der Steuerzeile über der Liste liegen die Filter-Chips: »Alle«, »Privat« und einer je Club (mit Anzahl) — dieselben Chips wie im Kopf der Übersicht. Rechts wechselst du zwischen Kartenansicht (mit Fotos und Badges) und Tabellenansicht (kompakt, sortierbar).",
+        text: "In der Steuerzeile über der Liste liegen die Bereichs-Chips: »Privat« und einer je Club (mit Anzahl), mehrere gleichzeitig wählbar — dieselben wie im Kopf der Übersicht, und die Wahl gilt seitenübergreifend. Rechts wechselst du zwischen der Tabelle (kompakt, sortierbar — die Voreinstellung) und der Kartenansicht (mit Fotos und Badges). Die Tabelle zeigt auch, wann eine Maschine hinzugefügt wurde; eine Club-Spalte, die in allen Zeilen dasselbe sagen würde, blendet sie aus.",
       },
       {
         titel: "Suchen & sortieren",
-        text: "Alles in einer Zeile: Suchfeld (Hersteller/Modell, Enter sucht), daneben die Sortierung als Auswahl (»Neueste«, »Name«, »Baujahr« — wirkt sofort) mit einem Pfeil für die Richtung, dann die Bereichs-Chips, rechts die Ansicht.",
+        text: "Das Suchfeld (Hersteller/Modell, Enter sucht) steht in der Steuerzeile. Sortiert wird in der Tabelle direkt im Spaltenkopf: ein Klick auf »Modell«, »Baujahr« oder »Hinzugefügt« sortiert danach, ein zweiter Klick dreht die Richtung — der Pfeil zeigt sie an. Nur in der Kartenansicht gibt es dafür eine Auswahl mit Richtungspfeil.",
       },
       {
         titel: "Private Sammlung",
@@ -103,7 +103,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Löschen",
-        text: "Auf der Detailseite über »Löschen«. Das dürfen nur der Eigentümer, ein Club-Owner/-Admin oder ein Super-Admin.",
+        text: "Auf der Detailseite über »Löschen« — nur Eigentümer, Club-Owner/-Admin oder Super-Admin. Die Rückfrage sagt dir vorher, was ANDERE dabei verlieren: Fehler, Reparaturen und Wartungspunkte gehen mit der Maschine; Reparaturen, die du für alle oder für EINEN Club freigegeben hattest, bleiben als Tipp am Modell erhalten (anonym, wenn die Freigabe anonym war); Freigaben an einzelne Personen oder mehrere Clubs erlöschen; Handbuch-Daten, die noch an der Maschine statt am Modell hingen, wandern ans Modell. Mehrere Maschinen löschst du über »Verwalten« in der Liste.",
       },
     ],
   },
@@ -115,7 +115,7 @@ export const ANLEITUNG: HilfeSektion[] = [
     schritte: [
       {
         titel: "Kopf, Übersicht & Reiter",
-        text: "Ganz oben steht der Kopf mit Foto, Name, Betriebsstatus, den Datenbank-Kennungen (OPDB/IPDB) sowie Club und Besitzern — dazu QR-Code, Bearbeiten und Löschen; er bleibt immer sichtbar. Darunter öffnet die Detailseite mit der Übersicht: einem Status-Dashboard aus Kennzahl-Karten. Über der Übersicht liegen drei Reiter: »Übersicht«, »Betrieb« (Fehler, Wartung) und »Wissensbasis« (Reparaturen, Handbuch, Guide, Tipps). Wählst du eine Gruppe, erscheint darunter eine schmale Unterreihe für ihre Bereiche. Reiter und Kennzahl-Karten tragen Zähler (z. B. offene Fehler, fällige Wartung); die Leiste bleibt beim Scrollen sichtbar.",
+        text: "Ganz oben steht der Kopf mit Foto, Name, Betriebsstatus, den Datenbank-Kennungen (OPDB/IPDB) sowie Club und Besitzern — dazu QR-Code, Bearbeiten und Löschen; er bleibt immer sichtbar. Darunter öffnet die Detailseite mit der Übersicht: die Betriebsstatus-Karte (Status-Satz, seit wann, und für Bearbeiter »Status manuell setzen«), darunter sechs Kennzahl-Karten in einer Reihe (offene und kritische Fehler, letzte Wartung, Reparaturen, Handbuch, Guide — jede springt in ihren Reiter) und die offenen Fehler als kurze Liste. Über der Übersicht liegen drei Reiter: »Übersicht«, »Betrieb« (Fehler, Wartung) und »Wissensbasis« (Reparaturen, Handbuch, Guide, Tipps). Wählst du eine Gruppe, erscheint darunter eine schmale Unterreihe für ihre Bereiche. Reiter und Kennzahl-Karten tragen Zähler (z. B. offene Fehler, fällige Wartung); die Leiste bleibt beim Scrollen sichtbar.",
       },
       {
         titel: "Betriebsstatus",
@@ -123,7 +123,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Bearbeiten",
-        text: "Über »Bearbeiten« änderst du Daten, Foto, Modell- und Club-Zuordnung sowie Besitzer und Ausstattung. Ein bereits gewähltes Modell wird dabei nur angezeigt (keine erneute Suche) — über »Anderes Modell wählen« oder »Manuell anpassen« änderst du es bei Bedarf.",
+        text: "Über »Bearbeiten« änderst du Daten, Foto, Modell- und Club-Zuordnung sowie Besitzer und Ausstattung. Ein bereits gewähltes Modell wird dabei nur angezeigt (keine erneute Suche) — über »Anderes Modell wählen« oder »Manuell anpassen« änderst du es bei Bedarf. Beim Foto (wie bei jedem Upload) steht ein Urheberrechts-Hinweis: Wer hochlädt, ist für die Rechte verantwortlich. Verlässt du ein Formular mit ungespeicherten Änderungen — über »Abbrechen« oder irgendeinen Link —, fragt ein Dialog »Weiter bearbeiten / Verwerfen / Speichern«; still verworfen wird nichts.",
       },
       {
         titel: "Besitzer",
@@ -270,11 +270,11 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Links & Notizen",
-        text: "Ein Link speichert Titel + Web-Adresse (z. B. OPDB-Eintrag, ein Video oder Datenblatt) und öffnet in einem neuen Tab. Fehlt bei der Adresse das »https://«, wird es automatisch ergänzt. Eine Notiz ist freier Text — für alles, was man sich zum Gerät merken will.",
+        text: "Ein Link speichert Titel + Web-Adresse (z. B. OPDB-Eintrag, ein Video oder Datenblatt) und öffnet in einem neuen Tab. Fehlt bei der Adresse das »https://«, wird es automatisch ergänzt. Eine Notiz ist freier Text mit einfacher Formatierung — über die Knöpfe über dem Feld (fett, kursiv, Aufzählung, Link) oder direkt getippt (**fett**, _kursiv_, Bindestrich am Zeilenanfang, [Text](URL)); »Vorschau« zeigt das Ergebnis vor dem Speichern. Notizen werden in der Liste formatiert angezeigt.",
       },
       {
         titel: "Dateien hochladen",
-        text: "Erlaubt sind PDF, Bilder (JPG/PNG/WebP/GIF/AVIF) sowie DOCX/XLSX/PPTX und TXT/CSV, bis 25 MB je Datei. Der Dateityp wird an den echten Dateibytes geprüft, nicht am Namen. Vor dem Hochladen bestätigst du, dass du die Datei speichern darfst. Hinweis: Handbücher gehören nicht hierher — die liest du über »Handbuch«/»Guide« ein (sie werden dort nicht als Datei abgelegt, sondern nur die extrahierten Fakten).",
+        text: "Erlaubt sind PDF, Bilder (JPG/PNG/WebP/GIF/AVIF) sowie DOCX/XLSX/PPTX und TXT/CSV, bis 25 MB je Datei. Der Dateityp wird an den echten Dateibytes geprüft, nicht am Namen. Vor dem Hochladen bestätigst du, dass du die Datei speichern darfst; der Urheberrechts-Hinweis darunter gilt für jeden Upload in der App. Hinweis: Handbücher gehören nicht hierher — die liest du über »Handbuch«/»Guide« ein (sie werden dort nicht als Datei abgelegt, sondern nur die extrahierten Fakten).",
       },
       {
         titel: "Bearbeiten & Löschen",
@@ -333,11 +333,11 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Mehrere auf einmal zuweisen",
-        text: "Auf der Maschinenliste »Mehrere einem Club zuweisen« → Karten antippen (oder »Alle auswählen«), Ziel-Club wählen und »Zuweisen«. Praktisch, wenn Geräte vor dem Club angelegt wurden. Maschinen, die schon im gewählten Club sind, werden als »bereits zugewiesen« markiert. Umhängen darf nur, wer die Maschine auch löschen dürfte (Eigentümer, Club-Owner/-Admin); andere werden übersprungen.",
+        text: "Auf der Maschinenliste »Verwalten« → Maschinen anhaken (oder »Alle auswählen«), Ziel-Club wählen und »Zuweisen«. Praktisch, wenn Geräte vor dem Club angelegt wurden. Maschinen, die schon im gewählten Club sind, werden als »bereits zugewiesen« markiert. Umhängen darf nur, wer die Maschine auch löschen dürfte (Eigentümer, Club-Owner/-Admin); andere werden übersprungen. »Fertig« verlässt den Verwalten-Modus wieder.",
       },
       {
         titel: "Mehrere auf einmal löschen",
-        text: "Auf der Maschinenliste »Mehrere löschen« → Karten antippen (oder »Alle auswählen«) und »Löschen«; eine Rückfrage bestätigt. Achtung: Das löscht die Maschinen samt allen Fehlern, Reparaturen und Wartungen endgültig. Was du daraus für andere freigegeben hattest, bleibt als Tipp am Modell erhalten (öffentlich bzw. für den einen Club; Freigaben an einzelne Personen oder mehrere Clubs erlöschen), und Handbuch-Daten, die nur an der Maschine hingen, wandern ans Modell — beim Löschen einer einzelnen Maschine zählt die Rückfrage das genau auf. Löschen darf nur, wer es auch einzeln dürfte (Eigentümer, Club-Owner/-Admin); andere werden übersprungen.",
+        text: "Dieselbe Leiste: »Verwalten« → Maschinen anhaken und »Löschen«; eine Rückfrage bestätigt. Achtung: Das löscht die Maschinen samt allen Fehlern, Reparaturen und Wartungen endgültig. Was du daraus für andere freigegeben hattest, bleibt als Tipp am Modell erhalten (öffentlich bzw. für den einen Club; Freigaben an einzelne Personen oder mehrere Clubs erlöschen), und Handbuch-Daten, die nur an der Maschine hingen, wandern ans Modell — beim Löschen einer einzelnen Maschine zählt die Rückfrage das genau auf. Löschen darf nur, wer es auch einzeln dürfte (Eigentümer, Club-Owner/-Admin); andere werden übersprungen.",
       },
       {
         titel: "Sichtbarkeit",
@@ -361,11 +361,15 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Was passiert",
-        text: "Claude liest das PDF und extrahiert ausschließlich Faktentabellen (Spulen, Schalter-/Lampen-Matrix, Sicherungen, Teile, Regeln, Schrauben, Gummiteile, Elektronik-Bauteile). Das PDF wird dabei NIE gespeichert — nur die Fakten landen in der Datenbank, als Wissenseintrag am Modell.",
+        text: "Die KI liest das PDF und extrahiert ausschließlich Faktentabellen (Spulen, Schalter-/Lampen-Matrix, Sicherungen, Teile, Regeln, Schrauben, Gummiteile, Elektronik-Bauteile). Das PDF wird dabei NIE gespeichert — nur die Fakten landen in der Datenbank, als Wissenseintrag am Modell. Der Handbuch-Reiter erklärt das Prinzip gleich im Kopf; solange noch nichts da ist, zeigt »Vorschau: so sehen Handbuch-Daten aus« mit erfundenen Beispielwerten, wie das Ergebnis aussehen wird.",
       },
       {
         titel: "Der Prompt-Weg (für alle)",
         text: "Der Weg für alle Nutzer: Auf der Seite »Handbuch auswerten« steht »Eigenes ChatGPT-/Claude-Abo« — den vorbereiteten Prompt kopieren, im eigenen KI-Abo zusammen mit dem Handbuch-PDF ausführen und NUR das JSON hier einfügen. »Prüfen« zeigt eine Vorschau samt Warnungen und gibt gezielte Tipps für den nächsten Versuch — inklusive einer kopierbaren Nachfrage, die du in denselben Chat einfügst (z. B. wenn die Ausgabe abgeschnitten war oder Tabellen fehlen). Die aufklappbare Anleitung im Dialog nennt geeignete Modelle; kostenlose Konten liefern vermutlich kein brauchbares Ergebnis (kleinere Modelle, kein PDF-Upload, abgeschnittene Antworten). Erst nach erfolgreicher Prüfung wird importiert.",
+      },
+      {
+        titel: "Node-Systeme (Stern SPIKE u. ä.)",
+        text: "Nicht jedes Gerät hat eine Schalter-/Lampen-MATRIX. Moderne Plattformen wie Stern SPIKE, neuere JJP oder Spooky adressieren Schalter und Lampen einzeln an Nodes — im Handbuch stehen dann Kennungen wie »8-SW-17« oder »8-LP-24« und Lampennummern bis weit über 88. Der Prompt sagt dem Modell ausdrücklich: dann Column/Row leer lassen und nichts erfinden. Die Prüfung erkennt das und meldet »Node-System (keine Matrix — so richtig)« statt einer fehlenden Matrix; auch die Nachfrage verlangt dann keine Rasterpositionen. Solche Tabellen erscheinen als normale Tabelle, nicht als Raster — das ist korrekt.",
       },
       {
         titel: "Wer darf was (KI)",
@@ -385,11 +389,11 @@ export const ANLEITUNG: HilfeSektion[] = [
     schritte: [
       {
         titel: "Wo",
-        text: "Der Guide-Reiter auf der Maschinen-Detailseite ist mit Schreibrecht immer sichtbar. Wer nur lesen darf, sieht ihn, sobald Handbuch-Daten oder Guides vorliegen.",
+        text: "Der Guide-Reiter auf der Maschinen-Detailseite ist mit Schreibrecht immer sichtbar. Wer nur lesen darf, sieht ihn, sobald Handbuch-Daten oder Guides vorliegen. Solange noch kein Guide da ist, zeigt »Vorschau: so sieht ein Guide aus« mit einem erfundenen WPC-95-Beispiel, was dich erwartet (Plattform, Abschnitte mit Warnungen, Text und Tabellen, Quellen).",
       },
       {
         titel: "Erstellen",
-        text: "Im Reiter »Guide« öffnet »Guide erstellen« (nur mit Schreibrecht) einen Dialog mit zwei Wegen: »Per KI erzeugen« oder »JSON importieren«. Beim KI-Weg bestimmt Claude zunächst die Plattform bzw. Geräte-Generation und prüft sie samt bekannter Serienfehler per Websuche gegen Community-Quellen (IPDB, PinWiki, Pinside). Das dauert ein bis zwei Minuten.",
+        text: "Im Reiter »Guide« öffnet »Guide erstellen« (nur mit Schreibrecht) einen Dialog mit zwei Wegen: »Per KI erzeugen« oder »JSON importieren«. Beim KI-Weg (nur Betreiber, siehe »Handbuch-Daten → Wer darf was«) bestimmt die KI zunächst die Plattform bzw. Geräte-Generation und prüft sie samt bekannter Serienfehler per Websuche gegen Community-Quellen (IPDB, PinWiki, Pinside). Das dauert ein bis zwei Minuten.",
       },
       {
         titel: "Der Prompt-Weg (für alle)",
@@ -425,7 +429,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Modellseite",
-        text: "Die Modellseite bündelt alles zu einem Modell in Reitern: Handbuch-Daten, Troubleshooting-Guide, Tipps und geteilte Reparaturen — jeweils mit Anzahl. Eigene Einträge lassen sich hier genauso verwalten wie auf der Maschinen-Detailseite.",
+        text: "Die Modellseite bündelt alles zu einem Modell in Reitern: Handbuch-Daten, Troubleshooting-Guide, Tipps und geteilte Reparaturen — jeweils mit Anzahl und einem kurzen Hinweis je Reiter, wie der Bereich funktioniert (für Handbuch und Guide reicht meist EIN Eintrag, Tipps und Reparaturen ergänzen sich). Eigene Einträge lassen sich hier genauso verwalten wie auf der Maschinen-Detailseite.",
       },
       {
         titel: "Drei Ebenen",
@@ -433,7 +437,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Allgemeine Tipps",
-        text: "Im Reiter »Tipps« (Maschine wie Modellseite) sammelst du frei formulierte Hinweise — z. B. Wartungskniffe oder bekannte Schwachstellen. Der Text erlaubt eine einfache FORMATIERUNG: **fett**, _kursiv_, Aufzählungen mit einem Bindestrich am Zeilenanfang und Links als [Text](URL) — reine URLs werden automatisch anklickbar. Zusätzlich lassen sich weiterführende LINKS mit optionalem Namen und kurzer Beschreibung anhängen. Ein Tipp kann anders als übriges Wissen MEHRERE Modelle und/oder ganze Generationen zugleich betreffen; die Ziele wählst du beim Anlegen (»Tipp hinzufügen« öffnet einen Dialog) aus dem Katalog (das Modell der aktuellen Maschine ist vorausgewählt). Rechts oben schaltest du zwischen Karten- und kompakter Listenansicht um; die Wahl bleibt gemerkt. Jeder Tipp zeigt »gilt für …«, trägt eine Sichtbarkeit und lässt sich wie andere Einträge bewerten und ausblenden; eigene Tipps tragen im Kopf Stift (Bearbeiten) und Papierkorb (Löschen mit Rückfrage).",
+        text: "Im Reiter »Tipps« (Maschine wie Modellseite) sammelst du frei formulierte Hinweise — z. B. Wartungskniffe oder bekannte Schwachstellen. Der Text erlaubt eine einfache FORMATIERUNG: **fett**, _kursiv_, Aufzählungen mit einem Bindestrich am Zeilenanfang und Links als [Text](URL) — reine URLs werden automatisch anklickbar. Zusätzlich lassen sich weiterführende LINKS mit optionalem Namen und kurzer Beschreibung anhängen. Die Knöpfe über dem Textfeld setzen die Formatierung für dich, »Vorschau« zeigt das Ergebnis. Ein Tipp kann anders als übriges Wissen MEHRERE Modelle und/oder ganze Generationen zugleich betreffen. »Tipp hinzufügen« öffnet eine eigene Seite, und die Ziel-Auswahl fragt in Stufen — vom Nahen zum Fernen: zuerst DIESES Gerät (vorausgewählt), dann weitere Editionen desselben Titels (z. B. Pro ↔ Premium/LE), dann — aufklappbar, mit Suche — andere Modelle, und getrennt davon ganze Generationen (die Generation deines Geräts steht vorn). Rechts oben schaltest du zwischen Karten- und kompakter Listenansicht um; die Wahl bleibt gemerkt. Jeder Tipp zeigt »gilt für …«, trägt eine Sichtbarkeit und lässt sich wie andere Einträge bewerten und ausblenden; eigene Tipps tragen im Kopf Stift (Bearbeiten) und Papierkorb (Löschen mit Rückfrage). Tipps mit »Anonym geteilt« sind aus einer anonymen Reparatur-Freigabe entstanden, deren Maschine gelöscht wurde (siehe »Wissen teilen & Community«).",
       },
     ],
   },
@@ -450,6 +454,10 @@ export const ANLEITUNG: HilfeSektion[] = [
       {
         titel: "Reparaturen teilen",
         text: "Rechts an jeder Reparatur sitzt das Teilen-Symbol; es öffnet den Teilen-Dialog. Eine geteilte Reparatur trägt den Chip »Geteilt: …«, und dasselbe Symbol öffnet dann die Freigabe zum Ändern oder Aufheben (mit Rückfrage). Standardmäßig anonym und ohne Kosten/Aufwand — beides lässt sich je Eintrag umschalten. Reichweiten: alle angemeldeten Nutzer, bestimmte Clubs oder bestimmte Personen per E-Mail. Die Vorschau zeigt exakt, was andere lesen.",
+      },
+      {
+        titel: "Wenn die Maschine gelöscht wird",
+        text: "Reparaturen sterben mit ihrer Maschine — eine geteilte Reparatur aber nicht ganz: Beim Löschen wird sie zu einem TIPP am Modell befördert (Symptom, Diagnose, Maßnahme, Teile; Kosten nur, wenn die Freigabe sie zeigte). Freigabe für alle → öffentlicher Tipp; Freigabe für genau EINEN Club → Club-Tipp; Freigaben an einzelne Personen oder mehrere Clubs lassen sich nicht verlustfrei abbilden und erlöschen — die Löschfrage zählt beides vorher auf. War die Freigabe anonym, ist es der Tipp auch (»Anonym geteilt«). Eine einzelne Reparatur zu löschen befördert dagegen nichts: Löschen heißt Löschen.",
       },
       {
         titel: "Was du siehst",
@@ -505,7 +513,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Profil",
-        text: "Im Abschnitt »Profil« pflegst du Name, Vorname/Nachname, optionale Initialen und ein Profilbild. Das Bild (oder deine Initialen) erscheint als Avatar in der Navigation.",
+        text: "Im Abschnitt »Profil« pflegst du Name, Vorname/Nachname, optionale Initialen und ein Profilbild. Das Bild (oder deine Initialen) erscheint als Avatar in der Navigation. Für Profilbild und Logo gilt wie für jeden Upload: Du bist für die Rechte am Bild verantwortlich.",
       },
       {
         titel: "E-Mail-Adresse ändern",
@@ -539,6 +547,10 @@ export const ANLEITUNG: HilfeSektion[] = [
         titel: "Passwort vergessen",
         text: "Auf der Anmeldeseite »Passwort vergessen?« → du erhältst eine E-Mail mit einem Reset-Link.",
       },
+      {
+        titel: "KI in der App (nur Betreiber)",
+        text: "Super-Admins sehen zusätzlich den Abschnitt »KI in der App«: ein Schalter, ob die KI-Verarbeitung in der App über den Plattform-Schlüssel genutzt wird. Aus heißt: die Oberfläche zeigt sich genau so wie für alle anderen Nutzer — dieselben Sperren, derselbe Wortlaut — und der Prompt-Weg ist der Weg. Praktisch, um die App mit den Augen der Nutzer zu sehen. Der Reparaturvorschlag bleibt in beiden Fällen verfügbar.",
+      },
     ],
   },
   {
@@ -549,7 +561,7 @@ export const ANLEITUNG: HilfeSektion[] = [
     schritte: [
       {
         titel: "Melden",
-        text: "Nutzer-Icon oben rechts → »Problem melden«. Die Seite hat Reiter: »Neue Meldung« (Typ Fehler oder Verbesserungsvorschlag, Titel, Beschreibung, optional Screenshot), »Meine Meldungen« und — für Super-Admins — »Alle Meldungen«. Seite, App-Version und Browser werden automatisch mitgeschickt; du musst nichts davon heraussuchen.",
+        text: "Am schnellsten über den KÄFER oben rechts in der Kopfzeile — er nimmt die Seite, auf der du gerade bist, als Herkunft mit; alternativ Nutzer-Icon → »Problem melden«. Die Seite hat Reiter: »Neue Meldung« (Typ Fehler oder Verbesserungsvorschlag, Titel, Beschreibung, optional Screenshot), »Meine Meldungen« und — für Super-Admins — »Alle Meldungen«. Seite, App-Version und Browser werden automatisch mitgeschickt; du musst nichts davon heraussuchen.",
       },
       {
         titel: "Was passiert dann?",
@@ -558,6 +570,10 @@ export const ANLEITUNG: HilfeSektion[] = [
       {
         titel: "Gut zu wissen",
         text: "Fehler AN EINER MASCHINE (z. B. »linker Flipper prellt«) gehören nicht hierher, sondern als Fehler auf die Maschinen-Detailseite — dieses Formular ist für die App selbst.",
+      },
+      {
+        titel: "Was uns wirklich hilft",
+        text: "Am wertvollsten sind konkrete Beobachtungen aus dem echten Gebrauch — besonders vom Prompt-Weg: Was hat das Modell geliefert, was hat die Prüfung gesagt, was stimmte nicht? Ein Beispiel: Beim Auswerten eines Stern-SPIKE-Handbuchs merkte ein Nutzer an, dass Schalter und Lampen dort einzeln an Nodes hängen (»8-SW-17«) und es gar keine Matrix gibt — die Prüfung verlangte trotzdem Rasterpositionen. Diese eine Notiz hat den Prompt, die Prüfung und die Tipps verbessert. Solche Rückmeldungen bitte als »Verbesserungsvorschlag« mit dem Modell/Gerät und, wenn möglich, dem betroffenen Textausschnitt schicken.",
       },
     ],
   },
@@ -575,8 +591,16 @@ export const ANLEITUNG: HilfeSektion[] = [
         text: "Über den Umschalter in der Navigation zwischen hellem und dunklem Design wechseln.",
       },
       {
+        titel: "Formatierung in Texten",
+        text: "Tipp-Texte und Dokument-Notizen verstehen eine einfache Formatierung: **fett**, _kursiv_, Aufzählungen mit Bindestrich am Zeilenanfang und Links als [Text](URL). Die Knöpfe über dem Feld setzen das für dich; »Vorschau« zeigt das Ergebnis.",
+      },
+      {
+        titel: "Ungespeicherte Änderungen",
+        text: "Verlässt du ein Formular mit Änderungen — egal über welchen Link —, fragt die App nach: weiter bearbeiten, verwerfen oder speichern. Nur beim Schließen des Tabs oder Neuladen der Seite warnt sie nicht.",
+      },
+      {
         titel: "Handbuch als PDF",
-        text: "Diese Anleitung gibt es oben rechts auch als PDF zum Herunterladen — praktisch zum Weitergeben oder für die Werkstatt ohne Netz.",
+        text: "Diese Anleitung gibt es oben rechts auch als PDF zum Herunterladen — praktisch zum Weitergeben oder für die Werkstatt ohne Netz. Der Einstiegs-Leitfaden ist darin das erste Kapitel.",
       },
     ],
   },
@@ -594,7 +618,11 @@ export const ADMIN_HILFE: HilfeSektion[] = [
     schritte: [
       {
         titel: "Zugang",
-        text: "Super-Admins finden »Administration« im Nutzer-Menü oben rechts. Weitere Super-Admins lassen sich dort ernennen; der letzte Super-Admin bleibt geschützt und kann nicht entfernt werden.",
+        text: "Super-Admins finden »Administration« im Nutzer-Menü oben rechts. Weitere Super-Admins lassen sich dort ernennen; der letzte Super-Admin bleibt geschützt und kann nicht entfernt werden. Neue Konten entstehen NUR über Einladungen (Plattform-Einladung durch dich oder Club-Einladung durch Owner/Admins) — eine offene Selbstregistrierung gibt es nicht; die Startseite verweist auf »Zugang anfragen«.",
+      },
+      {
+        titel: "KI-Zugang",
+        text: "Die KI-Verarbeitung in der App (Handbuch auswerten, Guide erzeugen, Wartungspunkte aus dem Guide) läuft über den Plattform-Schlüssel und ist Super-Admins vorbehalten — für alle anderen ist der Prompt-Weg der Weg; der Reparaturvorschlag ist die eine Ausnahme für alle. Einen eigenen Anthropic-Schlüssel darf nur ein Super-Admin mitgeben. Unter Konto → »KI in der App« kannst du den Plattform-Schlüssel für dich abschalten und die App exakt so sehen wie ein Nutzer. Die Regel steht in lib/ki-zugang.ts; Route und Actions prüfen sie serverseitig, die gesperrten Knöpfe nennen den Grund.",
       },
       {
         titel: "Rollen je Nutzer verwalten",
@@ -741,7 +769,7 @@ export const ADMIN_HILFE: HilfeSektion[] = [
     schritte: [
       {
         titel: "Wo & was",
-        text: "Administration → »Prompts«. Editierbar sind die Prompts für den Troubleshooting-Guide, die Handbuch-Extraktion, die Wartungspunkte-aus-Guide und den Reparaturvorschlag. Der Standard liegt im Code; hier speicherst du nur Abweichungen. Strukturelle Teile (die JSON-Ausgabeform, die Fakten-Spalten) bleiben bewusst fest, damit ein Edit das Auswerten der Antwort nie brechen kann.",
+        text: "Administration → »Prompts«. Editierbar sind die Prompts für den Troubleshooting-Guide, die Handbuch-Extraktion, die Wartungspunkte-aus-Guide und den Reparaturvorschlag. Der Standard liegt im Code; hier speicherst du nur Abweichungen. Strukturelle Teile (die JSON-Ausgabeform, die Fakten-Spalten) bleiben bewusst fest, damit ein Edit das Auswerten der Antwort nie brechen kann. Die Prompts des PROMPT-WEGS (die Nutzer kopieren) sind Code, kein Override: die Handbuch-Vorlage in lib/import-facts.ts (IMPORT_PROMPT), die Guide-Vorlage in lib/import-guide.ts — Rückmeldungen aus echten Läufen (z. B. die Node-Systeme bei Stern SPIKE) landen dort.",
       },
       {
         titel: "Platzhalter behalten",
@@ -775,6 +803,216 @@ export const ADMIN_HILFE: HilfeSektion[] = [
       {
         titel: "Mehr",
         text: "Die komplette Aufbau- und Betriebs-Dokumentation (Hosting, Umgebungsvariablen, Dienste, gelernte Stolperfallen) steht im Hilfe-Tab »Aufbau & Betrieb«.",
+      },
+    ],
+  },
+];
+
+/* ── Einstieg (/help/einstieg — Leitfaden je Zielgruppe) ──────────────────── */
+/*
+  Der Einstieg ist bewusst LEICHT: erst das Allgemeine, dann genau EIN Weg je
+  Zielgruppe (Solo-Sammler:in, Club-Mitglied, Club-Owner/-Admin), dann für alle
+  die KI ehrlich erklärt, „Tiefer einsteigen" für die, die wollen, und wie man
+  Rückmeldungen gibt. Die Zielgruppen-Sektionen tragen `zielgruppe`, die Seite
+  zeigt davon nur die gewählte; das PDF druckt alle.
+*/
+export type Zielgruppe = "sammler" | "mitglied" | "owner";
+
+export const ZIELGRUPPEN: { key: Zielgruppe; label: string }[] = [
+  { key: "sammler", label: "Solo-Sammler:in" },
+  { key: "mitglied", label: "Club-Mitglied" },
+  { key: "owner", label: "Club-Owner / -Admin" },
+];
+
+export const EINSTIEG: (HilfeSektion & { zielgruppe?: Zielgruppe })[] = [
+  {
+    key: "einstieg-worum",
+    titel: "Worum es geht",
+    einleitung:
+      "Der Pinball Manager ist eine Betriebs- und Wissensdatenbank für Flipperautomaten: Fehler, Reparaturen, Wartung und Termine je Gerät — und geteiltes Wissen je Modell.",
+    schritte: [
+      {
+        titel: "Zwei Hälften",
+        text: "Die BETRIEBS-Hälfte gehört dir bzw. deinem Club: Welche Maschine hat welchen Fehler, was wurde repariert, was ist zur Wartung fällig, welche Termine stehen an. Die WISSENS-Hälfte hängt am Modell und kann geteilt werden: Handbuch-Daten (Spulen, Schalter, Sicherungen …), ein Troubleshooting-Guide, Tipps und freigegebene Reparaturen anderer Besitzer desselben Modells.",
+      },
+      {
+        titel: "Hineinkommen",
+        text: "Es gibt keine offene Registrierung — du kommst über eine Einladung herein (von einem Club oder vom Betreiber; auf der Startseite steht »Zugang anfragen«). Der Link aus der E-Mail legt dein Konto an.",
+      },
+      {
+        titel: "Die Kopfzeile",
+        text: "Links die Hauptbereiche: »Übersicht« (was ist offen, fällig, nicht spielbereit), »Maschinen« (deine Geräte), »Termine«, »Wissensbasis« (Wissen je Modell) und »Hilfe«. Rechts der Globus (öffentliche Website), der Käfer (Problem melden / Feedback), Hell/Dunkel und dein Nutzer-Menü. Auf dem Handy liegen die Hauptbereiche unten in Daumenreichweite.",
+      },
+      {
+        titel: "In zehn Minuten startklar",
+        text: "1. Maschinen → »Neue Maschine«, Modell aus dem Katalog wählen. 2. Auf der Detailseite unter »Betrieb« den ersten Fehler eintragen (oder gleich das QR-Etikett drucken und ans Gerät kleben). 3. Wenn etwas repariert ist: Reparatur erfassen, Fehler abhaken. Alles Weitere — Wartungsplan, Dokumente, Handbuch-Daten, Clubs — kommt, wenn du es brauchst.",
+      },
+    ],
+  },
+  {
+    key: "einstieg-sammler",
+    zielgruppe: "sammler",
+    titel: "Für Solo-Sammler:innen",
+    einleitung:
+      "Du hast eigene Geräte und keinen Club? Dann ist das dein Weg — alles bleibt privat, nichts davon muss geteilt werden.",
+    schritte: [
+      {
+        titel: "Deine private Sammlung",
+        text: "Ohne Club-Zuordnung gehört jede Maschine nur dir und ist nur für dich sichtbar. Die Übersicht ist dein Cockpit: nicht spielbereite Geräte, offene Fehler, fällige Wartung.",
+      },
+      {
+        titel: "Fehler am Gerät — auch für Besuch",
+        text: "Druck das QR-Etikett der Maschine (Kopf der Detailseite → »QR-Code«) und kleb es ans Gerät. Wer es scannt, meldet einen Fehler mit Foto — ohne Konto. Für die ganze Sammlung gibt es unter Konto → »Logo & Sammel-QR« EINEN Code mit deinem Logo, hinter dem man das Gerät aus einer Liste wählt.",
+      },
+      {
+        titel: "Wartung ohne Zettel",
+        text: "Im Wartungs-Reiter »Neuer Wartungspunkt« oder gleich einen Standard-Wartungsplan anlegen (Nutzer-Menü → »Wartungspläne«, »aus Standard-Vorlage« bringt eine bewährte 20-Punkte-Liste) und mit der Maschine verknüpfen. Die Übersicht sagt dir, was fällig ist.",
+      },
+      {
+        titel: "Alles zum Gerät an einem Ort",
+        text: "Unter »Wissensbasis« der Maschine: Dokumente (Rechnungen, Datenblätter, Notizen), Handbuch-Daten aus deinem eigenen Handbuch (über den Prompt-Weg mit deinem KI-Abo — siehe Abschnitt »Die KI, ehrlich erklärt«), ein Troubleshooting-Guide und Tipps.",
+      },
+      {
+        titel: "Was du NICHT brauchst",
+        text: "Keinen Club, kein Teilen, keine Rollen. Wenn du willst, profitierst du trotzdem von anderen: Die Wissensbasis zeigt dir öffentliches Wissen zu deinen Modellen — und deine eigenen Einträge bleiben privat, solange du sie nicht freigibst.",
+      },
+    ],
+  },
+  {
+    key: "einstieg-club-mitglied",
+    zielgruppe: "mitglied",
+    titel: "Für Club-Mitglieder",
+    einleitung:
+      "Dein Club betreut Geräte gemeinsam. Als Mitglied siehst du die Club-Maschinen und hilfst beim Betrieb — die Verwaltung liegt bei Owner und Admins.",
+    schritte: [
+      {
+        titel: "Beitreten und Bereich wählen",
+        text: "Die Einladung kommt per E-Mail (oder liegt unter Konto → »Einladungen«). Danach siehst du in Übersicht und Maschinenliste Bereichs-Chips: »Privat« für deine eigenen Geräte und einen je Club — du kannst mehrere gleichzeitig aktiv lassen; die Wahl gilt seitenübergreifend.",
+      },
+      {
+        titel: "Was du an Club-Maschinen darfst",
+        text: "Fehler melden (mit Priorität und Foto), Fehler quittieren und bearbeiten, Reparaturen eintragen, Wartungspunkte erledigen, Termine anlegen, Dokumente pflegen — kurz: alles, was den Betrieb betrifft. Nicht dein Bereich: die Club-Zuordnung einer Maschine ändern oder sie löschen (Owner/Admin).",
+      },
+      {
+        titel: "Turniermodus verstehen",
+        text: "Startet ein Owner/Admin den Turniermodus, schlägt die Übersicht bei jedem NEUEN, noch nicht quittierten Fehler Alarm — quittieren heißt hier »gesehen, kümmere mich«. Sobald jeder neue Fehler quittiert ist, ist Ruhe.",
+      },
+      {
+        titel: "Wissen aus dem Club",
+        text: "Handbuch-Daten, Guides und Tipps, die jemand für den Club freigegeben hat, siehst du automatisch an den Club-Maschinen und in der Wissensbasis — mit Autor und Sichtbarkeit. Deine eigenen Beiträge gibst du selbst frei (privat, Club oder öffentlich).",
+      },
+      {
+        titel: "Benachrichtigung aufs Handy",
+        text: "Unter Konto → »WhatsApp-Benachrichtigung« kannst du dich je Club benachrichtigen lassen, sobald ein neuer Fehler gemeldet wird — sofern du dort Owner/Admin bist; als Mitglied genügt der Blick in die Übersicht.",
+      },
+    ],
+  },
+  {
+    key: "einstieg-club-owner",
+    zielgruppe: "owner",
+    titel: "Für Club-Owner und -Admins",
+    einleitung:
+      "Du richtest den Club ein und hältst ihn am Laufen: Mitglieder, Rollen, Maschinen, Wartungsstandards — und ein paar Regeln, die es zu kennen lohnt.",
+    schritte: [
+      {
+        titel: "Club anlegen und Leute holen",
+        text: "Nutzer-Menü → »Clubs« → »Club erstellen« (Name, optional Logo). Dann Mitglieder per E-Mail einladen — mit Rolle: Owner (alles, inkl. Club löschen), Admin (verwalten) oder Mitglied (Betrieb). Wer noch kein Konto hat, bekommt es über den Einladungslink.",
+      },
+      {
+        titel: "Maschinen in den Club",
+        text: "Beim Anlegen oder Bearbeiten einer Maschine den Club wählen — oder in der Maschinenliste »Verwalten«: anhaken, Ziel-Club wählen, »Zuweisen«. Club-Maschinen sehen alle Mitglieder; die Zuordnung ändern und löschen dürfen nur Owner/Admins und der Eigentümer.",
+      },
+      {
+        titel: "Wartung als Standard",
+        text: "Unter Nutzer-Menü → »Wartungspläne« legst du je Club Standard-Pläne an (gern aus der Vorlage) und verknüpfst Maschinen damit — Änderungen am Standard wirken dann überall. Einzelne Geräte können zusätzlich eigene Punkte haben.",
+      },
+      {
+        titel: "Freigaben und Voreinstellungen",
+        text: "Auf der Club-Seite legst du fest, was beim Teilen von Handbuch-Daten und Reparaturen für Club-Maschinen vorbelegt ist (Reichweite, anonym, Kosten) — im Einzelfall bleibt alles übersteuerbar. Dort startest du auch den Turniermodus und findest den Sammel-QR des Clubs.",
+      },
+      {
+        titel: "Zwei Regeln, die dich retten",
+        text: "1. Der LETZTE Owner kann den Club weder verlassen noch sein Konto löschen — vorher jemanden zum Owner befördern. 2. Beim Löschen einer Maschine sagt die Rückfrage, was andere verlieren: freigegebene Reparaturen werden zum Tipp am Modell (oder erlöschen), maschinengebundenes Wissen wandert ans Modell. Beim Löschen des Clubs bleiben die Maschinen bei ihren Eigentümern.",
+      },
+    ],
+  },
+  {
+    key: "einstieg-ki",
+    titel: "Die KI, ehrlich erklärt",
+    einleitung:
+      "Vier Stellen nutzen ein Sprachmodell. Was davon für dich läuft, was du selbst machst — und warum das so ist.",
+    schritte: [
+      {
+        titel: "Was die KI kann",
+        text: "Handbuch-Daten aus deinem Handbuch-PDF extrahieren (nur Faktentabellen, das PDF wird nie gespeichert), einen Troubleshooting-Guide für dein Modell schreiben (mit Websuche gegen IPDB, PinWiki, Pinside), Wartungspunkte aus dem Guide ableiten — und beim Anlegen einer Reparatur einen Vorschlag für Diagnose, Maßnahme und Teile machen.",
+      },
+      {
+        titel: "Die Regel",
+        text: "Der KI-Reparaturvorschlag läuft für alle über den Schlüssel des Betreibers — ein kleiner, planbarer Aufruf. Die INHALTS-Generierung (Handbuch, Guide, Wartungspunkte) läuft in der App nur für den Betreiber: ein Handbuch-Durchlauf oder ein Guide mit Websuche kostet Euro, nicht Cent, und die Menge ist nicht planbar. Das kann sich künftig ändern — dazu müssen erst Entscheidungen zu Sponsoring oder zur Annahme von Spenden getroffen werden. Bis dahin gilt für alle der PROMPT-WEG.",
+      },
+      {
+        titel: "Der Prompt-Weg in einem Satz",
+        text: "Prompt in der App kopieren, im eigenen KI-Abo (Claude, ChatGPT, Gemini …) mit dem Handbuch-PDF bzw. eingeschalteter Websuche ausführen, NUR das JSON zurück in die App einfügen, »Prüfen« drücken, importieren. Die aufklappbare Anleitung im Import nennt geeignete Modelle; kostenlose Konten reichen meist nicht — es braucht ein starkes Modell und eine höhere Reasoning-Stufe.",
+      },
+      {
+        titel: "Die Prüfung ist dein Freund",
+        text: "Sie sagt dir nicht nur, ob das JSON gültig ist, sondern WARUM etwas fehlt — abgeschnittene Ausgabe (typisch bei Free-Konten), nur eine Tabelle kopiert, PDF nicht angehängt, Spalten abweichend — und liefert eine kopierbare NACHFRAGE, die du in denselben Chat einfügst. Meist sitzt der zweite Versuch.",
+      },
+      {
+        titel: "Rückmeldungen machen es besser",
+        text: "Eine echte Geschichte: Beim Auswerten eines Stern-SPIKE-Handbuchs schrieb das Modell dazu, dass Schalter und Lampen dort einzeln an Nodes hängen (»8-SW-17«) und es keine Matrix gibt — unsere Prüfung verlangte trotzdem Rasterpositionen. Ein Nutzer hat diese Notiz weitergegeben; seitdem kennen Prompt, Prüfung und Tipps Node-Systeme. Solche Beobachtungen aus deinen Läufen sind Gold wert — schick sie über den Käfer oben rechts als Verbesserungsvorschlag.",
+      },
+      {
+        titel: "Gegenprüfen bleibt Pflicht",
+        text: "Guides und Vorschläge sind KI-generiert. Vor sicherheitsrelevanten Arbeiten — Netzteil, Hochspannung, Fliptronic — immer mit Original-Manual und Schaltplan gegenprüfen.",
+      },
+    ],
+  },
+  {
+    key: "einstieg-tiefer",
+    titel: "Tiefer einsteigen — wenn du willst",
+    einleitung:
+      "Nichts davon brauchst du am ersten Tag. Wer mehr will, findet hier die Wegweiser in die ausführliche Anleitung.",
+    schritte: [
+      {
+        titel: "Wissen teilen und bewerten",
+        text: "Sichtbarkeiten je Eintrag, Reparaturen mit Projektion (anonym, ohne Kosten) freigeben, fremde Einträge als hilfreich oder falsch markieren oder für dich ausblenden, was Kuratoren tun: Anleitung → »Wissen teilen & Community«.",
+      },
+      {
+        titel: "Einträge bearbeiten mit Verlauf",
+        text: "Handbuch-Daten und Guides direkt korrigieren, jede Änderung als Revision, Bewertungen bleiben erhalten: Anleitung → »Wissenseinträge bearbeiten & Verlauf«.",
+      },
+      {
+        titel: "Modelle, Familien, Generationen",
+        text: "Warum Premium und LE ein Eintrag sind, die Pro aber nicht; was ein Generation-Guide für alle WPC-95-Geräte bedeutet; wie Tipps mehrere Ziele haben: Anleitung → »Wissensbasis (Modelle)« und »Troubleshooting-Guide«.",
+      },
+      {
+        titel: "QR im Detail",
+        text: "Etikett-Formate, Druck-Studio, mehrere Karten auf A4, Sammel-QR, Gast-Meldungen mit Foto: Anleitung → »Fehler erfassen«.",
+      },
+      {
+        titel: "Für Kuratoren und Betreiber",
+        text: "Moderation geteilter Einträge, Nutzer und globale Rollen, Einladungen, E-Mail-Vorlagen, KI-Prompts (Refinery), Betrieb: der Reiter »Administration« in der Hilfe (nur mit der passenden Rolle sichtbar). Wer wissen will, wie die App gebaut ist: Reiter »Techstack«.",
+      },
+    ],
+  },
+  {
+    key: "einstieg-feedback",
+    titel: "Probleme melden & mitgestalten",
+    einleitung:
+      "Die App wächst mit dem, was ihr zurückmeldet. Der Weg ist kurz.",
+    schritte: [
+      {
+        titel: "Der Käfer oben rechts",
+        text: "Auf jeder Seite sitzt in der Kopfzeile der Käfer »Problem melden / Feedback«. Er öffnet das Formular und nimmt die aktuelle Seite als Herkunft mit; App-Version und Browser gehen automatisch mit. Typ »Fehler« oder »Verbesserungsvorschlag«, Titel, Beschreibung, optional ein Screenshot — fertig.",
+      },
+      {
+        titel: "Was danach passiert",
+        text: "Der Betreiber sichtet die Meldung; unter »Meine Meldungen« siehst du den Status und eine Antwort, und beim Abschluss bekommst du eine E-Mail.",
+      },
+      {
+        titel: "Eine gute Meldung",
+        text: "Was hast du getan, was hast du erwartet, was ist passiert — und bei KI-Themen: welches Modell, welches Gerät, welcher Textausschnitt. Ein Screenshot sagt oft mehr als drei Sätze. Fehler AN EINER MASCHINE gehören dagegen als Fehler auf die Maschinen-Detailseite, nicht hierher.",
       },
     ],
   },

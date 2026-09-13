@@ -27,6 +27,16 @@ id und Signale bleiben erhalten).
   `showModal()` „already open as a non-modal dialog" (Knoten wird umgehängt,
   `open` bleibt stehen); behoben per `removeAttribute("open")`, bewusst NICHT
   per `close()` (feuert das close-Event → Dialog unmontiert sich sofort).
+- **Hilfe auf Stand + Einstiegs-Leitfaden** (2026-09-13): die Anleitung
+  (`lib/help-content.ts`) beschreibt wieder die heutige App — Zugang auf
+  Einladung, Sortierung im Tabellenkopf, »Verwalten«, Löschfolgen, kompakte
+  Übersicht, Vorschauen, Formatierungsleiste, gestufter Tipp-Picker, KI-Regel,
+  Node-Systeme, Käfer-Knopf, Verlassen-Modal, Urheberrecht (27 Textstellen,
+  Anleitung + Admin-Hilfe). Neu: Reiter **Einstieg** (`/help/einstieg`,
+  öffentlich) mit „Worum es geht", EINEM Weg je Zielgruppe (Solo-Sammler:in,
+  Club-Mitglied, Club-Owner/-Admin — Wahl per `?ich=`), „Die KI, ehrlich
+  erklärt" (inkl. der SPIKE-Rückmeldung als Beispiel), „Tiefer einsteigen"
+  und „Probleme melden". Im PDF-Handbuch ist der Einstieg das erste Kapitel.
 - **Node-Systeme (Stern SPIKE) im Handbuch-Import** (2026-09-13, Rückmeldung
   aus einem echten Prompt-Lauf): Schalter/Lampen hängen dort einzeln
   adressiert an Nodes („8-SW-17", Lampen bis 288) — keine 8×8-Matrix. Der

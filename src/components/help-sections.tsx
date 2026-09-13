@@ -4,10 +4,12 @@ import {
   Bug,
   CalendarClock,
   ClipboardList,
+  Compass,
   Download,
   FileText,
   Hammer,
   History,
+  Home,
   KeyRound,
   LayoutDashboard,
   LifeBuoy,
@@ -19,6 +21,7 @@ import {
   Share2,
   ShieldAlert,
   ShieldCheck,
+  Sparkles,
   TriangleAlert,
   UserCog,
   Users,
@@ -39,6 +42,14 @@ import type { HilfeSektion } from "@/lib/help-content";
 const iconClass = "text-[var(--color-primary)]";
 
 const icons: Record<string, ReactNode> = {
+  // Einstieg
+  "einstieg-worum": <Compass size={18} className={iconClass} />,
+  "einstieg-sammler": <Home size={18} className={iconClass} />,
+  "einstieg-club-mitglied": <Users size={18} className={iconClass} />,
+  "einstieg-club-owner": <ShieldCheck size={18} className={iconClass} />,
+  "einstieg-ki": <Sparkles size={18} className={iconClass} />,
+  "einstieg-tiefer": <BookOpen size={18} className={iconClass} />,
+  "einstieg-feedback": <Bug size={18} className={iconClass} />,
   // Anleitung
   "erste-schritte": <KeyRound size={18} className={iconClass} />,
   uebersicht: <LayoutDashboard size={18} className={iconClass} />,

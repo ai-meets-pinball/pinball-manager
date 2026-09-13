@@ -1,8 +1,9 @@
 import Link from "next/link";
 
-/** Umschalter zwischen Anleitung, Techstack, der Admin-Hilfe (Kuratoren +
+/** Umschalter zwischen Einstieg, Anleitung, Techstack, der Admin-Hilfe (Kuratoren +
     Super-Admins) und (nur Super-Admins) der Aufbau-Dokumentation. */
 const tabs = [
+  { href: "/help/einstieg", key: "einstieg", label: "Einstieg", nurAdmin: false, nurKurator: false, nurEingeloggt: false },
   { href: "/help", key: "anleitung", label: "Anleitung", nurAdmin: false, nurKurator: false, nurEingeloggt: false },
   { href: "/help/techstack", key: "techstack", label: "Techstack", nurAdmin: false, nurKurator: false, nurEingeloggt: true },
   { href: "/help/admin", key: "admin", label: "Administration", nurAdmin: false, nurKurator: true, nurEingeloggt: false },
@@ -15,7 +16,7 @@ export function HelpTabs({
   darfKuratieren = false,
   eingeloggt = true,
 }: {
-  active: "anleitung" | "techstack" | "admin" | "setup";
+  active: "einstieg" | "anleitung" | "techstack" | "admin" | "setup";
   istSuperAdmin?: boolean;
   /** Kurator ODER Super-Admin — zeigt den Tab „Administration". */
   darfKuratieren?: boolean;
