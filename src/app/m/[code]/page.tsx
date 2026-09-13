@@ -38,20 +38,22 @@ export default async function MeldenPage({
     }
   }
 
+  // Kompakt: die Seite wird am Gerät auf dem Handy ausgefüllt — Kopf, Formular
+  // und Konto-Hinweis sollen ohne Scrollen auf einen Schirm passen.
   return (
-    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-6 py-10">
+    <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-4 px-5 py-6">
       <div className="flex items-center gap-3">
         {machine.fotoUrl ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={machine.fotoUrl}
             alt={modellName(machine)}
-            className="h-16 w-16 flex-none rounded-[var(--radius)] object-cover"
+            className="h-12 w-12 flex-none rounded-[var(--radius)] object-cover"
           />
         ) : null}
         <div>
-          <h1 className="text-xl font-bold">Fehler melden</h1>
-          <p className="text-sm text-[var(--color-muted)]">
+          <h1 className="text-lg font-bold">Fehler melden</h1>
+          <p className="text-xs text-[var(--color-muted)]">
             {modellName(machine)}
             {machine.baujahr ? ` · ${machine.baujahr}` : ""}
           </p>
@@ -61,7 +63,7 @@ export default async function MeldenPage({
       <QrFehlerForm token={code} angemeldetAls={currentUser?.name ?? null} />
 
       {!currentUser ? (
-        <p className="text-sm text-[var(--color-muted)]">
+        <p className="text-xs text-[var(--color-muted)]">
           Du hast ein Konto?{" "}
           <Link
             href={`/login?von=/m/${code}`}

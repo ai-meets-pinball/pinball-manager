@@ -43,13 +43,13 @@ export function QrFehlerForm({
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form action={formAction} className="flex flex-col gap-3">
       <input type="hidden" name="token" value={token} />
       <Field label="Was ist kaputt / was passiert?">
         <Textarea
           name="beschreibung"
           required
-          rows={5}
+          rows={4}
           maxLength={2000}
           placeholder="z. B. Linker Flipperfinger reagiert nicht mehr …"
         />
@@ -61,7 +61,7 @@ export function QrFehlerForm({
       ) : (
         <Field
           label="Dein Name"
-          hint="Kein Konto nötig — nur damit die Werkstatt weiß, wer gemeldet hat."
+          hint="Kein Konto nötig — nur, damit die Werkstatt weiß, wer meldet."
         >
           <Input
             name="name"
