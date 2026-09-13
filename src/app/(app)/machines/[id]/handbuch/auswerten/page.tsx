@@ -1,10 +1,9 @@
 import { ManualExtract } from "@/components/manual-extract";
 import { Card } from "@/components/ui/card";
 import { PageHeader } from "@/components/ui/page-header";
-import { getKiInDerApp } from "@/db/queries";
+import { getKiZugang } from "@/db/queries";
 import { availableProviders } from "@/lib/ai/provider";
 import { modellName } from "@/lib/format";
-import { darfEigenenSchluessel, darfKi } from "@/lib/ki-zugang";
 import { requireMachineWrite } from "@/lib/session";
 
 /*
@@ -23,8 +22,8 @@ export default async function HandbuchAuswertenPage({
   const { id } = await params;
   const { machine, user } = await requireMachineWrite(id);
 
-  const kiInDerApp = await getKiInDerApp(user.id);
-  const kiHandbuch = darfKi(user, "handbuch", kiInDerApp);
+  const ki = await getKiZugang(user);
+  const kiHandbuch = ki.handbuch;
 
   return (
     <div className="space-y-6">
@@ -38,7 +37,7 @@ export default async function HandbuchAuswertenPage({
           machineId={machine.id}
           providers={availableProviders()}
           centralKey={Boolean(process.env.ANTHROPIC_API_KEY)}
-          byoErlaubt={darfEigenenSchluessel(user, kiInDerApp)}
+          byoErlaubt={ki.byo}
           appErlaubt={kiHandbuch.erlaubt}
           appGrund={kiHandbuch.erlaubt ? undefined : kiHandbuch.grund}
         />

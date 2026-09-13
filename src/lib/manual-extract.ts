@@ -10,6 +10,7 @@ import {
   type Aufbereitung,
   type Paket,
 } from "@/lib/ai/prepare-document";
+import { istPdf } from "@/lib/storage";
 
 /*
   Phase-2-Pipeline: Handbuch (PDF) → Faktentabellen.
@@ -306,6 +307,13 @@ export async function* extractManualFactsStream(opts: {
   }
   if (file.type !== "application/pdf") {
     yield { type: "error", error: "Nur PDF-Dateien werden unterstützt." };
+    return;
+  }
+  // Wie bei allen Uploads (lib/storage): den Bytes trauen, nicht dem
+  // client-gemeldeten Typ — sonst füttert ein direkter POST beliebige Bytes
+  // unter „application/pdf" in den PDF-Parser.
+  if (!istPdf(new Uint8Array(await file.slice(0, 4).arrayBuffer()))) {
+    yield { type: "error", error: "Die Datei ist kein PDF (Signatur fehlt)." };
     return;
   }
   if (file.size > MAX_BYTES) {

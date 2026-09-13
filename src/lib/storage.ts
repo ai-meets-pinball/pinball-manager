@@ -256,7 +256,7 @@ function endung(name: string): string {
 }
 
 /** Prüft die ersten Bytes auf PDF- bzw. ZIP-Signatur (Office = ZIP-Container). */
-function istPdf(b: Uint8Array): boolean {
+export function istPdf(b: Uint8Array): boolean {
   return b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46; // %PDF
 }
 function istZip(b: Uint8Array): boolean {

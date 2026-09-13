@@ -1,8 +1,8 @@
 "use server";
 
-import { eq } from "drizzle-orm";
+import { and, count, eq, gte } from "drizzle-orm";
 import { db } from "@/db";
-import { faults, machines } from "@/db/schema";
+import { faults, kiAufrufe, machines } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
 import {
   getMachineGuides,
@@ -14,7 +14,10 @@ import {
 } from "@/db/queries";
 import { resolveProvider } from "@/lib/ai/provider";
 import { getKiInDerApp } from "@/db/queries/settings";
+import { KI_LIMIT, kiLimit } from "@/lib/ki-limit";
 import { darfEigenenSchluessel } from "@/lib/ki-zugang";
+import { datenBlock, einzeilig } from "@/lib/prompt-sicher";
+import { isSuperAdmin } from "@/lib/rechte";
 import { AiError, generateJson } from "@/lib/ai/generate";
 
 /*
@@ -97,6 +100,16 @@ export async function generateRepairSuggestion(
   // Plattform-Schlüssel (kleiner, planbarer Aufruf). Einen eigenen Schlüssel
   // darf nur der Betreiber mitgeben (lib/ki-zugang); ohne beides gibt es
   // eine klare Meldung statt eines 401 vom Anbieter.
+  // Missbrauchsschutz (lib/ki-limit): Aufrufe im Fenster zählen, BEVOR der
+  // Plattform-Schlüssel Kosten erzeugt; Super-Admins sind ausgenommen.
+  const fensterStart = new Date(Date.now() - KI_LIMIT.fensterMinuten * 60_000);
+  const [{ n: aufrufe }] = await db
+    .select({ n: count() })
+    .from(kiAufrufe)
+    .where(and(eq(kiAufrufe.userId, user.id), gte(kiAufrufe.createdAt, fensterStart)));
+  const limit = kiLimit(aufrufe, isSuperAdmin(user));
+  if (!limit.erlaubt) return { error: limit.grund };
+
   const provider = resolveProvider(formData);
   const eigenerSchluessel = darfEigenenSchluessel(user, await getKiInDerApp(user.id))
     ? String(formData.get("apiKey") ?? "")
@@ -111,15 +124,21 @@ export async function generateRepairSuggestion(
   const { text: prompt } = await resolvePrompt("repair_suggestion", {
     hersteller: machine.hersteller,
     generationId: gen?.id ?? null,
+    // Nutzertext sicher einsetzen (lib/prompt-sicher): kurze Felder einzeilig,
+    // Symptom und Wissen als gerahmte Datenblöcke — auch wenn sie wie
+    // Anweisungen klingen.
     vars: {
-      hersteller: machine.hersteller,
-      modell: machine.modell,
+      hersteller: einzeilig(machine.hersteller),
+      modell: einzeilig(machine.modell),
       baujahr: machine.baujahr ? String(machine.baujahr) : "unbekannt",
-      symptom: fault.beschreibung,
-      kategorie: fault.kategorie ?? "(keine)",
-      wissen,
+      symptom: datenBlock(fault.beschreibung, "SYMPTOM"),
+      kategorie: einzeilig(fault.kategorie ?? "(keine)", 40),
+      wissen: datenBlock(wissen, "WISSEN"),
     },
   });
+
+  // Der Aufruf zählt, sobald er losgeht — auch ein Fehlschlag kostet Tokens.
+  await db.insert(kiAufrufe).values({ userId: user.id, zweck: "reparatur" });
 
   try {
     const antwort = await generateJson(provider, {

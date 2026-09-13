@@ -45,12 +45,11 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { ViewToggle } from "@/components/ui/view-toggle";
 import { deleteMachine } from "@/db/actions/machines";
 import { getMachineDetail } from "@/db/machine-detail";
-import { getKiInDerApp, getLoeschfolgen, resolvePrompt } from "@/db/queries";
+import { getKiZugang, getLoeschfolgen, resolvePrompt } from "@/db/queries";
 import { FEHLER_FILTER, FEHLER_FILTER_LABEL } from "@/lib/fehler-status";
 import { modellName, relativeZeit } from "@/lib/format";
 import { tageDazwischen } from "@/lib/faelligkeit";
 import { buildGuideImportPrompt } from "@/lib/import-guide";
-import { darfEigenenSchluessel, darfKi } from "@/lib/ki-zugang";
 import { loeschfrage } from "@/lib/loeschfolgen";
 import { kannKuratieren } from "@/lib/session";
 import { klebrig } from "@/lib/sticky-view";
@@ -187,10 +186,10 @@ export default async function MachineDetailPage({
   // Wer darf KI IN DER APP auslösen? Die Generierung (Handbuch, Guide,
   // Wartungspunkte) ist dem Betreiber vorbehalten — für alle anderen ist der
   // Prompt-Weg der Weg (lib/ki-zugang). Die Regel gilt serverseitig ebenso.
-  const kiInDerApp = await getKiInDerApp(currentUser.id);
-  const kiGuide = darfKi(currentUser, "guide", kiInDerApp);
-  const kiWartung = darfKi(currentUser, "wartung", kiInDerApp);
-  const kiByo = darfEigenenSchluessel(currentUser, kiInDerApp);
+  const ki = await getKiZugang(currentUser);
+  const kiGuide = ki.guide;
+  const kiWartung = ki.wartung;
+  const kiByo = ki.byo;
 
   // Der Guide-Reiter: für Bearbeiter immer sichtbar (Erzeugen/Importieren geht
   // auch ohne Handbuch-Fakten); Nur-Leser sehen ihn erst, wenn Inhalte existieren.

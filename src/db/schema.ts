@@ -873,6 +873,27 @@ export const promptOverrides = pgTable(
    Wissen in `knowledge` (typ='troubleshooting') — die eigene Tabelle
    `troubleshooting_guides` ist entfallen. */
 
+/* ── KI-Aufrufe (Missbrauchsschutz) ───────────────────────────────────────── */
+/*
+  Ein Eintrag je KI-Aufruf über den Plattform-Schlüssel, der ALLEN offensteht
+  (heute: der Reparaturvorschlag). Daraus zählt lib/ki-limit die Aufrufe im
+  Zeitfenster je Nutzer — ohne diese Schranke könnte ein Skript in Schleife
+  Kosten treiben. Kein Inhalt, nur Zweck und Zeit. Alte Zeilen dürfen weg
+  (Cron-Aufräumen ist optional; die Zählung schaut nur ins Fenster).
+*/
+export const kiAufrufe = pgTable(
+  "ki_aufrufe",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    zweck: text("zweck").notNull(), // KiZweck aus lib/ki-zugang
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("ki_aufrufe_user_zeit").on(t.userId, t.createdAt)],
+);
+
 /* ── Standard-Wartungspläne (Vorlagen je Nutzer / je Club) ────────────────── */
 /*
   Der Code-Katalog (lib/maintenance-catalog.ts) ist nur das TEMPLATE. Darüber

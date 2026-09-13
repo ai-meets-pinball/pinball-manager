@@ -27,6 +27,21 @@ id und Signale bleiben erhalten).
   `showModal()` „already open as a non-modal dialog" (Knoten wird umgehängt,
   `open` bleibt stehen); behoben per `removeAttribute("open")`, bewusst NICHT
   per `close()` (feuert das close-Event → Dialog unmontiert sich sofort).
+- **Code-Review + Security-Audit** (2026-09-13, vier parallele Prüfer über
+  den Diff seit `c68a8f3` und das ganze Repo): keine harten Standard-
+  Verstöße, keine Autorisierungslücke (alle 29 Action-Dateien und Routen mit
+  Gate, kein IDOR, Token 192 Bit, Sign-up per Hook zu, Cron `timingSafeEqual`,
+  Uploads per Magic Bytes, SQL parametrisiert, RLS überall). Behoben:
+  (1) **Rate-Limit** für den KI-Reparaturvorschlag — Tabelle `ki_aufrufe`
+  (Migration 0060, RLS), Regel `lib/ki-limit.ts` (20 je 60 Min. je Nutzer,
+  Super-Admin ausgenommen); (2) **Prompt-Injection**: `lib/prompt-sicher.ts`
+  — kurze Felder einzeilig/gekappt (Hersteller/Modell stehen im System-Prompt
+  des Guides; Validator max 80), lange Felder (Symptom, Wissen, Guide-Text)
+  als gerahmte Datenblöcke mit „keine Anweisungen"-Ansage, override-fest, weil
+  im Wert statt in der Vorlage; (3) **PDF-Signatur** (`%PDF`) statt
+  `file.type` in der Handbuch-Pipeline; (4) `getKiZugang(user)` bündelt die
+  dreifach wiederholte Regel-Auswertung. HSTS liefert Vercel bereits
+  (`max-age=63072000`); `includeSubDomains/preload` bewusst nicht gesetzt.
 - **PDF-Handbuch** (2026-09-13): jedes Kapitel beginnt auf einer neuen Seite,
   Fließtext 10 pt statt 11, und die Wort-Bild-Marke steht oben auf der
   Titelseite — als Vektor nachgezeichnet (`zeichneLogo` in

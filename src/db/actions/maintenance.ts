@@ -14,6 +14,7 @@ import {
 } from "@/db/schema";
 import { getKiInDerApp } from "@/db/queries/settings";
 import { darfEigenenSchluessel, darfKi } from "@/lib/ki-zugang";
+import { datenBlock } from "@/lib/prompt-sicher";
 import { isClubMember, requireMachineWrite } from "@/lib/session";
 import { anzahl } from "@/lib/format";
 import { resolvePrompt } from "@/db/queries";
@@ -464,7 +465,8 @@ export async function importMaintenanceFromGuide(
   // der Nutzer wählt je Aktion (Feld „provider"), sonst der Standard.
   const provider = resolveProvider(formData);
   const { text: system } = await resolvePrompt("maintenance_import");
-  const userPrompt = `Wandle diesen Wartungsplan-Abschnitt in strukturierte Wartungspunkte (JSON) um:\n\n${abschnittText}`;
+  // Der Guide-Text ist Nutzer-/KI-Inhalt — als gerahmter Datenblock, nicht als Anweisung.
+  const userPrompt = `Wandle diesen Wartungsplan-Abschnitt in strukturierte Wartungspunkte (JSON) um:\n\n${datenBlock(abschnittText, "WARTUNGSPLAN-ABSCHNITT")}`;
 
   let antwort: AiAntwort;
   try {

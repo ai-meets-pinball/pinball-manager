@@ -7,6 +7,8 @@ import {
   emailTemplates,
   userSettings,
 } from "@/db/schema";
+import { darfEigenenSchluessel, darfKi } from "@/lib/ki-zugang";
+import type { RechteNutzer } from "@/lib/rechte";
 import { SHARE_DEFAULTS, type ShareDefaults } from "@/lib/share-defaults";
 import {
   DEFAULT_TEMPLATES,
@@ -92,4 +94,17 @@ export async function getKiInDerApp(userId: string): Promise<boolean> {
     console.error("[settings] ki_in_der_app nicht ladbar, nutze true:", e);
     return true;
   }
+}
+
+/** Die KI-Regel für einen Nutzer an EINER Stelle ausgewertet — Einstellung
+    laden, dann lib/ki-zugang je Zweck. Seiten und Actions fragen nur noch das. */
+export async function getKiZugang(user: RechteNutzer & { id: string }) {
+  const kiInDerApp = await getKiInDerApp(user.id);
+  return {
+    kiInDerApp,
+    handbuch: darfKi(user, "handbuch", kiInDerApp),
+    guide: darfKi(user, "guide", kiInDerApp),
+    wartung: darfKi(user, "wartung", kiInDerApp),
+    byo: darfEigenenSchluessel(user, kiInDerApp),
+  };
 }

@@ -6,6 +6,7 @@ import { db } from "@/db";
 import { machines } from "@/db/schema";
 import { getKiInDerApp } from "@/db/queries/settings";
 import { darfEigenenSchluessel, darfKi } from "@/lib/ki-zugang";
+import { einzeilig } from "@/lib/prompt-sicher";
 import { requireMachineWrite } from "@/lib/session";
 import { getModelGeneration, resolvePrompt } from "@/db/queries";
 import { upsertTroubleshootingKnowledge } from "@/lib/facts-store";
@@ -75,9 +76,11 @@ export async function generateTroubleshootingGuide(
   const { text: system } = await resolvePrompt("guide_system", {
     hersteller: machine.hersteller,
     generationId: gen?.id ?? null,
+    // Kurze Felder einzeilig und gekappt — sie stehen im SYSTEM-Prompt, ein
+    // mehrzeiliger „Hersteller" wäre eine Anweisung (lib/prompt-sicher).
     vars: {
-      hersteller: machine.hersteller,
-      modell: machine.modell,
+      hersteller: einzeilig(machine.hersteller),
+      modell: einzeilig(machine.modell),
       baujahr: machine.baujahr ? String(machine.baujahr) : "unbekannt",
     },
   });

@@ -28,8 +28,10 @@ const optionalUuid = z
   .pipe(z.string().uuid().optional());
 
 export const machineSchema = z.object({
-  hersteller: z.string().trim().min(1, "Hersteller ist erforderlich"),
-  modell: z.string().trim().min(1, "Modell ist erforderlich"),
+  // Längenlimit bewusst: beide Felder landen als Zeile in KI-Prompts
+  // (lib/prompt-sicher kappt zusätzlich) — 80 Zeichen reichen jedem Namen.
+  hersteller: z.string().trim().min(1, "Hersteller ist erforderlich").max(80, "Hersteller: höchstens 80 Zeichen"),
+  modell: z.string().trim().min(1, "Modell ist erforderlich").max(80, "Modell: höchstens 80 Zeichen"),
   baujahr: optionalInt,
   opdbRef: optionalString,
   ipdbRef: optionalString,
