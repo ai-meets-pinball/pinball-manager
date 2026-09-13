@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { FileText, Link as LinkIcon, StickyNote } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { UrheberHinweis } from "@/components/ui/urheber-hinweis";
 import { Field, Input, Textarea } from "@/components/ui/input";
 import { FormLeaveGuard } from "@/components/ui/form-leave-guard";
 import type { FormState } from "@/db/actions/form-state";
@@ -125,6 +126,7 @@ export function DokumentForm({
               className={fileInputStyles}
             />
           </Field>
+          <UrheberHinweis />
           {bearbeiten && dokument?.dateiname ? (
             <p className="text-xs text-[var(--color-muted)]">
               Aktuell: {dokument.dateiname}

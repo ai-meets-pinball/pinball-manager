@@ -27,6 +27,26 @@ id und Signale bleiben erhalten).
   `showModal()` „already open as a non-modal dialog" (Knoten wird umgehängt,
   `open` bleibt stehen); behoben per `removeAttribute("open")`, bewusst NICHT
   per `close()` (feuert das close-Event → Dialog unmontiert sich sofort).
+- **Tipp-Picker gestuft** (2026-09-13): erst dieses Gerät (vorausgewählt),
+  dann weitere Editionen desselben Titels (gleiche OPDB-Gruppe, z. B. Pro ↔
+  Premium/LE), dann — zugeklappt — andere Modelle, und getrennt davon ganze
+  Generationen (eigene Generation vorn). Ordnung in `lib/tipp-ziele.ts`.
+- **Urheberrechts-Hinweis an jedem Upload** (2026-09-13, `ui/urheber-hinweis.tsx`,
+  ein Wortlaut): Fotos, Logos, Profilbild, Dokumente, Handbuch-PDF,
+  Fehler-Fotos und beide JSON-Importe — wer hochlädt, ist für die Rechte
+  verantwortlich, besonders bei »öffentlich«. Bewusst nicht am Feedback-
+  Screenshot (Abbild der App selbst, geht nur an den Betreiber).
+- **Redlining-Runde Wissensbasis** (Notizen vom 2026-09-13, 14:29): der
+  Handbuch-Reiter erklärt gleich im Kopf, wie Handbuch-Daten funktionieren
+  (Modell-Ebene, Familie, Autor + Sichtbarkeit, Prompt-Weg, PDF nie
+  gespeichert); leere Handbuch- und Guide-Reiter bieten eine aufklappbare
+  **Vorschau** mit erfundenen WPC-95-Beispieldaten (`lib/wissen-beispiel.ts`,
+  `wissen-vorschau.tsx`) — gerendert mit DENSELBEN Komponenten wie echte
+  Einträge, per Test gegen dieselbe Import-Prüfung abgesichert; der
+  Ollama-Satz im Guide-Reiter ist weg (Ollama ist auf Vercel kein Weg).
+  Dazu (Notiz 14:35): „Handbuch auswerten" ist eine eigene Seite
+  (`/machines/[id]/handbuch/auswerten`) statt eines Dialogs — Anleitung,
+  Prompt, Einfügefeld, Prüfung und Tipps brauchen Platz und eine URL.
 - **KI-Zugang neu geregelt** (2026-09-13, `lib/ki-zugang.ts`): kein
   Plattform-Schlüssel für die Inhalts-Generierung (kostenunsicher — Euro je
   Durchlauf, Menge nicht planbar). Handbuch auswerten, Guide erzeugen und

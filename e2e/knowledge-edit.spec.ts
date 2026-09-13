@@ -112,17 +112,16 @@ test.describe("Wissens-Editor & Verlauf", () => {
     await loginAs(page, USERS.owner);
     await page.goto(`/machines/${machineId}?bereich=handbuch`);
 
-    // Der Import steckt im Dialog „Handbuch auswerten", Weg „Eigenes Abo".
-    await page.getByRole("button", { name: "Handbuch auswerten" }).click();
-    const dialog = page.locator("dialog[open]");
-    await dialog
-      .getByRole("button", { name: "Eigenes ChatGPT-/Claude-Abo" })
-      .click();
-    await dialog.getByLabel("Extrahiertes JSON").fill(NEUES_JSON);
-    await dialog.getByRole("button", { name: "Prüfen" }).click();
-    await expect(dialog.getByText("· 1 Zeilen")).toBeVisible();
-    await dialog.getByRole("button", { name: "Importieren" }).click();
-    await expect(dialog.getByText(/Importiert: 1 Faktentabelle/)).toBeVisible();
+    // Der Import lebt auf der Seite „Handbuch auswerten", Weg „Eigenes Abo"
+    // (für Nutzer ohne Betreiber-Recht ohnehin der Start).
+    await page.getByRole("link", { name: "Handbuch auswerten" }).click();
+    await page.waitForURL(`**/machines/${machineId}/handbuch/auswerten`);
+    await page.getByRole("button", { name: "Eigenes ChatGPT-/Claude-Abo" }).click();
+    await page.getByLabel("Extrahiertes JSON").fill(NEUES_JSON);
+    await page.getByRole("button", { name: "Prüfen" }).click();
+    await expect(page.getByText("· 1 Zeilen")).toBeVisible();
+    await page.getByRole("button", { name: "Importieren" }).click();
+    await expect(page.getByText(/Importiert: 1 Faktentabelle/)).toBeVisible();
 
     // Gleiche id (kein DELETE+INSERT), Signal überlebt, zweite Revision.
     const rows = await sql`

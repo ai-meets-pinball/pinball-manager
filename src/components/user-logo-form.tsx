@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { Loader2, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { UrheberHinweis } from "@/components/ui/urheber-hinweis";
 import { ConfirmButton } from "@/components/ui/confirm-button";
 import { Field, Input } from "@/components/ui/input";
 import { FormFeedback } from "@/components/ui/form-feedback";
@@ -34,6 +35,7 @@ export function UserLogoForm({ hatLogo }: { hatLogo: boolean }) {
             onChange={(e) => setDateiGewaehlt((e.target.files?.length ?? 0) > 0)}
           />
         </Field>
+        <UrheberHinweis />
         <Button
           type="submit"
           disabled={pending || !dateiGewaehlt}

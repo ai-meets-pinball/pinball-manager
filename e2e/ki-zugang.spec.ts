@@ -46,14 +46,14 @@ test.describe("KI-Zugang", () => {
     await expect(guide.getByText(/Der Weg für alle/)).toBeVisible();
     await page.keyboard.press("Escape");
 
+    // „Handbuch auswerten" ist eine eigene Seite, kein Dialog.
     await page.goto(`/machines/${machineId}?bereich=handbuch`);
-    await page.getByRole("button", { name: "Handbuch auswerten" }).click();
-    const handbuch = page.locator("dialog[open]");
-    await expect(handbuch.getByRole("button", { name: "In der App" })).toBeDisabled();
+    await page.getByRole("link", { name: "Handbuch auswerten" }).click();
+    await page.waitForURL(`**/machines/${machineId}/handbuch/auswerten`);
+    await expect(page.getByRole("button", { name: "In der App" })).toBeDisabled();
     await expect(
-      handbuch.getByRole("button", { name: "Eigenes ChatGPT-/Claude-Abo" }),
+      page.getByRole("button", { name: "Eigenes ChatGPT-/Claude-Abo" }),
     ).toHaveAttribute("aria-pressed", "true");
-    await page.keyboard.press("Escape");
 
     await page.goto(`/machines/${machineId}?bereich=wartung`);
     await expect(page.getByRole("button", { name: "Aus Guide übernehmen" })).toBeDisabled();
@@ -72,11 +72,8 @@ test.describe("KI-Zugang", () => {
     );
     await page.keyboard.press("Escape");
 
-    await page.goto(`/machines/${machineId}?bereich=handbuch`);
-    await page.getByRole("button", { name: "Handbuch auswerten" }).click();
-    await expect(
-      page.locator("dialog[open]").getByRole("button", { name: "In der App" }),
-    ).toBeEnabled();
+    await page.goto(`/machines/${machineId}/handbuch/auswerten`);
+    await expect(page.getByRole("button", { name: "In der App" })).toBeEnabled();
   });
 
   test("Super-Admin schaltet die KI in der App ab — und sieht den Prompt-Weg wie alle", async ({
@@ -115,14 +112,12 @@ test.describe("KI-Zugang", () => {
 
   test("Prüfung: abgeschnittenes JSON bekommt Tipp und Nachfrage", async ({ page }) => {
     await loginAs(page, USERS.owner);
-    await page.goto(`/machines/${machineId}?bereich=handbuch`);
-    await page.getByRole("button", { name: "Handbuch auswerten" }).click();
-    const dialog = page.locator("dialog[open]");
-    await dialog
+    await page.goto(`/machines/${machineId}/handbuch/auswerten`);
+    await page
       .getByLabel("Extrahiertes JSON")
       .fill('{"coils": {"columns": ["Sol/No", "Funktion"], "rows": [["1", "Flipper');
-    await dialog.getByRole("button", { name: "Prüfen" }).click();
-    await expect(dialog.getByText(/abgeschnitten/)).toBeVisible();
-    await expect(dialog.getByRole("button", { name: "Nachfrage kopieren" })).toBeVisible();
+    await page.getByRole("button", { name: "Prüfen" }).click();
+    await expect(page.getByText(/abgeschnitten/)).toBeVisible();
+    await expect(page.getByRole("button", { name: "Nachfrage kopieren" })).toBeVisible();
   });
 });

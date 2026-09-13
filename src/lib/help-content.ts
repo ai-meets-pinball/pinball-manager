@@ -357,7 +357,7 @@ export const ANLEITUNG: HilfeSektion[] = [
     schritte: [
       {
         titel: "Hochladen",
-        text: "Auf der Maschinen-Detailseite im Reiter »Handbuch« öffnet der Knopf »Handbuch auswerten« (rechts oben) einen Dialog. Standardweg ist »In der App«: bestätigen, dass du das Handbuch besitzt bzw. die Rechte hast, das PDF wählen und auswerten. Anbieter, Detailstufe und Sichtbarkeit liegen unter »Erweiterte Optionen« — für den Normalfall musst du sie nicht anfassen.",
+        text: "Auf der Maschinen-Detailseite im Reiter »Handbuch« öffnet der Knopf »Handbuch auswerten« (rechts oben) eine eigene Seite. Standardweg ist »In der App«: bestätigen, dass du das Handbuch besitzt bzw. die Rechte hast, das PDF wählen und auswerten. Anbieter, Detailstufe und Sichtbarkeit liegen unter »Erweiterte Optionen« — für den Normalfall musst du sie nicht anfassen.",
       },
       {
         titel: "Was passiert",
@@ -365,7 +365,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Der Prompt-Weg (für alle)",
-        text: "Der Weg für alle Nutzer: Im Dialog »Handbuch auswerten« steht »Eigenes ChatGPT-/Claude-Abo« — den vorbereiteten Prompt kopieren, im eigenen KI-Abo zusammen mit dem Handbuch-PDF ausführen und NUR das JSON hier einfügen. »Prüfen« zeigt eine Vorschau samt Warnungen und gibt gezielte Tipps für den nächsten Versuch — inklusive einer kopierbaren Nachfrage, die du in denselben Chat einfügst (z. B. wenn die Ausgabe abgeschnitten war oder Tabellen fehlen). Die aufklappbare Anleitung im Dialog nennt geeignete Modelle; kostenlose Konten liefern vermutlich kein brauchbares Ergebnis (kleinere Modelle, kein PDF-Upload, abgeschnittene Antworten). Erst nach erfolgreicher Prüfung wird importiert.",
+        text: "Der Weg für alle Nutzer: Auf der Seite »Handbuch auswerten« steht »Eigenes ChatGPT-/Claude-Abo« — den vorbereiteten Prompt kopieren, im eigenen KI-Abo zusammen mit dem Handbuch-PDF ausführen und NUR das JSON hier einfügen. »Prüfen« zeigt eine Vorschau samt Warnungen und gibt gezielte Tipps für den nächsten Versuch — inklusive einer kopierbaren Nachfrage, die du in denselben Chat einfügst (z. B. wenn die Ausgabe abgeschnitten war oder Tabellen fehlen). Die aufklappbare Anleitung im Dialog nennt geeignete Modelle; kostenlose Konten liefern vermutlich kein brauchbares Ergebnis (kleinere Modelle, kein PDF-Upload, abgeschnittene Antworten). Erst nach erfolgreicher Prüfung wird importiert.",
       },
       {
         titel: "Wer darf was (KI)",

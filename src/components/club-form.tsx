@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
+import { UrheberHinweis } from "@/components/ui/urheber-hinweis";
 import { Field, Input } from "@/components/ui/input";
 import { FormLeaveGuard } from "@/components/ui/form-leave-guard";
 import type { FormState } from "@/db/actions/form-state";
@@ -28,6 +29,7 @@ export function ClubForm({
           accept=".jpg,.jpeg,.png,.svg,image/jpeg,image/png,image/svg+xml"
         />
       </Field>
+      <UrheberHinweis />
       {state.error ? (
         <p className="text-sm text-[var(--color-danger)]">{state.error}</p>
       ) : null}

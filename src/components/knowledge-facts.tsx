@@ -13,6 +13,7 @@ import {
 } from "@/components/knowledge-moderation";
 import { KnowledgeSignals } from "@/components/knowledge-signals";
 import { SetVisibility } from "@/components/set-visibility";
+import { WissenVorschau } from "@/components/wissen-vorschau";
 
 /*
   Zeigt Handbuch-Fakten als MODELL-Wissen (Datenmodell-Redesign, Phase 1). Jeder
@@ -66,9 +67,12 @@ export function KnowledgeFacts({
 }) {
   if (eintraege.length === 0) {
     return (
-      <p className="text-sm text-[var(--color-muted)]">
-        Für dieses Modell liegen dir gegenüber noch keine Handbuch-Daten vor.
-      </p>
+      <div className="space-y-3">
+        <p className="text-sm text-[var(--color-muted)]">
+          Für dieses Modell liegen dir gegenüber noch keine Handbuch-Daten vor.
+        </p>
+        <WissenVorschau art="fakten" />
+      </div>
     );
   }
 

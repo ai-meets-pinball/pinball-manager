@@ -3,6 +3,7 @@
 import { useActionState, useState } from "react";
 import { ModelSearch } from "@/components/model-search";
 import { Button } from "@/components/ui/button";
+import { UrheberHinweis } from "@/components/ui/urheber-hinweis";
 import { Field, Input, Select } from "@/components/ui/input";
 import { FormLeaveGuard } from "@/components/ui/form-leave-guard";
 import { modellName } from "@/lib/format";
@@ -694,6 +695,7 @@ export function MachineForm({
       >
         <Input name="foto" type="file" accept="image/*" />
       </Field>
+      <UrheberHinweis />
 
       {state.error ? (
         <p className="text-sm text-[var(--color-danger)]">{state.error}</p>

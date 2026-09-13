@@ -9,30 +9,40 @@ import { FormFeedback } from "@/components/ui/form-feedback";
 import { VisibilityField } from "@/components/ui/visibility-field";
 import { LinksFeld } from "@/components/links-feld";
 import { createTipp } from "@/db/actions/tipps";
+import { ordneTippZiele } from "@/lib/tipp-ziele";
 import type { FormState } from "@/db/actions/form-state";
 
 /*
   Neuen allgemeinen Tipp anlegen (typ='tipp') — ein Knopf „Tipp hinzufügen"
   öffnet den Dialog (natives <dialog>, nur gemountet solange offen, schließt
   bei Erfolg). Der Geltungsbereich ist n:m: beliebig viele Modelle und/oder
-  Generationen aus dem Katalog, das Modell der aktuellen Maschine ist
-  vorausgewählt. Die Auswahl lebt im Client-State und wird als hidden inputs
-  übertragen — die Checkboxen selbst tragen bewusst KEINEN name: die Liste ist
-  filterbar, und weggefilterte (unmountete) Checkboxen würden ihre Auswahl
-  sonst still aus dem Submit verlieren.
-*/
-type Ziel = { id: string; label: string };
+  Generationen aus dem Katalog.
 
+  Die Ziel-Auswahl ist gestuft, vom Nahen zum Fernen (Redlining 2026-09-13):
+  erst DIESES Gerät (vorausgewählt), dann weitere Editionen desselben Titels
+  (z. B. Pro ↔ Premium/LE), dann — zugeklappt — andere Modelle, und getrennt
+  davon ganze Generationen. Die Ordnung liefert lib/tipp-ziele.
+
+  Die Auswahl lebt im Client-State und wird als hidden inputs übertragen — die
+  Checkboxen selbst tragen bewusst KEINEN name: Listen sind filterbar bzw.
+  zugeklappt, und unmontierte Checkboxen würden ihre Auswahl sonst still aus
+  dem Submit verlieren.
+*/
 type Katalog = {
   machineId: string;
   modelle: {
     id: string;
+    opdbRef: string | null;
     hersteller: string | null;
     modell: string;
     baujahr: number | null;
   }[];
   generationen: { id: string; name: string }[];
   vorauswahlModelId: string;
+  /** OPDB-Referenz dieser Maschine — bestimmt „weitere Editionen desselben Titels". */
+  eigenerOpdbRef: string | null;
+  /** Generation dieses Modells (falls bekannt) — steht in der Generationen-Stufe vorn. */
+  eigeneGeneration: { id: string; name: string } | null;
 };
 
 export function TippForm(props: Katalog) {
@@ -52,11 +62,16 @@ export function TippForm(props: Katalog) {
   );
 }
 
+const CHECK = "flex cursor-pointer items-center gap-2 text-sm";
+const STUFE = "rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-2";
+
 function TippDialog({
   machineId,
   modelle,
   generationen,
   vorauswahlModelId,
+  eigenerOpdbRef,
+  eigeneGeneration,
   onClose,
 }: Katalog & { onClose: () => void }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(
@@ -71,29 +86,29 @@ function TippDialog({
   );
   const [generationIds, setGenerationIds] = useState<Set<string>>(new Set());
 
-  const modellZiele: Ziel[] = useMemo(
+  const stufen = useMemo(
     () =>
-      modelle.map((m) => ({
-        id: m.id,
-        label: `${m.modell}${m.hersteller ? ` · ${m.hersteller}` : ""}${m.baujahr ? ` (${m.baujahr})` : ""}`,
-      })),
-    [modelle],
+      ordneTippZiele(
+        modelle.map((m) => ({
+          id: m.id,
+          opdbRef: m.opdbRef,
+          label: `${m.modell}${m.hersteller ? ` · ${m.hersteller}` : ""}${m.baujahr ? ` (${m.baujahr})` : ""}`,
+        })),
+        { id: vorauswahlModelId, opdbRef: eigenerOpdbRef },
+      ),
+    [modelle, vorauswahlModelId, eigenerOpdbRef],
   );
-
-  // Zwei kombinierbare Filter: Textsuche + „nur Ausgewählte" (zeigt die
-  // aktuelle Auswahl gesammelt, ohne durch den ganzen Katalog zu scrollen).
-  const [nurAusgewaehlte, setNurAusgewaehlte] = useState(false);
   const f = filter.trim().toLowerCase();
-  const gefilterteModelle = modellZiele.filter(
-    (m) =>
-      (!nurAusgewaehlte || modelIds.has(m.id)) &&
-      (!f || m.label.toLowerCase().includes(f)),
+  const gefilterteAndere = stufen.andere.filter(
+    (m) => !f || m.label.toLowerCase().includes(f),
   );
-  const gefilterteGenerationen = generationen.filter(
-    (g) =>
-      (!nurAusgewaehlte || generationIds.has(g.id)) &&
-      (!f || g.name.toLowerCase().includes(f)),
-  );
+  // Eigene Generation zuerst, dann der Rest alphabetisch (wie geliefert).
+  const generationenSortiert = eigeneGeneration
+    ? [
+        ...generationen.filter((g) => g.id === eigeneGeneration.id),
+        ...generationen.filter((g) => g.id !== eigeneGeneration.id),
+      ]
+    : generationen;
 
   function toggle(set: Set<string>, id: string): Set<string> {
     const neu = new Set(set);
@@ -101,10 +116,13 @@ function TippDialog({
     else neu.add(id);
     return neu;
   }
+  const toggleModel = (id: string) => setModelIds((s) => toggle(s, id));
 
   const anzahlZiele = modelIds.size + generationIds.size;
   // Speichern erst, wenn alles Pflichtige da ist (Titel, Text, mind. ein Ziel).
   const unvollstaendig = !titel.trim() || !text.trim() || anzahlZiele === 0;
+  // Was außerhalb der sichtbaren Stufen gewählt ist, steht in der Zusammenfassung.
+  const gewaehlteAndere = stufen.andere.filter((m) => modelIds.has(m.id));
 
   return (
     <ActionDialog onClose={onClose} ok={Boolean(state.ok)} breit>
@@ -148,93 +166,129 @@ function TippDialog({
         {/* Bewusst KEIN <Field> (= <label>) um den Picker: Button und
             Checkboxen in einem Label führen zu Klick-Weiterleitungen
             (gleiches Problem wie beim Feedback-Screenshot-Dropfeld). */}
-        <div className="flex flex-col gap-1.5 text-sm">
-          <span className="font-medium">
-            Für welche Modelle/Generationen gilt der Tipp?
-          </span>
-          <span className="text-xs text-[var(--color-muted)]">
-            {anzahlZiele === 1
-              ? "1 Ziel ausgewählt"
-              : `${anzahlZiele} Ziele ausgewählt`}
-            {" — das Modell dieser Maschine ist vorausgewählt."}
-          </span>
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col gap-2 text-sm">
+          <span className="font-medium">Wofür gilt der Tipp?</span>
+
+          {/* Stufe 1: dieses Gerät. */}
+          <div className={STUFE}>
+            {stufen.eigenes ? (
+              <label className={CHECK}>
+                <input
+                  type="checkbox"
+                  checked={modelIds.has(stufen.eigenes.id)}
+                  onChange={() => toggleModel(stufen.eigenes!.id)}
+                />
+                <span>
+                  <span className="font-medium">Dieses Gerät</span>
+                  <span className="text-[var(--color-muted)]"> — {stufen.eigenes.label}</span>
+                </span>
+              </label>
+            ) : (
+              <p className="text-[var(--color-muted)]">
+                Das Modell dieser Maschine steht nicht im Katalog.
+              </p>
+            )}
+          </div>
+
+          {/* Stufe 2: weitere Editionen desselben Titels (Pro/Premium/LE …). */}
+          {stufen.editionen.length > 0 ? (
+            <div className={`${STUFE} space-y-1`}>
+              <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-muted)]">
+                Auch für weitere Editionen dieses Titels?
+              </p>
+              {stufen.editionen.map((m) => (
+                <label key={m.id} className={CHECK}>
+                  <input
+                    type="checkbox"
+                    checked={modelIds.has(m.id)}
+                    onChange={() => toggleModel(m.id)}
+                  />
+                  {m.label}
+                </label>
+              ))}
+            </div>
+          ) : null}
+
+          {/* Stufe 3: andere Modelle — zugeklappt, mit Filter. */}
+          <details className={STUFE}>
+            <summary className="cursor-pointer font-medium">
+              Auch für andere Modelle?
+              {gewaehlteAndere.length > 0 ? (
+                <span className="font-normal text-[var(--color-muted)]">
+                  {" "}
+                  — {gewaehlteAndere.map((m) => m.label).join(", ")}
+                </span>
+              ) : null}
+            </summary>
+            <div className="mt-2 space-y-2">
               <Input
                 value={filter}
                 onChange={(e) => setFilter(e.target.value)}
-                placeholder="Modelle/Generationen filtern …"
-                className="min-w-40 flex-1"
+                placeholder="Modell suchen …"
               />
-              {/* Filter „nur Ausgewählte": Pillen-Optik wie die Unterreiter. */}
-              <button
-                type="button"
-                onClick={() => setNurAusgewaehlte((v) => !v)}
-                aria-pressed={nurAusgewaehlte}
-                className={`flex flex-none items-center gap-1.5 whitespace-nowrap rounded-full border px-3 py-1 text-sm transition-colors ${
-                  nurAusgewaehlte
-                    ? "border-[var(--color-primary)] bg-[var(--color-primary)]/10 text-[var(--color-primary)]"
-                    : "border-[var(--color-border)] text-[var(--color-muted)] hover:text-[var(--color-fg)]"
-                }`}
-              >
-                Ausgewählte ({anzahlZiele})
-              </button>
-            </div>
-            <div className="max-h-56 space-y-2 overflow-y-auto rounded-[var(--radius)] border border-[var(--color-border)] p-2">
-              {gefilterteGenerationen.length > 0 ? (
-                <div className="space-y-1">
-                  <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-muted)]">
-                    Generationen
-                  </p>
-                  {gefilterteGenerationen.map((g) => (
-                    <label
-                      key={g.id}
-                      className="flex cursor-pointer items-center gap-2 text-sm"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={generationIds.has(g.id)}
-                        onChange={() =>
-                          setGenerationIds((s) => toggle(s, g.id))
-                        }
-                      />
-                      <span className="inline-flex items-center gap-1">
-                        <Layers size={12} /> {g.name}
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              ) : null}
-              <div className="space-y-1">
-                <p className="text-xs font-medium uppercase tracking-wide text-[var(--color-muted)]">
-                  Modelle
-                </p>
-                {gefilterteModelle.map((m) => (
-                  <label
-                    key={m.id}
-                    className="flex cursor-pointer items-center gap-2 text-sm"
-                  >
+              <div className="max-h-48 space-y-1 overflow-y-auto">
+                {gefilterteAndere.map((m) => (
+                  <label key={m.id} className={CHECK}>
                     <input
                       type="checkbox"
                       checked={modelIds.has(m.id)}
-                      onChange={() => setModelIds((s) => toggle(s, m.id))}
+                      onChange={() => toggleModel(m.id)}
                     />
                     {m.label}
                   </label>
                 ))}
-                {gefilterteModelle.length === 0 &&
-                gefilterteGenerationen.length === 0 ? (
-                  <p className="text-sm text-[var(--color-muted)]">
-                    {nurAusgewaehlte && anzahlZiele === 0
-                      ? "Noch nichts ausgewählt."
-                      : "Nichts gefunden."}
-                  </p>
+                {gefilterteAndere.length === 0 ? (
+                  <p className="text-[var(--color-muted)]">Nichts gefunden.</p>
                 ) : null}
               </div>
             </div>
-          </div>
+          </details>
+
+          {/* Stufe 4: ganze Generationen — getrennt von den Modellen. */}
+          <details className={STUFE}>
+            <summary className="cursor-pointer font-medium">
+              Für eine ganze Generation?
+              {generationIds.size > 0 ? (
+                <span className="font-normal text-[var(--color-muted)]">
+                  {" "}
+                  — {generationen.filter((g) => generationIds.has(g.id)).map((g) => g.name).join(", ")}
+                </span>
+              ) : null}
+            </summary>
+            <div className="mt-2 space-y-2">
+              <p className="text-xs text-[var(--color-muted)]">
+                Ein Generation-Tipp erscheint bei ALLEN Modellen dieser
+                Board-/Hardware-Generation — für plattformweite Themen wie
+                Boards, Netzteile oder Batterien.
+              </p>
+              <div className="max-h-48 space-y-1 overflow-y-auto">
+                {generationenSortiert.map((g) => (
+                  <label key={g.id} className={CHECK}>
+                    <input
+                      type="checkbox"
+                      checked={generationIds.has(g.id)}
+                      onChange={() => setGenerationIds((s) => toggle(s, g.id))}
+                    />
+                    <span className="inline-flex items-center gap-1">
+                      <Layers size={12} /> {g.name}
+                      {eigeneGeneration?.id === g.id ? (
+                        <span className="text-xs text-[var(--color-muted)]">
+                          (Generation dieses Geräts)
+                        </span>
+                      ) : null}
+                    </span>
+                  </label>
+                ))}
+                {generationen.length === 0 ? (
+                  <p className="text-[var(--color-muted)]">Keine Generationen im Katalog.</p>
+                ) : null}
+              </div>
+            </div>
+          </details>
+
           <span className="text-xs text-[var(--color-muted)]">
-            Ein oder mehrere Modelle und/oder ganze Generationen.
+            {anzahlZiele === 1 ? "1 Ziel ausgewählt" : `${anzahlZiele} Ziele ausgewählt`}
+            {" — mindestens eines ist nötig."}
           </span>
         </div>
 

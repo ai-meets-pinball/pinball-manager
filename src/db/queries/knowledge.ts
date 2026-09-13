@@ -299,6 +299,9 @@ export async function getTippZielKatalog() {
   const modelle = gruppiereNachFamilie(zeilen).map((f) => ({
     id: f.vertreter.id,
     ids: f.mitglieder.map((m) => m.id),
+    // Für die Stufen im Tipp-Picker (Editionen desselben Titels = gleiche
+    // OPDB-Gruppe, lib/tipp-ziele).
+    opdbRef: f.vertreter.opdbRef,
     hersteller: f.vertreter.hersteller,
     modell: f.vertreter.modell,
     baujahr: f.vertreter.baujahr,

@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   Boxes,
   ExternalLink,
+  FileText,
   LayoutGrid,
   List as ListIcon,
   Pencil,
@@ -28,7 +29,6 @@ import {
 } from "@/components/machine-overview";
 import { MachineTabs, type MachineTab } from "@/components/machine-tabs";
 import { MaintenancePlan } from "@/components/maintenance-plan";
-import { HandbuchAuswerten } from "@/components/handbuch-auswerten";
 import { GuideErstellen } from "@/components/guide-erstellen";
 import { RememberParams } from "@/components/remember-params";
 import { RepairList } from "@/components/repair-list";
@@ -36,6 +36,7 @@ import { SharedRepairs } from "@/components/shared-repairs";
 import { StatusSeit } from "@/components/status-seit";
 import { StatusSteuerung } from "@/components/status-steuerung";
 import { TerminListe } from "@/components/termin-liste";
+import { WissenVorschau } from "@/components/wissen-vorschau";
 import { DokumenteListe } from "@/components/dokumente-liste";
 import { CountPill } from "@/components/ui/count-pill";
 import { ButtonLink } from "@/components/ui/button";
@@ -193,12 +194,10 @@ export default async function MachineDetailPage({
   // Request, nicht gespeichert).
   const kiProviders = availableProviders();
   const kiCentralKey = Boolean(process.env.ANTHROPIC_API_KEY);
-  const ollamaVerfuegbar = kiProviders.includes("ollama");
   // Wer darf KI IN DER APP auslösen? Die Generierung (Handbuch, Guide,
   // Wartungspunkte) ist dem Betreiber vorbehalten — für alle anderen ist der
   // Prompt-Weg der Weg (lib/ki-zugang). Die Regel gilt serverseitig ebenso.
   const kiInDerApp = await getKiInDerApp(currentUser.id);
-  const kiHandbuch = darfKi(currentUser, "handbuch", kiInDerApp);
   const kiGuide = darfKi(currentUser, "guide", kiInDerApp);
   const kiWartung = darfKi(currentUser, "wartung", kiInDerApp);
   const kiByo = darfEigenenSchluessel(currentUser, kiInDerApp);
@@ -711,9 +710,8 @@ export default async function MachineDetailPage({
         <section className="mx-[calc(50%-50vw)] px-4 sm:px-6">
           <div className="mx-auto max-w-[1440px] space-y-3">
             {/* Reiterkopf: links Instanz → Klasse (zum Modell mit allem
-                geteilten Wissen), rechts der kompakte Knopf „Handbuch
-                auswerten" (Dialog mit App-KI ODER eigenem ChatGPT-/Claude-Abo)
-                — statt einer Vollbreiten-Klappe unter den Fakten. */}
+                geteilten Wissen), rechts der Knopf „Handbuch auswerten" — eine
+                eigene Seite (App-KI ODER Prompt-Weg), kein Dialog. */}
             <div className="flex flex-wrap items-center justify-between gap-2">
               {machine.modelId ? (
                 <Link
@@ -727,16 +725,26 @@ export default async function MachineDetailPage({
                 <span />
               )}
               {darf.bearbeiten ? (
-                <HandbuchAuswerten
-                  machineId={machine.id}
-                  providers={kiProviders}
-                  centralKey={kiCentralKey}
-                  byoErlaubt={kiByo}
-                  appErlaubt={kiHandbuch.erlaubt}
-                  appGrund={kiHandbuch.erlaubt ? undefined : kiHandbuch.grund}
-                />
+                <ButtonLink
+                  variant="secondary"
+                  size="sm"
+                  href={`/machines/${machine.id}/handbuch/auswerten`}
+                >
+                  <FileText size={14} /> Handbuch auswerten
+                </ButtonLink>
               ) : null}
             </div>
+            {/* Wie es funktioniert — gleich hier, nicht erst im Dialog. */}
+            <p className="text-sm text-[var(--color-muted)]">
+              Handbuch-Daten sind reine Faktentabellen aus dem Service-Handbuch
+              (Spulen, Schalter- und Lampen-Matrix, Sicherungen, Teile …). Sie
+              hängen am <strong>Modell</strong>, nicht an dieser Maschine: alle
+              baugleichen Editionen teilen sie, und jeder Eintrag hat einen Autor
+              und eine Sichtbarkeit (privat, Club, öffentlich). Du bekommst sie
+              über »Handbuch auswerten«: den vorbereiteten Prompt mit deinem
+              Handbuch-PDF im eigenen KI-Abo ausführen, das JSON einfügen,
+              prüfen, importieren — das PDF selbst wird nie gespeichert.
+            </p>
             {/* Handbuch-Fakten als Modell-Wissen (eigene + sichtbare fremde),
                 je Eintrag mit Autor + Sichtbarkeit. */}
             <KnowledgeFacts
@@ -778,17 +786,17 @@ export default async function MachineDetailPage({
               kannKuratieren={kannKuratieren(currentUser)}
             />
           ) : (
-            <p className="text-sm text-[var(--color-muted)]">
-              Erzeuge aus Hersteller, Modell und Baujahr einen umfassenden FAQ-
-              und Troubleshooting-Guide (Plattform-Erkennung, Fehlersuche nach
-              Subsystemen, bekannte Serienfehler, Wartung). Claude prüft dabei
-              Plattform und Serienprobleme per Websuche gegen Community-Quellen.
-              {ollamaVerfuegbar
-                ? " Das lokale Modell (Ollama) arbeitet ohne Websuche — der Guide wird dann entsprechend gekennzeichnet."
-                : ""}{" "}
-              Alternativ lässt sich ein fertiger Guide als JSON importieren —
-              beides über »Guide erstellen«.
-            </p>
+            <div className="space-y-3">
+              <p className="text-sm text-[var(--color-muted)]">
+                Erzeuge aus Hersteller, Modell und Baujahr einen umfassenden FAQ-
+                und Troubleshooting-Guide (Plattform-Erkennung, Fehlersuche nach
+                Subsystemen, bekannte Serienfehler, Wartung). Die KI prüft dabei
+                Plattform und Serienprobleme per Websuche gegen Community-Quellen.{" "}
+                Alternativ lässt sich ein fertiger Guide als JSON importieren —
+                beides über »Guide erstellen«.
+              </p>
+              <WissenVorschau art="guide" />
+            </div>
           )}
         </div>
       ) : null}
@@ -813,6 +821,8 @@ export default async function MachineDetailPage({
                         m.ids.includes(machine.modelId ?? ""),
                       )?.id ?? machine.modelId
                     }
+                    eigenerOpdbRef={machine.opdbRef}
+                    eigeneGeneration={guideGeneration}
                   />
                 ) : (
                   <span />

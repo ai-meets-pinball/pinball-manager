@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { UrheberHinweis } from "@/components/ui/urheber-hinweis";
 import { Avatar } from "@/components/ui/avatar";
 import { FormFeedback } from "@/components/ui/form-feedback";
 import { Field, Input } from "@/components/ui/input";
@@ -92,6 +93,7 @@ export function ProfileForm({
         <Field label="Profilbild (optional)" hint="Wird in der Kopfzeile gezeigt.">
           <Input name="avatar" type="file" accept="image/*" />
         </Field>
+        <UrheberHinweis />
         <FormFeedback state={state} />
         <div>
           <Button type="submit" disabled={pending}>

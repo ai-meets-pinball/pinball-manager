@@ -6,6 +6,7 @@ import { ChevronDown, FileText, Loader2 } from "lucide-react";
 import { AiProviderField } from "@/components/ui/ai-provider-field";
 import { Button } from "@/components/ui/button";
 import { VisibilityField } from "@/components/ui/visibility-field";
+import { UrheberHinweis } from "@/components/ui/urheber-hinweis";
 import type { AiProvider } from "@/lib/ai/provider";
 
 /*
@@ -181,6 +182,7 @@ export function ManualUpload({
           Schrauben, Gummi, Elektronik).
         </span>
       </label>
+      <UrheberHinweis />
 
       {/* Fortgeschrittene Optionen eingeklappt — Standard-Pfad ist nur Datei +
           Bestätigung + Auswerten. Die Felder bleiben im geschlossenen <details>

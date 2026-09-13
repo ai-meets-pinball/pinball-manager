@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { UrheberHinweis } from "@/components/ui/urheber-hinweis";
 import { Camera, X } from "lucide-react";
 
 /*
@@ -112,6 +113,7 @@ export function BildFeld({
       <p className="text-xs text-[var(--color-muted)]">
         {bilder.length}/{max} Bilder{voll ? " (Maximum erreicht)" : ""}
       </p>
+      <UrheberHinweis />
     </div>
   );
 }

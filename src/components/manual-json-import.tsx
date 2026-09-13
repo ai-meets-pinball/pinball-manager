@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Field, Textarea } from "@/components/ui/input";
 import { PromptWeg } from "@/components/ui/prompt-weg";
 import { TippsVorschau } from "@/components/ui/tipps-vorschau";
+import { UrheberHinweis } from "@/components/ui/urheber-hinweis";
 import { VisibilityField } from "@/components/ui/visibility-field";
 import { importManualFacts } from "@/db/actions/machine-data";
 import {
@@ -121,6 +122,7 @@ export function ManualJsonImport({ machineId }: { machineId: string }) {
         <input type="hidden" name="machineId" value={machineId} />
         <input type="hidden" name="json" value={json} />
         <VisibilityField />
+        <UrheberHinweis />
         {state.error ? (
           <p className="text-sm text-[var(--color-danger)]">{state.error}</p>
         ) : null}

@@ -8,6 +8,7 @@ import { Field, Textarea } from "@/components/ui/input";
 import { FormFeedback } from "@/components/ui/form-feedback";
 import { PromptWeg } from "@/components/ui/prompt-weg";
 import { TippsVorschau } from "@/components/ui/tipps-vorschau";
+import { UrheberHinweis } from "@/components/ui/urheber-hinweis";
 import { VisibilityField } from "@/components/ui/visibility-field";
 import { GueltigkeitFeld } from "@/components/troubleshooting-generate";
 import { importTroubleshootingGuide } from "@/db/actions/machine-data";
@@ -126,6 +127,7 @@ export function TroubleshootingJsonImport({
 
         <GueltigkeitFeld generation={generation} />
         <VisibilityField objekt="diesen Guide" />
+        <UrheberHinweis />
         <FormFeedback state={state} />
 
         <div className="flex flex-wrap justify-end gap-2">
