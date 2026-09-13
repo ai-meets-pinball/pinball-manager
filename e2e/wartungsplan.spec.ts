@@ -34,7 +34,7 @@ test.describe("Standard-Wartungsplan", () => {
     await page.getByRole("button", { name: "Neuer Plan" }).click();
     const neu = page.locator("dialog[open]");
     await neu.getByLabel("Name").fill("E2E Standard");
-    await neu.getByLabel(/aus Standard-Vorlage/).check();
+    await neu.getByLabel(/aus Standardvorlage/).check();
     await neu.getByRole("button", { name: /Anlegen/ }).click();
     await expect(page.locator("dialog[open]")).toHaveCount(0);
     await expect(page.getByText(/20 Punkte/)).toBeVisible();

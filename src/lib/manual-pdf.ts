@@ -25,12 +25,14 @@ const RAND = 56;
 const TEXTBREITE = A4.breite - 2 * RAND;
 const FUSSZONE = RAND * 0.6; // unterhalb davon nur die Fußzeile
 
+// Leicht kleiner als die Web-Anzeige (Frank, 2026-09-13): 10 pt Fließtext
+// liest sich auf A4 gut und spart je Kapitel eine Seite.
 const GROESSE = {
   titel: 28,
-  untertitel: 14,
-  kapitel: 16,
-  einleitung: 11,
-  text: 11,
+  untertitel: 13,
+  kapitel: 15,
+  einleitung: 10,
+  text: 10,
   fusszeile: 9,
 };
 const ZEILE = 1.4; // Zeilenabstand als Faktor der Schriftgröße
@@ -38,8 +40,44 @@ const ZEILE = 1.4; // Zeilenabstand als Faktor der Schriftgröße
 const FARBE = {
   text: rgb(0.15, 0.15, 0.17),
   gedaempft: rgb(0.45, 0.45, 0.5),
+  blass: rgb(0.78, 0.77, 0.75), // wie --color-faint
   akzent: rgb(0.45, 0.11, 0.18), // Burgund, wie --color-primary
 };
+
+/** Pfad eines abgerundeten Rechtecks (SVG-Koordinaten, y nach unten). */
+function rundRect(x: number, y: number, w: number, h: number, r: number): string {
+  return [
+    `M ${x + r},${y}`,
+    `H ${x + w - r}`,
+    `A ${r},${r} 0 0 1 ${x + w},${y + r}`,
+    `V ${y + h - r}`,
+    `A ${r},${r} 0 0 1 ${x + w - r},${y + h}`,
+    `H ${x + r}`,
+    `A ${r},${r} 0 0 1 ${x},${y + h - r}`,
+    `V ${y + r}`,
+    `A ${r},${r} 0 0 1 ${x + r},${y}`,
+    "Z",
+  ].join(" ");
+}
+
+/**
+ * Die Wort-Bild-Marke aus components/logo.tsx, als Vektor nachgezeichnet
+ * (dieselben Formen im 76×90-Raster: Gehäuse-Umriss, Backglass-Balken, blasse
+ * Linie, Bordeaux-Akzent) — kein Bild-Asset nötig, scharf in jeder Größe.
+ * `x`/`yOben` = linke obere Ecke in PDF-Koordinaten, `hoehe` in pt.
+ */
+function zeichneLogo(seite: PDFPage, x: number, yOben: number, hoehe: number) {
+  const k = hoehe / 90;
+  const basis = { x, y: yOben, scale: k };
+  seite.drawSvgPath(rundRect(3, 3, 70, 84, 8), {
+    ...basis,
+    borderColor: FARBE.text,
+    borderWidth: 4 * k,
+  });
+  seite.drawSvgPath(rundRect(15, 19, 46, 8, 2), { ...basis, color: FARBE.text });
+  seite.drawSvgPath(rundRect(15, 60, 46, 4, 1), { ...basis, color: FARBE.blass });
+  seite.drawSvgPath(rundRect(15, 71, 26, 4, 1), { ...basis, color: FARBE.akzent });
+}
 
 /** Nicht-WinAnsi-Glyphen auf ASCII-Äquivalente abbilden, Rest verwerfen. */
 function bereinige(text: string): string {
@@ -159,7 +197,20 @@ export async function erzeugeHandbuchPdf(optionen: {
   const fett = await doc.embedFont(StandardFonts.HelveticaBold);
   const c = new Cursor(doc, normal, fett);
 
-  // ── Titelseite ──
+  // ── Titelseite: Wort-Bild-Marke oben links wie in der Kopfzeile ──
+  const logoHoehe = 30;
+  zeichneLogo(c.seite, RAND, A4.hoehe - RAND, logoHoehe);
+  const markeX = RAND + logoHoehe * (76 / 90) + 8;
+  const markeY = A4.hoehe - RAND - logoHoehe / 2 - 6;
+  c.seite.drawText("pinball", { x: markeX, y: markeY, size: 17, font: fett, color: FARBE.text });
+  c.seite.drawText("-manager", {
+    x: markeX + fett.widthOfTextAtSize("pinball", 17),
+    y: markeY,
+    size: 17,
+    font: fett,
+    color: FARBE.akzent,
+  });
+
   c.y -= 180;
   c.absatz("Pinball Manager", { fett: true, groesse: GROESSE.titel, farbe: FARBE.akzent });
   c.y -= 8;
@@ -181,9 +232,10 @@ export async function erzeugeHandbuchPdf(optionen: {
   // ── Kapitel (zuerst — das Inhaltsverzeichnis braucht die Zielpositionen) ──
   const kapitelStarts: { titel: string; seite: PDFPage; y: number }[] = [];
   for (const [i, k] of kapitel.entries()) {
-    // Überschrift + Einleitung zusammenhalten (kein Umbruch direkt danach).
-    c.brauchePlatz(GROESSE.kapitel * ZEILE * 4);
-    c.y -= 14;
+    // Jedes Kapitel beginnt auf einer neuen Seite (Frank, 2026-09-13) — das
+    // erste damit auf der Seite nach dem Titel (das Inhaltsverzeichnis rückt
+    // später als Seite 2 dazwischen).
+    c.neueSeite();
     kapitelStarts.push({ titel: k.titel, seite: c.seite, y: c.y });
     c.absatz(`${i + 1} · ${k.titel}`, {
       fett: true,

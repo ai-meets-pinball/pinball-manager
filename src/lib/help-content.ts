@@ -206,7 +206,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Standard-Wartungspläne",
-        text: "Unter Nutzer-Icon → »Wartungspläne« legst du BELIEBIG VIELE benannte Pläne an — eigene (privat) und je Club, den du managst (Owner/Admin bearbeiten, Mitglieder nutzen sie). »Neuer Plan« fragt nach einem Namen und optional »aus Standard-Vorlage« (spielt eine bewährte 20-Punkte-Liste ein); danach passt du die Punkte über Stift und Papierkorb an jeder Zeile bzw. »Punkt hinzufügen« an, benennst den Plan um (Stift am Namen) oder löschst ihn (verknüpfte Maschinen werden dabei entkoppelt — ihre Punkte werden eigene Kopien, die Historie bleibt). Die Pläne liegen hinter Reitern.",
+        text: "Unter Nutzer-Icon → »Wartungspläne« legst du BELIEBIG VIELE benannte Pläne an — eigene (privat) und je Club, den du managst (Owner/Admin bearbeiten, Mitglieder nutzen sie). »Neuer Plan« fragt nach einem Namen und optional »aus Standardvorlage«. Die STANDARDVORLAGE ist bewusst umfassend — rund 20 Punkte aus Community-Erfahrung — und als Inspiration gedacht, nicht als Pflichtprogramm: Du übernimmst sie als Kopie und kürzt oder ergänzt nach Geschmack; aus 20 Punkten werden dann je nach Gerät und Anspruch vielleicht 5, vielleicht alle 20. Danach passt du die Punkte über Stift und Papierkorb an jeder Zeile bzw. »Punkt hinzufügen« an, benennst den Plan um (Stift am Namen) oder löschst ihn (verknüpfte Maschinen werden dabei entkoppelt — ihre Punkte werden eigene Kopien, die Historie bleibt). Die Pläne liegen hinter Reitern.",
       },
       {
         titel: "Verknüpfen oder kopieren?",
@@ -866,7 +866,7 @@ export const EINSTIEG: (HilfeSektion & { zielgruppe?: Zielgruppe })[] = [
       },
       {
         titel: "Wartung ohne Zettel",
-        text: "Im Wartungs-Reiter »Neuer Wartungspunkt« oder gleich einen Standard-Wartungsplan anlegen (Nutzer-Menü → »Wartungspläne«, »aus Standard-Vorlage« bringt eine bewährte 20-Punkte-Liste) und mit der Maschine verknüpfen. Die Übersicht sagt dir, was fällig ist.",
+        text: "Im Wartungs-Reiter »Neuer Wartungspunkt« oder gleich einen eigenen Wartungsplan anlegen (Nutzer-Menü → »Wartungspläne« → »Neuer Plan«, Häkchen »aus Standardvorlage«) und mit der Maschine verknüpfen. Die Standardvorlage ist umfassend — rund 20 Punkte — und als Inspiration gedacht: kopieren, dann auf das kürzen, was zu dir und deinem Gerät passt; aus 20 werden je nach Geschmack 5 bis 20. Die Übersicht sagt dir, was fällig ist.",
       },
       {
         titel: "Alles zum Gerät an einem Ort",
@@ -924,7 +924,7 @@ export const EINSTIEG: (HilfeSektion & { zielgruppe?: Zielgruppe })[] = [
       },
       {
         titel: "Wartung als Standard",
-        text: "Unter Nutzer-Menü → »Wartungspläne« legst du je Club Standard-Pläne an (gern aus der Vorlage) und verknüpfst Maschinen damit — Änderungen am Standard wirken dann überall. Einzelne Geräte können zusätzlich eigene Punkte haben.",
+        text: "Unter Nutzer-Menü → »Wartungspläne« legst du je Club eigene Pläne an und verknüpfst Maschinen damit — Änderungen am Plan wirken dann überall. Guter Start ist die Standardvorlage (Häkchen bei »Neuer Plan«): rund 20 Punkte, bewusst umfassend und als Inspiration gedacht — der Club kürzt sie auf seinen Rhythmus, aus 20 werden vielleicht 8. Einzelne Geräte können zusätzlich eigene Punkte haben.",
       },
       {
         titel: "Freigaben und Voreinstellungen",

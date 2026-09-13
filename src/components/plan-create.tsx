@@ -11,7 +11,8 @@ import type { FormState } from "@/db/actions/form-state";
 
 /*
   Neuen benannten Wartungsplan anlegen — privat oder für einen Club, den ich
-  manage. „aus Standard-Vorlage" befüllt den Plan mit dem Code-Template.
+  manage. „aus Standardvorlage" befüllt den Plan mit dem Code-Template
+  (lib/maintenance-catalog.ts) — bewusst umfassend; der Nutzer kürzt.
   Button im Seitenkopf, Formular im Dialog (statt der früheren Klappe vor dem
   Inhalt); Erfolg schließt, der neue Plan erscheint als Reiter.
 */
@@ -81,7 +82,7 @@ function PlanDialog({
             name="ausVorlage"
             className="accent-[var(--color-accent)]"
           />
-          aus Standard-Vorlage (20 bewährte Punkte)
+          aus Standardvorlage (rund 20 Punkte — umfassend gedacht, als Inspiration; danach frei kürzen und anpassen)
         </label>
         <FormFeedback state={state} />
         <div className="flex justify-end gap-2">

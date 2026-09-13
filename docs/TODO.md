@@ -27,6 +27,17 @@ id und Signale bleiben erhalten).
   `showModal()` „already open as a non-modal dialog" (Knoten wird umgehängt,
   `open` bleibt stehen); behoben per `removeAttribute("open")`, bewusst NICHT
   per `close()` (feuert das close-Event → Dialog unmontiert sich sofort).
+- **PDF-Handbuch** (2026-09-13): jedes Kapitel beginnt auf einer neuen Seite,
+  Fließtext 10 pt statt 11, und die Wort-Bild-Marke steht oben auf der
+  Titelseite — als Vektor nachgezeichnet (`zeichneLogo` in
+  `lib/manual-pdf.ts`, dieselben Formen wie `components/logo.tsx`), also ohne
+  Bild-Asset und scharf in jeder Größe.
+- **Standardvorlage** (2026-09-13): der Wartungs-Vorlage heißt jetzt überall
+  „Standardvorlage" (Dialog, Hilfe, Einstieg) — mit dem Hinweis, dass sie
+  umfassend gedacht ist (rund 20 Punkte) und als Inspiration gilt: kopieren
+  und nach Geschmack kürzen, aus 20 werden 5 bis 20. Kein plattformweiter
+  Plan (Pläne gehören Nutzer oder Club) — dazu gibt es eine Skizze im Chat,
+  nicht umgesetzt.
 - **Hilfe auf Stand + Einstiegs-Leitfaden** (2026-09-13): die Anleitung
   (`lib/help-content.ts`) beschreibt wieder die heutige App — Zugang auf
   Einladung, Sortierung im Tabellenkopf, »Verwalten«, Löschfolgen, kompakte

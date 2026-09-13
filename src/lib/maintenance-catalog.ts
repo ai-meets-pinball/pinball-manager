@@ -6,7 +6,8 @@ import type {
 /*
   Standard-Wartungsplan als Code-Daten (wie DEFAULT_TEMPLATES in
   lib/email-templates.ts) — bewusst KEINE Katalog-Tabelle: die Liste ist eine
-  feste, vom Code gelieferte Vorlage, die per „Standard übernehmen" in die
+  feste, vom Code gelieferte STANDARDVORLAGE (so heißt sie in UI und Hilfe),
+  bewusst umfassend und als Inspiration gedacht, die per „aus Standardvorlage" in die
   per-Gerät-Wartungspunkte (maintenance_tasks) kopiert wird. Danach ist jeder
   Punkt frei editierbar.
 
