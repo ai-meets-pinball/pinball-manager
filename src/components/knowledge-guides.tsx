@@ -31,6 +31,7 @@ type Eintrag = {
   createdAt: Date;
   autorId: string;
   autorName: string | null;
+  anonym: boolean;
   hilfreich: number;
   falsch: number;
   meinSignal: "hilfreich" | "falsch" | null;
@@ -84,7 +85,11 @@ export function KnowledgeGuides({
   // Reiter pro teilendem Autor) — statt alle Blöcke untereinander zu stapeln.
   const tabs = eintraege.flatMap((e) => {
     const eigen = e.autorId === currentUserId;
-    const label = eigen ? "Dein Guide" : (e.autorName ?? "Unbekannt");
+    const label = eigen
+      ? "Dein Guide"
+      : e.anonym
+        ? "Anonym"
+        : (e.autorName ?? "Unbekannt");
     if (!eigen && e.ausgeblendet && !e.verborgenAm) {
       return {
         id: e.id,
@@ -116,7 +121,7 @@ export function KnowledgeGuides({
                 "Dein Guide"
               ) : (
                 <>
-                  Geteilt von {e.autorName ?? "unbekannt"}
+                  {e.anonym ? "Anonym geteilt" : `Geteilt von ${e.autorName ?? "unbekannt"}`}
                   {" · "}
                   <span className="inline-flex items-center gap-1">
                     <S.Icon size={13} /> {S.label}

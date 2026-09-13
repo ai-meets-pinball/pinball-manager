@@ -1,6 +1,5 @@
 import {
   and,
-  count,
   desc,
   eq,
   inArray,
@@ -13,6 +12,8 @@ import { db } from "@/db";
 import { getFamilie } from "@/db/queries/familie";
 import { planeWissenUmhaengen } from "@/db/queries/knowledge";
 import type { Loeschfolgen } from "@/lib/loeschfolgen";
+import { befoerderbar, type FreigabeKandidat } from "@/lib/reparatur-tipp";
+import type { Tx } from "@/db/machine-status-core";
 import type { ShareScope } from "@/lib/sharing";
 import {
   clubSettings,
@@ -219,20 +220,87 @@ export async function getShareDefaults(machine: {
   }
 }
 
+/*
+  Die Reparatur-Freigaben EINER Maschine als Kandidaten für die Beförderung
+  zum Tipp (lib/reparatur-tipp) — samt den Feldern der Reparatur und den
+  Club-Zielen. Löschfrage und Beförderung lesen dieselbe Liste.
+*/
+export async function getFreigabeKandidaten(
+  machineId: string,
+  q: Tx | typeof db = db,
+): Promise<
+  { shareId: string; modelId: string; ownerId: string; kandidat: FreigabeKandidat }[]
+> {
+  const zeilen = await q
+    .select({
+      shareId: shares.id,
+      modelId: shares.modelId,
+      ownerId: shares.ownerId,
+      scope: shares.scope,
+      anonym: shares.anonym,
+      zeigeKosten: shares.zeigeKosten,
+      datum: repairs.datum,
+      diagnose: repairs.diagnose,
+      massnahme: repairs.massnahme,
+      teile: repairs.teile,
+      kosten: repairs.kosten,
+      zeit: repairs.zeit,
+      faultBeschreibung: faults.beschreibung,
+      faultKategorie: faults.kategorie,
+    })
+    .from(shares)
+    .innerJoin(repairs, eq(repairs.id, shares.artefaktId))
+    .leftJoin(faults, eq(faults.id, repairs.faultId))
+    .where(
+      and(eq(shares.artefaktTyp, "repair"), eq(repairs.machineId, machineId)),
+    );
+  const ziele =
+    zeilen.length === 0
+      ? []
+      : await q
+          .select({ shareId: shareTargets.shareId, clubId: shareTargets.clubId })
+          .from(shareTargets)
+          .where(
+            inArray(
+              shareTargets.shareId,
+              zeilen.map((z) => z.shareId),
+            ),
+          );
+  return zeilen.map((z) => ({
+    shareId: z.shareId,
+    modelId: z.modelId,
+    ownerId: z.ownerId,
+    kandidat: {
+      scope: z.scope as ShareScope,
+      clubIds: ziele
+        .filter((t) => t.shareId === z.shareId && t.clubId)
+        .map((t) => t.clubId as string),
+      anonym: z.anonym,
+      zeigeKosten: z.zeigeKosten,
+      reparatur: {
+        datum: z.datum,
+        diagnose: z.diagnose,
+        massnahme: z.massnahme,
+        teile: z.teile,
+        kosten: z.kosten,
+        zeit: z.zeit,
+        faultBeschreibung: z.faultBeschreibung,
+        faultKategorie: z.faultKategorie,
+      },
+    },
+  }));
+}
+
 /** Was andere verlieren, wenn diese Maschine gelöscht wird — für die Löschfrage
     (lib/loeschfolgen.loeschfrage). Privates Wissen an der Maschine zählt nicht
     als Verlust für andere; umgehängt wird es trotzdem (actions/machines.ts). */
 export async function getLoeschfolgen(machineId: string): Promise<Loeschfolgen> {
-  const [{ n }] = await db
-    .select({ n: count() })
-    .from(shares)
-    .innerJoin(repairs, eq(repairs.id, shares.artefaktId))
-    .where(
-      and(eq(shares.artefaktTyp, "repair"), eq(repairs.machineId, machineId)),
-    );
+  const kandidaten = await getFreigabeKandidaten(machineId);
+  const befoerdert = kandidaten.filter((k) => befoerderbar(k.kandidat) !== null).length;
   const plan = await planeWissenUmhaengen(machineId);
   return {
-    freigegebeneReparaturen: n,
+    reparaturenBefoerdert: befoerdert,
+    freigegebeneReparaturen: kandidaten.length - befoerdert,
     wissenUebertragen: plan.umhaengen.length,
     wissenVerloren: plan.bleiben.filter((e) => e.visibility !== "privat").length,
   };

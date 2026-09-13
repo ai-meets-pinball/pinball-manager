@@ -63,6 +63,8 @@ Begründung:
 - Das Geteilte ist bewusst formuliert statt versehentlich preisgegeben.
 - Mehrere Reparaturen können auf denselben Wissenseintrag zeigen. Genau das ist das Signal „bekanntes Serienproblem".
 
+*Stand 2026-09-13 — gebaut in einer Variante:* Reparaturen werden zu Lebzeiten der Maschine über `shares` geteilt (mit Projektion und Anonymität, siehe unten), nicht kopiert. Die Brücke schlägt erst das **Löschen der Maschine**: jede Freigabe, die sich verlustfrei abbilden lässt (platform → öffentlich, genau ein Club → Club), wird zu einem **Tipp** (`knowledge`, `typ='tipp'`) am Modell — Symptom, Diagnose, Maßnahme, Teile, Kosten nur wenn freigegeben. Anonyme Freigaben bleiben anonym (`knowledge.anonym`). Es gibt keine Spalte `repairs.derived_knowledge_id`: die Reparatur existiert danach nicht mehr, ein Rückverweis hätte kein Ziel. Regel: `src/lib/reparatur-tipp.ts`.
+
 ---
 
 ## 5. Overrides und eigene Versionen

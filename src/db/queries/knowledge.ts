@@ -88,6 +88,8 @@ function knowledgeAuswahl(userId: string) {
     createdAt: knowledge.createdAt,
     autorId: knowledge.createdBy,
     autorName: user.name,
+    // Anonym geteilt: die Anzeige nennt den Autor nicht (Kuratierung schon).
+    anonym: knowledge.anonym,
     hilfreich: sql<number>`(select count(*) from ${knowledgeSignals} where ${knowledgeSignals.knowledgeId} = ${knowledge.id} and ${knowledgeSignals.wert} = 'hilfreich')::int`,
     falsch: sql<number>`(select count(*) from ${knowledgeSignals} where ${knowledgeSignals.knowledgeId} = ${knowledge.id} and ${knowledgeSignals.wert} = 'falsch')::int`,
     meinSignal: sql<

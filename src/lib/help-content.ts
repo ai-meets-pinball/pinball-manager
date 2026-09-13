@@ -337,7 +337,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Mehrere auf einmal löschen",
-        text: "Auf der Maschinenliste »Mehrere löschen« → Karten antippen (oder »Alle auswählen«) und »Löschen«; eine Rückfrage bestätigt. Achtung: Das löscht die Maschinen samt allen Fehlern, Reparaturen und Wartungen endgültig. Löschen darf nur, wer es auch einzeln dürfte (Eigentümer, Club-Owner/-Admin); andere werden übersprungen.",
+        text: "Auf der Maschinenliste »Mehrere löschen« → Karten antippen (oder »Alle auswählen«) und »Löschen«; eine Rückfrage bestätigt. Achtung: Das löscht die Maschinen samt allen Fehlern, Reparaturen und Wartungen endgültig. Was du daraus für andere freigegeben hattest, bleibt als Tipp am Modell erhalten (öffentlich bzw. für den einen Club; Freigaben an einzelne Personen oder mehrere Clubs erlöschen), und Handbuch-Daten, die nur an der Maschine hingen, wandern ans Modell — beim Löschen einer einzelnen Maschine zählt die Rückfrage das genau auf. Löschen darf nur, wer es auch einzeln dürfte (Eigentümer, Club-Owner/-Admin); andere werden übersprungen.",
       },
       {
         titel: "Sichtbarkeit",

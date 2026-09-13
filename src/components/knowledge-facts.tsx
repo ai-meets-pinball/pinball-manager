@@ -32,6 +32,7 @@ type Eintrag = {
   createdAt: Date;
   autorId: string;
   autorName: string | null;
+  anonym: boolean;
   hilfreich: number;
   falsch: number;
   meinSignal: "hilfreich" | "falsch" | null;
@@ -75,7 +76,11 @@ export function KnowledgeFacts({
   // Reiter pro teilendem Autor) — statt alle Blöcke untereinander zu stapeln.
   const tabs = eintraege.map((e) => {
     const eigen = e.autorId === currentUserId;
-    const label = eigen ? "Deine Handbuch-Daten" : (e.autorName ?? "Unbekannt");
+    const label = eigen
+      ? "Deine Handbuch-Daten"
+      : e.anonym
+        ? "Anonym"
+        : (e.autorName ?? "Unbekannt");
     // Für dich ausgeblendet (nur fremde Einträge): nur der Wiederherstellen-Stub.
     if (!eigen && e.ausgeblendet && !e.verborgenAm) {
       return {
@@ -110,7 +115,7 @@ export function KnowledgeFacts({
                 "Deine Handbuch-Daten"
               ) : (
                 <>
-                  Geteilt von {e.autorName ?? "unbekannt"}
+                  {e.anonym ? "Anonym geteilt" : `Geteilt von ${e.autorName ?? "unbekannt"}`}
                   {" · "}
                   <span className="inline-flex items-center gap-1">
                     <S.Icon size={13} /> {S.label}

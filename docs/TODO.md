@@ -27,6 +27,18 @@ id und Signale bleiben erhalten).
   `showModal()` „already open as a non-modal dialog" (Knoten wird umgehängt,
   `open` bleibt stehen); behoben per `removeAttribute("open")`, bewusst NICHT
   per `close()` (feuert das close-Event → Dialog unmontiert sich sofort).
+- **Geteilte Reparaturen überleben das Löschen der Maschine als Tipp**
+  (2026-09-13, Stufe 3 — die „Brücke" aus dem Datenmodell-Redesign, ohne
+  Rückverweis-Spalte): `deleteMachine`/`deleteMachines` befördern jede
+  Reparatur-Freigabe zu einem Tipp am Modell (`lib/reparatur-tipp.ts`:
+  `befoerderbar`, `tippAusReparatur`), BEVOR Freigaben und Maschine fallen.
+  Reichweite verlustfrei oder gar nicht: platform → öffentlich, genau ein Club
+  → Club; mehrere Clubs oder einzelne Personen erlöschen — die Löschfrage
+  zählt beides getrennt. Anonyme Freigaben bleiben anonym: neue Spalte
+  `knowledge.anonym` (Migration 0058), die drei Wissens-Komponenten zeigen
+  dann „Anonym geteilt"; /kuratierung nennt den Autor weiter. Nur beim
+  Löschen der MASCHINE — `deleteRepair` löscht. Kein Formularfeld für
+  `anonym` (bewusst).
 - **Maschine löschen: ehrlich, ohne Waisen, mit Rettung** (2026-09-13, Franks
   Frage „geht damit alles Öffentliche verloren?"): Handbuch/Guide/Tipps hängen
   am Modell und überleben — Reparaturen nicht, und ihre FREIGABEN blieben als
@@ -187,10 +199,9 @@ Aufteilung von `queries.ts` nach Themen.
 
 ## Phase-3-Rest (bewusst zurückgestellt)
 
-- **`derived_knowledge_id`** — eine Reparatur zu teilbarem Wissen „befördern".
-  Reparatur-Sharing bleibt laut Entscheidung in `shares`/`share_targets` (mit
-  Kosten-Projektion + Anonymität), es wird **nicht** nach `knowledge` migriert.
-  *Bester Anwendungsfall seit 2026-09-13:* beim Löschen einer Maschine sterben
-  geteilte Reparaturen mit (die Löschfrage sagt es jetzt) — „befördern" wäre
-  der Weg, sie als Modell-Wissen zu behalten. Eigene Entscheidung, weil sie
-  den Vorrang von `shares` anfasst.
+- **`derived_knowledge_id`** — *in anderer Form umgesetzt (2026-09-13):* eine
+  geteilte Reparatur wird beim Löschen der Maschine zum Tipp befördert
+  (`lib/reparatur-tipp.ts`). Ohne Rückverweis-Spalte, weil die Reparatur
+  danach nicht mehr existiert. Reparatur-Sharing bleibt in
+  `shares`/`share_targets` (Kosten-Projektion + Anonymität); ein manuelles
+  „Befördern" zu Lebzeiten der Maschine gibt es nicht — Bedarf abwarten.

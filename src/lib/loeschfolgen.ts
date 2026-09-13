@@ -12,7 +12,11 @@
 */
 
 export type Loeschfolgen = {
-  /** Reparaturen dieser Maschine mit einer Freigabe (platform/club/users). */
+  /** Geteilte Reparaturen, die als Tipp am Modell weiterleben
+      (lib/reparatur-tipp.befoerderbar: platform oder genau ein Club). */
+  reparaturenBefoerdert: number;
+  /** Geteilte Reparaturen, deren Freigabe ERLISCHT — an einzelne Personen
+      oder an mehrere Clubs; das lässt sich nicht verlustfrei als Tipp abbilden. */
   freigegebeneReparaturen: number;
   /** Wissen an `machine_id`, das ans Modell umgehängt wird und bleibt. */
   wissenUebertragen: number;
@@ -27,12 +31,20 @@ function zahl(n: number, singular: string, plural: string): string {
 /** Die Löschfrage: der bekannte Grundsatz, dahinter nur die Folgen, die > 0 sind. */
 export function loeschfrage(f: Loeschfolgen): string {
   const saetze = ["Diese Maschine samt Fehlern, Reparaturen und Wartungspunkten löschen?"];
+  if (f.reparaturenBefoerdert > 0) {
+    const n = f.reparaturenBefoerdert;
+    saetze.push(
+      n === 1
+        ? "1 geteilte Reparatur bleibt als Tipp am Modell erhalten."
+        : `${n} geteilte Reparaturen bleiben als Tipps am Modell erhalten.`,
+    );
+  }
   if (f.freigegebeneReparaturen > 0) {
     const n = f.freigegebeneReparaturen;
     saetze.push(
       n === 1
-        ? "1 Reparatur ist für andere freigegeben — die Freigabe erlischt."
-        : `${n} Reparaturen sind für andere freigegeben — die Freigaben erlöschen.`,
+        ? "1 Reparatur ist für einzelne Personen oder mehrere Clubs freigegeben — diese Freigabe erlischt."
+        : `${n} Reparaturen sind für einzelne Personen oder mehrere Clubs freigegeben — diese Freigaben erlöschen.`,
     );
   }
   if (f.wissenUebertragen > 0) {

@@ -1,0 +1,1 @@
+ALTER TABLE "knowledge" ADD COLUMN "anonym" boolean DEFAULT false NOT NULL;

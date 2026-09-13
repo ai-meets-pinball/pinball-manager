@@ -6,6 +6,7 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import {
   knowledge,
+  knowledgeTargets,
   machineAusstattung,
   machineBesitzer,
   machineBesitzerZuordnung,
@@ -17,6 +18,8 @@ import {
 } from "@/db/schema";
 import type { Tx } from "@/db/machine-status-core";
 import { planeWissenUmhaengen } from "@/db/queries/knowledge";
+import { getFreigabeKandidaten } from "@/db/queries/shares";
+import { befoerderbar, tippAusReparatur } from "@/lib/reparatur-tipp";
 import { istBaugleich, parseOpdbRef } from "@/lib/opdb-ref";
 import { darfMaschine } from "@/lib/rechte";
 import {
@@ -133,6 +136,37 @@ async function widerrufeFreigaben(machineId: string, q: Tx | typeof db = db) {
         inArray(shares.artefaktId, eigeneReparaturen),
       ),
     );
+}
+
+/*
+  Geteilte Reparaturen dieser Maschine zum Tipp am Modell befördern, BEVOR
+  Freigaben und Maschine gelöscht werden — die Brücke aus dem Datenmodell-
+  Redesign, hier für den Fall „Gerät geht, Wissen bleibt". Was sich nicht
+  verlustfrei abbilden lässt (mehrere Clubs, einzelne Personen), erlischt;
+  lib/reparatur-tipp entscheidet, die Löschfrage hat es angekündigt. Der Tipp
+  gehört dem Freigebenden; war die Freigabe anonym, ist es der Tipp auch.
+*/
+async function befoerdereFreigaben(q: Tx | typeof db, machineId: string) {
+  for (const k of await getFreigabeKandidaten(machineId, q)) {
+    const ziel = befoerderbar(k.kandidat);
+    if (!ziel) continue;
+    const { titel, inhalt } = tippAusReparatur(k.kandidat);
+    const [tipp] = await q
+      .insert(knowledge)
+      .values({
+        typ: "tipp",
+        titel,
+        inhalt,
+        sourceType: "eigen",
+        visibility: ziel.visibility,
+        clubId: ziel.clubId,
+        anonym: k.kandidat.anonym,
+        createdBy: k.ownerId,
+      })
+      .returning({ id: knowledge.id });
+    // Ziel am Modell der Freigabe; gelesen wird familienweit (getModelTipps).
+    await q.insert(knowledgeTargets).values({ knowledgeId: tipp.id, modelId: k.modelId });
+  }
 }
 
 /*
@@ -616,11 +650,13 @@ export async function deleteMachine(formData: FormData): Promise<void> {
     throw new Error("Nur Eigentümer oder Club-Owner/-Admin dürfen löschen");
   }
 
-  // Erst retten und aufräumen, dann löschen — in EINER Transaktion, damit
+  // Erst retten (Wissen, geteilte Reparaturen) und aufräumen, dann löschen —
+  // in EINER Transaktion, damit
   // kein halber Zustand bleibt. Die Löschfrage (lib/loeschfolgen) hat vorher
   // genau das angekündigt.
   await db.transaction(async (tx) => {
     await haengeWissenUm(tx, id);
+    await befoerdereFreigaben(tx, id);
     await widerrufeFreigaben(id, tx);
     await tx.delete(machines).where(eq(machines.id, id));
   });
@@ -655,10 +691,12 @@ export async function deleteMachines(
   }
 
   if (erlaubt.length > 0) {
-    // Wie deleteMachine, je Maschine: Wissen ans Modell, Freigaben weg, dann löschen.
+    // Wie deleteMachine, je Maschine: Wissen ans Modell, Reparaturen zum Tipp,
+    // Freigaben weg, dann löschen.
     await db.transaction(async (tx) => {
       for (const machineId of erlaubt) {
         await haengeWissenUm(tx, machineId);
+        await befoerdereFreigaben(tx, machineId);
         await widerrufeFreigaben(machineId, tx);
       }
       await tx.delete(machines).where(inArray(machines.id, erlaubt));

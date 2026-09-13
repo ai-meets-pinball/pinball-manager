@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { loeschfrage, umhaengbar } from "./loeschfolgen";
 
-const nichts = { freigegebeneReparaturen: 0, wissenUebertragen: 0, wissenVerloren: 0 };
+const nichts = {
+  reparaturenBefoerdert: 0,
+  freigegebeneReparaturen: 0,
+  wissenUebertragen: 0,
+  wissenVerloren: 0,
+};
 const GRUNDSATZ = "Diese Maschine samt Fehlern, Reparaturen und Wartungspunkten löschen?";
 
 describe("loeschfrage", () => {
@@ -9,15 +14,27 @@ describe("loeschfrage", () => {
     expect(loeschfrage(nichts)).toBe(GRUNDSATZ);
   });
 
-  it("nennt eine freigegebene Reparatur im Singular", () => {
-    expect(loeschfrage({ ...nichts, freigegebeneReparaturen: 1 })).toBe(
-      `${GRUNDSATZ} 1 Reparatur ist für andere freigegeben — die Freigabe erlischt.`,
+  it("nennt eine beförderte Reparatur im Singular", () => {
+    expect(loeschfrage({ ...nichts, reparaturenBefoerdert: 1 })).toBe(
+      `${GRUNDSATZ} 1 geteilte Reparatur bleibt als Tipp am Modell erhalten.`,
     );
   });
 
-  it("nennt mehrere freigegebene Reparaturen im Plural", () => {
+  it("nennt mehrere beförderte Reparaturen im Plural", () => {
+    expect(loeschfrage({ ...nichts, reparaturenBefoerdert: 2 })).toContain(
+      "2 geteilte Reparaturen bleiben als Tipps am Modell erhalten.",
+    );
+  });
+
+  it("nennt eine erlöschende Freigabe im Singular", () => {
+    expect(loeschfrage({ ...nichts, freigegebeneReparaturen: 1 })).toContain(
+      "1 Reparatur ist für einzelne Personen oder mehrere Clubs freigegeben — diese Freigabe erlischt.",
+    );
+  });
+
+  it("nennt mehrere erlöschende Freigaben im Plural", () => {
     expect(loeschfrage({ ...nichts, freigegebeneReparaturen: 3 })).toContain(
-      "3 Reparaturen sind für andere freigegeben — die Freigaben erlöschen.",
+      "3 Reparaturen sind für einzelne Personen oder mehrere Clubs freigegeben — diese Freigaben erlöschen.",
     );
   });
 
@@ -39,14 +56,16 @@ describe("loeschfrage", () => {
     );
   });
 
-  it("reiht alle Folgen hinter den Grundsatz — Reparaturen zuerst", () => {
+  it("reiht alle Folgen hinter den Grundsatz — Reparaturen zuerst, Erhaltenes vor Verlorenem", () => {
     const text = loeschfrage({
+      reparaturenBefoerdert: 1,
       freigegebeneReparaturen: 1,
       wissenUebertragen: 1,
       wissenVerloren: 1,
     });
     expect(text.startsWith(GRUNDSATZ)).toBe(true);
-    expect(text.indexOf("Reparatur")).toBeLessThan(text.indexOf("übertragen"));
+    expect(text.indexOf("als Tipp")).toBeLessThan(text.indexOf("erlischt"));
+    expect(text.indexOf("erlischt")).toBeLessThan(text.indexOf("übertragen"));
     expect(text.indexOf("übertragen")).toBeLessThan(text.indexOf("verloren"));
   });
 });

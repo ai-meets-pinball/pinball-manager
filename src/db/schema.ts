@@ -593,6 +593,11 @@ export const knowledge = pgTable(
     quelle: text("quelle"),
     sourceType: knowledgeSource("source_type").notNull(),
     visibility: knowledgeVisibility("visibility").notNull().default("privat"),
+    // Anonym: die Anzeige nennt „anonym geteilt" statt des Autors — für alle
+    // außer Kuratoren und Super-Admins (Moderation braucht den Namen). Gesetzt
+    // nur von der Beförderung einer anonymen Reparatur-Freigabe zum Tipp
+    // (actions/machines.ts beim Löschen der Maschine); kein Formularfeld.
+    anonym: boolean("anonym").notNull().default(false),
     // Geltungsbereich: GENAU eine der drei Ebenen (Check-Constraint unten).
     generationId: uuid("generation_id").references(() => generations.id, {
       onDelete: "cascade",
