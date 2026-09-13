@@ -4,6 +4,8 @@ import { useActionState, useState } from "react";
 import { Check, ClipboardCopy, FileJson, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Textarea } from "@/components/ui/input";
+import { PromptWeg } from "@/components/ui/prompt-weg";
+import { TippsVorschau } from "@/components/ui/tipps-vorschau";
 import { VisibilityField } from "@/components/ui/visibility-field";
 import { importManualFacts } from "@/db/actions/machine-data";
 import {
@@ -11,14 +13,17 @@ import {
   parseFactsText,
   type ImportResult,
 } from "@/lib/import-facts";
+import { tippsFuerFakten } from "@/lib/import-tipps";
 import type { FormState } from "@/db/actions/form-state";
 
 /*
-  JSON-Import als Alternative zum KI-/PDF-Upload. Fluss: Prompt kopieren → in
-  ChatGPT mit dem Handbuch nutzen → JSON hier einfügen → „Prüfen" (Vorschau +
-  Warnungen, dieselbe parseFactsText wie serverseitig) → „Importieren".
-  Der Import ist erst nach erfolgreicher Prüfung aktiv; jede Änderung am JSON
-  verlangt erneutes Prüfen (Korrekturschleife).
+  Der Prompt-Weg für Handbuch-Fakten — für alle außer dem Betreiber der EINZIGE
+  Weg (lib/ki-zugang). Fluss: Prompt kopieren → im eigenen KI-Abo mit dem
+  Handbuch ausführen → JSON hier einfügen → „Prüfen" (Vorschau + Warnungen,
+  dieselbe parseFactsText wie serverseitig, plus Tipps und ein Nachfrage-Prompt
+  für den nächsten Versuch, lib/import-tipps) → „Importieren". Der Import ist
+  erst nach erfolgreicher Prüfung aktiv; jede Änderung am JSON verlangt
+  erneutes Prüfen (Korrekturschleife).
 */
 const LABELS: Record<string, string> = {
   coils: "Spulen & Flasher",
@@ -53,10 +58,7 @@ export function ManualJsonImport({ machineId }: { machineId: string }) {
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-[var(--color-muted)]">
-        Mit ChatGPT-Abo: Handbuch dort hochladen, den Prompt einfügen und die
-        JSON-Ausgabe hier einsetzen — spart die KI-Verarbeitung in der App.
-      </p>
+      <PromptWeg weg="handbuch" />
 
       <Button
         type="button"
@@ -65,7 +67,7 @@ export function ManualJsonImport({ machineId }: { machineId: string }) {
         className="self-start"
       >
         {copied ? <Check size={16} /> : <ClipboardCopy size={16} />}
-        {copied ? "Prompt kopiert" : "ChatGPT-Prompt kopieren"}
+        {copied ? "Prompt kopiert" : "Prompt kopieren"}
       </Button>
 
       <Field label="Extrahiertes JSON">
@@ -107,7 +109,12 @@ export function ManualJsonImport({ machineId }: { machineId: string }) {
         Prüfen
       </Button>
 
-      {check ? <Vorschau check={check} /> : null}
+      {check ? (
+        <>
+          <Vorschau check={check} />
+          <TippsVorschau {...tippsFuerFakten(json, check)} />
+        </>
+      ) : null}
 
       {/* Import — erst nach erfolgreicher Prüfung aktiv. */}
       <form action={formAction} className="space-y-2">

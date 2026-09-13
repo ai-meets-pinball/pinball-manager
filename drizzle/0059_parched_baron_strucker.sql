@@ -1,0 +1,1 @@
+ALTER TABLE "user_settings" ADD COLUMN "ki_in_der_app" boolean DEFAULT true NOT NULL;

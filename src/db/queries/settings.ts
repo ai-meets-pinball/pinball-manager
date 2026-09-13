@@ -78,3 +78,18 @@ export async function getSettingsFor(
     return { werte: SHARE_DEFAULTS, angepasst: false };
   }
 }
+
+/** KI in der App nutzen? Nur für den Super-Admin bedeutsam (lib/ki-zugang);
+    fehlende Zeile = true. Schema-Drift-fest wie getSettingsFor. */
+export async function getKiInDerApp(userId: string): Promise<boolean> {
+  try {
+    const row = await db.query.userSettings.findFirst({
+      where: eq(userSettings.userId, userId),
+      columns: { kiInDerApp: true },
+    });
+    return row?.kiInDerApp ?? true;
+  } catch (e) {
+    console.error("[settings] ki_in_der_app nicht ladbar, nutze true:", e);
+    return true;
+  }
+}

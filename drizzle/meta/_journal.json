@@ -414,6 +414,13 @@
       "when": 1789290477806,
       "tag": "0058_gray_lady_ursula",
       "breakpoints": true
+    },
+    {
+      "idx": 59,
+      "version": "7",
+      "when": 1789299438374,
+      "tag": "0059_parched_baron_strucker",
+      "breakpoints": true
     }
   ]
 }

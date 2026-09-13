@@ -23,13 +23,18 @@ export function KiVorschlagHolen({
   faultId,
   providers,
   centralKey,
+  byoErlaubt,
   onVorschlag,
 }: {
   faultId: string;
   providers: AiProvider[];
   centralKey: boolean;
+  /** Eigener Schlüssel erlaubt (Betreiber)? Ohne zentralen Key und ohne
+      dieses Recht ist der Vorschlag nicht verfügbar — Knopf gesperrt. */
+  byoErlaubt: boolean;
   onVorschlag: (v: KiVorschlag) => void;
 }) {
+  const verfuegbar = centralKey || byoErlaubt || providers.some((p) => p === "ollama" || p === "mlx");
   const [state, formAction, pending] = useActionState<
     RepairSuggestState,
     FormData
@@ -45,9 +50,9 @@ export function KiVorschlagHolen({
       className="space-y-3 rounded-[var(--radius)] border border-dashed border-[var(--color-border)] p-3"
     >
       <input type="hidden" name="faultId" value={faultId} />
-      <AiProviderField providers={providers} centralKey={centralKey} />
+      <AiProviderField providers={providers} centralKey={centralKey} byoErlaubt={byoErlaubt} />
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" variant="secondary" size="sm" disabled={pending}>
+        <Button type="submit" variant="secondary" size="sm" disabled={pending || !verfuegbar}>
           {pending ? (
             <Loader2 size={14} className="animate-spin" />
           ) : (

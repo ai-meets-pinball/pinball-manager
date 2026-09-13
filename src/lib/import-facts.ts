@@ -214,7 +214,7 @@ export function parseFactsText(raw: string): ImportResult {
       present: [],
       reports: [],
       warnings: [],
-      errors: ["Kein JSON-Objekt gefunden. Füge die JSON-Ausgabe aus ChatGPT ein."],
+      errors: ["Kein JSON-Objekt gefunden. Füge die JSON-Ausgabe aus deinem KI-Chat ein."],
     };
   }
   try {

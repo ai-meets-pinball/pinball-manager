@@ -12,6 +12,8 @@ import {
   maintenancePlans,
   maintenanceTasks,
 } from "@/db/schema";
+import { getKiInDerApp } from "@/db/queries/settings";
+import { darfEigenenSchluessel, darfKi } from "@/lib/ki-zugang";
 import { isClubMember, requireMachineWrite } from "@/lib/session";
 import { anzahl } from "@/lib/format";
 import { resolvePrompt } from "@/db/queries";
@@ -424,6 +426,10 @@ export async function importMaintenanceFromGuide(
 ): Promise<FormState> {
   const machineId = String(formData.get("machineId"));
   const { user, machine } = await requireMachineWrite(machineId);
+  // Wartungspunkte per KI aus dem Guide: dem Betreiber vorbehalten (lib/ki-zugang).
+  const kiInDerApp = await getKiInDerApp(user.id);
+  const ki = darfKi(user, "wartung", kiInDerApp);
+  if (!ki.erlaubt) return { error: ki.grund };
 
   // Datenmodell-Redesign (Phase 2): der Guide dieses Nutzers liegt als
   // Modell-Wissen (knowledge, typ='troubleshooting') vor — je nach Modell auf
@@ -466,7 +472,7 @@ export async function importMaintenanceFromGuide(
       system,
       prompt: userPrompt,
       schema: maintenanceImportJsonSchema,
-      apiKey: String(formData.get("apiKey") ?? ""),
+      apiKey: darfEigenenSchluessel(user, kiInDerApp) ? String(formData.get("apiKey") ?? "") : "",
       zweck: "Import",
     });
   } catch (e) {

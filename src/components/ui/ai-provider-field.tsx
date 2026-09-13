@@ -44,11 +44,15 @@ const META: Record<
 export function AiProviderField({
   providers,
   centralKey,
+  byoErlaubt = true,
 }: {
   /** Verfügbare Anbieter (erster = Vorauswahl). */
   providers: AiProvider[];
   /** Zentraler Anthropic-Key vorhanden? Wenn nicht, braucht der Claude-Weg BYO. */
   centralKey: boolean;
+  /** Darf dieser Nutzer einen eigenen Schlüssel mitgeben (lib/ki-zugang:
+      nur der Betreiber)? Sonst erscheint statt des Felds ein Hinweis. */
+  byoErlaubt?: boolean;
 }) {
   const [selected, setSelected] = useState<AiProvider>(
     providers[0] ?? "anthropic",
@@ -95,7 +99,16 @@ export function AiProviderField({
       {/* Der tatsächlich gewählte Anbieter geht an die Server-Action. */}
       <input type="hidden" name="provider" value={selected} />
 
-      {braucheKey ? <ApiKeyField /> : null}
+      {braucheKey ? (
+        byoErlaubt ? (
+          <ApiKeyField />
+        ) : (
+          <p className="text-sm text-[var(--color-muted)]">
+            Kein Plattform-Schlüssel konfiguriert — diese Funktion steht derzeit
+            nicht zur Verfügung.
+          </p>
+        )
+      ) : null}
     </div>
   );
 }

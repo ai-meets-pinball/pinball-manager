@@ -18,12 +18,19 @@ export function MaintenanceGuideImport({
   machineId,
   providers,
   centralKey,
+  byoErlaubt,
+  erlaubt,
+  grund,
 }: {
   machineId: string;
   /** Verfügbare KI-Anbieter (Auswahl, wenn mehrere). */
   providers: AiProvider[];
   /** Zentraler Anthropic-Key vorhanden? Sonst BYO-Feld beim Claude-Weg. */
   centralKey: boolean;
+  byoErlaubt: boolean;
+  /** Darf dieser Nutzer das (lib/ki-zugang)? Sonst Knopf gesperrt mit Grund. */
+  erlaubt: boolean;
+  grund?: string;
 }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     importMaintenanceFromGuide,
@@ -43,11 +50,14 @@ export function MaintenanceGuideImport({
     >
       <input type="hidden" name="machineId" value={machineId} />
 
-      <AiProviderField providers={providers} centralKey={centralKey} />
+      {erlaubt ? (
+        <AiProviderField providers={providers} centralKey={centralKey} byoErlaubt={byoErlaubt} />
+      ) : null}
 
       <button
         type="submit"
-        disabled={pending}
+        disabled={pending || !erlaubt}
+        title={!erlaubt ? grund : undefined}
         className="inline-flex items-center gap-2 self-start rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 text-sm hover:bg-[var(--color-border)]/40 disabled:opacity-50"
       >
         {pending ? (

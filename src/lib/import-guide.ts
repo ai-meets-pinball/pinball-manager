@@ -150,7 +150,7 @@ export function parseGuideText(raw: string): GuideImportResult {
       ...LEER,
       warnings: [],
       errors: [
-        "Kein JSON-Objekt gefunden. Füge die JSON-Ausgabe aus ChatGPT ein.",
+        "Kein JSON-Objekt gefunden. Füge die JSON-Ausgabe aus deinem KI-Chat ein.",
       ],
     };
   }

@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/db";
 import { clubSettings, userSettings } from "@/db/schema";
+import { getKiInDerApp } from "@/db/queries/settings";
 import { requireClubManager, requireUser } from "@/lib/session";
 import { SHARE_SCOPES } from "@/lib/sharing";
 import { uploadUserLogo } from "@/lib/storage";
@@ -110,4 +111,23 @@ export async function setUserLogo(
 
   revalidatePath("/account");
   return { message: entfernen ? "Logo entfernt." : "Logo gespeichert." };
+}
+
+/*
+  Super-Admin-Schalter „KI in der App nutzen" (user_settings.ki_in_der_app,
+  lib/ki-zugang). Flippt den gespeicherten Wert; fehlende Zeile gilt als true.
+  Für alle anderen ohne Wirkung — die Regel fragt die Einstellung nur beim
+  Super-Admin ab, darum hier kein hartes Gate, nur der Nutzer selbst.
+*/
+export async function toggleKiInDerApp(): Promise<void> {
+  const currentUser = await requireUser();
+  const neu = !(await getKiInDerApp(currentUser.id));
+  await db
+    .insert(userSettings)
+    .values({ userId: currentUser.id, kiInDerApp: neu })
+    .onConflictDoUpdate({
+      target: userSettings.userId,
+      set: { kiInDerApp: neu, updatedAt: new Date() },
+    });
+  revalidatePath("/account");
 }

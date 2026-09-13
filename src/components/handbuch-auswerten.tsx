@@ -19,10 +19,16 @@ export function HandbuchAuswerten({
   machineId,
   providers,
   centralKey,
+  byoErlaubt,
+  appErlaubt,
+  appGrund,
 }: {
   machineId: string;
   providers: AiProvider[];
   centralKey: boolean;
+  byoErlaubt: boolean;
+  appErlaubt: boolean;
+  appGrund?: string;
 }) {
   const [offen, setOffen] = useState(false);
   return (
@@ -38,11 +44,14 @@ export function HandbuchAuswerten({
       {offen ? (
         <ActionDialog onClose={() => setOffen(false)} breit>
           <div className="space-y-4 p-5">
-            <h3 className="text-base font-semibold">Handbuch per KI auswerten</h3>
+            <h3 className="text-base font-semibold">Handbuch auswerten</h3>
             <ManualExtract
               machineId={machineId}
               providers={providers}
               centralKey={centralKey}
+              byoErlaubt={byoErlaubt}
+              appErlaubt={appErlaubt}
+              appGrund={appGrund}
             />
             <div className="flex justify-end">
               <DialogAbbrechen>Schließen</DialogAbbrechen>

@@ -27,9 +27,15 @@ export function MachineFaultsPreview({
   faults: Zeile[];
 }) {
   return (
-    <Card className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="font-semibold">Offene Fehler</h3>
+    <Card className="space-y-2 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <div className="flex flex-wrap items-baseline gap-x-2">
+          <h3 className="font-semibold">Offene Fehler</h3>
+          {/* Leer: der Befund steht in der Titelzeile, die Karte bleibt einzeilig. */}
+          {faults.length === 0 ? (
+            <span className="text-sm text-[var(--color-muted)]">keine.</span>
+          ) : null}
+        </div>
         <Link
           href={`/machines/${machineId}?bereich=fehler`}
           className="inline-flex items-center gap-1 text-sm text-[var(--color-primary)] hover:underline"
@@ -38,9 +44,7 @@ export function MachineFaultsPreview({
         </Link>
       </div>
 
-      {faults.length === 0 ? (
-        <p className="text-sm text-[var(--color-muted)]">Keine offenen Fehler.</p>
-      ) : (
+      {faults.length === 0 ? null : (
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

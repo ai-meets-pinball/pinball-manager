@@ -364,12 +364,12 @@ export const ANLEITUNG: HilfeSektion[] = [
         text: "Claude liest das PDF und extrahiert ausschließlich Faktentabellen (Spulen, Schalter-/Lampen-Matrix, Sicherungen, Teile, Regeln, Schrauben, Gummiteile, Elektronik-Bauteile). Das PDF wird dabei NIE gespeichert — nur die Fakten landen in der Datenbank, als Wissenseintrag am Modell.",
       },
       {
-        titel: "Alternative ohne KI: JSON-Import",
-        text: "Hast du ein ChatGPT- oder Claude-Abo, geht es auch ohne KI-Verarbeitung in der App: Im Dialog »Handbuch auswerten« auf »Eigenes ChatGPT-/Claude-Abo« umschalten, den vorbereiteten Prompt kopieren, dort zusammen mit dem Handbuch nutzen und die JSON-Ausgabe einfügen. »Prüfen« zeigt eine Vorschau samt Warnungen, erst dann wird importiert.",
+        titel: "Der Prompt-Weg (für alle)",
+        text: "Der Weg für alle Nutzer: Im Dialog »Handbuch auswerten« steht »Eigenes ChatGPT-/Claude-Abo« — den vorbereiteten Prompt kopieren, im eigenen KI-Abo zusammen mit dem Handbuch-PDF ausführen und NUR das JSON hier einfügen. »Prüfen« zeigt eine Vorschau samt Warnungen und gibt gezielte Tipps für den nächsten Versuch — inklusive einer kopierbaren Nachfrage, die du in denselben Chat einfügst (z. B. wenn die Ausgabe abgeschnitten war oder Tabellen fehlen). Die aufklappbare Anleitung im Dialog nennt geeignete Modelle; kostenlose Konten liefern vermutlich kein brauchbares Ergebnis (kleinere Modelle, kein PDF-Upload, abgeschnittene Antworten). Erst nach erfolgreicher Prüfung wird importiert.",
       },
       {
-        titel: "KI-Schlüssel (falls nötig)",
-        text: "Die KI-Funktionen (Handbuch auswerten, Troubleshooting-Guide, Wartungspunkte aus dem Guide) laufen über Claude (Anthropic). Ist zentral kein Schlüssel hinterlegt, erscheint (unter »Erweiterte Optionen«) ein Feld für deinen eigenen Anthropic-API-Schlüssel: Er wird nur für die jeweilige Aktion genutzt und NICHT gespeichert. Einen Schlüssel legst du unter console.anthropic.com an; lade dort etwas Guthaben auf und setze ein monatliches Ausgabenlimit, damit keine unerwarteten Kosten entstehen. Selbst gehostete Installationen können die KI-Funktionen alternativ über ein lokales Modell (Ollama oder MLX) betreiben.",
+        titel: "Wer darf was (KI)",
+        text: "Die KI-Verarbeitung IN DER APP (Handbuch auswerten, Guide erzeugen, Wartungspunkte aus dem Guide) ist dem Betreiber vorbehalten — die Kosten je Durchlauf sind nicht planbar (Euro, nicht Cent). Für alle anderen ist der Prompt-Weg der Weg: Prompt kopieren, im eigenen KI-Abo ausführen, JSON einfügen — dort kostet derselbe Durchlauf nichts extra. Das kann sich künftig ändern; dazu müssen aber erst Entscheidungen zu Sponsoring oder zur Annahme von Spenden getroffen werden. Die Knöpfe bzw. Reiter für die App-Verarbeitung sind für dich ausgegraut und nennen den Grund. Einzige Ausnahme: der KI-Reparaturvorschlag beim Anlegen einer Reparatur läuft für alle über den Schlüssel des Betreibers (kleiner, planbarer Aufruf). Einen eigenen Anthropic-Schlüssel kann nur der Betreiber hinterlegen (selbst gehostete Installationen; dort alternativ ein lokales Modell über Ollama oder MLX). Der Betreiber kann unter Konto → »KI in der App« den Plattform-Schlüssel für sich abschalten und dann bewusst den Prompt-Weg gehen — so, wie alle anderen ihn sehen.",
       },
       {
         titel: "Ansehen",
@@ -392,8 +392,8 @@ export const ANLEITUNG: HilfeSektion[] = [
         text: "Im Reiter »Guide« öffnet »Guide erstellen« (nur mit Schreibrecht) einen Dialog mit zwei Wegen: »Per KI erzeugen« oder »JSON importieren«. Beim KI-Weg bestimmt Claude zunächst die Plattform bzw. Geräte-Generation und prüft sie samt bekannter Serienfehler per Websuche gegen Community-Quellen (IPDB, PinWiki, Pinside). Das dauert ein bis zwei Minuten.",
       },
       {
-        titel: "Alternative ohne KI: JSON-Import",
-        text: "Wie bei den Handbuch-Daten geht es auch ohne die KI-Erstellung in der App: Im Dialog »Guide erstellen« auf »JSON importieren« umschalten, den vorbereiteten Prompt kopieren (er enthält bereits Hersteller, Modell und Baujahr), in ChatGPT ausführen und die JSON-Ausgabe einfügen. »Prüfen« zeigt eine Vorschau samt Warnungen, erst dann wird importiert. Der Import ersetzt deinen bisherigen Guide auf der gewählten Ebene — der alte Stand wandert in den Verlauf. Importierte Guides sind als »Importiert (extern erstellt)« gekennzeichnet.",
+        titel: "Der Prompt-Weg (für alle)",
+        text: "Wie bei den Handbuch-Daten: Im Dialog »Guide erstellen« ist »JSON importieren« der Weg für alle — den vorbereiteten Prompt kopieren (er enthält bereits Hersteller, Modell und Baujahr), im eigenen KI-Abo mit eingeschalteter Websuche ausführen und NUR das JSON hier einfügen. »Prüfen« zeigt eine Vorschau samt Warnungen und Tipps (zu wenige Abschnitte, keine Quellen, abgeschnitten …) mit einer kopierbaren Nachfrage für denselben Chat; erst dann wird importiert. Der Import ersetzt deinen bisherigen Guide auf der gewählten Ebene — der alte Stand wandert in den Verlauf. Importierte Guides sind als »Importiert (extern erstellt)« gekennzeichnet. »Per KI erzeugen« in der App ist dem Betreiber vorbehalten.",
       },
       {
         titel: "Gültigkeit: Modell oder Generation",

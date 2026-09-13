@@ -37,7 +37,12 @@ export function RepairForm({
   selectedFaultIds?: string[];
   /** Neue Reparatur zu EINEM Fehler mit verfügbarer KI: bietet „Vorschlag von
       der KI holen" an, der Diagnose/Maßnahme/Teile vorfüllt. */
-  kiVorschlag?: { faultId: string; providers: AiProvider[]; centralKey: boolean };
+  kiVorschlag?: {
+    faultId: string;
+    providers: AiProvider[];
+    centralKey: boolean;
+    byoErlaubt: boolean;
+  };
 }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     action,

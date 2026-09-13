@@ -21,12 +21,20 @@ export function ManualExtract({
   machineId,
   providers,
   centralKey,
+  byoErlaubt,
+  appErlaubt,
+  appGrund,
 }: {
   machineId: string;
   providers: AiProvider[];
   centralKey: boolean;
+  byoErlaubt: boolean;
+  /** Darf dieser Nutzer in der App auswerten (lib/ki-zugang)? Sonst ist der
+      Modus gesperrt — mit Grund — und der Abo-Weg ist der Start. */
+  appErlaubt: boolean;
+  appGrund?: string;
 }) {
-  const [modus, setModus] = useState<"app" | "abo">("app");
+  const [modus, setModus] = useState<"app" | "abo">(appErlaubt ? "app" : "abo");
 
   return (
     <div className="space-y-3">
@@ -42,13 +50,16 @@ export function ManualExtract({
         {MODI.map((m) => {
           const Icon = m.icon;
           const aktiv = modus === m.key;
+          const gesperrt = m.key === "app" && !appErlaubt;
           return (
             <button
               key={m.key}
               type="button"
               aria-pressed={aktiv}
+              disabled={gesperrt}
+              title={gesperrt ? appGrund : undefined}
               onClick={() => setModus(m.key)}
-              className={`inline-flex items-center gap-1.5 rounded-[calc(var(--radius)-2px)] px-3 py-1.5 transition-colors ${
+              className={`inline-flex items-center gap-1.5 rounded-[calc(var(--radius)-2px)] px-3 py-1.5 transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                 aktiv
                   ? "bg-[var(--color-primary)] text-[var(--color-primary-fg)]"
                   : "text-[var(--color-muted)] hover:text-[var(--color-fg)]"
@@ -60,11 +71,16 @@ export function ManualExtract({
         })}
       </div>
 
+      {!appErlaubt && appGrund ? (
+        <p className="text-xs text-[var(--color-muted)]">{appGrund}</p>
+      ) : null}
+
       {modus === "app" ? (
         <ManualUpload
           machineId={machineId}
           providers={providers}
           centralKey={centralKey}
+          byoErlaubt={byoErlaubt}
         />
       ) : (
         <ManualJsonImport machineId={machineId} />

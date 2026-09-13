@@ -14,13 +14,14 @@ import {
   WhatsappClubSchalter,
   WhatsappSettingsForm,
 } from "@/components/whatsapp-settings-form";
+import { KiSettingsForm } from "@/components/ki-settings-form";
 import { UserLogoForm } from "@/components/user-logo-form";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ICON_BTN } from "@/components/ui/icon-button";
 import { List, ListRow } from "@/components/ui/list";
 import { StatusBadge } from "@/components/ui/status-badge";
-import { getSettingsFor, getUserLogoUrl } from "@/db/queries";
+import { getKiInDerApp, getSettingsFor, getUserLogoUrl } from "@/db/queries";
 import { getWhatsappStatus } from "@/db/queries/whatsapp";
 import { leaveClub } from "@/db/actions/clubs";
 import { acceptInvitation, declineInvitation } from "@/db/actions/invitations";
@@ -47,6 +48,7 @@ export default async function AccountPage() {
   const shareSettings = await getSettingsFor("user", user.id);
   // WhatsApp: globale Nummer + Clubs, für die das Opt-in aktiv ist.
   const waStatus = await getWhatsappStatus(user.id);
+  const kiInDerApp = isSuperAdmin(user) ? await getKiInDerApp(user.id) : true;
   const aktiveClubs = new Set(waStatus.aktiveClubIds);
   // Persönliches Logo (für QR-Etiketten der privaten Sammlung/Maschinen).
   const logoUrl = await getUserLogoUrl(user.id);
@@ -240,6 +242,17 @@ export default async function AccountPage() {
           </List>
         )}
       </section>
+
+      {/* Nur der Super-Admin hat die Wahl — alle anderen gehen den Prompt-Weg
+          ohnehin (lib/ki-zugang). */}
+      {isSuperAdmin(user) ? (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">KI in der App</h2>
+          <Card>
+            <KiSettingsForm aktiv={kiInDerApp} />
+          </Card>
+        </section>
+      ) : null}
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold">WhatsApp-Benachrichtigung</h2>

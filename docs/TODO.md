@@ -27,6 +27,21 @@ id und Signale bleiben erhalten).
   `showModal()` „already open as a non-modal dialog" (Knoten wird umgehängt,
   `open` bleibt stehen); behoben per `removeAttribute("open")`, bewusst NICHT
   per `close()` (feuert das close-Event → Dialog unmontiert sich sofort).
+- **KI-Zugang neu geregelt** (2026-09-13, `lib/ki-zugang.ts`): kein
+  Plattform-Schlüssel für die Inhalts-Generierung (kostenunsicher — Euro je
+  Durchlauf, Menge nicht planbar). Handbuch auswerten, Guide erzeugen und
+  Wartungspunkte aus dem Guide per KI in der App: nur Super-Admin — UI sperrt
+  Reiter/Knöpfe mit Grund, Server (Route + Actions) prüft dieselbe Regel.
+  Einzige Ausnahme: der KI-Reparaturvorschlag läuft für alle über den
+  Plattform-Schlüssel. Eigener Anthropic-Schlüssel (BYO) nur noch für den
+  Super-Admin. Für alle anderen ist der **Prompt-Weg** der Weg: erklärt in
+  `lib/ki-hinweise.ts` (Warum, Schritte, geeignete Modelle mit Stand-Datum,
+  Free-Warnung → `ui/prompt-weg.tsx`), und die Import-Prüfung gibt gezielte
+  Tipps plus einen kopierbaren Nachfrage-Prompt (`lib/import-tipps.ts`,
+  `ui/tipps-vorschau.tsx`). Der Super-Admin kann die KI in der App für sich
+  abschalten (Konto → „KI in der App“, `user_settings.ki_in_der_app`,
+  Migration 0059) und sieht dann den Prompt-Weg wie alle. Hilfe-Texte
+  nachgezogen. E2E `e2e/ki-zugang.spec.ts`.
 - **Geteilte Reparaturen überleben das Löschen der Maschine als Tipp**
   (2026-09-13, Stufe 3 — die „Brücke" aus dem Datenmodell-Redesign, ohne
   Rückverweis-Spalte): `deleteMachine`/`deleteMachines` befördern jede

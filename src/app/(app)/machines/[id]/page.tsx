@@ -44,11 +44,17 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { ViewToggle } from "@/components/ui/view-toggle";
 import { deleteMachine } from "@/db/actions/machines";
 import { getMachineDetail } from "@/db/machine-detail";
-import { getLoeschfolgen, getTippZielKatalog, resolvePrompt } from "@/db/queries";
+import {
+  getKiInDerApp,
+  getLoeschfolgen,
+  getTippZielKatalog,
+  resolvePrompt,
+} from "@/db/queries";
 import { FEHLER_FILTER, FEHLER_FILTER_LABEL } from "@/lib/fehler-status";
 import { modellName, relativeZeit } from "@/lib/format";
 import { tageDazwischen } from "@/lib/faelligkeit";
 import { buildGuideImportPrompt } from "@/lib/import-guide";
+import { darfEigenenSchluessel, darfKi } from "@/lib/ki-zugang";
 import { loeschfrage } from "@/lib/loeschfolgen";
 import { kannKuratieren } from "@/lib/session";
 import { klebrig } from "@/lib/sticky-view";
@@ -188,6 +194,14 @@ export default async function MachineDetailPage({
   const kiProviders = availableProviders();
   const kiCentralKey = Boolean(process.env.ANTHROPIC_API_KEY);
   const ollamaVerfuegbar = kiProviders.includes("ollama");
+  // Wer darf KI IN DER APP auslösen? Die Generierung (Handbuch, Guide,
+  // Wartungspunkte) ist dem Betreiber vorbehalten — für alle anderen ist der
+  // Prompt-Weg der Weg (lib/ki-zugang). Die Regel gilt serverseitig ebenso.
+  const kiInDerApp = await getKiInDerApp(currentUser.id);
+  const kiHandbuch = darfKi(currentUser, "handbuch", kiInDerApp);
+  const kiGuide = darfKi(currentUser, "guide", kiInDerApp);
+  const kiWartung = darfKi(currentUser, "wartung", kiInDerApp);
+  const kiByo = darfEigenenSchluessel(currentUser, kiInDerApp);
 
   // Der Guide-Reiter: für Bearbeiter immer sichtbar (Erzeugen/Importieren geht
   // auch ohne Handbuch-Fakten); Nur-Leser sehen ihn erst, wenn Inhalte existieren.
@@ -471,52 +485,54 @@ export default async function MachineDetailPage({
 
       {/* ── Übersicht: Foto und Status-Dashboard ─────────────────────────────── */}
       {active === "uebersicht" ? (
-        <div className="space-y-4">
+        <div className="space-y-2">
           {/* Betriebsstatus an EINER Stelle: „seit" + Grund + Steuerung in
               einer betitelten Karte. Den Status-Badge trägt nur der Seitenkopf
               (keine Doppelanzeige, P6). Ziel der Status-Links (Kopf-Badge,
               Dashboard) per #status — so landet der Sprung auf einem in sich
               geschlossenen Block, nicht auf losen Steuer-Elementen. */}
-          <Card id="status" className="scroll-mt-24 space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <h3 className="font-semibold">Betriebsstatus</h3>
+          <Card id="status" className="scroll-mt-24 space-y-2 py-3">
+            {/* Kompakt: Titel und Status-Satz in EINER Zeile, „seit" rechts.
+                WARUM ist die Maschine nicht spielbereit? Grund für ALLE sichtbar
+                — manuell gepinnter Grund oder (automatisch) der kritische Fehler. */}
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+              <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+                <h3 className="font-semibold">Betriebsstatus</h3>
+                {machine.status !== "spielbereit" ? (
+                  machine.statusManuell && machine.statusGrund ? (
+                    <span className="text-sm text-[var(--color-muted)]">
+                      <span className="font-medium text-[var(--color-fg)]">
+                        Grund:
+                      </span>{" "}
+                      {machine.statusGrund}
+                    </span>
+                  ) : !machine.statusManuell && fehler.anzahlKritischOffen > 0 ? (
+                    <span className="text-sm text-[var(--color-muted)]">
+                      Automatisch eingeschränkt wegen{" "}
+                      <Link
+                        href={`/machines/${machine.id}?bereich=fehler`}
+                        className="underline hover:text-[var(--color-fg)]"
+                      >
+                        offenem kritischen Fehler
+                      </Link>
+                      {fehler.anzahlKritischOffen > 1
+                        ? ` (${fehler.anzahlKritischOffen})`
+                        : ""}
+                      .
+                    </span>
+                  ) : (
+                    <span className="text-sm text-[var(--color-muted)]">
+                      Manuell gesetzt.
+                    </span>
+                  )
+                ) : (
+                  <span className="text-sm text-[var(--color-muted)]">
+                    Spielbereit — keine Einschränkung.
+                  </span>
+                )}
+              </div>
               <StatusSeit seit={machine.statusSeit.toISOString()} />
             </div>
-
-            {/* WARUM ist die Maschine nicht spielbereit? Grund für ALLE sichtbar
-                — manuell gepinnter Grund oder (automatisch) der kritische Fehler. */}
-            {machine.status !== "spielbereit" ? (
-              machine.statusManuell && machine.statusGrund ? (
-                <p className="text-sm text-[var(--color-muted)]">
-                  <span className="font-medium text-[var(--color-fg)]">
-                    Grund:
-                  </span>{" "}
-                  {machine.statusGrund}
-                </p>
-              ) : !machine.statusManuell && fehler.anzahlKritischOffen > 0 ? (
-                <p className="text-sm text-[var(--color-muted)]">
-                  Automatisch eingeschränkt wegen{" "}
-                  <Link
-                    href={`/machines/${machine.id}?bereich=fehler`}
-                    className="underline hover:text-[var(--color-fg)]"
-                  >
-                    offenem kritischen Fehler
-                  </Link>
-                  {fehler.anzahlKritischOffen > 1
-                    ? ` (${fehler.anzahlKritischOffen})`
-                    : ""}
-                  .
-                </p>
-              ) : (
-                <p className="text-sm text-[var(--color-muted)]">
-                  Manuell gesetzt.
-                </p>
-              )
-            ) : (
-              <p className="text-sm text-[var(--color-muted)]">
-                Spielbereit — keine Einschränkung.
-              </p>
-            )}
 
             {darf.bearbeiten ? (
               <StatusSteuerung
@@ -638,6 +654,9 @@ export default async function MachineDetailPage({
           hatGuide={eigenerGuide}
           providers={kiProviders}
           centralKey={kiCentralKey}
+          byoErlaubt={kiByo}
+          kiErlaubt={kiWartung.erlaubt}
+          kiGrund={kiWartung.erlaubt ? undefined : kiWartung.grund}
           verknuepfterPlan={wartungsStandard}
           plans={wartung.plaene}
         />
@@ -712,6 +731,9 @@ export default async function MachineDetailPage({
                   machineId={machine.id}
                   providers={kiProviders}
                   centralKey={kiCentralKey}
+                  byoErlaubt={kiByo}
+                  appErlaubt={kiHandbuch.erlaubt}
+                  appGrund={kiHandbuch.erlaubt ? undefined : kiHandbuch.grund}
                 />
               ) : null}
             </div>
@@ -739,6 +761,9 @@ export default async function MachineDetailPage({
                 vorhanden={eigenerGuide}
                 providers={kiProviders}
                 centralKey={kiCentralKey}
+                byoErlaubt={kiByo}
+                kiErlaubt={kiGuide.erlaubt}
+                kiGrund={kiGuide.erlaubt ? undefined : kiGuide.grund}
                 generation={guideGeneration}
                 prompt={guideImportPrompt ?? ""}
               />

@@ -13,6 +13,8 @@ import {
   resolvePrompt,
 } from "@/db/queries";
 import { resolveProvider } from "@/lib/ai/provider";
+import { getKiInDerApp } from "@/db/queries/settings";
+import { darfEigenenSchluessel } from "@/lib/ki-zugang";
 import { AiError, generateJson } from "@/lib/ai/generate";
 
 /*
@@ -91,7 +93,21 @@ export async function generateRepairSuggestion(
     ? kappe(teile.join("\n\n"), 14000)
     : "(kein hinterlegtes Wissen zu diesem Gerät)";
 
+  // Der Reparaturvorschlag ist die eine KI-Funktion für ALLE — über den
+  // Plattform-Schlüssel (kleiner, planbarer Aufruf). Einen eigenen Schlüssel
+  // darf nur der Betreiber mitgeben (lib/ki-zugang); ohne beides gibt es
+  // eine klare Meldung statt eines 401 vom Anbieter.
   const provider = resolveProvider(formData);
+  const eigenerSchluessel = darfEigenenSchluessel(user, await getKiInDerApp(user.id))
+    ? String(formData.get("apiKey") ?? "")
+    : "";
+  const cloud = provider === "anthropic" || provider === "auto";
+  if (cloud && !process.env.ANTHROPIC_API_KEY && !eigenerSchluessel) {
+    return {
+      error:
+        "Kein Plattform-Schlüssel konfiguriert — der KI-Vorschlag steht derzeit nicht zur Verfügung.",
+    };
+  }
   const { text: prompt } = await resolvePrompt("repair_suggestion", {
     hersteller: machine.hersteller,
     generationId: gen?.id ?? null,
@@ -110,7 +126,7 @@ export async function generateRepairSuggestion(
       prompt,
       schema: repairSuggestionJsonSchema,
       maxTokens: 8000,
-      apiKey: String(formData.get("apiKey") ?? ""),
+      apiKey: eigenerSchluessel,
       zweck: "Reparatur",
     });
     if (antwort.abgeschnitten) {

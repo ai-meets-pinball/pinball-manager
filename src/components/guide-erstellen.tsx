@@ -27,6 +27,11 @@ type Props = {
   vorhanden: boolean;
   providers: AiProvider[];
   centralKey: boolean;
+  byoErlaubt: boolean;
+  /** Darf dieser Nutzer per KI in der App erzeugen (lib/ki-zugang)? Sonst ist
+      der KI-Tab gesperrt (mit Grund) und der Dialog startet beim JSON-Import. */
+  kiErlaubt: boolean;
+  kiGrund?: string;
   generation?: { name: string } | null;
   /** Kopierbarer Import-Prompt (serverseitig aufgelöst). */
   prompt: string;
@@ -57,17 +62,21 @@ export function GuideErstellen(props: Props) {
   );
 }
 
-/* Nur gemountet, solange offen — der Modus startet bei jeder Öffnung bei „KI". */
+/* Nur gemountet, solange offen — der Modus startet bei jeder Öffnung bei „KI",
+   sofern erlaubt; sonst beim JSON-Import (Prompt-Weg). */
 function GuideDialog({
   machineId,
   vorhanden,
   providers,
   centralKey,
+  byoErlaubt,
+  kiErlaubt,
+  kiGrund,
   generation,
   prompt,
   onClose,
 }: Props & { onClose: () => void }) {
-  const [modus, setModus] = useState<"ki" | "json">("ki");
+  const [modus, setModus] = useState<"ki" | "json">(kiErlaubt ? "ki" : "json");
 
   return (
     <ActionDialog onClose={onClose} breit>
@@ -89,14 +98,17 @@ function GuideDialog({
           {MODI.map((m) => {
             const Icon = m.icon;
             const aktiv = modus === m.key;
+            const gesperrt = m.key === "ki" && !kiErlaubt;
             return (
               <button
                 key={m.key}
                 type="button"
                 role="tab"
                 aria-selected={aktiv}
+                disabled={gesperrt}
+                title={gesperrt ? kiGrund : undefined}
                 onClick={() => setModus(m.key)}
-                className={`inline-flex items-center gap-1.5 rounded-[calc(var(--radius)-2px)] px-3 py-1.5 transition-colors ${
+                className={`inline-flex items-center gap-1.5 rounded-[calc(var(--radius)-2px)] px-3 py-1.5 transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${
                   aktiv
                     ? "bg-[var(--color-primary)] text-[var(--color-primary-fg)]"
                     : "text-[var(--color-muted)] hover:text-[var(--color-fg)]"
@@ -108,12 +120,17 @@ function GuideDialog({
           })}
         </div>
 
+        {!kiErlaubt && kiGrund ? (
+          <p className="text-xs text-[var(--color-muted)]">{kiGrund}</p>
+        ) : null}
+
         {modus === "ki" ? (
           <TroubleshootingGenerate
             machineId={machineId}
             vorhanden={vorhanden}
             providers={providers}
             centralKey={centralKey}
+            byoErlaubt={byoErlaubt}
             generation={generation}
             onErfolg={onClose}
           />

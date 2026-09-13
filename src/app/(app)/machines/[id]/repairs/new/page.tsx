@@ -6,6 +6,8 @@ import { db } from "@/db";
 import { faults } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
 import { availableProviders } from "@/lib/ai/provider";
+import { getKiInDerApp } from "@/db/queries";
+import { darfEigenenSchluessel } from "@/lib/ki-zugang";
 import { modellName } from "@/lib/format";
 
 export default async function NewRepairPage({
@@ -17,7 +19,7 @@ export default async function NewRepairPage({
 }) {
   const { id } = await params;
   const { faultId } = await searchParams;
-  const { machine } = await requireMachineWrite(id);
+  const { machine, user } = await requireMachineWrite(id);
 
   const machineFaults = await db.query.faults.findMany({
     where: eq(faults.machineId, id),
@@ -35,6 +37,9 @@ export default async function NewRepairPage({
           faultId: fault.id,
           providers: kiProviders,
           centralKey: Boolean(process.env.ANTHROPIC_API_KEY),
+          // Eigener Schlüssel nur für den Betreiber (lib/ki-zugang); alle
+          // anderen nutzen den Plattform-Schlüssel.
+          byoErlaubt: darfEigenenSchluessel(user, await getKiInDerApp(user.id)),
         }
       : undefined;
 

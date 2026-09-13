@@ -6,6 +6,8 @@ import { DialogAbbrechen } from "@/components/ui/action-dialog";
 import { Button } from "@/components/ui/button";
 import { Field, Textarea } from "@/components/ui/input";
 import { FormFeedback } from "@/components/ui/form-feedback";
+import { PromptWeg } from "@/components/ui/prompt-weg";
+import { TippsVorschau } from "@/components/ui/tipps-vorschau";
 import { VisibilityField } from "@/components/ui/visibility-field";
 import { GueltigkeitFeld } from "@/components/troubleshooting-generate";
 import { importTroubleshootingGuide } from "@/db/actions/machine-data";
@@ -13,13 +15,14 @@ import {
   parseGuideText,
   type GuideImportResult,
 } from "@/lib/import-guide";
+import { tippsFuerGuide } from "@/lib/import-tipps";
 import type { FormState } from "@/db/actions/form-state";
 
 /*
   JSON-Import als Alternative zur KI-Generierung des Troubleshooting-Guides —
   lebt im „Guide erstellen"-Dialog (guide-erstellen.tsx) hinter dem Modus
   „JSON importieren". Gleiches Prinzip wie ManualJsonImport: Prompt kopieren →
-  extern (z. B. ChatGPT) ausführen → JSON hier einfügen → „Prüfen" (Vorschau,
+  im eigenen KI-Abo ausführen → JSON hier einfügen → „Prüfen" (Vorschau,
   dieselbe parseGuideText wie serverseitig) → „Importieren". Der Prompt ist
   maschinenspezifisch (Hersteller/Modell/Baujahr) und kommt deshalb als Prop
   vom Server. Import erst nach erfolgreicher Prüfung; jede Änderung am JSON
@@ -67,11 +70,7 @@ export function TroubleshootingJsonImport({
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-[var(--color-muted)]">
-        Mit ChatGPT-Abo: den Prompt dort einfügen (er enthält bereits
-        Hersteller, Modell und Baujahr) und die JSON-Ausgabe hier einsetzen —
-        spart die KI-Erstellung in der App.
-      </p>
+      <PromptWeg weg="guide" />
 
       <Button
         type="button"
@@ -81,7 +80,7 @@ export function TroubleshootingJsonImport({
         className="self-start"
       >
         {copied ? <Check size={16} /> : <ClipboardCopy size={16} />}
-        {copied ? "Prompt kopiert" : "ChatGPT-Prompt kopieren"}
+        {copied ? "Prompt kopiert" : "Prompt kopieren"}
       </Button>
 
       <Field label="Guide-JSON">
@@ -113,7 +112,12 @@ export function TroubleshootingJsonImport({
         />
       </label>
 
-      {check ? <Vorschau check={check} vorhanden={vorhanden} /> : null}
+      {check ? (
+        <>
+          <Vorschau check={check} vorhanden={vorhanden} />
+          <TippsVorschau {...tippsFuerGuide(json, check)} />
+        </>
+      ) : null}
 
       {/* Import — erst nach erfolgreicher Prüfung aktiv. */}
       <form action={formAction} className="space-y-3">

@@ -4,6 +4,8 @@ import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { machines } from "@/db/schema";
+import { getKiInDerApp } from "@/db/queries/settings";
+import { darfEigenenSchluessel, darfKi } from "@/lib/ki-zugang";
 import { requireMachineWrite } from "@/lib/session";
 import { getModelGeneration, resolvePrompt } from "@/db/queries";
 import { upsertTroubleshootingKnowledge } from "@/lib/facts-store";
@@ -47,6 +49,11 @@ export async function generateTroubleshootingGuide(
   const machineId = String(formData.get("machineId"));
   // Autorisierung: Eigentümer ODER Club-Mitglied (kein RLS). Wirft sonst.
   const { user } = await requireMachineWrite(machineId);
+  // Guide per KI in der App: dem Betreiber vorbehalten (lib/ki-zugang) — die
+  // UI sperrt den Reiter mit demselben Grund, hier ist die Regel bindend.
+  const kiInDerApp = await getKiInDerApp(user.id);
+  const ki = darfKi(user, "guide", kiInDerApp);
+  if (!ki.erlaubt) return { error: ki.grund };
 
   const machine = await db.query.machines.findFirst({
     where: eq(machines.id, machineId),
@@ -85,7 +92,7 @@ export async function generateTroubleshootingGuide(
       websuche: true,
       schema: troubleshootingGuideJsonSchema,
       maxTokens: 32000,
-      apiKey: String(formData.get("apiKey") ?? ""),
+      apiKey: darfEigenenSchluessel(user, kiInDerApp) ? String(formData.get("apiKey") ?? "") : "",
       zweck: "Guide",
     });
   } catch (e) {

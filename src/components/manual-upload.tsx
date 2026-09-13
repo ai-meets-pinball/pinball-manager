@@ -48,12 +48,14 @@ export function ManualUpload({
   machineId,
   providers,
   centralKey,
+  byoErlaubt = true,
 }: {
   machineId: string;
   /** Verfügbare KI-Anbieter (Auswahl, wenn mehrere). */
   providers: AiProvider[];
   /** Zentraler Anthropic-Key vorhanden? Sonst BYO-Feld beim Claude-Weg. */
   centralKey: boolean;
+  byoErlaubt?: boolean;
 }) {
   const router = useRouter();
   const [pending, setPending] = useState(false);
@@ -192,7 +194,7 @@ export function ManualUpload({
           />
         </summary>
         <div className="flex flex-col gap-3 border-t border-[var(--color-border)] px-3 py-3">
-          <AiProviderField providers={providers} centralKey={centralKey} />
+          <AiProviderField providers={providers} centralKey={centralKey} byoErlaubt={byoErlaubt} />
 
           <label className="flex items-start gap-2 text-sm text-[var(--color-muted)]">
             <input

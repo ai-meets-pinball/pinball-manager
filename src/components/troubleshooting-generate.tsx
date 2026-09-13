@@ -49,6 +49,7 @@ export function TroubleshootingGenerate({
   vorhanden,
   providers,
   centralKey,
+  byoErlaubt = true,
   generation,
   onErfolg,
 }: {
@@ -58,6 +59,7 @@ export function TroubleshootingGenerate({
   providers: AiProvider[];
   /** Zentraler Anthropic-Key vorhanden? Sonst BYO-Feld beim Claude-Weg. */
   centralKey: boolean;
+  byoErlaubt?: boolean;
   /** Generation des Modells (falls bekannt) — erlaubt einen Guide, der für
       ALLE Modelle dieser Board-/Hardware-Generation gilt. */
   generation?: { name: string } | null;
@@ -77,7 +79,7 @@ export function TroubleshootingGenerate({
     <form action={formAction} className="flex flex-col gap-3">
       <input type="hidden" name="machineId" value={machineId} />
 
-      <AiProviderField providers={providers} centralKey={centralKey} />
+      <AiProviderField providers={providers} centralKey={centralKey} byoErlaubt={byoErlaubt} />
       <GueltigkeitFeld generation={generation} />
       <VisibilityField objekt="diesen Guide" />
 

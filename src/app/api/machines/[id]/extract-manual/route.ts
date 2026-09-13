@@ -4,6 +4,8 @@ import {
   extractManualFactsStream,
   type ExtractProgress,
 } from "@/lib/manual-extract";
+import { getKiInDerApp } from "@/db/queries/settings";
+import { darfEigenenSchluessel, darfKi } from "@/lib/ki-zugang";
 
 /*
   Streamende Handbuch-Extraktion (Phase 2). Als API-Route statt Server Action,
@@ -34,12 +36,21 @@ export async function POST(
     return Response.json({ error: "Kein Schreibzugriff auf diese Maschine." }, { status: 403 });
   }
   const { user, machine } = zugriff;
+  // Die Regel (lib/ki-zugang) schützt, nicht der gesperrte Knopf: Handbuch
+  // auswerten in der App ist dem Betreiber vorbehalten.
+  const kiInDerApp = await getKiInDerApp(user.id);
+  const ki = darfKi(user, "handbuch", kiInDerApp);
+  if (!ki.erlaubt) {
+    return Response.json({ error: ki.grund }, { status: 403 });
+  }
 
   const formData = await request.formData();
   const file = formData.get("manual");
   const attest = formData.get("attest") === "on";
   const provider = resolveProvider(formData);
-  const apiKey = String(formData.get("apiKey") ?? "").trim() || undefined;
+  const apiKey = darfEigenenSchluessel(user, kiInDerApp)
+    ? String(formData.get("apiKey") ?? "").trim() || undefined
+    : undefined;
   const highDetail = formData.get("highDetail") === "on";
   const rohSicht = String(formData.get("visibility") ?? "");
   const visibility: "privat" | "club" | "oeffentlich" =

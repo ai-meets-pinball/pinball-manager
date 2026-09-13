@@ -22,6 +22,9 @@ export function MaintenancePlan({
   hatGuide,
   providers,
   centralKey,
+  byoErlaubt,
+  kiErlaubt,
+  kiGrund,
   verknuepfterPlan,
   plans,
 }: {
@@ -33,6 +36,10 @@ export function MaintenancePlan({
   providers: AiProvider[];
   /** Zentraler Anthropic-Key vorhanden? Sonst BYO-Feld beim Claude-Weg. */
   centralKey: boolean;
+  byoErlaubt: boolean;
+  /** „Aus Guide übernehmen" erlaubt (lib/ki-zugang)? Sonst gesperrt mit Grund. */
+  kiErlaubt: boolean;
+  kiGrund?: string;
   /** Verknüpfter Standard (oder null = eigener Plan / Kopie). */
   verknuepfterPlan: { name: string } | null;
   /** Verknüpfbare Standard-Pläne (eigene + Club-Pläne), fürs Picker-Dropdown. */
@@ -78,6 +85,9 @@ export function MaintenancePlan({
               machineId={machineId}
               providers={providers}
               centralKey={centralKey}
+              byoErlaubt={byoErlaubt}
+              erlaubt={kiErlaubt}
+              grund={kiGrund}
             />
           ) : null}
 

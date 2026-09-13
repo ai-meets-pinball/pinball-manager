@@ -553,6 +553,11 @@ export const userSettings = pgTable("user_settings", {
   // Sammel-QR-Token der PRIVATEN Sammlung (Route /s/<token>). Nullbar: wird bei
   // Erstaufruf der Sammel-QR-Seite erzeugt (user_settings-Zeilen sind sparse).
   qrToken: text("qr_token").unique(),
+  // Nur für den Super-Admin wirksam: KI in der App über den Plattform-Schlüssel
+  // nutzen (true) — oder bewusst wie ein normaler Nutzer den Prompt-Weg gehen
+  // (false), etwa um die Oberfläche so zu sehen, wie alle sie sehen. Fehlt die
+  // Zeile, gilt true (lib/ki-zugang).
+  kiInDerApp: boolean("ki_in_der_app").notNull().default(true),
 });
 
 export const clubSettings = pgTable("club_settings", {
