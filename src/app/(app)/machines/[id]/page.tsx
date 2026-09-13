@@ -44,11 +44,12 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { ViewToggle } from "@/components/ui/view-toggle";
 import { deleteMachine } from "@/db/actions/machines";
 import { getMachineDetail } from "@/db/machine-detail";
-import { getTippZielKatalog, resolvePrompt } from "@/db/queries";
+import { getLoeschfolgen, getTippZielKatalog, resolvePrompt } from "@/db/queries";
 import { FEHLER_FILTER, FEHLER_FILTER_LABEL } from "@/lib/fehler-status";
 import { modellName, relativeZeit } from "@/lib/format";
 import { tageDazwischen } from "@/lib/faelligkeit";
 import { buildGuideImportPrompt } from "@/lib/import-guide";
+import { loeschfrage } from "@/lib/loeschfolgen";
 import { kannKuratieren } from "@/lib/session";
 import { klebrig } from "@/lib/sticky-view";
 import { availableProviders } from "@/lib/ai/provider";
@@ -114,6 +115,10 @@ export default async function MachineDetailPage({
     reparaturen,
     teilen,
   } = await getMachineDetail(id);
+
+  // Nur wer löschen darf, sieht den Knopf — nur dann lohnt die Frage, was
+  // andere dabei verlieren (Freigaben, maschinengebundenes Wissen).
+  const loeschfolgen = darf.loeschen ? await getLoeschfolgen(machine.id) : null;
 
   // Die Ansicht benutzt weiterhin die gewohnten Namen.
   const alleFehler = fehler.alle;
@@ -446,11 +451,11 @@ export default async function MachineDetailPage({
           {/* Nur zeigen, wenn deleteMachine es auch zulässt (Eigentümer,
               Club-Manager, Super-Admin) — sonst ein Knopf, der garantiert
               in einen Fehler läuft. */}
-          {darf.loeschen ? (
+          {darf.loeschen && loeschfolgen ? (
             <form action={deleteMachine}>
               <input type="hidden" name="id" value={machine.id} />
               <ConfirmButton
-                question="Diese Maschine samt Fehlern, Reparaturen und Wartungspunkten löschen?"
+                question={loeschfrage(loeschfolgen)}
                 confirmLabel="Ja, löschen"
                 className="inline-flex items-center gap-2 rounded-[var(--radius)] border border-[var(--color-danger)]/40 px-3 py-2 text-sm text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10"
               >

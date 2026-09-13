@@ -128,7 +128,7 @@ function SammelLeiste({
           <input key={id} type="hidden" name="machineIds" value={id} />
         ))}
         <ConfirmButton
-          question={`${ids.length} Maschine(n) endgültig löschen? Alle zugehörigen Fehler, Reparaturen und Wartungen werden mitgelöscht — das lässt sich nicht rückgängig machen.`}
+          question={`${ids.length} Maschine(n) endgültig löschen? Alle zugehörigen Fehler, Reparaturen und Wartungen werden mitgelöscht, Freigaben von Reparaturen erlöschen — das lässt sich nicht rückgängig machen. (Was eine einzelne Maschine für andere bedeutet, zeigt ihr Löschen-Knopf auf der Detailseite.)`}
           confirmLabel="Endgültig löschen"
           disabled={loeschenLaeuft || ausgewaehlt}
           className="inline-flex items-center gap-1 rounded-[var(--radius)] border border-[var(--color-danger)] px-3 py-1.5 text-sm font-medium text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 disabled:opacity-50"

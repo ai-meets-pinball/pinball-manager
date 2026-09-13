@@ -27,6 +27,18 @@ id und Signale bleiben erhalten).
   `showModal()` „already open as a non-modal dialog" (Knoten wird umgehängt,
   `open` bleibt stehen); behoben per `removeAttribute("open")`, bewusst NICHT
   per `close()` (feuert das close-Event → Dialog unmontiert sich sofort).
+- **Maschine löschen: ehrlich, ohne Waisen, mit Rettung** (2026-09-13, Franks
+  Frage „geht damit alles Öffentliche verloren?"): Handbuch/Guide/Tipps hängen
+  am Modell und überleben — Reparaturen nicht, und ihre FREIGABEN blieben als
+  Waisen in `shares` (kein FK, `artefakt_id` ist polymorph). Jetzt: die
+  Löschfrage der Detailseite nennt, was andere verlieren (`lib/loeschfolgen.ts`,
+  `getLoeschfolgen`); `deleteMachine`/`deleteMachines`/`deleteRepair` räumen
+  Freigaben in derselben Transaktion ab (Migration 0057 holt den Altbestand
+  nach); Wissen, das noch an `machine_id` hängt (Upload vor der Modell-
+  Zuordnung), wandert ans Modell — beim ersten Zuordnen und vor dem Löschen
+  (`umhaengbar`: was am Modell Autor+Typ doppeln würde, bleibt und gilt als
+  verloren). Sammel-Löschen bleibt bei einem generischen Satz (keine Query je
+  Zeile). E2E: `e2e/loeschen.spec.ts`.
 - **Next 16.2.9 → 16.3.5** (2026-09-12): `npm audit` meldete elf Advisories
   gegen 16.2.9, darunter Proxy-Bypass im App Router, DoS über Server Actions,
   RCE in der Image-Optimierung (AVIF) — alle in 16.3.5 geschlossen. Gate:
@@ -178,3 +190,7 @@ Aufteilung von `queries.ts` nach Themen.
 - **`derived_knowledge_id`** — eine Reparatur zu teilbarem Wissen „befördern".
   Reparatur-Sharing bleibt laut Entscheidung in `shares`/`share_targets` (mit
   Kosten-Projektion + Anonymität), es wird **nicht** nach `knowledge` migriert.
+  *Bester Anwendungsfall seit 2026-09-13:* beim Löschen einer Maschine sterben
+  geteilte Reparaturen mit (die Löschfrage sagt es jetzt) — „befördern" wäre
+  der Weg, sie als Modell-Wissen zu behalten. Eigene Entscheidung, weil sie
+  den Vorrang von `shares` anfasst.

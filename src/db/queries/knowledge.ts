@@ -19,9 +19,12 @@ import {
   knowledgeSignals,
   knowledgeTargets,
   machineModels,
+  machines,
   user,
 } from "@/db/schema";
+import type { Tx } from "@/db/machine-status-core";
 import { getFamilie } from "@/db/queries/familie";
+import { umhaengbar } from "@/lib/loeschfolgen";
 import { gruppiereNachFamilie } from "@/lib/opdb-ref";
 import { darfWissen, kannKuratieren } from "@/lib/rechte";
 import {
@@ -472,4 +475,50 @@ export async function getKuratierungsUebersicht(currentUser: SessionUser) {
     .orderBy(desc(knowledge.verborgenAm));
 
   return { gemeldet, verborgen };
+}
+
+/*
+  Wissen, das noch an der MASCHINE hängt (Upload, als sie kein Modell hatte):
+  was davon ans Modell darf und was dort einen Eintrag desselben Autors und
+  Typs doppeln würde, entscheidet lib/loeschfolgen.umhaengbar — hier nur das
+  Laden. Löschfrage (getLoeschfolgen) und Umhängen (actions/machines.ts) sehen
+  so dieselbe Einteilung. Der Vergleich läuft gegen die ganze Familie, wie
+  facts-store beim In-Place-Update.
+*/
+export async function planeWissenUmhaengen(
+  machineId: string,
+  q: Tx | typeof db = db,
+): Promise<{
+  modelId: string | null;
+  umhaengen: string[];
+  bleiben: { id: string; visibility: string }[];
+}> {
+  const [m] = await q
+    .select({ modelId: machines.modelId })
+    .from(machines)
+    .where(eq(machines.id, machineId));
+  const anMaschine = await q
+    .select({
+      id: knowledge.id,
+      typ: knowledge.typ,
+      createdBy: knowledge.createdBy,
+      visibility: knowledge.visibility,
+    })
+    .from(knowledge)
+    .where(eq(knowledge.machineId, machineId));
+  const modelId = m?.modelId ?? null;
+  if (!modelId || anMaschine.length === 0) {
+    return { modelId, umhaengen: [], bleiben: anMaschine };
+  }
+
+  const amModell = await q
+    .select({ typ: knowledge.typ, createdBy: knowledge.createdBy })
+    .from(knowledge)
+    .where(inArray(knowledge.modelId, (await getFamilie(modelId)).ids));
+  const plan = umhaengbar(anMaschine, amModell);
+  return {
+    modelId,
+    umhaengen: plan.umhaengen,
+    bleiben: anMaschine.filter((e) => plan.bleiben.includes(e.id)),
+  };
 }

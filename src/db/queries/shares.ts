@@ -1,5 +1,6 @@
 import {
   and,
+  count,
   desc,
   eq,
   inArray,
@@ -10,6 +11,8 @@ import {
 } from "drizzle-orm";
 import { db } from "@/db";
 import { getFamilie } from "@/db/queries/familie";
+import { planeWissenUmhaengen } from "@/db/queries/knowledge";
+import type { Loeschfolgen } from "@/lib/loeschfolgen";
 import type { ShareScope } from "@/lib/sharing";
 import {
   clubSettings,
@@ -214,4 +217,23 @@ export async function getShareDefaults(machine: {
     console.error("[shares] Voreinstellungen nicht ladbar, nutze Standard:", e);
     return SHARE_DEFAULTS;
   }
+}
+
+/** Was andere verlieren, wenn diese Maschine gelöscht wird — für die Löschfrage
+    (lib/loeschfolgen.loeschfrage). Privates Wissen an der Maschine zählt nicht
+    als Verlust für andere; umgehängt wird es trotzdem (actions/machines.ts). */
+export async function getLoeschfolgen(machineId: string): Promise<Loeschfolgen> {
+  const [{ n }] = await db
+    .select({ n: count() })
+    .from(shares)
+    .innerJoin(repairs, eq(repairs.id, shares.artefaktId))
+    .where(
+      and(eq(shares.artefaktTyp, "repair"), eq(repairs.machineId, machineId)),
+    );
+  const plan = await planeWissenUmhaengen(machineId);
+  return {
+    freigegebeneReparaturen: n,
+    wissenUebertragen: plan.umhaengen.length,
+    wissenVerloren: plan.bleiben.filter((e) => e.visibility !== "privat").length,
+  };
 }

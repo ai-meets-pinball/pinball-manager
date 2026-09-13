@@ -4,7 +4,7 @@ import { and, eq, inArray } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { faults, repairFaults, repairs } from "@/db/schema";
+import { faults, repairFaults, repairs, shares } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
 import { mitStatusNachzug } from "@/db/machine-status-core";
 import { repairSchema } from "@/lib/validators";
@@ -154,9 +154,16 @@ export async function deleteRepair(
   await requireMachineWrite(machineId);
 
   // repair_faults hängt per FK (cascade) an der Reparatur und geht mit weg.
-  await db
-    .delete(repairs)
-    .where(and(eq(repairs.id, id), eq(repairs.machineId, machineId)));
+  // Eine Freigabe NICHT: `shares.artefakt_id` ist polymorph und ohne FK, sie
+  // bliebe als Waise stehen — darum hier in derselben Transaktion abräumen.
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(shares)
+      .where(and(eq(shares.artefaktTyp, "repair"), eq(shares.artefaktId, id)));
+    await tx
+      .delete(repairs)
+      .where(and(eq(repairs.id, id), eq(repairs.machineId, machineId)));
+  });
 
   // BEWUSST ohne mitStatusNachzug: das Löschen einer Reparatur
   // öffnet keinen behobenen Fehler wieder — der Status ändert sich nicht.

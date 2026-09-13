@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
 import {
+  knowledge,
   machineAusstattung,
   machineBesitzer,
   machineBesitzerZuordnung,
@@ -14,6 +15,8 @@ import {
   shares,
   user,
 } from "@/db/schema";
+import type { Tx } from "@/db/machine-status-core";
+import { planeWissenUmhaengen } from "@/db/queries/knowledge";
 import { istBaugleich, parseOpdbRef } from "@/lib/opdb-ref";
 import { darfMaschine } from "@/lib/rechte";
 import {
@@ -110,17 +113,19 @@ async function sindBaugleich(a: string | null, b: string | null): Promise<boolea
   return istBaugleich(refA, refB);
 }
 
-/** Die Reparatur-Freigaben einer Maschine aufheben, wenn sich ihr Modell
-    ändert — sonst hingen die Freigaben am alten Typ. Handbuch-Fakten sind seit
-    dem Datenmodell-Redesign kein Share mehr (Modell-Wissen in `knowledge`) und
-    bleiben bewusst am ursprünglichen Modell. */
-async function widerrufeFreigaben(machineId: string) {
-  const eigeneReparaturen = db
+/** Die Reparatur-Freigaben einer Maschine aufheben — wenn sich ihr Modell
+    ändert (sonst hingen die Freigaben am alten Typ) und bevor sie gelöscht
+    wird (`shares.artefakt_id` hat keinen FK, die Freigaben blieben sonst als
+    Waisen stehen). Handbuch-Fakten sind seit dem Datenmodell-Redesign kein
+    Share mehr (Modell-Wissen in `knowledge`) und bleiben bewusst am
+    ursprünglichen Modell. */
+async function widerrufeFreigaben(machineId: string, q: Tx | typeof db = db) {
+  const eigeneReparaturen = q
     .select({ id: repairs.id })
     .from(repairs)
     .where(eq(repairs.machineId, machineId));
 
-  await db
+  await q
     .delete(shares)
     .where(
       and(
@@ -128,6 +133,23 @@ async function widerrufeFreigaben(machineId: string) {
         inArray(shares.artefaktId, eigeneReparaturen),
       ),
     );
+}
+
+/*
+  Wissen, das noch an der MASCHINE hängt (Upload, als sie kein Modell hatte),
+  ans Modell umhängen — beim ersten Zuordnen eines Modells und als
+  Sicherheitsnetz vor dem Löschen, denn `knowledge.machine_id` kaskadiert.
+  Was am Modell einen Eintrag desselben Autors und Typs doppeln würde, bleibt
+  liegen (lib/loeschfolgen.umhaengbar) und wird in der Löschfrage als verloren
+  genannt. Ohne Modell gibt es kein Ziel — dann passiert hier nichts.
+*/
+async function haengeWissenUm(q: Tx | typeof db, machineId: string) {
+  const plan = await planeWissenUmhaengen(machineId, q);
+  if (!plan.modelId || plan.umhaengen.length === 0) return;
+  await q
+    .update(knowledge)
+    .set({ modelId: plan.modelId, machineId: null })
+    .where(inArray(knowledge.id, plan.umhaengen));
 }
 
 /*
@@ -517,6 +539,12 @@ export async function updateMachine(
   await schreibeBesitzerZuordnung(id, besitzer.besitzerIds);
   await schreibeAusstattung(id, ausstattungAusFormular(formData));
 
+  // Erstes Modell für diese Maschine: Wissen, das bis jetzt nur an ihr hing,
+  // gehört ab sofort dem Modell — und überlebt damit auch ihr Löschen.
+  if (machine.modelId === null && neuerModelId !== null) {
+    await haengeWissenUm(db, id);
+  }
+
   revalidatePath("/machines");
   revalidatePath(`/machines/${id}`);
   redirect(`/machines/${id}`);
@@ -588,7 +616,14 @@ export async function deleteMachine(formData: FormData): Promise<void> {
     throw new Error("Nur Eigentümer oder Club-Owner/-Admin dürfen löschen");
   }
 
-  await db.delete(machines).where(eq(machines.id, id));
+  // Erst retten und aufräumen, dann löschen — in EINER Transaktion, damit
+  // kein halber Zustand bleibt. Die Löschfrage (lib/loeschfolgen) hat vorher
+  // genau das angekündigt.
+  await db.transaction(async (tx) => {
+    await haengeWissenUm(tx, id);
+    await widerrufeFreigaben(id, tx);
+    await tx.delete(machines).where(eq(machines.id, id));
+  });
   revalidatePath("/machines");
   redirect("/machines");
 }
@@ -620,7 +655,14 @@ export async function deleteMachines(
   }
 
   if (erlaubt.length > 0) {
-    await db.delete(machines).where(inArray(machines.id, erlaubt));
+    // Wie deleteMachine, je Maschine: Wissen ans Modell, Freigaben weg, dann löschen.
+    await db.transaction(async (tx) => {
+      for (const machineId of erlaubt) {
+        await haengeWissenUm(tx, machineId);
+        await widerrufeFreigaben(machineId, tx);
+      }
+      await tx.delete(machines).where(inArray(machines.id, erlaubt));
+    });
     revalidatePath("/machines");
   }
 
