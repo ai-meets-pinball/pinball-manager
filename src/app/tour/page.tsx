@@ -3,7 +3,12 @@ import { ilike } from "drizzle-orm";
 import { MarketingFooter, MarketingNav } from "@/components/site-chrome";
 import { db } from "@/db";
 import { clubs } from "@/db/schema";
+import { MachineDataTables } from "@/components/machine-data-tables";
+import { TroubleshootingGuideView } from "@/components/troubleshooting-guide";
+import { inhaltToFacts } from "@/lib/import-facts";
 import { baseUrl, erzeugeQrSvgFuerUrl } from "@/lib/qr-code";
+import type { TroubleshootingGuide } from "@/lib/validators";
+import { BEISPIEL_FAKTEN } from "@/lib/wissen-beispiel";
 
 /*
   Englischer One-Pager zum Weitergeben — bewusst NICHT in der Navigation
@@ -99,6 +104,60 @@ const mockMachines = [
   { name: "Twilight Zone", year: "1993", club: null, due: 1 },
   { name: "Attack From Mars", year: "1995", club: "Pinball Friends", due: 0 },
 ];
+
+/* Demo-Guide für die Tour — englischer INHALT in exakt der Form, die
+   troubleshootingGuideSchema verlangt, gerendert mit DERSELBEN Komponente wie
+   ein echter Guide (TroubleshootingGuideView). Frei erfunden, WPC-95-typisch,
+   wie BEISPIEL_GUIDE in lib/wissen-beispiel (dessen Text ist deutsch, deshalb
+   hier eine eigene Fassung). Die Oberflächen-Beschriftung bleibt deutsch —
+   das ist ehrlich: so sieht die App aus. */
+const demoGuide: TroubleshootingGuide = {
+  plattform: "WPC-95 (Williams/Bally, 1995–1999)",
+  abschnitte: [
+    {
+      titel: "1 · Safety first",
+      bloecke: [
+        {
+          typ: "warnung",
+          text: "Unplug the machine before touching the power driver or Fliptronic board — the 50 V rail stays charged in the capacitors for a moment.",
+        },
+        {
+          typ: "text",
+          text: "Before any diagnosis: inspect the fuses, reseat the board connectors, check the battery holder for corrosion.",
+        },
+      ],
+    },
+    {
+      titel: "2 · Flipper weak or dead",
+      bloecke: [
+        {
+          typ: "text",
+          text: "Both flippers dead → check fuse F106 and the Fliptronic II board. Only one dead → measure the EOS switch and the cabinet flipper button.",
+        },
+        {
+          typ: "tabelle",
+          titel: "Quick diagnosis",
+          spalten: ["Symptom", "Suspect", "Check"],
+          zeilen: [
+            ["Both flippers dead", "F106 blown", "Fuse, then 50 V at J907"],
+            ["One flipper weak", "EOS contact burnt", "Clean or replace the contact"],
+            ["Flipper stays up", "Transistor shorted", "Replace the Q on the Fliptronic board"],
+          ],
+        },
+      ],
+    },
+    {
+      titel: "3 · Known issues of this generation",
+      bloecke: [
+        {
+          typ: "text",
+          text: "Battery corrosion on the CPU board and cracked solder joints at connector J101 (power supply) are the classics of this era.",
+        },
+      ],
+    },
+  ],
+  quellen: ["PinWiki: WPC Repair Guide", "IPDB", "Pinside forum"],
+};
 
 /* Stand der Dinge — was heute trägt, was noch nicht gebaut ist und was
    nachkommen kann. Dieser Abschnitt ist der Grund, warum man dem Rest der
@@ -468,6 +527,47 @@ export default async function TourPage() {
               machine does not start over. The manual PDF is never stored: only
               the extracted facts are kept, never the copyrighted text.
             </p>
+          </div>
+        </div>
+      </section>
+
+      {/* ===== DEMO: HANDBUCH-DATEN + GUIDE ===== */}
+      <section className="mx-auto max-w-[1200px] border-t border-[var(--color-border)] px-5 py-[70px] sm:px-12">
+        <div className="mb-10 max-w-[620px]">
+          <div className={EYEBROW}>What it looks like</div>
+          <h2 className="mb-3.5 text-[26px] font-bold tracking-[-0.3px] sm:text-[30px]">
+            A manual, extracted. A guide, structured.
+          </h2>
+          <p className="text-[15px] leading-[1.65] text-[var(--color-muted)]">
+            Both blocks below are rendered by the app&apos;s own components with
+            sample data for a WPC-95 game — invented values, real form. The
+            interface labels are German; the data speaks for itself. Switch
+            and lamp tables become a wired matrix, wire colours become chips,
+            and a guide is sections of text, warnings and tables — not a wall
+            of prose.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+          <div className="min-w-0 space-y-3">
+            <div className="font-mono text-[11px] uppercase tracking-[1px] text-[var(--color-faint)]">
+              Manual data · coils, switch matrix, fuses
+            </div>
+            <div className="rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[0_20px_50px_rgba(30,28,26,0.08)]">
+              <MachineDataTables facts={inhaltToFacts(BEISPIEL_FAKTEN)} />
+            </div>
+          </div>
+          <div className="min-w-0 space-y-3">
+            <div className="font-mono text-[11px] uppercase tracking-[1px] text-[var(--color-faint)]">
+              Troubleshooting guide · imported via the prompt route
+            </div>
+            <div className="rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[0_20px_50px_rgba(30,28,26,0.08)]">
+              <TroubleshootingGuideView
+                daten={demoGuide}
+                model="import"
+                createdAt={new Date("2026-09-01T12:00:00Z")}
+              />
+            </div>
           </div>
         </div>
       </section>
