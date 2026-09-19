@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Check, Users, Wrench } from "lucide-react";
+import { Check, TriangleAlert, Users, Wrench } from "lucide-react";
 import { CountPill } from "@/components/ui/count-pill";
 import { modellName } from "@/lib/format";
 
@@ -17,12 +17,15 @@ type Machine = {
 export function MachineCard({
   machine,
   wartungFaellig = 0,
+  offeneFehler = null,
   selection,
   hinweis,
 }: {
   machine: Machine;
   /** Anzahl fälliger Wartungen — zeigt eine „needs attention"-Badge. */
   wartungFaellig?: number;
+  /** Offene Fehler: Anzahl + neueste Beschreibung — Badge plus eine Zeile Text. */
+  offeneFehler?: { anzahl: number; neueste: string } | null;
   /** Gesetzt = Auswahlmodus: die Karte wird zum Auswahl-Umschalter statt Link. */
   selection?: {
     selected: boolean;
@@ -56,6 +59,20 @@ export function MachineCard({
           <p className="mt-1 flex items-center gap-1 text-xs text-[var(--color-muted)]">
             <Users size={12} /> {machine.club.name}
           </p>
+        ) : null}
+        {offeneFehler ? (
+          <div className="mt-1.5 space-y-1">
+            <CountPill tone="danger">
+              <TriangleAlert size={11} /> {offeneFehler.anzahl} offene
+              {offeneFehler.anzahl === 1 ? "r Fehler" : " Fehler"}
+            </CountPill>
+            <p
+              className="truncate text-xs text-[var(--color-muted)]"
+              title={offeneFehler.neueste}
+            >
+              {offeneFehler.neueste}
+            </p>
+          </div>
         ) : null}
         {wartungFaellig > 0 ? (
           <p className="mt-1.5">

@@ -9,7 +9,19 @@ Melde-Warnung bleibt rein anzeigend) und **In-Place-Editor + Bearbeitungs-
 Verlauf** (`knowledge_revisions`; Neu-Generierung/Import aktualisiert in place —
 id und Signale bleiben erhalten).
 
-## Umgesetzt 09/2026 (Stand 2026-09-13)
+## Umgesetzt 09/2026 (Stand 2026-09-19)
+
+- **Feedback-Runde 19.09.** (acht offene Meldungen, Plan
+  `~/.claude/plans/wir-haben-neues-feedback-floofy-parnas.md`): Katalog-Import
+  nimmt jetzt auch OPDB-Aliase (Editionen) mit — die „Kiss | Bally"-Zeile mit
+  Elvira-Bild war ein Alt-Seed mit falscher OPDB-Id; Foto-Feld mit Format-/
+  Größen-Hinweis und Vorab-Prüfung (`lib/bild-upload.ts`), Detail-Kopf zeigt
+  das Foto ganz; Sammel-QR-Liste nach Modell sortiert + Suchfeld ab sechs
+  Geräten; QR-Bogen „Alle meine Maschinen hinzufügen"; Hilfe-Suche
+  (`lib/hilfe-suche.ts`, `?q=` auf /help, Treffer aus Einstieg/Admin verlinkt);
+  Maschinen-Karten und -Tabelle zeigen offene Fehler mit neuester Beschreibung;
+  Ausstattung alphabetisch; Guide-Import entfernt Zitier-Reste externer
+  Modelle (`bereinigeZitate`), Plattform-Prompt auf ein bis zwei Sätze.
 
 - **Einladungs-Rundmail** (2026-09-13, `/admin/rundmail`): Frank schreibt
   Onboarding-/Einladungsmails selbst in der App und verschickt sie an mehrere
@@ -236,6 +248,11 @@ id und Signale bleiben erhalten).
   Spec: `docs/superpowers/specs/2026-09-02-migrationslog-abgleich-design.md`.
 
 ## Offen, aber aktuell geringer Nutzen
+
+- **Globale Suche** (Feedback 2026-09-17, „Suchfeld für die komplette Seite"):
+  ein Suchfeld in der Nav über Maschinen (`maschinenFuer`) und Hilfe-Abschnitte
+  (`filtereHilfe`) — beide Regeln existieren, es fehlt nur die Seite/Palette.
+  Zurückgestellt, weil /machines und /help je ein eigenes Suchfeld haben.
 
 - **`npm run lint` meldet 7 vorbestehende Fehler** (Stand 2026-09-12, auch auf
   16.2.9): fünf `react/no-unescaped-entities` (rohe `"` in JSX auf

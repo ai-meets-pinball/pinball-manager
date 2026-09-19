@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { MAX_BILD_MB } from "@/lib/bild-upload";
 
 /*
   Supabase wird AUSSCHLIESSLICH als Storage genutzt (PRD §7) — nicht für Auth, nicht für Daten.
@@ -32,7 +33,7 @@ const ERLAUBTE_BILDTYPEN = {
   "image/avif": "avif",
 } as const;
 
-const MAX_BYTES = 10 * 1024 * 1024; // 10 MB
+const MAX_BYTES = MAX_BILD_MB * 1024 * 1024;
 
 /** Bestimmt den Bildtyp anhand der Signatur (Magic Bytes), nicht anhand des
     vom Client gemeldeten MIME-Typs. Liefert null bei allem anderen. */
@@ -59,7 +60,7 @@ async function uploadBild(
   userId: string,
 ): Promise<string> {
   if (file.size > MAX_BYTES) {
-    throw new Error("Bild zu groß (maximal 10 MB).");
+    throw new Error(`Bild zu groß (maximal ${MAX_BILD_MB} MB).`);
   }
 
   const kopf = new Uint8Array(await file.slice(0, 16).arrayBuffer());

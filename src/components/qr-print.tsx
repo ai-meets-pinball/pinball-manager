@@ -12,6 +12,7 @@ import { ChevronDown, Loader2, Plus, Printer, Search, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/input";
 import {
+  alleQrKarten,
   qrKarteFuerMaschine,
   sucheMeineMaschinen,
 } from "@/db/actions/qr-karten";
@@ -171,6 +172,7 @@ export function QrPrint({
   const [mladen, setMladen] = useState(false);
   const [zusatz, setZusatz] = useState<Karte[]>([]);
   const [mfehler, setMfehler] = useState<string | null>(null);
+  const [alleLaden, setAlleLaden] = useState(false);
   const suchNr = useRef(0);
 
   // Debounced Maschinen-Suche (Muster wie model-search): die laufende Nummer
@@ -210,6 +212,27 @@ export function QrPrint({
     setZusatz((alt) =>
       alt.some((k) => k.id === res.id) ? alt : [...alt, res],
     );
+  }
+
+  // „Alle meine Maschinen": ein Bogen für die ganze Sammlung (Feedback:
+  // „nicht für jeden Flipper einzeln drucken müssen"). Die aktuelle Maschine
+  // ist Karte 1 und bleibt draußen; schon gewählte Karten werden nicht doppelt.
+  async function alleHinzufuegen() {
+    setMfehler(null);
+    setAlleLaden(true);
+    try {
+      const karten = await alleQrKarten();
+      setZusatz((alt) => [
+        ...alt,
+        ...karten.filter(
+          (k) => k.id !== machineId && !alt.some((a) => a.id === k.id),
+        ),
+      ]);
+    } catch {
+      setMfehler("Die Maschinen konnten nicht geladen werden.");
+    } finally {
+      setAlleLaden(false);
+    }
   }
 
   const gefiltert = useMemo(() => {
@@ -729,6 +752,21 @@ export function QrPrint({
                     ))}
                   </ul>
                 ) : null}
+
+                {/* Alle auf einmal — oder einzeln über die Suche darunter. */}
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={alleHinzufuegen}
+                  disabled={alleLaden}
+                >
+                  {alleLaden ? (
+                    <Loader2 size={15} className="animate-spin" />
+                  ) : (
+                    <Plus size={15} />
+                  )}
+                  Alle meine Maschinen hinzufügen
+                </Button>
 
                 {/* Maschinen-Suche zum Hinzufügen. */}
                 <div className="relative">

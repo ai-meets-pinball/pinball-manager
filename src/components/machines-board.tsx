@@ -33,6 +33,8 @@ type Item = {
   clubId: string | null;
   club: { name: string } | null;
   wartungFaellig: number;
+  /** Offene Fehler: Anzahl + neueste Beschreibung (null = keine). */
+  offeneFehler: { anzahl: number; neueste: string } | null;
   /** Darf der Nutzer diese Maschine umhängen/löschen? Sonst nicht anhakbar. */
   darfUmhaengen: boolean;
 };
@@ -266,6 +268,7 @@ export function MachinesBoard({
                 {clubSpalte ? (
                   <th className="py-2 pr-4 font-medium">Club</th>
                 ) : null}
+                <th className="py-2 pr-4 font-medium">Fehler</th>
                 <th className="py-2 font-medium">Wartung</th>
               </tr>
             </thead>
@@ -311,6 +314,24 @@ export function MachinesBoard({
                         : ""}
                     </td>
                   ) : null}
+                  <td className="py-2 pr-4">
+                    {m.offeneFehler ? (
+                      <span
+                        className="inline-flex max-w-56 items-center gap-2"
+                        title={m.offeneFehler.neueste}
+                      >
+                        <CountPill
+                          n={`${m.offeneFehler.anzahl} offen`}
+                          tone="danger"
+                        />
+                        <span className="truncate text-xs text-[var(--color-muted)]">
+                          {m.offeneFehler.neueste}
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="text-[var(--color-faint)]">—</span>
+                    )}
+                  </td>
                   <td className="py-2">
                     {m.wartungFaellig > 0 ? (
                       <CountPill n={`${m.wartungFaellig} fällig`} tone="danger" />
@@ -330,6 +351,7 @@ export function MachinesBoard({
               key={m.id}
               machine={m}
               wartungFaellig={m.wartungFaellig}
+              offeneFehler={m.offeneFehler}
               selection={
                 verwalten
                   ? {

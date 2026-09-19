@@ -123,7 +123,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Bearbeiten",
-        text: "Über »Bearbeiten« änderst du Daten, Foto, Modell- und Club-Zuordnung sowie Besitzer und Ausstattung. Ein bereits gewähltes Modell wird dabei nur angezeigt (keine erneute Suche) — über »Anderes Modell wählen« oder »Manuell anpassen« änderst du es bei Bedarf. Beim Foto (wie bei jedem Upload) steht ein Urheberrechts-Hinweis: Wer hochlädt, ist für die Rechte verantwortlich. Verlässt du ein Formular mit ungespeicherten Änderungen — über »Abbrechen« oder irgendeinen Link —, fragt ein Dialog »Weiter bearbeiten / Verwerfen / Speichern«; still verworfen wird nichts.",
+        text: "Über »Bearbeiten« änderst du Daten, Foto, Modell- und Club-Zuordnung sowie Besitzer und Ausstattung. Ein bereits gewähltes Modell wird dabei nur angezeigt (keine erneute Suche) — über »Anderes Modell wählen« oder »Manuell anpassen« änderst du es bei Bedarf. Beim Foto gehen JPG, PNG, WebP, GIF und AVIF bis 10 MB (zu große Dateien meldet das Feld sofort); am besten passt ein Querformat (etwa 5:3) — der Detail-Kopf zeigt das Foto ganz, die kleinen Vorschaubilder in Listen sind quadratische Ausschnitte. Beim Foto (wie bei jedem Upload) steht ein Urheberrechts-Hinweis: Wer hochlädt, ist für die Rechte verantwortlich. Verlässt du ein Formular mit ungespeicherten Änderungen — über »Abbrechen« oder irgendeinen Link —, fragt ein Dialog »Weiter bearbeiten / Verwerfen / Speichern«; still verworfen wird nichts.",
       },
       {
         titel: "Besitzer",
@@ -131,7 +131,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Ausstattung",
-        text: "Neben den Besitzern kannst du je Gerät festhalten, was zusätzlich verbaut oder dabei ist — Shaker, Topper, farbige LEDs, Ersatz-Gummisatz und dergleichen. Jeder Eintrag hat einen Namen und optional eine kurze Notiz (keine Kategorie). Gepflegt wird die Ausstattung beim Anlegen oder Bearbeiten der Maschine (im Formular, wie die Besitzer); im Kopf der Detailseite wird sie nur angezeigt. Rein informativ — vergibt keine Rechte.",
+        text: "Neben den Besitzern kannst du je Gerät festhalten, was zusätzlich verbaut oder dabei ist — Shaker, Topper, farbige LEDs, Ersatz-Gummisatz und dergleichen. Jeder Eintrag hat einen Namen und optional eine kurze Notiz (keine Kategorie). Gepflegt wird die Ausstattung beim Anlegen oder Bearbeiten der Maschine (im Formular, wie die Besitzer); im Kopf der Detailseite wird sie nur angezeigt, alphabetisch sortiert. Rein informativ — vergibt keine Rechte.",
       },
     ],
   },
@@ -163,11 +163,11 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Sammel-QR — ein Code für eine ganze Sammlung",
-        text: "Statt (oder zusätzlich zu) einem Etikett je Gerät gibt es einen Sammel-QR für eine ganze Sammlung: für einen Club (Club-Seite → »Sammel-QR«) und für deine private Sammlung (Konto → »Logo & Sammel-QR«). Wer diesen Code scannt, wählt zuerst das Gerät aus einer Liste und meldet dann dafür. Weil hier NICHT der Code direkt am Gerät gescannt wurde, trägt so eine Meldung das Kennzeichen »Sammel-QR« — ein Hinweis, dass der Melder das Gerät aus einer Liste gewählt hat und evtl. nicht davorstand.",
+        text: "Statt (oder zusätzlich zu) einem Etikett je Gerät gibt es einen Sammel-QR für eine ganze Sammlung: für einen Club (Club-Seite → »Sammel-QR«) und für deine private Sammlung (Konto → »Logo & Sammel-QR«). Wer diesen Code scannt, wählt zuerst das Gerät aus einer alphabetischen Liste (ab sechs Geräten mit Suchfeld) und meldet dann dafür. Weil hier NICHT der Code direkt am Gerät gescannt wurde, trägt so eine Meldung das Kennzeichen »Sammel-QR« — ein Hinweis, dass der Melder das Gerät aus einer Liste gewählt hat und evtl. nicht davorstand.",
       },
       {
         titel: "QR-Code drucken — Druck-Studio",
-        text: "Auf der QR-Seite steht ein Druck-Studio, das den Code MASSSTABSGETREU druckt. Zwei Kartenformen: ein EIGENES Etikett mit frei wählbaren Maßen (Breite×Höhe in mm, Hoch-/Querformat) oder eine SCORECARD in herstellerspezifischen Kartenmaßen (das passende Format wird anhand des Herstellers vorgeschlagen, ist frei änderbar). Zwei Seitenmodi: exakt in Kartengröße (für Etiketten-/Kartendrucker) oder auf A4 mit SCHNITTMARKEN zum Ausschneiden (jeder Bürodrucker). Zuschaltbar sind Name, Hinweistext und ein Logo (oben, links oder rechts vom Code) — bei Club-Maschinen das Club-Logo, bei privaten Maschinen dein persönliches Logo (Konto → »Logo & Sammel-QR«); die Schriftgröße ist regelbar. Deine Einstellungen werden gemerkt, sodass das nächste Etikett gleich so vorbelegt ist.",
+        text: "Auf der QR-Seite steht ein Druck-Studio, das den Code MASSSTABSGETREU druckt. Zwei Kartenformen: ein EIGENES Etikett mit frei wählbaren Maßen (Breite×Höhe in mm, Hoch-/Querformat) oder eine SCORECARD in herstellerspezifischen Kartenmaßen (das passende Format wird anhand des Herstellers vorgeschlagen, ist frei änderbar). Zwei Seitenmodi: exakt in Kartengröße (für Etiketten-/Kartendrucker) oder auf A4 mit SCHNITTMARKEN zum Ausschneiden (jeder Bürodrucker). Im A4-Modus lassen sich weitere Karten auf den Bogen legen — einzeln über die Suche oder mit »Alle meine Maschinen hinzufügen« die ganze Sammlung auf einmal (neue Geräte beim nächsten Druck einfach wieder mit aufnehmen). Zuschaltbar sind Name, Hinweistext und ein Logo (oben, links oder rechts vom Code) — bei Club-Maschinen das Club-Logo, bei privaten Maschinen dein persönliches Logo (Konto → »Logo & Sammel-QR«); die Schriftgröße ist regelbar. Deine Einstellungen werden gemerkt, sodass das nächste Etikett gleich so vorbelegt ist.",
       },
       {
         titel: "Mehrere Karten auf eine A4-Seite",

@@ -377,7 +377,7 @@ export default async function MachineDetailPage({
               <img
                 src={machine.fotoUrl}
                 alt={modellName(machine)}
-                className="h-24 w-40 rounded-[var(--radius)] border border-[var(--color-border)] object-cover sm:h-36 sm:w-56"
+                className="h-24 w-40 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-inset)] object-contain sm:h-36 sm:w-56"
               />
             </a>
           ) : null}

@@ -82,7 +82,9 @@ SCHRITT 0 — Plattform identifizieren (immer zuerst, vor dem eigentlichen Guide
 Bestimme anhand von Hersteller, Modell und ggf. Baujahr die exakte Plattform und
 Geräte-Generation. Falls dir Websuche zur Verfügung steht, verifiziere Plattform und
 bekannte Serienprobleme in Community-Quellen (IPDB, PinWiki, Pinside). Nenne die
-identifizierte Plattform explizit am Anfang des Guides. Der GESAMTE folgende Guide
+identifizierte Plattform explizit am Anfang des Guides — in ein bis zwei Sätzen
+(Name, Generation, Steuerungsprinzip); die Details zu Boards, Spannungen und
+Verkabelung gehören in die Subsysteme (Abschnitt 2). Der GESAMTE folgende Guide
 muss zu dieser Plattform passen — keine Konzepte aus anderen Generationen übertragen
 (z.B. keine Schaltermatrix bei EM-Geräten, keine Score-Reels bei DMD-Geräten, keine
 klassischen Sicherungsplatinen bei Node-Board-Systemen).

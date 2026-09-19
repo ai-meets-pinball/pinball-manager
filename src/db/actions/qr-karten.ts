@@ -37,3 +37,20 @@ export async function qrKarteFuerMaschine(
     qrSvg: await erzeugeQrSvg(machine.qrToken),
   };
 }
+
+/** ALLE sichtbaren Maschinen als QR-Karten — für den A4-Bogen „alle auf
+    einmal" statt Gerät für Gerät über die Suche. Dieselbe Sichtbarkeit wie
+    die Suche (getMeineMaschinen); das SVG je Karte ist klein. */
+export async function alleQrKarten(): Promise<
+  { id: string; name: string; qrSvg: string }[]
+> {
+  const me = await requireUser();
+  const maschinen = await getMeineMaschinen(me);
+  return Promise.all(
+    maschinen.map(async (m) => ({
+      id: m.id,
+      name: modellName(m),
+      qrSvg: await erzeugeQrSvg(m.qrToken),
+    })),
+  );
+}

@@ -92,3 +92,55 @@ test.describe("Troubleshooting-Guide JSON-Import", () => {
     ).toBeVisible();
   });
 });
+
+/*
+  Zitier-Reste externer Modelle („filecite…" in Private-Use-Zeichen, wie im
+  importierten Heighway-Alien-Guide) werden beim Import entfernt — der Text
+  steht danach sauber auf der Seite.
+*/
+test.describe("Troubleshooting-Guide JSON-Import bereinigt Zitier-Reste", () => {
+  let machineId: string;
+  let modelId: string;
+  const MARKER = "fileciteturn4file0L39-L67";
+
+  test.beforeAll(async () => {
+    const ownerId = await userIdByEmail(USERS.owner);
+    ({ machineId, modelId } = await createMachine({
+      ownerId,
+      opdbRef: "E2E10-GIDZ",
+    }));
+  });
+
+  test.afterAll(async () => {
+    await sql`DELETE FROM knowledge WHERE model_id IN (${modelId})`;
+    await sql`DELETE FROM machines WHERE id = ${machineId}`;
+  });
+
+  test("Marker verschwinden aus Plattform und Blöcken", async ({ page }) => {
+    await loginAs(page, USERS.owner);
+    await page.goto(`/machines/${machineId}?bereich=guide`);
+    const dialog = await guideDialogOeffnen(page);
+    await dialog.getByLabel("Guide-JSON").fill(
+      JSON.stringify({
+        plattform: `E2E-Plattform Heighway ${MARKER}`,
+        abschnitte: [
+          {
+            titel: "1. Sicherheitshinweise",
+            bloecke: [
+              { typ: "warnung", text: `Netzstecker ziehen ${MARKER} ${MARKER}.` },
+            ],
+          },
+        ],
+        quellen: [`E2E Manual ${MARKER}`],
+      }),
+    );
+    await dialog.getByRole("button", { name: "Prüfen" }).click();
+    await dialog.getByRole("button", { name: "Guide importieren" }).click();
+    await expect(page.locator("dialog[open]")).toHaveCount(0);
+    // Die Plattform steht mit ihrem Label in EINEM Absatz („Plattform: …") —
+    // das Ende des Absatzes zeigt, dass hinter dem Namen nichts mehr klebt.
+    await expect(page.getByText(/Plattform:\s*E2E-Plattform Heighway$/)).toBeVisible();
+    await expect(page.getByText(/^Netzstecker ziehen\.$/)).toBeVisible();
+    await expect(page.getByText(/filecite/)).toHaveCount(0);
+  });
+});

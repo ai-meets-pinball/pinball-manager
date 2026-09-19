@@ -7,6 +7,7 @@ import { SearchToolbar } from "@/components/ui/search-toolbar";
 import { ViewToggle } from "@/components/ui/view-toggle";
 import {
   getDueMaintenanceCountByMachine,
+  getOpenFaultsForMachines,
   getUserClubs,
   getMeineMaschinen,
 } from "@/db/queries";
@@ -73,6 +74,28 @@ export default async function MachinesPage({
     user,
     machines.map((m) => m.id),
   );
+  // Offene Fehler je Maschine — Zähler plus die neueste Beschreibung, damit
+  // man in der Liste sieht, WAS an einem Gerät ansteht (Feedback: „die
+  // Fehlerbeschreibung auch beim einzelnen Gerät, nicht nur in der Übersicht").
+  // Die Query liefert nach Datum absteigend → der erste Treffer je Maschine
+  // ist der neueste.
+  const offeneFehler = await getOpenFaultsForMachines(
+    user,
+    machines.map((m) => m.id),
+  );
+  const fehlerJeMaschine = new Map<
+    string,
+    { anzahl: number; neueste: string }
+  >();
+  for (const f of offeneFehler) {
+    const eintrag = fehlerJeMaschine.get(f.machineId);
+    if (eintrag) eintrag.anzahl += 1;
+    else
+      fehlerJeMaschine.set(f.machineId, {
+        anzahl: 1,
+        neueste: f.beschreibung,
+      });
+  }
   // Clubs des Nutzers — Tabs + Ziele für die Bulk-Zuweisung.
   const meineClubs = await getUserClubs(user.id);
 
@@ -89,6 +112,7 @@ export default async function MachinesPage({
     clubId: m.clubId,
     club: m.club,
     wartungFaellig: wartungFaellig.get(m.id) ?? 0,
+    offeneFehler: fehlerJeMaschine.get(m.id) ?? null,
     darfUmhaengen: darfMaschine(
       user,
       { ownerId: m.ownerId, clubId: m.clubId },

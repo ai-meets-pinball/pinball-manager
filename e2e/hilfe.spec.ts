@@ -32,6 +32,25 @@ test.describe("Hilfe & Einstieg", () => {
     await expect(page.getByText(/^Zugang auf Einladung\./)).toBeVisible();
   });
 
+  test("Suche filtert die Anleitung und verweist auf den Einstieg", async ({ page }) => {
+    await page.goto("/help");
+    const suche = page.getByRole("textbox", { name: "In der Hilfe suchen" });
+    await suche.fill("Sammel-QR");
+    await suche.press("Enter");
+    await expect(page).toHaveURL(/q=Sammel-QR/);
+    // Nur Sektionen mit Treffer bleiben: „Fehler" (Sammel-QR-Schritt) ja,
+    // „Erste Schritte" nicht.
+    await expect(page.getByRole("heading", { name: "Fehler" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Erste Schritte" })).toHaveCount(0);
+    // Treffer in anderen Hilfe-Seiten als Links.
+    await expect(page.getByRole("link", { name: /^Einstieg: / }).first()).toBeVisible();
+
+    await page.goto("/help?q=gibtsganzsichernicht");
+    await expect(page.getByText(/Nichts gefunden zu/)).toBeVisible();
+    await page.getByRole("link", { name: "zurücksetzen" }).click();
+    await expect(page.getByRole("heading", { name: "Erste Schritte" })).toBeVisible();
+  });
+
   test("PDF-Handbuch antwortet als PDF", async ({ request }) => {
     const res = await request.get("/help/manual");
     expect(res.status()).toBe(200);

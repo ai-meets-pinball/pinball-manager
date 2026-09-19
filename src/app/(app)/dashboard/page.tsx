@@ -492,6 +492,7 @@ export default async function DashboardPage({
               key={f.id}
               kompakt={kompakt}
               href={`/machines/${f.machineId}?bereich=fehler`}
+              titleWrap
               title={f.beschreibung}
               subtitle={`${modellName(f)} · ${f.datum.toLocaleDateString("de-DE")}`}
               meta={

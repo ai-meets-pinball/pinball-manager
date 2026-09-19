@@ -1,7 +1,7 @@
 /*
   Katalog-Import aus dem OFFIZIELLEN OPDB-Export (Match Play), seit der
   opdb.org-API-Abschaltung 2026-10-01 der einzige Weg. Lädt den ÖFFENTLICHEN
-  v2-Export (kein Token nötig) und upsertet alle Editionen als machine_models —
+  v2-Export (kein Token nötig) und upsertet Maschinen UND Editionen (Aliase) als machine_models —
   inklusive Backglass-Bild (das der Export jetzt selbst liefert, Host img.opdb.org).
 
   Ersetzt import-models.mjs (Modelle) UND import-images.mjs (Bilder über die tote
@@ -52,8 +52,13 @@ const data = await res.json();
 const entries = Array.isArray(data) ? data : (data.entries ?? []);
 console.log(`${entries.length} Einträge geladen.`);
 
-// Nur Editionen (entryType "machine"); Gruppen/Titel und Aliase überspringen —
-// die App-Granularität ist die Edition (opdb_ref wie "G2Lkd-MNEdK").
+// Maschinen (entryType "machine", opdb_ref wie "G2Lkd-MNEdK") UND Aliase
+// (entryType "alias", drei Segmente wie "G2Lkd-MNEdK-A97xV" = Editionen wie
+// Premium/LE) — beides sind wählbare Katalogzeilen (siehe ensureMachineModel in
+// actions/machines.ts). Nur Gruppen/Titel (entryType "machineGroup") überspringen.
+// Aliase MÜSSEN mit, sonst bleiben Altzeilen aus dem früheren API-Import mit
+// falschem Namen/Bild stehen (2026-09: „Kiss | Bally" war in Wahrheit „Elvira's
+// House of Horrors (Blood Red Kiss)").
 // Familienschlüssel = erste zwei Segmente; Quelle der Regel ist
 // src/lib/opdb-ref.ts (familienSchluessel) — hier nur nachgebaut, weil dieses
 // Skript kein TypeScript importiert. Leeres zweites Segment → null.
@@ -64,7 +69,7 @@ function familienSchluessel(ref) {
 const rows = [];
 let mitBild = 0;
 for (const e of entries) {
-  if (e.entryType !== "machine") continue;
+  if (e.entryType !== "machine" && e.entryType !== "alias") continue;
   const opdbRef = e.opdbId ?? e.opdbMachine;
   const hersteller = e.manufacturer?.name ?? e.manufacturerName ?? null;
   const modell = e.name ?? null;
@@ -82,7 +87,9 @@ for (const e of entries) {
     image_url: image,
   });
 }
-console.log(`${rows.length} Editionen zum Upsert (davon ${mitBild} mit Bild).`);
+console.log(
+  `${rows.length} Maschinen + Editionen zum Upsert (davon ${mitBild} mit Bild).`,
+);
 
 const cols = [
   "opdb_ref",

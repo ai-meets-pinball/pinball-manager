@@ -234,7 +234,9 @@ async function sammlungMaschinen(where: SQL): Promise<SammlungMaschine[]> {
     })
     .from(machines)
     .where(where)
-    .orderBy(machines.hersteller, machines.modell);
+    // Sortiert wie angezeigt (modellName = „Modell | Hersteller"); nach
+    // Hersteller sortiert wirkte die Liste für Melder zufällig.
+    .orderBy(machines.modell, machines.hersteller);
 }
 
 /** Sammlung über ihren öffentlichen Sammel-QR-Token auflösen (erst Club, dann
@@ -321,17 +323,20 @@ export async function getMachineBesitzer(machineId: string) {
     .orderBy(machineBesitzer.name);
 }
 
-/** Die Ausstattung/Add-ons EINER Maschine (1:n), in Anlage-Reihenfolge. */
+/** Die Ausstattung/Add-ons EINER Maschine (1:n), alphabetisch nach Name —
+    die Anlage-Reihenfolge ist keine (das Formular schreibt alles neu), und
+    lesbar ist die Liste nur sortiert. Im Code statt in SQL: `localeCompare`
+    mit "de" ist deterministisch, egal welche Collation die DB hat. */
 export async function getMachineAusstattung(machineId: string) {
-  return db
+  const rows = await db
     .select({
       id: machineAusstattung.id,
       name: machineAusstattung.name,
       notiz: machineAusstattung.notiz,
     })
     .from(machineAusstattung)
-    .where(eq(machineAusstattung.machineId, machineId))
-    .orderBy(machineAusstattung.createdAt);
+    .where(eq(machineAusstattung.machineId, machineId));
+  return rows.sort((a, b) => a.name.localeCompare(b.name, "de"));
 }
 
 /*

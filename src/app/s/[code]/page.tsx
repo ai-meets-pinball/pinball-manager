@@ -1,7 +1,11 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { SearchToolbar } from "@/components/ui/search-toolbar";
 import { getSammlungByToken } from "@/db/queries";
 import { modellName } from "@/lib/format";
+
+/* Ab so vielen Geräten lohnt ein Suchfeld — darunter wäre es nur Rauschen. */
+const SUCHE_AB = 6;
 
 /*
   Öffentliche Sammlungs-Seite hinter dem SAMMEL-QR (kein Login — /s steht bewusst
@@ -12,14 +16,25 @@ import { modellName } from "@/lib/format";
 */
 export default async function SammlungPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ code: string }>;
+  searchParams: Promise<{ q?: string }>;
 }) {
-  const { code } = await params;
+  const [{ code }, { q }] = await Promise.all([params, searchParams]);
   if (!/^[0-9a-f]{8,32}$/i.test(code)) notFound();
 
   const sammlung = await getSammlungByToken(code);
   if (!sammlung) notFound();
+
+  // Suche über „Modell | Hersteller" — in-memory, die Liste ist klein und
+  // bereits sortiert geladen; das GET-Formular funktioniert ohne JS.
+  const suche = (q ?? "").trim().toLowerCase();
+  const maschinen = suche
+    ? sammlung.maschinen.filter((m) =>
+        modellName(m).toLowerCase().includes(suche),
+      )
+    : sammlung.maschinen;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col gap-6 px-6 py-10">
@@ -40,13 +55,27 @@ export default async function SammlungPage({
         </div>
       </div>
 
+      {sammlung.maschinen.length >= SUCHE_AB ? (
+        <SearchToolbar
+          placeholder="Gerät suchen …"
+          label="Gerät suchen"
+          defaultValue={q ?? ""}
+          resetHref={`/s/${code}`}
+          ohneButton
+        />
+      ) : null}
+
       {sammlung.maschinen.length === 0 ? (
         <p className="text-[var(--color-muted)]">
           Diese Sammlung hat noch keine Geräte.
         </p>
+      ) : maschinen.length === 0 ? (
+        <p className="text-[var(--color-muted)]">
+          Kein Gerät passt zu „{q}“.
+        </p>
       ) : (
         <ul className="flex flex-col gap-2">
-          {sammlung.maschinen.map((m) => (
+          {maschinen.map((m) => (
             <li key={m.id}>
               <Link
                 href={`/s/${code}/${m.id}`}

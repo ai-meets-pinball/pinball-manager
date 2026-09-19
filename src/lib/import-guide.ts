@@ -45,7 +45,8 @@ export function buildGuideSystemPrompt(machine: {
   Guide-Bestandteilen zu Blocktypen.
 */
 export const GUIDE_OUTPUT_INSTRUCTION = `Erstelle jetzt den Guide für den oben beschriebenen Flipper und gib ihn AUSSCHLIESSLICH als JSON zurück, das dem vorgegebenen Schema entspricht:
-- "plattform": die in Schritt 0 identifizierte Plattform/Geräte-Generation (kurz).
+- "plattform": die in Schritt 0 identifizierte Plattform/Geräte-Generation in EIN bis ZWEI Sätzen (Name, Generation, Steuerungsprinzip) — Details zu Boards, Spannungen und Verkabelung gehören in Abschnitt 2.
+- Keine Zitier-Marker, Fußnoten oder Datei-Verweise im Text — Quellen nur in "quellen".
 - "abschnitte": die oben genannten Abschnitte 1–7, je mit "titel" und "bloecke".
 - Ein Block ist entweder:
   - {"typ":"text","text": ...} für Fließtext (nutze "\\n" für Absätze/Aufzählungen),
@@ -167,6 +168,45 @@ export function parseGuideText(raw: string): GuideImportResult {
   }
 }
 
+/*
+  Zitier-Reste externer Modelle entfernen. ChatGPT & Co. hängen an Sätze
+  Marker wie „filecite turn4file0 L39-L67", eingerahmt von Zeichen aus dem
+  Unicode-Private-Use-Bereich (U+E200 … U+E201) — im Guide nur Müll (Feedback
+  zum Heighway-Alien-Guide). Erst die gerahmten Marker samt Folge-Leerzeichen,
+  dann jedes übrige Private-Use-Zeichen (hat in einem Guide nichts verloren).
+*/
+export function bereinigeZitate(text: string): string {
+  return text
+    .replace(/[^]* ?/g, "")
+    .replace(/[-]/g, "")
+    .replace(/ +([.,;:)])/g, "$1")
+    .replace(/[ \t]{2,}/g, " ")
+    .trim();
+}
+
+/** bereinigeZitate über alle Texte eines Guides — Plattform, Blöcke
+    (Text, Warnung, Tabellen-Zellen) und Quellen. */
+function bereinigeGuide(guide: TroubleshootingGuide): TroubleshootingGuide {
+  return {
+    plattform: bereinigeZitate(guide.plattform),
+    quellen: guide.quellen.map(bereinigeZitate),
+    abschnitte: guide.abschnitte.map((a) => ({
+      ...a,
+      titel: bereinigeZitate(a.titel),
+      bloecke: a.bloecke.map((b) =>
+        b.typ === "tabelle"
+          ? {
+              ...b,
+              titel: bereinigeZitate(b.titel),
+              spalten: b.spalten.map(bereinigeZitate),
+              zeilen: b.zeilen.map((z) => z.map(bereinigeZitate)),
+            }
+          : { ...b, text: bereinigeZitate(b.text) },
+      ),
+    })),
+  };
+}
+
 /**
  * Prüft und bewertet Guide-Daten — die EINE Kette vor dem Speichern, für
  * BEIDE Wege: die KI-Antwort und das eingefügte JSON. Vorher bekam nur der
@@ -203,7 +243,7 @@ export function parseGuide(eingabe: unknown): GuideImportResult {
       ],
     };
   }
-  const guide = parsed.data;
+  const guide = bereinigeGuide(parsed.data);
 
   if (guide.abschnitte.length === 0) {
     return {
