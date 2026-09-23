@@ -342,7 +342,7 @@ const abschnitte: Abschnitt[] = [
     schritte: [
       {
         titel: "OPDB-Daten (Match Play)",
-        text: "Die opdb.org-API wird am 1. Oktober 2026 abgeschaltet. Der Modell-Katalog (`machine_models`) wird stattdessen aus dem öffentlichen OPDB-Export befüllt — einmal `node scripts/import-opdb.mjs` ausführen (kein Token nötig), danach `node scripts/seed-generations.mjs` für die Generationen. Ein `MATCHPLAY_API_KEY` (Match-Play-Konto → API) ist nur für optionale Zusatz-Endpunkte gedacht.",
+        text: "Die opdb.org-API wird am 1. Oktober 2026 abgeschaltet. Der Modell-Katalog (`machine_models`) wird stattdessen aus dem öffentlichen OPDB-Export befüllt — einmal `node scripts/import-opdb.mjs` ausführen (kein Token nötig), danach `node scripts/seed-generations.mjs` für die Generationen. Fehler im Export (z. B. falsche Editionsnamen) stehen mit Begründung in `scripts/opdb-korrekturen.json` und werden nach jedem Import erneut angewandt — so überlebt eine Korrektur das nächste Katalog-Update. Ein `MATCHPLAY_API_KEY` (Match-Play-Konto → API) ist nur für optionale Zusatz-Endpunkte gedacht.",
       },
       {
         titel: "Anthropic-Schlüssel",

@@ -11,6 +11,13 @@
 
   Reihenfolge:  node scripts/import-opdb.mjs   dann   node scripts/seed-generations.mjs
 
+  Korrekturen am Export (scripts/opdb-korrekturen.json): die OPDB hat Fehler
+  (z. B. heißt die Heighway-Alien-Standard-Edition dort „Pro"). Weil der Upsert
+  Name/Hersteller/Baujahr bei jedem Lauf überschreibt, werden die Korrekturen
+  NACH dem Upsert je opdb_ref per UPDATE angewandt — im Repo nachlesbar, mit
+  Begründung, und der nächste Lauf stellt sie wieder her. Nur hersteller,
+  modell, baujahr sind korrigierbar (Bild, Familienschlüssel, Generation nicht).
+
   ACHTUNG: schreibt in die verbundene DB (lokal = Prod machine_models).
 */
 import fs from "node:fs";
@@ -122,6 +129,40 @@ for (let i = 0; i < rows.length; i += CHUNK) {
   verarbeitet += chunk.length;
   process.stdout.write(`\r${verarbeitet}/${rows.length} upserted…`);
 }
+
+// Korrekturen nach dem Upsert (siehe Kopfkommentar). Unbekannte Felder brechen
+// ab, bevor etwas geschrieben wird; eine Ref, die (noch) nicht im Katalog
+// steht, ist kein Fehler — sie wird gezählt und gemeldet.
+const KORRIGIERBAR = ["hersteller", "modell", "baujahr"];
+const korrekturen = JSON.parse(
+  fs.readFileSync(new URL("./opdb-korrekturen.json", import.meta.url), "utf8"),
+);
+for (const k of korrekturen) {
+  const fremd = Object.keys(k).filter(
+    (f) => f !== "opdb_ref" && f !== "grund" && !KORRIGIERBAR.includes(f),
+  );
+  if (!k.opdb_ref || fremd.length > 0) {
+    console.error(
+      `\nopdb-korrekturen.json: Eintrag ${JSON.stringify(k.opdb_ref)} hat unzulässige Felder: ${fremd.join(", ") || "(opdb_ref fehlt)"}. Erlaubt: ${KORRIGIERBAR.join(", ")}.`,
+    );
+    await sql.end();
+    process.exit(1);
+  }
+}
+let angewandt = 0;
+let unbekannt = 0;
+for (const k of korrekturen) {
+  const felder = Object.fromEntries(
+    KORRIGIERBAR.filter((f) => k[f] !== undefined).map((f) => [f, k[f]]),
+  );
+  const r = await sql`
+    UPDATE machine_models SET ${sql(felder)} WHERE opdb_ref = ${k.opdb_ref}`;
+  if (r.count > 0) angewandt++;
+  else unbekannt++;
+}
+console.log(
+  `\nKorrekturen: ${angewandt} angewandt, ${unbekannt} Ref(s) nicht im Katalog.`,
+);
 
 const gesamt = (await sql`SELECT count(*)::int c FROM machine_models`)[0].c;
 const bilder = (
