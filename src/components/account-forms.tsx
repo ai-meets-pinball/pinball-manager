@@ -81,7 +81,7 @@ export function ProfileForm({
         </div>
         <Field
           label="Initialen (optional)"
-          hint="Standard: erste Buchstaben von Vor- und Nachname."
+          hint="Bis zu drei Buchstaben, wie beim Highscore. Standard: erste Buchstaben von Vor- und Nachname."
         >
           <Input
             name="initialen"

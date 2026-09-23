@@ -8,6 +8,7 @@ import { faultImages, faults } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
 import { mitStatusNachzug } from "@/db/machine-status-core";
 import { benachrichtigeUeberNeuenFehler } from "@/db/whatsapp-benachrichtigung";
+import { maileEigentuemerUeberNeuenFehler } from "@/db/fehler-mail-benachrichtigung";
 import { MAX_FAULT_IMAGES, uploadFaultImages } from "@/lib/storage";
 import { faultSchema } from "@/lib/validators";
 import type { FormState } from "@/db/actions/form-state";
@@ -71,6 +72,21 @@ export async function createFault(
     });
   } catch (e) {
     console.error("[whatsapp] Benachrichtigung fehlgeschlagen:", e);
+  }
+  // Private Maschine: Eigentümer per Mail, wenn jemand anderes meldet
+  // (Regel + Sperre in lib/fehler-mail.ts). Nur offene Fehler.
+  if (parsed.data.status === "offen") {
+    try {
+      await maileEigentuemerUeberNeuenFehler({
+        id: neu.id,
+        machineId,
+        beschreibung: parsed.data.beschreibung,
+        melderId: user.id,
+        melderName: user.name,
+      });
+    } catch (e) {
+      console.error("[fehler-mail] Benachrichtigung fehlgeschlagen:", e);
+    }
   }
 
   revalidatePath(`/machines/${machineId}`);

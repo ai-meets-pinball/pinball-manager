@@ -103,10 +103,10 @@ export function StatusSteuerung({
             ))}
           </Select>
         </Field>
-        <Field label="Begründung (optional)">
+        <Field label="Begründung / Hinweis (optional)">
           <Input
             name="grund"
-            placeholder="z. B. Netzteil defekt, Teil bestellt"
+            placeholder="z. B. Netzteil defekt, Teil bestellt — bleibt auch bei Spielbereit sichtbar"
             value={grundSel}
             onChange={(e) => setGrundSel(e.target.value)}
           />

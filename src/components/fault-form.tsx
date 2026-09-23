@@ -7,7 +7,20 @@ import { Field, Select, Textarea } from "@/components/ui/input";
 import { FormLeaveGuard } from "@/components/ui/form-leave-guard";
 import type { FormState } from "@/db/actions/form-state";
 
-const KATEGORIEN = ["Spule", "Schalter", "Anzeige", "mechanisch", "Sonstiges"];
+/* Fehlerbilder grob nach Baugruppe/Disziplin (Wunsch aus dem Feedback, 09/2026).
+   Freier Text in faults.kategorie — beim Umbenennen den Bestand per SQL mitziehen. */
+const KATEGORIEN = [
+  "Spule",
+  "Schalter",
+  "Beleuchtung",
+  "Anzeige",
+  "Elektrik",
+  "Elektronik",
+  "Mechanik",
+  "Baugruppe",
+  "Software",
+  "Sonstiges",
+];
 
 type FaultValues = {
   id: string;

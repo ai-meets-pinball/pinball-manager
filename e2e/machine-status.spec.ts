@@ -75,7 +75,7 @@ test.describe("Maschinen-Status (Dashboard)", () => {
     await page.goto(`/machines/${machineId}?bereich=uebersicht`);
     await page.getByRole("button", { name: "Status manuell setzen" }).click();
     await page.getByLabel("Status").selectOption("ausser_betrieb");
-    await page.getByLabel("Begründung (optional)").fill("E2E: Netzteil defekt");
+    await page.getByLabel("Begründung / Hinweis (optional)").fill("E2E: Netzteil defekt");
     await page.getByRole("button", { name: "Status setzen" }).click();
     await expect(page.getByText("Außer Betrieb").first()).toBeVisible();
 
@@ -138,8 +138,36 @@ test.describe("Maschinen-Status (Dashboard)", () => {
     await page.goto("/dashboard");
     const sektion = page
       .locator("section#status")
-      .filter({ hasText: "Nicht spielbereite Maschinen" });
+      .filter({ hasText: "Betriebsstatus & Hinweise" });
     await expect(sektion).toBeVisible();
     await expect(sektion.getByText("Eingeschränkt").first()).toBeVisible();
+  });
+
+  test("manuell Spielbereit mit Begründung: Hinweis auf Detailseite und Übersicht", async ({
+    page,
+  }) => {
+    // Feedback 09/2026: ein Merker („EL-Inverter ersetzen, sobald Ersatz da")
+    // soll auch bei spielbereitem Gerät sichtbar bleiben.
+    await loginAs(page, USERS.owner);
+    await page.goto(`/machines/${machineId}?bereich=uebersicht`);
+    await page.getByRole("button", { name: "Status manuell setzen" }).click();
+    await page.getByLabel("Status").selectOption("spielbereit");
+    await page
+      .getByLabel("Begründung / Hinweis (optional)")
+      .fill("E2E: EL-Inverter ersetzen, sobald Ersatz da");
+    await page.getByRole("button", { name: "Status setzen" }).click();
+    await expect(page.getByText("Hinweis:")).toBeVisible();
+    await expect(
+      page.getByText("E2E: EL-Inverter ersetzen, sobald Ersatz da").first(),
+    ).toBeVisible();
+
+    await page.goto("/dashboard");
+    const sektion = page
+      .locator("section#status")
+      .filter({ hasText: "Betriebsstatus & Hinweise" });
+    await expect(
+      sektion.getByText("E2E: EL-Inverter ersetzen, sobald Ersatz da"),
+    ).toBeVisible();
+    await expect(sektion.getByText("Spielbereit").first()).toBeVisible();
   });
 });

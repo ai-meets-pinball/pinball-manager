@@ -182,6 +182,13 @@ export default async function DashboardPage({
   // Wie schwer die Gesamtlage ist, entscheidet dieselbe Ordnung wie bei der
   // einzelnen Maschine (lib/betriebsstatus.ts).
   const nichtSpielbereit = machines.filter((m) => m.status !== "spielbereit");
+  // Dazu spielbereite Maschinen mit manuell gesetztem Merker („EL-Inverter
+  // ersetzen, sobald Ersatz da"): ein Grund existiert nur bei manuellem Status,
+  // die Automatik löscht ihn — also immer ein bewusster Hinweis.
+  const statusListe = [
+    ...nichtSpielbereit,
+    ...machines.filter((m) => m.status === "spielbereit" && m.statusGrund),
+  ];
   const ausserBetrieb =
     schwerster(nichtSpielbereit.map((m) => m.status as Betriebsstatus)) ===
     "ausser_betrieb";
@@ -382,14 +389,15 @@ export default async function DashboardPage({
         ))}
       </div>
 
-      {/* Nicht spielbereite Maschinen zuerst — die dringendste Betriebslage. */}
-      {nichtSpielbereit.length > 0 ? (
+      {/* Betriebslage zuerst: nicht spielbereite Maschinen, dann spielbereite
+          mit Hinweis. Zeilenform überall gleich: Gerät fett, darunter der Grund. */}
+      {statusListe.length > 0 ? (
       <section id="status" className="scroll-mt-20 space-y-3">
         <h2 className="text-lg font-semibold">
-          Nicht spielbereite Maschinen ({nichtSpielbereit.length})
+          Betriebsstatus &amp; Hinweise ({statusListe.length})
         </h2>
         <List empty="Alle Maschinen spielbereit." kompakt={kompakt}>
-          {nichtSpielbereit.map((m) => (
+          {statusListe.map((m) => (
             <ListRow
               key={m.id}
               kompakt={kompakt}
@@ -416,8 +424,8 @@ export default async function DashboardPage({
               key={w.id}
               kompakt={kompakt}
               href={`/machines/${w.machineId}?bereich=wartung`}
-              title={w.titel}
-              subtitle={modellName(w)}
+              title={modellName(w)}
+              subtitle={w.titel}
               meta={
                 <>
                   <StatusBadge value={w.prioritaet} />
@@ -457,8 +465,8 @@ export default async function DashboardPage({
                 key={t.id}
                 kompakt={kompakt}
                 href={`/machines/${t.machineId}?bereich=termine`}
-                title={t.titel}
-                subtitle={`${modellName(t)} · ${t.datum.toLocaleDateString("de-DE")}`}
+                title={modellName(t)}
+                subtitle={`${t.titel} · ${t.datum.toLocaleDateString("de-DE")}`}
                 meta={
                   <span
                     className={`whitespace-nowrap text-xs ${
@@ -492,9 +500,9 @@ export default async function DashboardPage({
               key={f.id}
               kompakt={kompakt}
               href={`/machines/${f.machineId}?bereich=fehler`}
-              titleWrap
-              title={f.beschreibung}
-              subtitle={`${modellName(f)} · ${f.datum.toLocaleDateString("de-DE")}`}
+              title={modellName(f)}
+              subtitleWrap
+              subtitle={`${f.beschreibung} · ${f.datum.toLocaleDateString("de-DE")}`}
               meta={
                 <>
                   <StatusBadge value={f.status} />
@@ -512,7 +520,7 @@ export default async function DashboardPage({
           ausdrücklich sagen. Der Leerfall wandert damit von den einzelnen
           Listen (List `empty`) eine Ebene höher auf die Seite. */}
       {alleMaschinen.length > 0 &&
-      nichtSpielbereit.length === 0 &&
+      statusListe.length === 0 &&
       wartungen.length === 0 &&
       termine.length === 0 &&
       fehler.length === 0 ? (

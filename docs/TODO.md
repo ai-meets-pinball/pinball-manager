@@ -9,7 +9,27 @@ Melde-Warnung bleibt rein anzeigend) und **In-Place-Editor + Bearbeitungs-
 Verlauf** (`knowledge_revisions`; Neu-Generierung/Import aktualisiert in place —
 id und Signale bleiben erhalten).
 
-## Umgesetzt 09/2026 (Stand 2026-09-19)
+## Umgesetzt 09/2026 (Stand 2026-09-23)
+
+- **Feedback-Runde 23.09.** (fünf Vorschläge von Dirk): Fehler-Mail an den
+  Eigentümer PRIVATER Maschinen bei Fremd-/Gast-Meldung (`lib/fehler-mail.ts`
+  = Regel mit 30-Minuten-Sperre je Gerät aus `faults` berechnet,
+  `db/fehler-mail-benachrichtigung.ts`, Mail-Kategorie `fehler_neu`; Clubs
+  bleiben bei WhatsApp); manueller Status-Grund bleibt bei »Spielbereit« als
+  Hinweis sichtbar (Status-Karte, Dashboard-Sektion »Betriebsstatus &
+  Hinweise«); Dashboard-Zeilen einheitlich Gerät fett/Beschreibung darunter
+  (`ListRow subtitleWrap`); Fehler-Kategorien erweitert (Beleuchtung, Elektrik,
+  Elektronik, Mechanik, Baugruppe, Software; Bestand »mechanisch« → »Mechanik«
+  per SQL); Initialen-Hinweis (drei Buchstaben gingen schon).
+
+- **Heighway Alien (Dirk, 21.09.)**: `scripts/review-zu-fakten.mjs` formt sein
+  angereichertes Review-JSON (Top-Level `sections`, Objekt-Records) in das
+  Fakten-Import-JSON um — neu darin LED-Ketten (Board/Kette statt Matrix),
+  Gummis, Schrauben, Boards/Firmware, 3D-Druckteile; Prosa-Kapitel bleiben
+  draußen (gehören in den Guide, als Folgeschritt angeboten). Katalog-
+  Korrekturen, die den OPDB-Import überleben: `scripts/opdb-korrekturen.json`
+  (erster Eintrag: „Alien (Pro)" → „Alien (Standard)", Heighway hatte nur
+  Standard und LE), angewandt nach dem Upsert in `import-opdb.mjs`.
 
 - **Feedback-Runde 19.09.** (acht offene Meldungen, Plan
   `~/.claude/plans/wir-haben-neues-feedback-floofy-parnas.md`): Katalog-Import

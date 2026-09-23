@@ -5,6 +5,7 @@ import { db } from "@/db";
 import { faultImages, faults } from "@/db/schema";
 import { mitStatusNachzug } from "@/db/machine-status-core";
 import { benachrichtigeUeberNeuenFehler } from "@/db/whatsapp-benachrichtigung";
+import { maileEigentuemerUeberNeuenFehler } from "@/db/fehler-mail-benachrichtigung";
 import { getMachineByQrToken, getSammlungByToken } from "@/db/queries";
 import { getCurrentUser } from "@/lib/session";
 import { MAX_FAULT_IMAGES, uploadFaultImages } from "@/lib/storage";
@@ -162,6 +163,18 @@ async function meldeFehlerKern(eingabe: {
     });
   } catch (e) {
     console.error("[whatsapp] Benachrichtigung fehlgeschlagen:", e);
+  }
+  // Private Maschine: Eigentümer per Mail (Regel + Sperre in lib/fehler-mail.ts).
+  try {
+    await maileEigentuemerUeberNeuenFehler({
+      id: neu.id,
+      machineId: eingabe.machineId,
+      beschreibung,
+      melderId: currentUser?.id ?? null,
+      melderName: currentUser?.name ?? `${name} (Gast)`,
+    });
+  } catch (e) {
+    console.error("[fehler-mail] Benachrichtigung fehlgeschlagen:", e);
   }
 
   return { message: "Danke! Der Fehler ist gemeldet und wird geprüft." };

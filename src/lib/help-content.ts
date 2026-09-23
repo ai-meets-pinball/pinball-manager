@@ -63,8 +63,8 @@ export const ANLEITUNG: HilfeSektion[] = [
         text: "Oben rechts schaltest du die Abschnitte zwischen kompakter Liste (dichte Zeilen — die Voreinstellung) und Kartenansicht (luftig) um; die Wahl bleibt gemerkt.",
       },
       {
-        titel: "Nicht spielbereite Maschinen",
-        text: "Zuerst die dringendste Lage: alle Maschinen, die nicht »Spielbereit« sind (also »Eingeschränkt« oder »Außer Betrieb«) — mit Grund und direktem Sprung zur Maschine. Mehr zum Status im Abschnitt »Maschinen-Detailseite«.",
+        titel: "Betriebsstatus & Hinweise",
+        text: "Zuerst die dringendste Lage: alle Maschinen, die nicht »Spielbereit« sind (also »Eingeschränkt« oder »Außer Betrieb«) — mit Grund und direktem Sprung zur Maschine. Dahinter stehen spielbereite Maschinen, an denen ein manueller Hinweis hängt (z. B. »EL-Inverter ersetzen, sobald Ersatz da«). In allen Listen der Übersicht steht das Gerät fett in der ersten Zeile, darunter Grund, Wartungspunkt, Termin oder Fehlerbeschreibung. Mehr zum Status im Abschnitt »Maschinen-Detailseite«.",
       },
       {
         titel: "Anstehende Wartung",
@@ -72,7 +72,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Offene Fehler",
-        text: "Alle noch nicht behobenen Fehler (offen, quittiert, in Arbeit) mit Priorität — ebenfalls direkt verlinkt.",
+        text: "Alle noch nicht behobenen Fehler (offen, quittiert, in Arbeit) mit Priorität — ebenfalls direkt verlinkt. Wie in allen Listen der Übersicht steht das Gerät fett in der ersten Zeile, die Fehlerbeschreibung darunter.",
       },
       {
         titel: "Turniermodus (Club)",
@@ -119,7 +119,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Betriebsstatus",
-        text: "Jede Maschine trägt einen Betriebsstatus: »Spielbereit«, »Eingeschränkt« oder »Außer Betrieb«. Normalerweise wird er automatisch aus den offenen Fehlern abgeleitet — ein offener KRITISCHER Fehler setzt die Maschine auf »Eingeschränkt«. Mit Schreibrecht lässt er sich auf der Übersicht der Maschine auch von Hand setzen (nur so gibt es »Außer Betrieb«); »Zurück auf Automatik« lässt ihn wieder den Fehlern folgen. Der Status-Badge im Seitenkopf und die »Maschinenstatus«-Karte verlinken direkt auf diese Steuerung. Der Grund einer Einschränkung wird auf der Geräteseite angezeigt — bei manueller Pinnung der eingetragene Grund, bei automatischer Einschränkung der auslösende kritische Fehler (verlinkt). Dieser Status steckt hinter der »nicht spielbereit«-Kennzahl der Übersicht.",
+        text: "Jede Maschine trägt einen Betriebsstatus: »Spielbereit«, »Eingeschränkt« oder »Außer Betrieb«. Normalerweise wird er automatisch aus den offenen Fehlern abgeleitet — ein offener KRITISCHER Fehler setzt die Maschine auf »Eingeschränkt«. Mit Schreibrecht lässt er sich auf der Übersicht der Maschine auch von Hand setzen (nur so gibt es »Außer Betrieb«); »Zurück auf Automatik« lässt ihn wieder den Fehlern folgen. Der Status-Badge im Seitenkopf und die »Maschinenstatus«-Karte verlinken direkt auf diese Steuerung. Der Grund einer Einschränkung wird auf der Geräteseite angezeigt — bei manueller Pinnung der eingetragene Grund, bei automatischer Einschränkung der auslösende kritische Fehler (verlinkt). Setzt du den Status manuell auf »Spielbereit« und trägst eine Begründung ein, bleibt sie als »Hinweis« auf der Status-Karte und in der Übersicht sichtbar — ein Merker für Dinge, die noch anstehen, ohne das Gerät einzuschränken; »Zurück auf Automatik« löscht ihn. Dieser Status steckt hinter der »nicht spielbereit«-Kennzahl der Übersicht.",
       },
       {
         titel: "Bearbeiten",
@@ -143,7 +143,7 @@ export const ANLEITUNG: HilfeSektion[] = [
     schritte: [
       {
         titel: "Melden",
-        text: "Auf der Maschinen-Detailseite im Reiter »Fehler« auf »Neuer Fehler«. Beschreibe das Symptom und wähle optional eine Kategorie (z. B. Spule, Schalter), eine Priorität (niedrig, mittel, hoch, kritisch) und den Status. Direkt beim Anlegen kannst du ein oder mehrere FOTOS anhängen — am Handy wahlweise mit der Kamera oder aus der Galerie; sie erscheinen später als Vorschau am Fehler. Ein offener KRITISCHER Fehler setzt die Maschine automatisch auf »Eingeschränkt« (siehe Betriebsstatus).",
+        text: "Auf der Maschinen-Detailseite im Reiter »Fehler« auf »Neuer Fehler«. Beschreibe das Symptom und wähle optional eine Kategorie (Spule, Schalter, Beleuchtung, Anzeige, Elektrik, Elektronik, Mechanik, Baugruppe, Software, Sonstiges), eine Priorität (niedrig, mittel, hoch, kritisch) und den Status. Direkt beim Anlegen kannst du ein oder mehrere FOTOS anhängen — am Handy wahlweise mit der Kamera oder aus der Galerie; sie erscheinen später als Vorschau am Fehler. Ein offener KRITISCHER Fehler setzt die Maschine automatisch auf »Eingeschränkt« (siehe Betriebsstatus).",
       },
       {
         titel: "Status & Filter",
@@ -159,7 +159,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Per QR-Code melden — auch ohne Konto",
-        text: "Jede Maschine hat ein QR-Etikett (Detailseite → »QR-Code«, drucken und ans Gerät kleben). Wer den Code scannt, landet auf einer öffentlichen Melde-Seite: Angemeldete mit Zugriff kommen direkt in den Fehler-Reiter; alle anderen — auch Gäste ganz ohne Konto — beschreiben das Symptom, geben nur ihren Namen an (erscheint als »… (Gast)«) und können ebenfalls Fotos anhängen. Priorität und Status vergibt anschließend der Betreiber. Ein Login ist der bevorzugte Weg, aber keine Voraussetzung.",
+        text: "Jede Maschine hat ein QR-Etikett (Detailseite → »QR-Code«, drucken und ans Gerät kleben). Wer den Code scannt, landet auf einer öffentlichen Melde-Seite: Angemeldete mit Zugriff kommen direkt in den Fehler-Reiter; alle anderen — auch Gäste ganz ohne Konto — beschreiben das Symptom, geben nur ihren Namen an (erscheint als »… (Gast)«) und können ebenfalls Fotos anhängen. Priorität und Status vergibt anschließend der Betreiber. Der Eigentümer einer PRIVATEN Maschine bekommt bei jeder Fremd-Meldung eine E-Mail (höchstens alle 30 Minuten je Gerät); für Club-Maschinen gibt es die WhatsApp-Benachrichtigung an Owner/Admins. Ein Login ist der bevorzugte Weg, aber keine Voraussetzung.",
       },
       {
         titel: "Sammel-QR — ein Code für eine ganze Sammlung",
@@ -513,7 +513,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Profil",
-        text: "Im Abschnitt »Profil« pflegst du Name, Vorname/Nachname, optionale Initialen und ein Profilbild. Das Bild (oder deine Initialen) erscheint als Avatar in der Navigation. Für Profilbild und Logo gilt wie für jeden Upload: Du bist für die Rechte am Bild verantwortlich.",
+        text: "Im Abschnitt »Profil« pflegst du Name, Vorname/Nachname, optionale Initialen (bis zu drei Buchstaben, wie beim Highscore) und ein Profilbild. Das Bild (oder deine Initialen) erscheint als Avatar in der Navigation. Für Profilbild und Logo gilt wie für jeden Upload: Du bist für die Rechte am Bild verantwortlich.",
       },
       {
         titel: "E-Mail-Adresse ändern",
@@ -760,7 +760,7 @@ export const ADMIN_HILFE: HilfeSektion[] = [
       },
       {
         titel: "Versand-Protokoll",
-        text: "Unter jeder Meldung stehen die dazu verschickten Mails (wann, an wen, welcher Text). Das komplette Protokoll ALLER System-Mails (Einladungen, Passwort-Reset, Wartungs-Erinnerungen, Feedback-Benachrichtigungen) findest du unter Administration → »Mail-Protokoll«, nach Kategorie filterbar. Unter Administration → »WhatsApp« liegt entsprechend das Protokoll der WhatsApp-Fehler-Benachrichtigungen; oben steht, ob der echte Versand aktiv ist oder nur mitprotokolliert wird.",
+        text: "Unter jeder Meldung stehen die dazu verschickten Mails (wann, an wen, welcher Text). Das komplette Protokoll ALLER System-Mails (Einladungen, Passwort-Reset, Wartungs-Erinnerungen, Feedback-Benachrichtigungen, Fehler-Mails an Eigentümer privater Maschinen) findest du unter Administration → »Mail-Protokoll«, nach Kategorie filterbar. Unter Administration → »WhatsApp« liegt entsprechend das Protokoll der WhatsApp-Fehler-Benachrichtigungen; oben steht, ob der echte Versand aktiv ist oder nur mitprotokolliert wird.",
       },
     ],
   },
@@ -866,7 +866,7 @@ export const EINSTIEG: (HilfeSektion & { zielgruppe?: Zielgruppe })[] = [
       },
       {
         titel: "Fehler am Gerät — auch für Besuch",
-        text: "Druck das QR-Etikett der Maschine (Kopf der Detailseite → »QR-Code«) und kleb es ans Gerät. Wer es scannt, meldet einen Fehler mit Foto — ohne Konto. Für die ganze Sammlung gibt es unter Konto → »Logo & Sammel-QR« EINEN Code mit deinem Logo, hinter dem man das Gerät aus einer Liste wählt.",
+        text: "Druck das QR-Etikett der Maschine (Kopf der Detailseite → »QR-Code«) und kleb es ans Gerät. Wer es scannt, meldet einen Fehler mit Foto — ohne Konto; du bekommst dazu eine E-Mail (höchstens alle 30 Minuten je Gerät). Für die ganze Sammlung gibt es unter Konto → »Logo & Sammel-QR« EINEN Code mit deinem Logo, hinter dem man das Gerät aus einer Liste wählt.",
       },
       {
         titel: "Wartung ohne Zettel",

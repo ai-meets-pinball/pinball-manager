@@ -52,6 +52,7 @@ export function ListRow({
   actions,
   kompakt = false,
   titleWrap = false,
+  subtitleWrap = false,
   children,
 }: {
   leading?: ReactNode;
@@ -66,6 +67,8 @@ export function ListRow({
   /** Titel darf umbrechen statt abgeschnitten zu werden — für reiche Zeilen mit
       Fließtext (z. B. eine Fehlerbeschreibung als Titel). */
   titleWrap?: boolean;
+  /** Untertitel darf umbrechen — z. B. eine Fehlerbeschreibung unter dem Gerät. */
+  subtitleWrap?: boolean;
   children?: ReactNode;
 }) {
   return (
@@ -88,7 +91,9 @@ export function ListRow({
           )}
         </p>
         {subtitle ? (
-          <p className="truncate text-sm text-[var(--color-muted)]">
+          <p
+            className={`text-sm text-[var(--color-muted)] ${subtitleWrap ? "break-words" : "truncate"}`}
+          >
             {subtitle}
           </p>
         ) : null}

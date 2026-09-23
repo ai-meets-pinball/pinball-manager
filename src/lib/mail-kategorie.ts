@@ -10,6 +10,7 @@ export const MAIL_KATEGORIE_LABEL: Record<string, string> = {
   termin_erinnerung: "Termin-Erinnerung",
   feedback_neu: "Neue Meldung (an Admins)",
   feedback_status: "Melder-Benachrichtigung",
+  fehler_neu: "Neuer Fehler (an Eigentümer)",
 };
 
 export function mailKategorieLabel(kategorie: string): string {

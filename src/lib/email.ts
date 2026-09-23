@@ -30,7 +30,8 @@ export type MailKategorie =
   | "maintenance_reminder"
   | "termin_erinnerung"
   | "feedback_neu"
-  | "feedback_status";
+  | "feedback_status"
+  | "fehler_neu";
 
 /* Zentraler Versand: EINE Stelle spricht Resend an UND schreibt eine
    `mail_log`-Zeile. Das Protokollieren ist „best effort" — ein Log-Fehler
@@ -456,6 +457,41 @@ export async function sendFeedbackStatusEmail(
         }
         <p>Danke für deinen Hinweis!</p>
         <p><a href="${meldung.url}">Deine Meldungen ansehen</a></p>
+      </div>
+    `,
+  });
+}
+
+/** Neuer Fehler an einer PRIVATEN Maschine → Mail an den Eigentümer. OB sie
+    geht (nur privat, nur Fremd-Meldung, Sperre je Maschine), entscheidet
+    lib/fehler-mail.ts; Aufrufer ist db/fehler-mail-benachrichtigung.ts, best
+    effort wie die WhatsApp-Benachrichtigung. */
+export async function sendNeuerFehlerEmail(
+  to: string,
+  fehler: {
+    maschine: string;
+    beschreibung: string;
+    /** Anzeigename des Melders, bei Gästen „<Name> (Gast)". */
+    melder: string;
+    url: string;
+  },
+) {
+  const kurz = fehler.beschreibung.trim().replace(/\s+/g, " ").slice(0, 140);
+  await sendeMail({
+    kategorie: "fehler_neu",
+    to,
+    subject: `Neuer Fehler an ${fehler.maschine} — Pinball Manager`,
+    logText: `Neuer Fehler an ${fehler.maschine} von ${fehler.melder}: ${kurz}`,
+    html: `
+      <div style="font-family: sans-serif; line-height: 1.5;">
+        <h2>Neuer Fehler an ${escapeHtml(fehler.maschine)}</h2>
+        <p>Gemeldet von ${escapeHtml(fehler.melder)}:</p>
+        ${textToHtml(fehler.beschreibung)}
+        <p><a href="${fehler.url}">Fehler an der Maschine ansehen</a></p>
+        <p style="color:#71717a;font-size:13px;margin-top:16px;">
+          Du bekommst diese Mail als Eigentümer der Maschine. Weitere Meldungen
+          an demselben Gerät lösen frühestens nach 30 Minuten die nächste Mail aus.
+        </p>
       </div>
     `,
   });

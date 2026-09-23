@@ -513,6 +513,16 @@ export default async function MachineDetailPage({
                       Manuell gesetzt.
                     </span>
                   )
+                ) : machine.statusManuell && machine.statusGrund ? (
+                  /* Spielbereit, aber mit manuell gesetztem Merker (z. B. „EL-
+                     Inverter ersetzen, sobald Ersatz da") — sichtbar lassen. */
+                  <span className="text-sm text-[var(--color-muted)]">
+                    Spielbereit —{" "}
+                    <span className="font-medium text-[var(--color-fg)]">
+                      Hinweis:
+                    </span>{" "}
+                    {machine.statusGrund}
+                  </span>
                 ) : (
                   <span className="text-sm text-[var(--color-muted)]">
                     Spielbereit — keine Einschränkung.
