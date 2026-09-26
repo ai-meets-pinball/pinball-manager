@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { setKnowledgeOverride } from "@/db/actions/knowledge";
 
 /*
@@ -48,11 +49,7 @@ export function KnowledgeHide({
           onClick={() => toggle(false)}
           className="inline-flex items-center gap-1 hover:text-[var(--color-fg)]"
         >
-          {pending ? (
-            <Loader2 size={13} className="animate-spin" />
-          ) : (
-            <Eye size={13} />
-          )}{" "}
+          {pending ? <Spinner size={13} /> : <Eye size={13} />}{" "}
           Einblenden
         </button>
       </div>
@@ -67,11 +64,7 @@ export function KnowledgeHide({
       title="Für dich ausblenden"
       className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)] hover:text-[var(--color-fg)]"
     >
-      {pending ? (
-        <Loader2 size={13} className="animate-spin" />
-      ) : (
-        <EyeOff size={13} />
-      )}{" "}
+      {pending ? <Spinner size={13} /> : <EyeOff size={13} />}{" "}
       Ausblenden
     </button>
   );

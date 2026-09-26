@@ -21,7 +21,7 @@ import { MAX_ADRESSEN, parseAdressen } from "@/lib/adressen";
   verlassen wird — es ist der Beleg, wer eingeladen wurde.
 */
 export function RundmailVersand({ eigeneAdresse }: { eigeneAdresse: string }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     invitePlatformUsers,
     {},
   );
@@ -83,10 +83,10 @@ export function RundmailVersand({ eigeneAdresse }: { eigeneAdresse: string }) {
             <ConfirmButton
               question={`${gueltig.length} Einladung${gueltig.length === 1 ? "" : "en"} verschicken? Jede Person bekommt ihren eigenen Link.`}
               confirmLabel="Ja, verschicken"
-              disabled={pending || gueltig.length === 0}
+              disabled={gueltig.length === 0}
               className={buttonStyles()}
             >
-              <Send size={14} /> {pending ? "Wird verschickt…" : "Einladungen verschicken"}
+              <Send size={14} /> Einladungen verschicken
             </ConfirmButton>
           </div>
           <FormFeedback state={{ error: state.error }} />

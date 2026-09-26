@@ -70,8 +70,12 @@ test.describe("Maschinen-Rechte", () => {
 
   test("Aussenstehender bekommt keinen Zugriff", async ({ page }) => {
     await loginAs(page, USERS.outsider);
-    const res = await page.goto(`/machines/${machineId}`);
-    // Kein Zugriff → Fehlerseite oder Weiterleitung, jedenfalls kein Inhalt.
-    expect(res?.status()).not.toBe(200);
+    await page.goto(`/machines/${machineId}`);
+    // Kein Zugriff → Fehlerseite statt Inhalt. Der HTTP-Status taugt nicht als
+    // Beleg: seit loading.tsx streamt Next die Seite und schickt die 200, bevor
+    // die Rechteprüfung wirft. Also: Warten vorbei, und keine Maschine zu sehen.
+    await expect(page.getByText("Lädt …")).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "E2E Automat" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Löschen" })).toHaveCount(0);
   });
 });

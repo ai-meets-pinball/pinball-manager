@@ -23,7 +23,7 @@ function RegisterForm() {
   const params = useSearchParams();
   const invite = params.get("invite");
 
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     registerAccount,
     {},
   );
@@ -107,8 +107,8 @@ function RegisterForm() {
         <p className="text-sm text-[var(--color-danger)]">{state.error}</p>
       ) : null}
 
-      <Button type="submit" disabled={pending}>
-        {pending ? "Konto wird erstellt…" : "Registrieren"}
+      <Button type="submit">
+        Registrieren
       </Button>
 
       <p className="text-xs text-[var(--color-muted)]">

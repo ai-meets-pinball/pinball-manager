@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2, Pencil } from "lucide-react";
+import { Pencil } from "lucide-react";
 import { ActionDialog, DialogAbbrechen } from "@/components/ui/action-dialog";
 import { Button } from "@/components/ui/button";
 import { ICON_BTN } from "@/components/ui/icon-button";
@@ -103,7 +103,7 @@ function EditorDialog({
   const [json, setJson] = useState(ausgang.inhalt);
   const [links, setLinks] = useState<TippLink[]>(ausgang.links);
   const [check, setCheck] = useState<Pruefung | null>(null);
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     async (prev, fd) => {
       const res = await updateKnowledge(prev, fd);
       if (res.ok) router.refresh();
@@ -234,13 +234,10 @@ function EditorDialog({
             type="submit"
             size="sm"
             disabled={
-              pending ||
-              unveraendert ||
-              (typ === "tipp" ? !json.trim() : !check?.ok)
+              unveraendert || (typ === "tipp" ? !json.trim() : !check?.ok)
             }
           >
-            {pending ? <Loader2 size={16} className="animate-spin" /> : null}
-            {pending ? "Speichere…" : "Speichern"}
+            Speichern
           </Button>
         </div>
       </form>

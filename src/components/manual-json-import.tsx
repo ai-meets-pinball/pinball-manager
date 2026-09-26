@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Check, ClipboardCopy, FileJson, Loader2 } from "lucide-react";
+import { Check, ClipboardCopy, FileJson } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Field, Textarea } from "@/components/ui/input";
 import { PromptWeg } from "@/components/ui/prompt-weg";
@@ -42,7 +42,7 @@ export function ManualJsonImport({ machineId }: { machineId: string }) {
   const [json, setJson] = useState("");
   const [check, setCheck] = useState<ImportResult | null>(null);
   const [copied, setCopied] = useState(false);
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     importManualFacts,
     {},
   );
@@ -129,13 +129,8 @@ export function ManualJsonImport({ machineId }: { machineId: string }) {
         {state.message ? (
           <p className="text-sm text-[var(--color-success)]">{state.message}</p>
         ) : null}
-        <Button type="submit" disabled={pending || !check?.ok}>
-          {pending ? (
-            <Loader2 size={16} className="animate-spin" />
-          ) : (
-            <FileJson size={16} />
-          )}
-          {pending ? "Importiere…" : "Importieren"}
+        <Button type="submit" disabled={!check?.ok}>
+          <FileJson size={16} /> Importieren
         </Button>
       </form>
     </div>

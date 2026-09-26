@@ -47,7 +47,7 @@ export function PromptOverrideNeu({
   );
   const nichtsFrei =
     (typ === "hersteller" ? freieHersteller : freieGenerationen).length === 0;
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     async (prev, fd) => {
       const res = await savePrompt(prev, fd);
       if (res.message) {
@@ -138,8 +138,8 @@ export function PromptOverrideNeu({
                 : "Für alle Generationen gibt es schon einen Override — oben bearbeiten."}
           </p>
         ) : null}
-        <Button type="submit" size="sm" disabled={pending || !wert || nichtsFrei}>
-          {pending ? "Speichere…" : "Override anlegen"}
+        <Button type="submit" size="sm" disabled={!wert || nichtsFrei}>
+          Override anlegen
         </Button>
       </form>
     </details>

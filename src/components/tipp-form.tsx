@@ -2,7 +2,7 @@
 
 import { useActionState, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Layers, Loader2 } from "lucide-react";
+import { Layers } from "lucide-react";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { FormatTextarea } from "@/components/ui/format-textarea";
 import { Field, Input } from "@/components/ui/input";
@@ -61,7 +61,7 @@ export function TippFormular({
   zurueck,
 }: Katalog) {
   const router = useRouter();
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     createTipp,
     {},
   );
@@ -284,9 +284,8 @@ export function TippFormular({
 
       <FormFeedback state={state} />
       <div className="flex flex-wrap gap-2">
-        <Button type="submit" disabled={pending || unvollstaendig}>
-          {pending ? <Loader2 size={16} className="animate-spin" /> : null}
-          {pending ? "Speichere…" : "Tipp speichern"}
+        <Button type="submit" disabled={unvollstaendig}>
+          Tipp speichern
         </Button>
         <ButtonLink variant="secondary" href={zurueck}>
           Abbrechen

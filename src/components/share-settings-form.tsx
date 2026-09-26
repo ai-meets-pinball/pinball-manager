@@ -34,7 +34,7 @@ export function ShareSettingsForm({
   angepasst: boolean;
   clubId?: string;
 }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     saveShareSettings,
     {},
   );
@@ -57,7 +57,6 @@ export function ShareSettingsForm({
         werte={werte}
         clubId={clubId}
         formAction={formAction}
-        pending={pending}
       />
 
       <FormFeedback state={state} />
@@ -82,12 +81,10 @@ function Felder({
   werte,
   clubId,
   formAction,
-  pending,
 }: {
   werte: ShareDefaults;
   clubId?: string;
   formAction: (formData: FormData) => void;
-  pending: boolean;
 }) {
   const [w, setW] = useState<ShareDefaults>(werte);
   const unveraendert = (Object.keys(werte) as (keyof ShareDefaults)[]).every(
@@ -137,8 +134,8 @@ function Felder({
         {haken("autoShareRepairs", "Neue Reparaturen automatisch freigeben")}
       </div>
 
-      <Button type="submit" disabled={pending || unveraendert}>
-        <Save size={16} /> {pending ? "Speichern…" : "Speichern"}
+      <Button type="submit" disabled={unveraendert}>
+        <Save size={16} /> Speichern
       </Button>
     </form>
   );

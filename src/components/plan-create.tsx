@@ -43,7 +43,7 @@ function PlanDialog({
   clubs: { id: string; name: string }[];
   onClose: () => void;
 }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     createPlan,
     {},
   );
@@ -87,8 +87,8 @@ function PlanDialog({
         <FormFeedback state={state} />
         <div className="flex justify-end gap-2">
           <DialogAbbrechen />
-          <Button type="submit" size="sm" disabled={pending || name.trim() === ""}>
-            {pending ? "…" : "Anlegen"}
+          <Button type="submit" size="sm" disabled={name.trim() === ""}>
+            Anlegen
           </Button>
         </div>
       </form>

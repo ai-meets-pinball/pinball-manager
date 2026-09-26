@@ -11,6 +11,18 @@ id und Signale bleiben erhalten).
 
 ## Umgesetzt 09/2026 (Stand 2026-09-26)
 
+- **Sofortiges Warte-Feedback** (Frank, 26.09.): EIN `Spinner`-Baustein
+  (`ui/spinner.tsx`); `Button` ist jetzt Client-Komponente und erkennt per
+  `useFormStatus` selbst, wenn sein Formular läuft (Kinder unsichtbar, Spinner
+  zentriert, `aria-busy`) — gilt damit auch für Server-`<form action>` und
+  `ActionForm`; `pending`-Prop für Buttons außerhalb eines Formulars;
+  `IconSubmit` für Icon-Submits; `ConfirmButton` zeigt den Spinner am Auslöser
+  in der Zeile. Navigation: `loading.tsx` in (app), help, s, m, invite.
+  `SearchToolbar` läuft über `next/form` (Client-Navigation statt Vollreload).
+  Bestand aufgeräumt: 22 Inline-`Loader2` und 47 Label-Wechsel („Speichern…",
+  nacktes „…") entfernt, Labels sind konstant; lange KI-Aktionen zeigen den
+  Dauer-Hinweis neben statt im Knopf.
+
 - **Feedback-Runde 26.09.** (Dirk, Kai): Listen-Vorschauen passen das Foto ins
   einheitliche Quadrat ein statt zu beschneiden; Besitzer-Katalog je Club auf
   der Club-Seite pflegbar (umbenennen, mit Mitglied verknüpfen, zusammenführen,

@@ -8,7 +8,8 @@ import {
   type CSSProperties,
 } from "react";
 import { createPortal } from "react-dom";
-import { ChevronDown, Loader2, Plus, Printer, Search, X } from "lucide-react";
+import { ChevronDown, Plus, Printer, Search, X } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/input";
 import {
@@ -758,13 +759,9 @@ export function QrPrint({
                   type="button"
                   variant="secondary"
                   onClick={alleHinzufuegen}
-                  disabled={alleLaden}
+                  pending={alleLaden}
                 >
-                  {alleLaden ? (
-                    <Loader2 size={15} className="animate-spin" />
-                  ) : (
-                    <Plus size={15} />
-                  )}
+                  <Plus size={15} />
                   Alle meine Maschinen hinzufügen
                 </Button>
 
@@ -781,9 +778,9 @@ export function QrPrint({
                     className="pl-9"
                   />
                   {mladen ? (
-                    <Loader2
+                    <Spinner
                       size={15}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-[var(--color-muted)]"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)]"
                     />
                   ) : null}
                 </div>

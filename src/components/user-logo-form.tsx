@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Loader2, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UrheberHinweis } from "@/components/ui/urheber-hinweis";
 import { ConfirmButton } from "@/components/ui/confirm-button";
@@ -15,7 +15,7 @@ import type { FormState } from "@/db/actions/form-state";
    ClubLogoForm, nur ohne clubId: Speichern erst mit Datei, „Entfernen" als
    eigenes Formular mit derselben Action (siehe dort). */
 export function UserLogoForm({ hatLogo }: { hatLogo: boolean }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     setUserLogo,
     {},
   );
@@ -38,11 +38,10 @@ export function UserLogoForm({ hatLogo }: { hatLogo: boolean }) {
         <UrheberHinweis />
         <Button
           type="submit"
-          disabled={pending || !dateiGewaehlt}
+          disabled={!dateiGewaehlt}
           title={dateiGewaehlt ? undefined : "Erst eine Datei wählen"}
         >
-          {pending ? <Loader2 size={16} className="animate-spin" /> : null}
-          {pending ? "Speichere…" : "Speichern"}
+          Speichern
         </Button>
       </form>
       {hatLogo ? (
@@ -51,7 +50,6 @@ export function UserLogoForm({ hatLogo }: { hatLogo: boolean }) {
           <ConfirmButton
             question="Logo entfernen? Es verschwindet auch von deinen QR-Etiketten."
             confirmLabel="Ja, entfernen"
-            disabled={pending}
           >
             <Trash2 size={13} /> Logo entfernen
           </ConfirmButton>

@@ -50,7 +50,7 @@ export function FaultForm({
   /** Nur beim Bearbeiten: „Gemeldet von" wird wählbar (Feedback 09/2026). */
   melder?: Melder;
 }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     action,
     {},
   );
@@ -147,8 +147,8 @@ export function FaultForm({
       ) : null}
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" disabled={pending}>
-          {pending ? "Speichern…" : "Speichern"}
+        <Button type="submit">
+          Speichern
         </Button>
         <FormLeaveGuard backHref={`/machines/${machineId}?bereich=fehler`} />
       </div>

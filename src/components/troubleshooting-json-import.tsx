@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Check, ClipboardCopy, FileJson, Loader2 } from "lucide-react";
+import { Check, ClipboardCopy, FileJson } from "lucide-react";
 import { DialogAbbrechen } from "@/components/ui/action-dialog";
 import { Button } from "@/components/ui/button";
 import { Field, Textarea } from "@/components/ui/input";
@@ -50,7 +50,7 @@ export function TroubleshootingJsonImport({
   const [json, setJson] = useState("");
   const [check, setCheck] = useState<GuideImportResult | null>(null);
   const [copied, setCopied] = useState(false);
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     async (prev, fd) => {
       const res = await importTroubleshootingGuide(prev, fd);
       if (res.message) onErfolg?.();
@@ -141,13 +141,8 @@ export function TroubleshootingJsonImport({
           >
             Prüfen
           </Button>
-          <Button type="submit" size="sm" disabled={pending || !check?.ok}>
-            {pending ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <FileJson size={16} />
-            )}
-            {pending ? "Importiere…" : "Guide importieren"}
+          <Button type="submit" size="sm" disabled={!check?.ok}>
+            <FileJson size={16} /> Guide importieren
           </Button>
         </div>
       </form>

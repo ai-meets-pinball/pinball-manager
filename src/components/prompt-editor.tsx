@@ -55,7 +55,7 @@ export function PromptEditor({
     setText(vorlage);
   }
 
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     async (prev, fd) => {
       const res = await savePrompt(prev, fd);
       if (res.message) router.refresh();
@@ -110,10 +110,10 @@ export function PromptEditor({
           <Button
             type="submit"
             size="sm"
-            disabled={pending || sperre !== null}
+            disabled={sperre !== null}
             title={sperre ?? undefined}
           >
-            {pending ? "Speichere…" : "Speichern"}
+            Speichern
           </Button>
           {fehlend.length > 0 ? (
             <span className="text-xs text-[var(--color-danger)]">

@@ -20,14 +20,14 @@ export function AbmeldenButton({ children = "Abmelden" }: { children?: string })
       type="button"
       variant="secondary"
       size="sm"
-      disabled={pending}
+      pending={pending}
       onClick={async () => {
         setPending(true);
         await signOut();
         router.refresh();
       }}
     >
-      <LogOut size={14} /> {pending ? "…" : children}
+      <LogOut size={14} /> {children}
     </Button>
   );
 }

@@ -51,7 +51,7 @@ function EinladenDialog({
   allowOwner: boolean;
   onClose: () => void;
 }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     inviteMember,
     {},
   );
@@ -88,8 +88,8 @@ function EinladenDialog({
 
         <div className="flex justify-end gap-2">
           <DialogAbbrechen />
-          <Button type="submit" size="sm" disabled={pending}>
-            <Mail size={14} /> {pending ? "Senden…" : "Einladen"}
+          <Button type="submit" size="sm">
+            <Mail size={14} /> Einladen
           </Button>
         </div>
       </form>

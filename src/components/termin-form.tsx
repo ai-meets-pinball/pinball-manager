@@ -27,7 +27,7 @@ export function TerminForm({
   machineId: string;
   termin?: TerminValues;
 }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     action,
     {},
   );
@@ -88,8 +88,8 @@ export function TerminForm({
       ) : null}
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" disabled={pending}>
-          {pending ? "Speichern…" : "Speichern"}
+        <Button type="submit">
+          Speichern
         </Button>
         <FormLeaveGuard backHref={`/machines/${machineId}?bereich=termine`} />
       </div>

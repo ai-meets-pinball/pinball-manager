@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { FlaskConical, Loader2, Sparkles } from "lucide-react";
+import { FlaskConical, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AiProviderField } from "@/components/ui/ai-provider-field";
 import { Field, Input } from "@/components/ui/input";
@@ -79,14 +79,9 @@ export function PromptRefinery({
             type="submit"
             size="sm"
             variant="secondary"
-            disabled={testPending}
+            pending={testPending}
           >
-            {testPending ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <FlaskConical size={16} />
-            )}
-            {testPending ? "Teste…" : "Test-Lauf"}
+            <FlaskConical size={16} /> Test-Lauf
           </Button>
           {testState.error ? (
             <p className="text-sm text-[var(--color-danger)]">
@@ -112,14 +107,9 @@ export function PromptRefinery({
             type="submit"
             size="sm"
             variant="secondary"
-            disabled={verbPending}
+            pending={verbPending}
           >
-            {verbPending ? (
-              <Loader2 size={16} className="animate-spin" />
-            ) : (
-              <Sparkles size={16} />
-            )}
-            {verbPending ? "Verbessere…" : "Prompt verbessern lassen"}
+            <Sparkles size={16} /> Prompt verbessern lassen
           </Button>
           {verbState.error ? (
             <p className="text-sm text-[var(--color-danger)]">

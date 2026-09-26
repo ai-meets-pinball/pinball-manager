@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { Loader2, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { AiProviderField } from "@/components/ui/ai-provider-field";
 import type { AiProvider } from "@/lib/ai/provider";
 import {
@@ -32,7 +33,7 @@ export function MaintenanceGuideImport({
   erlaubt: boolean;
   grund?: string;
 }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     importMaintenanceFromGuide,
     {},
   );
@@ -54,22 +55,16 @@ export function MaintenanceGuideImport({
         <AiProviderField providers={providers} centralKey={centralKey} byoErlaubt={byoErlaubt} />
       ) : null}
 
-      <button
+      <Button
         type="submit"
-        disabled={pending || !erlaubt}
+        variant="secondary"
+        size="sm"
+        disabled={!erlaubt}
         title={!erlaubt ? grund : undefined}
-        className="inline-flex items-center gap-2 self-start rounded-[var(--radius)] border border-[var(--color-border)] px-3 py-1.5 text-sm hover:bg-[var(--color-border)]/40 disabled:opacity-50"
+        className="self-start"
       >
-        {pending ? (
-          <>
-            <Loader2 size={15} className="animate-spin" /> Extrahiere…
-          </>
-        ) : (
-          <>
-            <Sparkles size={15} /> Aus Guide übernehmen
-          </>
-        )}
-      </button>
+        <Sparkles size={15} /> Aus Guide übernehmen
+      </Button>
       {state.error ? (
         <span className="text-sm text-[var(--color-danger)]">{state.error}</span>
       ) : null}

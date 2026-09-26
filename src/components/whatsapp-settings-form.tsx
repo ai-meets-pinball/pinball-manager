@@ -15,7 +15,7 @@ import { saveWhatsappNummer, toggleWhatsappOptin } from "@/db/actions/whatsapp";
   gespeicherten Stand abweicht.
 */
 export function WhatsappSettingsForm({ nummer }: { nummer: string | null }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     saveWhatsappNummer,
     {},
   );
@@ -40,8 +40,8 @@ export function WhatsappSettingsForm({ nummer }: { nummer: string | null }) {
 
       <FormFeedback state={state} />
 
-      <Button type="submit" disabled={pending || unveraendert}>
-        <Save size={16} /> {pending ? "Speichern…" : "Speichern"}
+      <Button type="submit" disabled={unveraendert}>
+        <Save size={16} /> Speichern
       </Button>
     </form>
   );

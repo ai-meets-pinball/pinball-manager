@@ -81,6 +81,7 @@ export default async function HelpPage({
       </div>
 
       <SearchToolbar
+        action="/help"
         placeholder="In der Hilfe suchen …"
         label="In der Hilfe suchen"
         defaultValue={suche}

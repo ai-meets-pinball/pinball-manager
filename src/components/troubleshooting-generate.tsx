@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { LifeBuoy, Loader2, RefreshCw } from "lucide-react";
+import { LifeBuoy, RefreshCw } from "lucide-react";
 import { DialogAbbrechen } from "@/components/ui/action-dialog";
 import { AiProviderField } from "@/components/ui/ai-provider-field";
 import { Button } from "@/components/ui/button";
@@ -89,13 +89,13 @@ export function TroubleshootingGenerate({
 
       <div className="flex flex-wrap justify-end gap-2">
         <DialogAbbrechen />
-        <Button type="submit" size="sm" disabled={pending}>
-          {pending ? (
-            <>
-              <Loader2 size={16} className="animate-spin" /> Erstelle Guide… (kann
-              1–2 Minuten dauern)
-            </>
-          ) : vorhanden ? (
+        {pending ? (
+          <span className="self-center text-xs text-[var(--color-muted)]">
+            Erstelle Guide … kann 1–2 Minuten dauern.
+          </span>
+        ) : null}
+        <Button type="submit" size="sm">
+          {vorhanden ? (
             <>
               <RefreshCw size={16} /> Guide neu erstellen
             </>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2 } from "lucide-react";
 import { BildFeld } from "@/components/bild-feld";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/input";
@@ -23,7 +23,7 @@ export function SammelFehlerForm({
   /** Name des angemeldeten Nutzers — null = Gast (Namensfeld erscheint). */
   angemeldetAls: string | null;
 }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     meldeFehlerPerSammelQr,
     {},
   );
@@ -80,10 +80,7 @@ export function SammelFehlerForm({
       {state.error ? (
         <p className="text-sm text-[var(--color-danger)]">{state.error}</p>
       ) : null}
-      <Button type="submit" disabled={pending}>
-        {pending ? <Loader2 size={16} className="animate-spin" /> : null}
-        {pending ? "Sende…" : "Fehler melden"}
-      </Button>
+      <Button type="submit">Fehler melden</Button>
     </form>
   );
 }

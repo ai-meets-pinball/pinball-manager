@@ -90,7 +90,7 @@ export function MachineForm({
   aktuellerNutzer: { id: string; name: string };
   machine?: MachineValues;
 }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     action,
     {},
   );
@@ -727,8 +727,8 @@ export function MachineForm({
       ) : null}
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" disabled={pending || !bereit || fotoZuGross}>
-          {pending ? "Speichern…" : "Speichern"}
+        <Button type="submit" disabled={!bereit || fotoZuGross}>
+          Speichern
         </Button>
         <FormLeaveGuard backHref={backHref} />
       </div>

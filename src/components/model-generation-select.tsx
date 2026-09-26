@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Loader2, Pencil } from "lucide-react";
+import { Pencil } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { FormFeedback } from "@/components/ui/form-feedback";
 import { Select } from "@/components/ui/input";
 import { assignModelGeneration } from "@/db/actions/generations";
@@ -79,7 +80,7 @@ export function ModelGenerationSelect({
   return (
     <span className="inline-flex flex-wrap items-center gap-2">
       {pending ? (
-        <Loader2 size={14} className="animate-spin text-[var(--color-muted)]" />
+        <Spinner size={14} className="text-[var(--color-muted)]" />
       ) : null}
       <Select
         defaultValue={aktuell ?? ""}

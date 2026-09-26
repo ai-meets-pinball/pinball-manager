@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import Form from "next/form";
 import Link from "next/link";
 import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -6,8 +7,10 @@ import { Input } from "@/components/ui/input";
 
 /*
   DAS Suchfeld-Rezept (vorher zwei divergente Varianten in /machines und
-  /admin/modelle). Ein GET-Formular OHNE action — es submittet auf die aktuelle
-  URL und funktioniert damit ohne JS auf jeder Seite. `keep` hält weitere
+  /admin/modelle). Ein GET-Formular über `next/form`: ohne JS ein normales
+  GET auf `action`, mit JS eine Client-Navigation — die loading.tsx der Route
+  zeigt sofort den Wartezustand und der „Suchen"-Knopf spinnt (useFormStatus),
+  statt dass die Seite stumm komplett neu lädt. `keep` hält weitere
   Query-Parameter (z. B. die Sortierung) über eine neue Suche hinweg; `children`
   ist der Filter-/Sortier-Slot (z. B. ein AutoSubmitSelect) IM selben Formular,
   rechts vom Suchfeld — Suche und Filter reisen gemeinsam. `resetHref` zeigt den
@@ -15,6 +18,7 @@ import { Input } from "@/components/ui/input";
   Automatik, wenn Filter im children-Slot stecken).
 */
 export function SearchToolbar({
+  action,
   placeholder,
   defaultValue = "",
   label = "Suchen",
@@ -25,6 +29,8 @@ export function SearchToolbar({
   breite = "w-64",
   children,
 }: {
+  /** Pfad der Seite, auf der gesucht wird (Ziel des GET, z. B. "/machines"). */
+  action: string;
   placeholder: string;
   defaultValue?: string;
   /** aria-label des Suchfelds. */
@@ -45,7 +51,7 @@ export function SearchToolbar({
   const istAktiv =
     aktiv ?? (Boolean(defaultValue) || Object.keys(keep).length > 0);
   return (
-    <form method="get" className="flex flex-wrap items-center gap-2">
+    <Form action={action} className="flex flex-wrap items-center gap-2">
       {Object.entries(keep).map(([k, v]) => (
         <input key={k} type="hidden" name={k} value={v} />
       ))}
@@ -76,6 +82,6 @@ export function SearchToolbar({
           zurücksetzen
         </Link>
       ) : null}
-    </form>
+    </Form>
   );
 }

@@ -31,7 +31,7 @@ export function ProfileForm({
   name: string;
   email: string;
 }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     updateProfile,
     {},
   );
@@ -52,12 +52,9 @@ export function ProfileForm({
         <Avatar image={avatar} kuerzel={kuerzel} size={56} />
         {avatar ? (
           <form action={removeAvatar}>
-            <button
-              type="submit"
-              className="text-xs text-[var(--color-muted)] underline hover:text-[var(--color-fg)]"
-            >
+            <Button type="submit" variant="secondary" size="sm" className="text-xs">
               Bild entfernen
-            </button>
+            </Button>
           </form>
         ) : (
           <p className="text-xs text-[var(--color-muted)]">
@@ -96,8 +93,8 @@ export function ProfileForm({
         <UrheberHinweis />
         <FormFeedback state={state} />
         <div>
-          <Button type="submit" disabled={pending}>
-            {pending ? "Speichern…" : "Profil speichern"}
+          <Button type="submit">
+            Profil speichern
           </Button>
         </div>
       </form>
@@ -159,8 +156,8 @@ export function EmailForm({ initialEmail }: { initialEmail: string }) {
       {error ? <p className="text-sm text-[var(--color-danger)]">{error}</p> : null}
       {msg ? <p className="text-sm text-[var(--color-success)]">{msg}</p> : null}
       <div>
-        <Button type="submit" disabled={loading || unveraendert}>
-          {loading ? "Senden…" : "E-Mail ändern"}
+        <Button type="submit" pending={loading} disabled={unveraendert}>
+          E-Mail ändern
         </Button>
       </div>
     </form>
@@ -230,8 +227,8 @@ export function ChangePasswordForm() {
       {error ? <p className="text-sm text-[var(--color-danger)]">{error}</p> : null}
       {msg ? <p className="text-sm text-[var(--color-success)]">{msg}</p> : null}
       <div>
-        <Button type="submit" disabled={loading}>
-          {loading ? "Ändern…" : "Passwort ändern"}
+        <Button type="submit" pending={loading}>
+          Passwort ändern
         </Button>
       </div>
     </form>

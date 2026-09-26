@@ -28,7 +28,7 @@ export function GenerationAnlegen() {
 }
 
 function AnlegenDialog({ onClose }: { onClose: () => void }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     createGeneration,
     {},
   );
@@ -53,9 +53,9 @@ function AnlegenDialog({ onClose }: { onClose: () => void }) {
           <Button
             type="submit"
             size="sm"
-            disabled={pending || name.trim() === ""}
+            disabled={name.trim() === ""}
           >
-            {pending ? "…" : "Anlegen"}
+            Anlegen
           </Button>
         </div>
       </form>

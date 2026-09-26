@@ -73,8 +73,8 @@ function LoginForm() {
         {error ? (
           <p className="text-sm text-[var(--color-danger)]">{error}</p>
         ) : null}
-        <Button type="submit" disabled={loading}>
-          {loading ? "Anmelden…" : "Anmelden"}
+        <Button type="submit" pending={loading}>
+          Anmelden
         </Button>
       </form>
       <p className="text-sm text-[var(--color-muted)]">

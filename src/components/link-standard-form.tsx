@@ -35,7 +35,6 @@ export function LinkStandardForm({
     applyStandardMaintenance,
     {},
   );
-  const pending = verknuepft || kopiert;
   // Welche Action zuletzt lief — nur deren Rückmeldung wird gezeigt (sonst
   // deckte ein altes „Kopie"-Ergebnis einen neuen Verknüpfen-Fehler zu).
   const [zuletzt, setZuletzt] = useState<"verknuepfen" | "kopie">("verknuepfen");
@@ -82,20 +81,20 @@ export function LinkStandardForm({
         type="submit"
         variant="secondary"
         size="sm"
-        disabled={pending}
+        pending={verknuepft}
         onClick={() => setZuletzt("verknuepfen")}
       >
-        <Link2 size={14} /> {verknuepft ? "Verknüpfe…" : "Verknüpfen"}
+        <Link2 size={14} /> Verknüpfen
       </Button>
       <Button
         type="submit"
         variant="secondary"
         size="sm"
         formAction={kopieAction}
-        disabled={pending}
+        pending={kopiert}
         onClick={() => setZuletzt("kopie")}
       >
-        <Copy size={14} /> {kopiert ? "Kopiere…" : "Als Kopie übernehmen"}
+        <Copy size={14} /> Als Kopie übernehmen
       </Button>
       <FormFeedback state={zuletzt === "kopie" ? kopie : verknuepfen} />
     </form>

@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
-import { Loader2, Search } from "lucide-react";
+import { Search } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { Input } from "@/components/ui/input";
 import {
   searchMachineModels,
@@ -81,9 +82,9 @@ export function ModelSearch({
           autoComplete="off"
         />
         {pending ? (
-          <Loader2
+          <Spinner
             size={16}
-            className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-[var(--color-muted)]"
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--color-muted)]"
           />
         ) : null}
       </div>

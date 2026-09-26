@@ -120,7 +120,7 @@ function SammelLeiste({
             <option value="none">— Aus Club entfernen —</option>
           </select>
           <Button type="submit" disabled={zuweisenLaeuft || ausgewaehlt}>
-            {zuweisenLaeuft ? "Zuweisen…" : "Zuweisen"}
+            Zuweisen
           </Button>
         </form>
       ) : null}
@@ -135,7 +135,7 @@ function SammelLeiste({
           disabled={loeschenLaeuft || ausgewaehlt}
           className="inline-flex items-center gap-1 rounded-[var(--radius)] border border-[var(--color-danger)] px-3 py-1.5 text-sm font-medium text-[var(--color-danger)] hover:bg-[var(--color-danger)]/10 disabled:opacity-50"
         >
-          <Trash2 size={14} /> {loeschenLaeuft ? "Löschen…" : "Löschen"}
+          <Trash2 size={14} /> Löschen
         </ConfirmButton>
       </form>
 

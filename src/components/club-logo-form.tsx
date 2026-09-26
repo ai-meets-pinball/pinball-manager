@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Loader2, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UrheberHinweis } from "@/components/ui/urheber-hinweis";
 import { ConfirmButton } from "@/components/ui/confirm-button";
@@ -24,7 +24,7 @@ export function ClubLogoForm({
   clubId: string;
   hatLogo: boolean;
 }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     setClubLogo,
     {},
   );
@@ -48,11 +48,10 @@ export function ClubLogoForm({
         <UrheberHinweis />
         <Button
           type="submit"
-          disabled={pending || !dateiGewaehlt}
+          disabled={!dateiGewaehlt}
           title={dateiGewaehlt ? undefined : "Erst eine Datei wählen"}
         >
-          {pending ? <Loader2 size={16} className="animate-spin" /> : null}
-          {pending ? "Speichere…" : "Speichern"}
+          Speichern
         </Button>
       </form>
       {hatLogo ? (
@@ -62,7 +61,6 @@ export function ClubLogoForm({
           <ConfirmButton
             question="Logo entfernen? Es verschwindet auch von den QR-Etiketten des Clubs."
             confirmLabel="Ja, entfernen"
-            disabled={pending}
           >
             <Trash2 size={13} /> Logo entfernen
           </ConfirmButton>

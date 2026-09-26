@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { History, Loader2 } from "lucide-react";
+import { History } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { MachineDataTables } from "@/components/machine-data-tables";
 import { TroubleshootingGuideView } from "@/components/troubleshooting-guide";
 import { ActionDialog, DialogAbbrechen } from "@/components/ui/action-dialog";
@@ -85,7 +86,7 @@ function VerlaufDialog({
         <h3 className="text-base font-semibold">Verlauf</h3>
         {revisionen === null ? (
           <p className="flex items-center gap-2 text-sm text-[var(--color-muted)]">
-            <Loader2 size={14} className="animate-spin" /> Lade Verlauf…
+            <Spinner size={14} /> Lade Verlauf…
           </p>
         ) : null}
         {revisionen?.map((r) => (

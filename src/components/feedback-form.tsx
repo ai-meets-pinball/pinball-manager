@@ -8,7 +8,7 @@ import {
   type DragEvent,
 } from "react";
 import { useRouter } from "next/navigation";
-import { ImagePlus, Loader2, Pencil, Send, X } from "lucide-react";
+import { ImagePlus, Pencil, Send, X } from "lucide-react";
 import { ActionDialog, DialogAbbrechen } from "@/components/ui/action-dialog";
 import { Button } from "@/components/ui/button";
 import { ICON_BTN } from "@/components/ui/icon-button";
@@ -155,7 +155,7 @@ export function FeedbackForm({ von }: { von: string }) {
   const formRef = useRef<HTMLFormElement>(null);
   // Nach Erfolg das Screenshot-Feld über den key neu mounten (leert Vorschau).
   const [resetMarke, setResetMarke] = useState(0);
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     async (prev, fd) => {
       const res = await submitFeedback(prev, fd);
       if (res.message) {
@@ -202,13 +202,8 @@ export function FeedbackForm({ von }: { von: string }) {
         Seite, App-Version und Browser werden automatisch mitgeschickt.
       </p>
       <FormFeedback state={state} />
-      <Button type="submit" disabled={pending}>
-        {pending ? (
-          <Loader2 size={16} className="animate-spin" />
-        ) : (
-          <Send size={16} />
-        )}
-        {pending ? "Sende…" : "Meldung absenden"}
+      <Button type="submit">
+        <Send size={16} /> Meldung absenden
       </Button>
     </form>
   );
@@ -265,7 +260,7 @@ function FeedbackDialog({
   antwort: string;
   onClose: () => void;
 }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     updateFeedback,
     {},
   );
@@ -310,8 +305,8 @@ function FeedbackDialog({
         <FormFeedback state={state} />
         <div className="flex justify-end gap-2">
           <DialogAbbrechen />
-          <Button type="submit" size="sm" disabled={pending || unveraendert}>
-            {pending ? "…" : "Speichern"}
+          <Button type="submit" size="sm" disabled={unveraendert}>
+            Speichern
           </Button>
         </div>
       </form>

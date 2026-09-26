@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { ChevronDown, FileText, Loader2 } from "lucide-react";
+import { ChevronDown, FileText } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { AiProviderField } from "@/components/ui/ai-provider-field";
 import { Button } from "@/components/ui/button";
 import { VisibilityField } from "@/components/ui/visibility-field";
@@ -224,7 +225,7 @@ export function ManualUpload({
       {prog.kind === "running" ? (
         <div className="space-y-1.5 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface-2)] p-3 text-sm">
           <div className="flex items-center gap-2">
-            <Loader2 size={15} className="animate-spin text-[var(--color-primary)]" />
+            <Spinner size={15} className="text-[var(--color-primary)]" />
             <span>{prog.label}</span>
           </div>
           {prozent !== null ? (
@@ -251,16 +252,8 @@ export function ManualUpload({
         <p className="text-sm text-[var(--color-success)]">{summary(prog.counts)}</p>
       ) : null}
 
-      <Button type="submit" disabled={pending || zuGross} className="self-start">
-        {pending ? (
-          <>
-            <Loader2 size={16} className="animate-spin" /> Verarbeite …
-          </>
-        ) : (
-          <>
-            <FileText size={16} /> Handbuch auswerten
-          </>
-        )}
+      <Button type="submit" disabled={zuGross} className="self-start">
+        <FileText size={16} /> Handbuch auswerten
       </Button>
     </form>
   );

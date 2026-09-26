@@ -118,7 +118,7 @@ function VerbergenDialog({
 }) {
   const router = useRouter();
   const [grund, setGrund] = useState("");
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     async (prev, fd) => {
       const res = await hideKnowledge(prev, fd);
       if (res.ok) router.refresh();
@@ -154,9 +154,9 @@ function VerbergenDialog({
             type="submit"
             variant="danger"
             size="sm"
-            disabled={pending || !grund.trim()}
+            disabled={!grund.trim()}
           >
-            {pending ? "…" : "Für alle verbergen"}
+            Für alle verbergen
           </Button>
         </div>
       </form>

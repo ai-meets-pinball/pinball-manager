@@ -326,7 +326,7 @@ function RollenDialog({
   freieGlobale: string[];
   onClose: () => void;
 }) {
-  const [state, action, pending] = useActionState<FormState, FormData>(
+  const [state, action] = useActionState<FormState, FormData>(
     setUserRole,
     {},
   );
@@ -403,8 +403,8 @@ function RollenDialog({
 
         <div className="flex justify-end gap-2">
           <DialogAbbrechen />
-          <Button type="submit" size="sm" disabled={pending || unveraendert}>
-            {pending ? "…" : dialog.art === "neu" ? "Hinzufügen" : "Speichern"}
+          <Button type="submit" size="sm" disabled={unveraendert}>
+            {dialog.art === "neu" ? "Hinzufügen" : "Speichern"}
           </Button>
         </div>
       </form>

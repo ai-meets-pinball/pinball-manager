@@ -42,7 +42,7 @@ export function RenameDialog({
   maxLength?: number;
   onClose: () => void;
 }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     action,
     {},
   );
@@ -67,8 +67,8 @@ export function RenameDialog({
         <FormFeedback state={state} />
         <div className="flex justify-end gap-2">
           <DialogAbbrechen />
-          <Button type="submit" size="sm" disabled={pending || unveraendert}>
-            {pending ? "…" : "Speichern"}
+          <Button type="submit" size="sm" disabled={unveraendert}>
+            Speichern
           </Button>
         </div>
       </form>

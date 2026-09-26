@@ -255,6 +255,7 @@ export default async function MachinesPage({
           Pfeil dreht die Richtung) + Bereichs-Chips, rechts die Ansicht. */}
       <div className="flex flex-wrap items-center gap-2">
         <SearchToolbar
+          action="/machines"
           placeholder="Suchen…"
           defaultValue={q ?? ""}
           label="Maschinen suchen"

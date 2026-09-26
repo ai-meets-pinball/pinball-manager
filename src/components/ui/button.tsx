@@ -1,11 +1,15 @@
+"use client";
+
 import type { ComponentProps } from "react";
+import { useFormStatus } from "react-dom";
 import Link from "next/link";
+import { Spinner } from "@/components/ui/spinner";
 
 type Variant = "primary" | "secondary" | "danger";
 type Size = "md" | "sm";
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-[var(--radius)] text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex items-center justify-center gap-2 rounded-[var(--radius)] text-sm font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50 aria-busy:cursor-progress aria-busy:opacity-100";
 
 const variants: Record<Variant, string> = {
   primary:
@@ -33,24 +37,61 @@ export function buttonStyles({
   return `${base} ${variants[variant]} ${sizes[size]} ${className}`;
 }
 
-/* ComponentProps<"button"> schließt in React 19 auch `ref` ein — Refs werden
-   ohne forwardRef einfach durchgereicht (nutzt z. B. ConfirmButton für den
-   Fokus-Sprung auf „Ja …"). */
+/*
+  Sofortiges Feedback nach dem Klick (Feedback 09/2026): ein Submit-Button
+  liest den Zustand seines <form> selbst (useFormStatus) und zeigt während der
+  Action einen Spinner — in jedem Formular, auch in Server-Formularen und in
+  ActionForm, ohne dass der Aufrufer etwas durchreicht. Die Kinder bleiben
+  unsichtbar im Fluss (Breite stabil, kein doppeltes Icon), der Spinner liegt
+  zentriert darüber. `type="button"` (Dialog öffnen, Abbrechen) spinnt nie —
+  außer der Aufrufer sagt es per `pending` (Buttons außerhalb eines Formulars,
+  useTransition).
+
+  ComponentProps<"button"> schließt in React 19 auch `ref` ein — Refs werden
+  ohne forwardRef einfach durchgereicht (nutzt z. B. ConfirmButton für den
+  Fokus-Sprung auf „Ja …").
+*/
 export function Button({
   variant = "primary",
   size = "md",
   className = "",
+  pending,
+  disabled,
+  type,
+  children,
   ...props
 }: ComponentProps<"button"> & {
   variant?: Variant;
   size?: Size;
+  /** Erzwingt den Wartezustand (sonst: Submit in einem laufenden Formular). */
+  pending?: boolean;
 }) {
-  return <button className={buttonStyles({ variant, size, className })} {...props} />;
+  const status = useFormStatus();
+  const laeuft = pending ?? (status.pending && (type ?? "submit") === "submit");
+  return (
+    <button
+      type={type}
+      className={`${buttonStyles({ variant, size, className })} relative`}
+      disabled={disabled || laeuft}
+      aria-busy={laeuft || undefined}
+      {...props}
+    >
+      {laeuft ? (
+        <span className="absolute inset-0 flex items-center justify-center">
+          <Spinner size={size === "sm" ? 14 : 16} />
+        </span>
+      ) : null}
+      <span className={`inline-flex items-center gap-2 ${laeuft ? "invisible" : ""}`}>
+        {children}
+      </span>
+    </button>
+  );
 }
 
 /* Wie `Button`, aber als `next/link` — für Primär-Aktionen, die navigieren
    („Neue Maschine", „Neuer Fehler" …). Vorher wurden solche CTAs von Hand
-   gebaut und wichen vom Akzent-Hover ab. */
+   gebaut und wichen vom Akzent-Hover ab. Wartezustand beim Navigieren zeigt
+   die loading.tsx der Routen-Gruppe. */
 export function ButtonLink({
   variant = "primary",
   size = "md",

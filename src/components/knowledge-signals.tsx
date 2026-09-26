@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { Flag, Loader2, ThumbsUp } from "lucide-react";
+import { Flag, ThumbsUp } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { setKnowledgeSignal } from "@/db/actions/knowledge";
 
 /*
@@ -80,7 +81,7 @@ export function KnowledgeSignals({
         <Flag size={13} /> Falsch{falsch > 0 ? ` · ${falsch}` : ""}
       </button>
       {pending ? (
-        <Loader2 size={13} className="animate-spin text-[var(--color-muted)]" />
+        <Spinner size={13} className="text-[var(--color-muted)]" />
       ) : null}
     </div>
   );

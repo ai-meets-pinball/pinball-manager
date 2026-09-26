@@ -351,7 +351,7 @@ function SammelLeiste({
   onAlle: () => void;
   onFertig: () => void;
 }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     logCompletionBulk,
     {},
   );
@@ -380,8 +380,8 @@ function SammelLeiste({
         <Field label="Notiz (optional)">
           <Input name="notiz" placeholder="z. B. Gummis erneuert" />
         </Field>
-        <Button type="submit" size="sm" disabled={pending || taskIds.length === 0}>
-          {pending ? "…" : `${taskIds.length} erledigen`}
+        <Button type="submit" size="sm" disabled={taskIds.length === 0}>
+          {`${taskIds.length} erledigen`}
         </Button>
         <button
           type="button"

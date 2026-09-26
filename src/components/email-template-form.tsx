@@ -55,7 +55,7 @@ export function EmailTemplateForm({
   /** Aus, wenn die Seite selbst eine echte (gerenderte) Vorschau zeigt. */
   inlineVorschau?: boolean;
 }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     saveEmailTemplate,
     {},
   );
@@ -133,10 +133,10 @@ export function EmailTemplateForm({
           <Button
             type="submit"
             size="sm"
-            disabled={pending || (betreff === subject && text === body)}
+            disabled={betreff === subject && text === body}
             title={betreff === subject && text === body ? "Keine Änderung" : undefined}
           >
-            <Save size={14} /> {pending ? "Speichern…" : "Speichern"}
+            <Save size={14} /> Speichern
           </Button>
         </div>
       </form>

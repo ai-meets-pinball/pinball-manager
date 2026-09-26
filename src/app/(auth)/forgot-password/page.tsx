@@ -49,8 +49,8 @@ export default function ForgotPasswordPage() {
             <Input name="email" type="email" required autoComplete="email" />
           </Field>
           {error ? <p className="text-sm text-[var(--color-danger)]">{error}</p> : null}
-          <Button type="submit" disabled={loading}>
-            {loading ? "Senden…" : "Link senden"}
+          <Button type="submit" pending={loading}>
+            Link senden
           </Button>
         </form>
       )}

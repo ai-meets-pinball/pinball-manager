@@ -1,7 +1,9 @@
 "use client";
 
 import { useRef, type ComponentProps, type ReactNode } from "react";
+import { useFormStatus } from "react-dom";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 
 /*
   DAS Protokoll für destruktive Aktionen (Löschen, Entziehen, Zurücksetzen):
@@ -15,6 +17,10 @@ import { Button } from "@/components/ui/button";
 
   Ohne JS submittet der Trigger direkt (Fallback wie zuvor — kein Confirm, aber
   keine tote Schaltfläche). Backdrop-Klick schließt; Escape schließt nativ.
+
+  Nach „Ja, löschen" läuft die Action, der Dialog ist zu — und der Auslöser in
+  der Zeile zeigt den Spinner (useFormStatus auf dem umgebenden <form>), damit
+  der Klick sofort sichtbar ist (Feedback 09/2026).
 */
 export function ConfirmButton({
   children,
@@ -29,6 +35,7 @@ export function ConfirmButton({
   confirmLabel?: string;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
+  const { pending } = useFormStatus();
 
   return (
     <>
@@ -41,8 +48,10 @@ export function ConfirmButton({
         }}
         className="inline-flex items-center gap-1 text-xs text-[var(--color-muted)] hover:text-[var(--color-danger)]"
         {...buttonProps}
+        disabled={buttonProps.disabled || pending}
+        aria-busy={pending || undefined}
       >
-        {children}
+        {pending ? <Spinner size={14} /> : children}
       </button>
 
       <dialog

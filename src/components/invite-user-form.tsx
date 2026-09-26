@@ -11,7 +11,7 @@ import { invitePlatformUser } from "@/db/actions/invitations";
 
 /** Plattform-Einladung im Admin-Bereich: berechtigt zur Registrierung (ohne Club). */
 export function InviteUserForm() {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     invitePlatformUser,
     {},
   );
@@ -31,8 +31,8 @@ export function InviteUserForm() {
         <Textarea name="message" rows={3} />
       </Field>
       <div>
-        <Button type="submit" disabled={pending}>
-          <Mail size={16} /> {pending ? "Senden…" : "Einladen"}
+        <Button type="submit">
+          <Mail size={16} /> Einladen
         </Button>
       </div>
       <FormFeedback state={state} />

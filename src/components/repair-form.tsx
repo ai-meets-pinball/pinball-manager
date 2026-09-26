@@ -44,7 +44,7 @@ export function RepairForm({
     byoErlaubt: boolean;
   };
 }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     action,
     {},
   );
@@ -163,8 +163,8 @@ export function RepairForm({
         ) : null}
 
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" disabled={pending}>
-            {pending ? "Speichern…" : "Speichern"}
+          <Button type="submit">
+            Speichern
           </Button>
           <FormLeaveGuard backHref={`/machines/${machineId}?bereich=reparaturen`} />
         </div>

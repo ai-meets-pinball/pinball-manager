@@ -211,6 +211,7 @@ export default async function AdminModellePage({
           <h2 className="text-lg font-semibold">Modelle ({treffer})</h2>
           <div className="flex flex-wrap items-center gap-3">
             <SearchToolbar
+              action="/admin/modelle"
               placeholder="Hersteller, Modell oder OPDB-Ref …"
               defaultValue={q}
               label="Modelle suchen"

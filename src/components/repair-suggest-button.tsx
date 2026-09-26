@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { Loader2, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { AiProviderField } from "@/components/ui/ai-provider-field";
 import { FormFeedback } from "@/components/ui/form-feedback";
@@ -35,7 +35,7 @@ export function KiVorschlagHolen({
   onVorschlag: (v: KiVorschlag) => void;
 }) {
   const verfuegbar = centralKey || byoErlaubt || providers.some((p) => p === "ollama" || p === "mlx");
-  const [state, formAction, pending] = useActionState<
+  const [state, formAction] = useActionState<
     RepairSuggestState,
     FormData
   >(async (prev, fd) => {
@@ -52,13 +52,8 @@ export function KiVorschlagHolen({
       <input type="hidden" name="faultId" value={faultId} />
       <AiProviderField providers={providers} centralKey={centralKey} byoErlaubt={byoErlaubt} />
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" variant="secondary" size="sm" disabled={pending || !verfuegbar}>
-          {pending ? (
-            <Loader2 size={14} className="animate-spin" />
-          ) : (
-            <Sparkles size={14} />
-          )}
-          {pending ? "Hole Vorschlag…" : "Vorschlag von der KI holen"}
+        <Button type="submit" variant="secondary" size="sm" disabled={!verfuegbar}>
+          <Sparkles size={14} /> Vorschlag von der KI holen
         </Button>
         {state.vorschlag ? (
           <p className="text-xs text-[var(--color-muted)]">

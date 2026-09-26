@@ -283,10 +283,11 @@ function TeilenDialog({
               type="submit"
               form={formId}
               size="sm"
-              disabled={pending || gesperrt !== null}
+              pending={pending}
+              disabled={gesperrt !== null}
               title={gesperrt ?? undefined}
             >
-              {pending ? "…" : aktuell ? "Speichern" : "Teilen"}
+              {aktuell ? "Speichern" : "Teilen"}
             </Button>
           </div>
         </div>

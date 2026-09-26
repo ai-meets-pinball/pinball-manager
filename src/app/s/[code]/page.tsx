@@ -57,6 +57,7 @@ export default async function SammlungPage({
 
       {sammlung.maschinen.length >= SUCHE_AB ? (
         <SearchToolbar
+          action={`/s/${code}`}
           placeholder="Gerät suchen …"
           label="Gerät suchen"
           defaultValue={q ?? ""}

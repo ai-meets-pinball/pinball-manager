@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import { Loader2 } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { setKnowledgeVisibility } from "@/db/actions/knowledge";
 import type { FormState } from "@/db/actions/form-state";
 
@@ -81,7 +81,7 @@ export function SetVisibility({
         </select>
       </label>
       {pending ? (
-        <Loader2 size={13} className="animate-spin text-[var(--color-muted)]" />
+        <Spinner size={13} className="text-[var(--color-muted)]" />
       ) : null}
       {state.error ? (
         <span className="text-[var(--color-danger)]">{state.error}</span>

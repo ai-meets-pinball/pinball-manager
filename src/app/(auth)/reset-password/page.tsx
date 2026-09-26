@@ -82,8 +82,8 @@ function ResetPasswordForm() {
         />
       </Field>
       {error ? <p className="text-sm text-[var(--color-danger)]">{error}</p> : null}
-      <Button type="submit" disabled={loading}>
-        {loading ? "Speichern…" : "Passwort speichern"}
+      <Button type="submit" pending={loading}>
+        Passwort speichern
       </Button>
     </form>
   );

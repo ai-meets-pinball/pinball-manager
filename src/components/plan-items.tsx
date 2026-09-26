@@ -176,7 +176,7 @@ type Ziel = { art: "neu"; planId: string } | { art: "aendern"; item: PlanItem };
 */
 function PunktDialog({ ziel, onClose }: { ziel: Ziel; onClose: () => void }) {
   const item = ziel.art === "aendern" ? ziel.item : undefined;
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     item ? updatePlanItem : createPlanItem,
     {},
   );
@@ -261,8 +261,8 @@ function PunktDialog({ ziel, onClose }: { ziel: Ziel; onClose: () => void }) {
         <FormFeedback state={state} />
         <div className="flex justify-end gap-2">
           <DialogAbbrechen />
-          <Button type="submit" size="sm" disabled={pending || unveraendert}>
-            {pending ? "…" : item ? "Speichern" : "Hinzufügen"}
+          <Button type="submit" size="sm" disabled={unveraendert}>
+            {item ? "Speichern" : "Hinzufügen"}
           </Button>
         </div>
       </form>

@@ -63,7 +63,7 @@ function ErledigtDialog({
   titel: string;
   onClose: () => void;
 }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     logCompletion,
     {},
   );
@@ -89,8 +89,8 @@ function ErledigtDialog({
         <FormFeedback state={state} />
         <div className="flex justify-end gap-2">
           <DialogAbbrechen />
-          <Button type="submit" size="sm" disabled={pending}>
-            {pending ? "…" : "Eintragen"}
+          <Button type="submit" size="sm">
+            Eintragen
           </Button>
         </div>
       </form>

@@ -12,7 +12,7 @@ export function ClubForm({
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
 }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     action,
     {},
   );
@@ -34,8 +34,8 @@ export function ClubForm({
         <p className="text-sm text-[var(--color-danger)]">{state.error}</p>
       ) : null}
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" disabled={pending}>
-          {pending ? "Erstellen…" : "Club erstellen"}
+        <Button type="submit">
+          Club erstellen
         </Button>
         <FormLeaveGuard backHref="/clubs" />
       </div>

@@ -41,7 +41,7 @@ export function StatusSteuerung({
     { manuell, status, grund: grund ?? null },
     { status: statusSel, grund: grundSel },
   );
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     async (prev, fd) => {
       const res = await setzeMaschinenStatus(prev, fd);
       if (res.message) {
@@ -71,12 +71,9 @@ export function StatusSteuerung({
             }}
           >
             <input type="hidden" name="machineId" value={machineId} />
-            <button
-              type="submit"
-              className="inline-flex items-center gap-1.5 rounded-[var(--radius)] border border-[var(--color-border)] px-2.5 py-1 text-xs text-[var(--color-muted)] transition-colors hover:border-[var(--color-primary)] hover:text-[var(--color-fg)]"
-            >
+            <Button type="submit" variant="secondary" size="sm" className="text-xs">
               <RotateCcw size={13} /> Zurück auf Automatik
-            </button>
+            </Button>
           </form>
         ) : null}
       </div>
@@ -120,10 +117,10 @@ export function StatusSteuerung({
       <div className="flex items-center gap-3">
         <Button
           type="submit"
-          disabled={pending || unveraendert}
+          disabled={unveraendert}
           title={unveraendert ? "Keine Änderung" : undefined}
         >
-          {pending ? "…" : "Status setzen"}
+          Status setzen
         </Button>
         <button
           type="button"

@@ -1,7 +1,8 @@
 "use client";
 
 import { useActionState } from "react";
-import { BadgeCheck, Loader2, Mail, UserRound } from "lucide-react";
+import { BadgeCheck, Mail, UserRound } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { inviteBesitzer } from "@/db/actions/besitzer";
 import type { FormState } from "@/db/actions/form-state";
 
@@ -47,7 +48,7 @@ function EinBesitzer({
   machineId: string;
   besitzer: Besitzer;
 }) {
-  const [state, formAction, pending] = useActionState<FormState, FormData>(
+  const [state, formAction] = useActionState<FormState, FormData>(
     inviteBesitzer,
     {},
   );
@@ -67,18 +68,14 @@ function EinBesitzer({
         <form action={formAction} className="inline-flex items-center gap-2">
           <input type="hidden" name="machineId" value={machineId} />
           <input type="hidden" name="besitzerId" value={besitzer.id} />
-          <button
+          <Button
             type="submit"
-            disabled={pending}
-            className="inline-flex items-center gap-1 rounded-full border border-[var(--color-border)] px-2 py-0.5 text-xs hover:border-[var(--color-primary)] hover:text-[var(--color-primary)] disabled:opacity-60"
+            variant="secondary"
+            size="sm"
+            className="rounded-full px-2 py-0.5 text-xs font-normal"
           >
-            {pending ? (
-              <Loader2 size={12} className="animate-spin" />
-            ) : (
-              <Mail size={12} />
-            )}
-            In den Club einladen
-          </button>
+            <Mail size={12} /> In den Club einladen
+          </Button>
         </form>
       ) : null}
       {state.message ? (
