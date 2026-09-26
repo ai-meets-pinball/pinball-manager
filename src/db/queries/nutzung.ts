@@ -25,9 +25,9 @@ import { heuteUtc } from "@/lib/nutzung";
   (nutzung_tage) sind eigens protokolliert.
 
   Zähler laufen als mehrere kleine GROUP-BY-Abfragen (Muster
-  getDueMaintenanceCountByMachine) und werden im Code zu Zeilen gemischt —
-  lesbarer als eine zehnfach korrelierte Subquery. `ab` ist die untere
-  Zeitgrenze (null = alles).
+  getDueMaintenanceCountByMachine), NACHEINANDER, und werden im Code zu Zeilen
+  gemischt — lesbarer als eine zehnfach korrelierte Subquery. `grenze` ist die
+  untere Zeitgrenze (null = alles).
 */
 
 type Zaehler = Map<string, number>;
@@ -97,75 +97,65 @@ export async function getNutzungNutzer(grenze: Date | null): Promise<NutzerZeile
     .innerJoin(roles, eq(roles.id, roleAssignments.roleId))
     .leftJoin(clubs, eq(clubs.id, roleAssignments.clubId));
 
-  const [
-    maschinen,
-    fehler,
-    reparaturen,
-    wissen,
-    meldungen,
-    ki,
-    logins,
-    tage,
-    gesehenSession,
-    gesehenTag,
-    gesehenLogin,
-  ] = await Promise.all([
-    db
-      .select({ k: machines.ownerId, n: count() })
-      .from(machines)
-      .groupBy(machines.ownerId),
-    db
-      .select({ k: faults.gemeldetVon, n: count() })
-      .from(faults)
-      .where(and(isNotNull(faults.gemeldetVon), ab(faults.datum, grenze)))
-      .groupBy(faults.gemeldetVon),
-    // Reparaturen tragen keinen Nutzer — sie zählen beim Eigentümer der Maschine.
-    db
-      .select({ k: machines.ownerId, n: count() })
-      .from(repairs)
-      .innerJoin(machines, eq(machines.id, repairs.machineId))
-      .where(ab(repairs.datum, grenze))
-      .groupBy(machines.ownerId),
-    db
-      .select({ k: knowledge.createdBy, n: count() })
-      .from(knowledge)
-      .where(ab(knowledge.createdAt, grenze))
-      .groupBy(knowledge.createdBy),
-    db
-      .select({ k: feedback.createdBy, n: count() })
-      .from(feedback)
-      .where(ab(feedback.createdAt, grenze))
-      .groupBy(feedback.createdBy),
-    db
-      .select({ k: kiAufrufe.userId, n: count() })
-      .from(kiAufrufe)
-      .where(ab(kiAufrufe.createdAt, grenze))
-      .groupBy(kiAufrufe.userId),
-    db
-      .select({ k: loginLog.userId, n: count() })
-      .from(loginLog)
-      .where(ab(loginLog.zeitpunkt, grenze))
-      .groupBy(loginLog.userId),
-    db
-      .select({ k: nutzungTage.userId, n: count() })
-      .from(nutzungTage)
-      .where(grenze ? gte(nutzungTage.tag, heuteUtc(grenze)) : undefined)
-      .groupBy(nutzungTage.userId),
-    // „Zuletzt gesehen": das Späteste aus Session-Aktualisierung (Better Auth,
-    // ±1 Tag), letztem aktiven Tag und letzter Anmeldung.
-    db
-      .select({ k: session.userId, m: max(session.updatedAt) })
-      .from(session)
-      .groupBy(session.userId),
-    db
-      .select({ k: nutzungTage.userId, m: max(nutzungTage.tag) })
-      .from(nutzungTage)
-      .groupBy(nutzungTage.userId),
-    db
-      .select({ k: loginLog.userId, m: max(loginLog.zeitpunkt) })
-      .from(loginLog)
-      .groupBy(loginLog.userId),
-  ]);
+  // NACHEINANDER, nicht parallel: elf gleichzeitige Abfragen erschöpfen den
+  // postgres-js-Pool (10) hinter dem Supabase-Pooler und hängen dann dauerhaft
+  // (2026-09-26 live beobachtet: /admin/nutzung lief in den Timeout). Elf kurze
+  // Abfragen in Folge brauchen unter einer halben Sekunde.
+  const maschinen = await db
+    .select({ k: machines.ownerId, n: count() })
+    .from(machines)
+    .groupBy(machines.ownerId);
+  const fehler = await db
+    .select({ k: faults.gemeldetVon, n: count() })
+    .from(faults)
+    .where(and(isNotNull(faults.gemeldetVon), ab(faults.datum, grenze)))
+    .groupBy(faults.gemeldetVon);
+  // Reparaturen tragen keinen Nutzer — sie zählen beim Eigentümer der Maschine.
+  const reparaturen = await db
+    .select({ k: machines.ownerId, n: count() })
+    .from(repairs)
+    .innerJoin(machines, eq(machines.id, repairs.machineId))
+    .where(ab(repairs.datum, grenze))
+    .groupBy(machines.ownerId);
+  const wissen = await db
+    .select({ k: knowledge.createdBy, n: count() })
+    .from(knowledge)
+    .where(ab(knowledge.createdAt, grenze))
+    .groupBy(knowledge.createdBy);
+  const meldungen = await db
+    .select({ k: feedback.createdBy, n: count() })
+    .from(feedback)
+    .where(ab(feedback.createdAt, grenze))
+    .groupBy(feedback.createdBy);
+  const ki = await db
+    .select({ k: kiAufrufe.userId, n: count() })
+    .from(kiAufrufe)
+    .where(ab(kiAufrufe.createdAt, grenze))
+    .groupBy(kiAufrufe.userId);
+  const logins = await db
+    .select({ k: loginLog.userId, n: count() })
+    .from(loginLog)
+    .where(ab(loginLog.zeitpunkt, grenze))
+    .groupBy(loginLog.userId);
+  const tage = await db
+    .select({ k: nutzungTage.userId, n: count() })
+    .from(nutzungTage)
+    .where(grenze ? gte(nutzungTage.tag, heuteUtc(grenze)) : undefined)
+    .groupBy(nutzungTage.userId);
+  // „Zuletzt gesehen": das Späteste aus Session-Aktualisierung (Better Auth,
+  // ±1 Tag), letztem aktiven Tag und letzter Anmeldung.
+  const gesehenSession = await db
+    .select({ k: session.userId, m: max(session.updatedAt) })
+    .from(session)
+    .groupBy(session.userId);
+  const gesehenTag = await db
+    .select({ k: nutzungTage.userId, m: max(nutzungTage.tag) })
+    .from(nutzungTage)
+    .groupBy(nutzungTage.userId);
+  const gesehenLogin = await db
+    .select({ k: loginLog.userId, m: max(loginLog.zeitpunkt) })
+    .from(loginLog)
+    .groupBy(loginLog.userId);
 
   const rollen = new Map<
     string,
@@ -234,48 +224,46 @@ export async function getNutzungClubs(grenze: Date | null): Promise<ClubZeile[]>
     .from(clubs)
     .orderBy(clubs.name);
 
-  const [mitglieder, maschinen, fehler, reparaturen, letzteFehler, letzteReparatur, letzteMaschine] =
-    await Promise.all([
-      db
-        .select({ k: roleAssignments.clubId, n: count() })
-        .from(roleAssignments)
-        .where(isNotNull(roleAssignments.clubId))
-        .groupBy(roleAssignments.clubId),
-      db
-        .select({ k: machines.clubId, n: count() })
-        .from(machines)
-        .where(isNotNull(machines.clubId))
-        .groupBy(machines.clubId),
-      db
-        .select({ k: machines.clubId, n: count() })
-        .from(faults)
-        .innerJoin(machines, eq(machines.id, faults.machineId))
-        .where(and(isNotNull(machines.clubId), ab(faults.datum, grenze)))
-        .groupBy(machines.clubId),
-      db
-        .select({ k: machines.clubId, n: count() })
-        .from(repairs)
-        .innerJoin(machines, eq(machines.id, repairs.machineId))
-        .where(and(isNotNull(machines.clubId), ab(repairs.datum, grenze)))
-        .groupBy(machines.clubId),
-      db
-        .select({ k: machines.clubId, m: max(faults.datum) })
-        .from(faults)
-        .innerJoin(machines, eq(machines.id, faults.machineId))
-        .where(isNotNull(machines.clubId))
-        .groupBy(machines.clubId),
-      db
-        .select({ k: machines.clubId, m: max(repairs.datum) })
-        .from(repairs)
-        .innerJoin(machines, eq(machines.id, repairs.machineId))
-        .where(isNotNull(machines.clubId))
-        .groupBy(machines.clubId),
-      db
-        .select({ k: machines.clubId, m: max(machines.createdAt) })
-        .from(machines)
-        .where(isNotNull(machines.clubId))
-        .groupBy(machines.clubId),
-    ]);
+  // Nacheinander — siehe getNutzungNutzer (Pool-Erschöpfung).
+  const mitglieder = await db
+    .select({ k: roleAssignments.clubId, n: count() })
+    .from(roleAssignments)
+    .where(isNotNull(roleAssignments.clubId))
+    .groupBy(roleAssignments.clubId);
+  const maschinen = await db
+    .select({ k: machines.clubId, n: count() })
+    .from(machines)
+    .where(isNotNull(machines.clubId))
+    .groupBy(machines.clubId);
+  const fehler = await db
+    .select({ k: machines.clubId, n: count() })
+    .from(faults)
+    .innerJoin(machines, eq(machines.id, faults.machineId))
+    .where(and(isNotNull(machines.clubId), ab(faults.datum, grenze)))
+    .groupBy(machines.clubId);
+  const reparaturen = await db
+    .select({ k: machines.clubId, n: count() })
+    .from(repairs)
+    .innerJoin(machines, eq(machines.id, repairs.machineId))
+    .where(and(isNotNull(machines.clubId), ab(repairs.datum, grenze)))
+    .groupBy(machines.clubId);
+  const letzteFehler = await db
+    .select({ k: machines.clubId, m: max(faults.datum) })
+    .from(faults)
+    .innerJoin(machines, eq(machines.id, faults.machineId))
+    .where(isNotNull(machines.clubId))
+    .groupBy(machines.clubId);
+  const letzteReparatur = await db
+    .select({ k: machines.clubId, m: max(repairs.datum) })
+    .from(repairs)
+    .innerJoin(machines, eq(machines.id, repairs.machineId))
+    .where(isNotNull(machines.clubId))
+    .groupBy(machines.clubId);
+  const letzteMaschine = await db
+    .select({ k: machines.clubId, m: max(machines.createdAt) })
+    .from(machines)
+    .where(isNotNull(machines.clubId))
+    .groupBy(machines.clubId);
 
   const zM = alsZaehler(mitglieder);
   const zMa = alsZaehler(maschinen);
