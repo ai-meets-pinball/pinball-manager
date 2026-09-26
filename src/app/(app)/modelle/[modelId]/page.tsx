@@ -7,6 +7,7 @@ import { KnowledgeTipps } from "@/components/knowledge-tipps";
 import { MachineTabs, type MachineTab } from "@/components/machine-tabs";
 import { SharedRepairs } from "@/components/shared-repairs";
 import { Card } from "@/components/ui/card";
+import { FotoZoom } from "@/components/ui/foto-zoom";
 import {
   getFamilie,
   getMachineModel,
@@ -105,12 +106,7 @@ export default async function GeraetetypPage({
 
       <div className="flex flex-wrap items-center gap-4">
         {model.imageUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={model.imageUrl}
-            alt={modellName(model)}
-            className="h-20 w-32 flex-none rounded-[var(--radius)] object-cover"
-          />
+          <FotoZoom src={model.imageUrl} alt={modellName(model)} />
         ) : null}
         <div>
           <h1 className="text-2xl font-bold">{modellName(model)}</h1>

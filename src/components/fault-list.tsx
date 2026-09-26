@@ -3,6 +3,7 @@ import { Pencil, Trash2, Wrench } from "lucide-react";
 import { ActionForm } from "@/components/ui/action-form";
 import { ButtonLink } from "@/components/ui/button";
 import { ConfirmButton } from "@/components/ui/confirm-button";
+import { FotoZoom } from "@/components/ui/foto-zoom";
 import { ICON_BTN } from "@/components/ui/icon-button";
 import { List, ListRow } from "@/components/ui/list";
 import { StatusBadge } from "@/components/ui/status-badge";
@@ -94,20 +95,7 @@ export function FaultList({
           {fault.bilder && fault.bilder.length > 0 ? (
             <div className="flex flex-wrap gap-2">
               {fault.bilder.map((url) => (
-                <a
-                  key={url}
-                  href={url}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="block h-20 w-20 overflow-hidden rounded-[var(--radius)] border border-[var(--color-border)]"
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={url}
-                    alt="Foto zum Fehler"
-                    className="h-full w-full object-cover"
-                  />
-                </a>
+                <FotoZoom key={url} src={url} alt="Foto zum Fehler" quadrat />
               ))}
             </div>
           ) : null}
