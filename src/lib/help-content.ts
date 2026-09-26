@@ -790,6 +790,27 @@ export const ADMIN_HILFE: HilfeSektion[] = [
     ],
   },
   {
+    key: "nutzung",
+    titel: "Nutzungsübersicht",
+    nurSuperAdmin: true,
+    einleitung:
+      "Administration → »Nutzung«: Wer nutzt den Pinball Manager wie — je Nutzer, je Club und als Ereignis-Feed.",
+    schritte: [
+      {
+        titel: "Drei Reiter, ein Zeitraum",
+        text: "»Nutzer« zeigt je Konto Clubs und Rollen, Maschinen (Bestand), Fehler, Reparaturen, Wissenseinträge, Feedback, KI-Aufrufe, Anmeldungen, aktive Tage und »zuletzt gesehen« — die Spalten Nutzer, Maschinen, Logins, aktive Tage und zuletzt gesehen sind per Klick auf den Kopf sortierbar. »Clubs« zeigt Mitglieder, Maschinen, Fehler, Reparaturen und die letzte Aktivität. »Aktivität« ist der chronologische Feed aller Ereignisse (Anmeldung, Maschine angelegt, Fehler gemeldet, Reparatur, Wartung erledigt, Wissen, Feedback, KI-Aufruf, Einladung, Termin), nach Art filterbar; ein Klick auf einen Nutzernamen im Reiter »Nutzer« filtert den Feed auf diese Person. Der Zeitraum (7/30/90 Tage, gesamt) gilt für alle Zähler außer Bestand; Reiter und Zeitraum bleiben gemerkt.",
+      },
+      {
+        titel: "Woher die Zahlen kommen",
+        text: "Fast alles ist aus den vorhandenen Daten abgeleitet — jede Maschine, jeder Fehler, jeder Wissenseintrag trägt Zeitstempel und Nutzer; deshalb ist der Feed auch rückwirkend gefüllt. Reparaturen tragen keinen Nutzer und zählen beim Eigentümer der Maschine. Nur zwei Dinge werden eigens protokolliert: jede Anmeldung (Zeitpunkt und grober Gerätetyp wie »Handy · Safari« — keine IP-Adresse) und je Nutzer der Kalendertag, an dem er angemeldet etwas aufgerufen hat. Beides beginnt mit Version 1.78; »zuletzt gesehen« nimmt zusätzlich die Sitzungs-Aktualisierung von Better Auth (auf einen Tag genau).",
+      },
+      {
+        titel: "Was bewusst fehlt",
+        text: "Keine Seitenaufrufe je Route, keine IP-Adressen, kein Export. Mail- und WhatsApp-Versand stehen weiter in ihren eigenen Protokollen. Die Daten hängen am Konto und werden mit ihm gelöscht.",
+      },
+    ],
+  },
+  {
     key: "betrieb",
     titel: "Betriebs-Hinweise",
     nurSuperAdmin: true,

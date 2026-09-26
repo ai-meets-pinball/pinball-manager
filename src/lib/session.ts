@@ -1,8 +1,16 @@
 import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
+import { cache } from "react";
 import { db } from "@/db";
-import { knowledge, machines, roleAssignments, roles } from "@/db/schema";
+import {
+  knowledge,
+  machines,
+  nutzungTage,
+  roleAssignments,
+  roles,
+} from "@/db/schema";
+import { heuteUtc } from "@/lib/nutzung";
 import { auth } from "@/lib/auth";
 import { istSuperAdminEmail } from "@/lib/super-admins";
 import { istSichererPfad } from "@/lib/safe-path";
@@ -61,25 +69,43 @@ async function globalRoleKeys(userId: string): Promise<string[]> {
 }
 
 /** Aktuell angemeldeter Nutzer (oder null). Lädt die globalen Rollen mit und
-    stuft Konten aus SUPER_ADMIN_EMAILS einmalig zum Super-Admin hoch. */
-export async function getCurrentUser(): Promise<SessionUser | null> {
-  // In Next 16 ist headers() async — sonst liefert getSession null.
-  const sessionData = await auth.api.getSession({ headers: await headers() });
-  const u = sessionData?.user;
-  if (!u) return null;
+    stuft Konten aus SUPER_ADMIN_EMAILS einmalig zum Super-Admin hoch.
 
-  let keys = await globalRoleKeys(u.id);
+    `cache()`: Layout, Seite und Server Actions rufen das mehrfach je Request —
+    Session und Rollen werden jetzt einmal geladen, und der Nutzungstag unten
+    wird einmal statt dreimal geschrieben. */
+export const getCurrentUser = cache(
+  async function getCurrentUser(): Promise<SessionUser | null> {
+    // In Next 16 ist headers() async — sonst liefert getSession null.
+    const sessionData = await auth.api.getSession({ headers: await headers() });
+    const u = sessionData?.user;
+    if (!u) return null;
 
-  if (istSuperAdminEmail(u.email) && !keys.includes(SUPERADMIN_ROLE)) {
-    await db
-      .insert(roleAssignments)
-      .values({ userId: u.id, roleId: await roleIdByKey(SUPERADMIN_ROLE) })
-      .onConflictDoNothing();
-    keys = [...keys, SUPERADMIN_ROLE];
-  }
+    let keys = await globalRoleKeys(u.id);
 
-  return { id: u.id, name: u.name, email: u.email, roles: keys };
-}
+    if (istSuperAdminEmail(u.email) && !keys.includes(SUPERADMIN_ROLE)) {
+      await db
+        .insert(roleAssignments)
+        .values({ userId: u.id, roleId: await roleIdByKey(SUPERADMIN_ROLE) })
+        .onConflictDoNothing();
+      keys = [...keys, SUPERADMIN_ROLE];
+    }
+
+    // Aktiver Tag für die Nutzungsübersicht (/admin/nutzung): eine Zeile je
+    // Nutzer und UTC-Kalendertag, idempotent über den Primärschlüssel. Best
+    // effort — ein Fehler hier darf keine Seite blockieren.
+    try {
+      await db
+        .insert(nutzungTage)
+        .values({ userId: u.id, tag: heuteUtc() })
+        .onConflictDoNothing();
+    } catch (e) {
+      console.error("[nutzung-tage]", (e as Error).message);
+    }
+
+    return { id: u.id, name: u.name, email: u.email, roles: keys };
+  },
+);
 
 /** Erzwingt eine Anmeldung; leitet sonst auf /login um — mit dem aktuellen
     Pfad als Rücksprungziel (?von=, gesetzt vom Proxy), damit Deep-Links wie

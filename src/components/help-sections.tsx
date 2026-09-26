@@ -1,4 +1,5 @@
 import {
+  Activity,
   Boxes,
   BookOpen,
   Bug,
@@ -78,6 +79,7 @@ const icons: Record<string, ReactNode> = {
   prompts: <Wand2 size={18} className={iconClass} />,
   kuratierung: <ShieldAlert size={18} className={iconClass} />,
   betrieb: <Server size={18} className={iconClass} />,
+  nutzung: <Activity size={18} className={iconClass} />,
 };
 
 /** Interaktives Inhaltsverzeichnis: springt per Anker zu den Sektionen

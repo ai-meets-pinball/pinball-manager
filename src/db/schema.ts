@@ -2,6 +2,7 @@ import { relations, sql } from "drizzle-orm";
 import {
   boolean,
   check,
+  date,
   index,
   integer,
   jsonb,
@@ -892,6 +893,43 @@ export const kiAufrufe = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [index("ki_aufrufe_user_zeit").on(t.userId, t.createdAt)],
+);
+
+/* ── Nutzungsübersicht (Super-Admin) ──────────────────────────────────────── */
+/*
+  Zwei kleine Tabellen für das, was sich nicht aus den Fachdaten ableiten
+  lässt. Alles andere (Maschinen, Fehler, Wissen, Feedback, Mails, KI-Aufrufe)
+  liest /admin/nutzung aus den vorhandenen Tabellen (db/queries/nutzung.ts).
+*/
+
+/* Eine Zeile je Anmeldung — geschrieben vom Better-Auth-Hook bei jeder neuen
+   Session (lib/auth.ts). Bewusst OHNE IP-Adresse (Datenschutz); nur ein
+   grober Gerätetyp aus dem User-Agent (lib/geraetetyp.ts), z. B. „Handy · Safari". */
+export const loginLog = pgTable(
+  "login_log",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    zeitpunkt: timestamp("zeitpunkt").notNull().defaultNow(),
+    geraet: text("geraet"),
+  },
+  (t) => [index("login_log_user_zeit").on(t.userId, t.zeitpunkt)],
+);
+
+/* Aktive Tage: EINE Zeile je Nutzer und Kalendertag (UTC-Datum, lib/nutzung.ts
+   heuteUtc). Gesetzt beim Session-Laden in lib/session.ts per
+   INSERT … ON CONFLICT DO NOTHING — idempotent über den Primärschlüssel. */
+export const nutzungTage = pgTable(
+  "nutzung_tage",
+  {
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    tag: date("tag").notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.tag] })],
 );
 
 /* ── Standard-Wartungspläne (Vorlagen je Nutzer / je Club) ────────────────── */

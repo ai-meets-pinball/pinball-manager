@@ -5,7 +5,8 @@ import { APIError, createAuthMiddleware } from "better-auth/api";
 import { nextCookies } from "better-auth/next-js";
 import { db } from "@/db";
 import { account, session, user, verification } from "@/db/auth-schema";
-import { invitations } from "@/db/schema";
+import { invitations, loginLog } from "@/db/schema";
+import { geraetetyp } from "@/lib/geraetetyp";
 import { istSuperAdminEmail } from "@/lib/super-admins";
 import {
   sendChangeEmailVerification,
@@ -94,6 +95,23 @@ export const auth = betterAuth({
               "Der Zugang läuft derzeit über eine Einladung. Bitte frg@silverballmania.com anschreiben.",
             code: "INVITATION_REQUIRED",
           });
+        },
+      },
+    },
+    session: {
+      create: {
+        /* Login-Protokoll für die Nutzungsübersicht (/admin/nutzung): eine
+           Zeile je neuer Session, ohne IP — nur der grobe Gerätetyp. Best
+           effort: ein Log-Fehler darf die Anmeldung nie brechen. */
+        after: async (neu) => {
+          try {
+            await db.insert(loginLog).values({
+              userId: neu.userId,
+              geraet: geraetetyp(neu.userAgent),
+            });
+          } catch (e) {
+            console.error("[login-log]", (e as Error).message);
+          }
         },
       },
     },

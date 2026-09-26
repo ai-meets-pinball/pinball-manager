@@ -24,3 +24,4 @@ export * from "@/db/queries/feedback";
 export * from "@/db/queries/mail";
 export * from "@/db/queries/prompts";
 export * from "@/db/queries/settings";
+export * from "@/db/queries/nutzung";

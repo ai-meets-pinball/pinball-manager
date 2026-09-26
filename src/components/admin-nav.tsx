@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Activity,
   Boxes,
   Building2,
   Layers,
@@ -50,6 +51,7 @@ const TABS = [
     icon: MessageCircle,
     exact: false,
   },
+  { href: "/admin/nutzung", label: "Nutzung", icon: Activity, exact: false },
 ] as const;
 
 export function AdminNav() {

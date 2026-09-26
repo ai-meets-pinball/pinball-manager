@@ -127,6 +127,13 @@ export default function DatenschutzPage() {
             <strong>kein Tracking</strong> und keine Reichweiten-/Werbeanalyse
             statt; deshalb ist kein Cookie-Banner erforderlich (§ 25 Abs. 2 TDDDG).
           </p>
+          <p>
+            Für den Betrieb protokollieren wir je Konto die Anmeldungen (Zeitpunkt
+            und grober Gerätetyp, etwa „Handy · Safari“; keine IP-Adresse) sowie
+            die Kalendertage, an denen das Konto die Anwendung genutzt hat. Diese
+            Daten sieht nur der Betreiber, sie dienen dem Verständnis der Nutzung
+            und werden mit dem Konto gelöscht.
+          </p>
 
           <h2 className={H2}>6. Speicherdauer</h2>
           <p>

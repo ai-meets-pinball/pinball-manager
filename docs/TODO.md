@@ -9,7 +9,17 @@ Melde-Warnung bleibt rein anzeigend) und **In-Place-Editor + Bearbeitungs-
 Verlauf** (`knowledge_revisions`; Neu-Generierung/Import aktualisiert in place —
 id und Signale bleiben erhalten).
 
-## Umgesetzt 09/2026 (Stand 2026-09-23)
+## Umgesetzt 09/2026 (Stand 2026-09-26)
+
+- **Nutzungsübersicht** (`/admin/nutzung`, Super-Admin): je Nutzer (Clubs,
+  Maschinen, Fehler, Reparaturen, Wissen, Feedback, KI, Logins, aktive Tage,
+  zuletzt gesehen), je Club, und ein Ereignis-Feed als UNION über die
+  Fachtabellen (`db/queries/nutzung.ts`, rückwirkend gefüllt). Neu
+  protokolliert (Migration 0061, RLS): `login_log` (Better-Auth-Hook
+  `session.create.after`, Gerätetyp aus `lib/geraetetyp.ts`, keine IP) und
+  `nutzung_tage` (ein Eintrag je Nutzer und UTC-Tag, gesetzt in
+  `getCurrentUser`, das jetzt per `React.cache` je Request nur einmal lädt).
+  Regeln in `lib/nutzung.ts`; Datenschutzerklärung und Admin-Hilfe ergänzt.
 
 - **Feedback-Runde 23.09.** (fünf Vorschläge von Dirk): Fehler-Mail an den
   Eigentümer PRIVATER Maschinen bei Fremd-/Gast-Meldung (`lib/fehler-mail.ts`
