@@ -4,13 +4,15 @@ import { AbmeldenButton } from "@/components/abmelden-button";
 import { Button } from "@/components/ui/button";
 import { acceptInvitation } from "@/db/actions/invitations";
 import { db } from "@/db";
-import { clubs, invitations, roles } from "@/db/schema";
+import { clubs, invitations, roles, user as userTable } from "@/db/schema";
 import { getCurrentUser } from "@/lib/session";
 import { ActionForm } from "@/components/ui/action-form";
 
 /*
   Einladungs-Landeseite. Der Token kommt aus der E-Mail.
-  - Nicht angemeldet → Registrieren (mit ?invite=token) oder Anmelden.
+  - Nicht angemeldet, Adresse hat schon ein Konto → Anmelden (Rücksprung
+    hierher per ?von=), nicht Registrieren: das Konto wird weiterverwendet.
+  - Nicht angemeldet, Adresse neu → Registrieren (mit ?invite=token).
   - Angemeldet mit passender E-Mail → „Einladung annehmen".
   - Angemeldet mit anderer E-Mail → Hinweis.
 */
@@ -43,6 +45,17 @@ export default async function InvitePage({
   const gueltig = invite && invite.status === "pending" && !invite.expired;
 
   const user = await getCurrentUser();
+  // Gibt es zur eingeladenen Adresse schon ein Konto? Dann ist Anmelden der
+  // Weg, nicht Registrieren (das scheitert ohnehin an der doppelten Adresse).
+  const kontoVorhanden = gueltig
+    ? Boolean(
+        await db.query.user.findFirst({
+          where: eq(userTable.email, invite.email.toLowerCase()),
+          columns: { id: true },
+        }),
+      )
+    : false;
+  const zurueckHierher = `/login?von=${encodeURIComponent(`/invite/${token}`)}`;
 
   return (
     <main className="mx-auto flex min-h-screen max-w-sm flex-col justify-center gap-6 px-6">
@@ -70,7 +83,17 @@ export default async function InvitePage({
             Die Einladung gilt für <strong>{invite!.email}</strong>.
           </p>
 
-          {!user ? (
+          {!user && kontoVorhanden ? (
+            <div className="flex flex-col gap-3">
+              <p className="text-sm text-[var(--color-muted)]">
+                Für diese Adresse gibt es schon ein Konto — melde dich an, dann
+                kannst du die Einladung direkt annehmen.
+              </p>
+              <Link href={zurueckHierher}>
+                <Button className="w-full">Anmelden &amp; beitreten</Button>
+              </Link>
+            </div>
+          ) : !user ? (
             <div className="flex flex-col gap-3">
               <Link href={`/register?invite=${token}`}>
                 <Button className="w-full">Registrieren &amp; beitreten</Button>
@@ -78,12 +101,12 @@ export default async function InvitePage({
               <p className="text-sm text-[var(--color-muted)]">
                 Schon ein Konto?{" "}
                 <Link
-                  href="/login"
+                  href={zurueckHierher}
                   className="text-[var(--color-accent)] underline"
                 >
                   Anmelden
                 </Link>{" "}
-                und den Link erneut öffnen.
+                — du kommst danach hierher zurück.
               </p>
             </div>
           ) : user.email.toLowerCase() !== invite!.email.toLowerCase() ? (

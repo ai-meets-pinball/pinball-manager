@@ -64,7 +64,7 @@ function EinladenDialog({
         <input type="hidden" name="clubId" value={clubId} />
         <Field
           label="E-Mail"
-          hint="Bestehende oder neue Adresse — neue Nutzer registrieren sich über den Link."
+          hint="Hat die Adresse schon ein Konto, meldet sich die Person an und nimmt die Einladung an — neue Nutzer registrieren sich über den Link."
         >
           <Input name="email" type="email" required autoFocus />
         </Field>

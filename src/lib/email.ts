@@ -362,6 +362,8 @@ export async function sendInvitationEmail(
   clubName: string,
   inviterName: string,
   message?: string | null,
+  /** Adresse hat schon ein Konto → „anmelden" statt „registrieren" sagen. */
+  kontoVorhanden = false,
 ) {
   const vorlage = await getTemplate("invite_club");
   const vars = { einlader: inviterName, clubname: clubName };
@@ -374,9 +376,12 @@ export async function sendInvitationEmail(
     html: invitationHtml({
       body: renderPlaceholders(vorlage.body, vars),
       url,
-      ctaLabel: "Einladung ansehen",
-      hinweis:
-        "Hast du noch kein Konto, kannst du dich über den Link direkt registrieren. Der Link ist nur begrenzt gültig.",
+      ctaLabel: kontoVorhanden
+        ? "Anmelden und Einladung annehmen"
+        : "Einladung ansehen",
+      hinweis: kontoVorhanden
+        ? "Du hast bereits ein Konto beim Pinball Manager — melde dich mit diesem Konto an und nimm die Einladung an. Der Link ist nur begrenzt gültig."
+        : "Hast du noch kein Konto, kannst du dich über den Link direkt registrieren. Der Link ist nur begrenzt gültig.",
       message,
     }),
   });

@@ -98,6 +98,7 @@ export async function inviteMember(
       club?.name ?? "Club",
       currentUser.name,
       String(formData.get("message") ?? ""),
+      Boolean(existingUser),
     );
   } catch (e) {
     console.error("[invite] email:", (e as Error).message);

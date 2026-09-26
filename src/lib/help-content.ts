@@ -36,7 +36,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Per Einladung beitreten",
-        text: "Wurdest du in einen weiteren Club eingeladen und hast schon ein Konto, findest du die Einladung unter Konto → »Einladungen« (annehmen oder ablehnen) — oder du öffnest den Link aus der E-Mail.",
+        text: "Wurdest du in einen weiteren Club eingeladen und hast schon ein Konto, findest du die Einladung unter Konto → »Einladungen« (annehmen oder ablehnen) — oder du öffnest den Link aus der E-Mail: Er erkennt dein Konto, führt dich zur Anmeldung und danach direkt zum »Annehmen«. Es entsteht kein zweites Konto.",
       },
       {
         titel: "Wo finde ich was?",
@@ -302,7 +302,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Mitglieder einladen",
-        text: "Auf der Club-Seite (als Owner oder Admin) öffnet »Mitglied einladen« neben der Überschrift einen Dialog: E-Mail eingeben, Rolle wählen und »Einladen«. Der Empfänger bekommt eine E-Mail mit Beitritts-Link. Offene Einladungen stehen unter der Mitgliederliste und lassen sich über den Papierkorb zurückziehen; verfallene tauchen dort nicht mehr auf.",
+        text: "Auf der Club-Seite (als Owner oder Admin) öffnet »Mitglied einladen« neben der Überschrift einen Dialog: E-Mail eingeben, Rolle wählen und »Einladen«. Der Empfänger bekommt eine E-Mail mit Beitritts-Link — hat die Adresse schon ein Konto, wird dieses weiterverwendet (anmelden, annehmen); nur neue Adressen registrieren sich. Offene Einladungen stehen unter der Mitgliederliste und lassen sich über den Papierkorb zurückziehen; verfallene tauchen dort nicht mehr auf.",
       },
       {
         titel: "Rollen",
