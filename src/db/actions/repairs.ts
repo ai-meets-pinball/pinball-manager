@@ -6,30 +6,55 @@ import { redirect } from "next/navigation";
 import { db } from "@/db";
 import { faults, repairFaults, repairs, shares } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
-import { mitStatusNachzug } from "@/db/machine-status-core";
+import { mitStatusNachzug, type Tx } from "@/db/machine-status-core";
 import { repairSchema } from "@/lib/validators";
+import {
+  fehlerStatusNachReparatur,
+  type FehlerStatus,
+  type ReparaturStatus,
+} from "@/lib/fehler-status";
 import type { FormState } from "@/db/actions/form-state";
+
+type FehlerMitStatus = { id: string; status: FehlerStatus };
 
 /* Die gewählten Fehler einlesen (Mehrfachauswahl) und prüfen, dass ALLE wirklich
    zu dieser Maschine gehören — sonst könnte man über eine eigene Maschine fremde
-   Fehler „beheben". Gibt die (deduplizierten) IDs zurück. */
-async function resolveFaultIds(
+   Fehler „beheben". Gibt die (deduplizierten) Fehler mit ihrem aktuellen Status
+   zurück — den braucht die Nachzug-Regel. */
+async function resolveFaults(
   formData: FormData,
   machineId: string,
-): Promise<{ ids: string[] } | { error: string }> {
+): Promise<{ fehler: FehlerMitStatus[] } | { error: string }> {
   const ids = [
     ...new Set(formData.getAll("faultIds").map(String).filter(Boolean)),
   ];
-  if (ids.length === 0) return { ids: [] };
+  if (ids.length === 0) return { fehler: [] };
 
   const vorhanden = await db.query.faults.findMany({
     where: and(eq(faults.machineId, machineId), inArray(faults.id, ids)),
-    columns: { id: true },
+    columns: { id: true, status: true },
   });
   if (vorhanden.length !== ids.length) {
     return { error: "Ein gewählter Fehler gehört nicht zu dieser Maschine" };
   }
-  return { ids };
+  return { fehler: vorhanden };
+}
+
+/* Schlüsselregel: die Reparatur führt den Status der verknüpften Fehler
+   („erledigt" → behoben, „in Arbeit" → in Arbeit für noch offene). Die
+   Entscheidung trifft lib/fehler-status.ts; hier nur die Updates, und nur dort,
+   wo die Regel einen neuen Status liefert. */
+async function fehlerNachziehen(
+  tx: Tx,
+  fehler: FehlerMitStatus[],
+  reparaturStatus: ReparaturStatus,
+) {
+  for (const f of fehler) {
+    const neu = fehlerStatusNachReparatur(reparaturStatus, f.status);
+    if (neu) {
+      await tx.update(faults).set({ status: neu }).where(eq(faults.id, f.id));
+    }
+  }
 }
 
 export async function createRepair(
@@ -45,9 +70,9 @@ export async function createRepair(
   }
   const data = parsed.data;
 
-  const faultRes = await resolveFaultIds(formData, machineId);
+  const faultRes = await resolveFaults(formData, machineId);
   if ("error" in faultRes) return faultRes;
-  const faultIds = faultRes.ids;
+  const faultIds = faultRes.fehler.map((f) => f.id);
 
   // Das Symptom wird NICHT kopiert — es lebt am Fehler. Hier nur die Verknüpfung.
   // `faultId` bleibt als „primärer" Fehler gesetzt (geteilte Ansicht zeigt eins).
@@ -72,13 +97,7 @@ export async function createRepair(
         .values(faultIds.map((fid) => ({ repairId: rep.id, faultId: fid })));
     }
 
-    // Schlüsselregel: erledigte Reparatur → ALLE verknüpften Fehler behoben.
-    if (data.status === "erledigt" && faultIds.length > 0) {
-      await tx
-        .update(faults)
-        .set({ status: "behoben" })
-        .where(inArray(faults.id, faultIds));
-    }
+    await fehlerNachziehen(tx, faultRes.fehler, data.status);
   });
 
   revalidatePath(`/machines/${machineId}`);
@@ -107,9 +126,9 @@ export async function updateRepair(
   });
   if (!bestehend) return { error: "Reparatur nicht gefunden." };
 
-  const faultRes = await resolveFaultIds(formData, machineId);
+  const faultRes = await resolveFaults(formData, machineId);
   if ("error" in faultRes) return faultRes;
-  const faultIds = faultRes.ids;
+  const faultIds = faultRes.fehler.map((f) => f.id);
 
   await mitStatusNachzug(machineId, async (tx) => {
     await tx
@@ -133,12 +152,7 @@ export async function updateRepair(
         .values(faultIds.map((fid) => ({ repairId: id, faultId: fid })));
     }
 
-    if (data.status === "erledigt" && faultIds.length > 0) {
-      await tx
-        .update(faults)
-        .set({ status: "behoben" })
-        .where(inArray(faults.id, faultIds));
-    }
+    await fehlerNachziehen(tx, faultRes.fehler, data.status);
   });
 
   revalidatePath(`/machines/${machineId}`);

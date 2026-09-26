@@ -186,7 +186,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Mit Fehlern verknüpfen",
-        text: "Eine Reparatur kann einen oder MEHRERE Fehler beheben — einfach die zutreffenden Fehler ankreuzen. Wird die Reparatur auf »erledigt« gesetzt, springen alle verknüpften Fehler automatisch auf »behoben«.",
+        text: "Eine Reparatur kann einen oder MEHRERE Fehler beheben — einfach die zutreffenden Fehler ankreuzen. Die Reparatur führt den Status der verknüpften Fehler: »in Arbeit« setzt alle noch offenen (offen/quittiert) auf »in Arbeit«, »erledigt« setzt alle auf »behoben«. Ein bereits behobener Fehler wird dadurch nicht wieder geöffnet.",
       },
       {
         titel: "Historie",

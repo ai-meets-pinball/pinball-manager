@@ -85,7 +85,7 @@ export function RepairForm({
 
         <Field
           label="Behobene Fehler (optional)"
-          hint="Eine Reparatur mit Status „erledigt“ setzt alle gewählten Fehler auf „behoben“."
+          hint="Status „in Arbeit“ setzt die gewählten, noch offenen Fehler auf „in Arbeit“; „erledigt“ setzt alle auf „behoben“."
         >
           {faults.length === 0 ? (
             <p className="text-sm text-[var(--color-muted)]">

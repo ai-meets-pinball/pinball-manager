@@ -11,6 +11,14 @@ id und Signale bleiben erhalten).
 
 ## Umgesetzt 09/2026 (Stand 2026-09-26)
 
+- **Reparatur führt den Fehlerstatus** (Feedback Kai, 26.09.): eine Reparatur
+  „in Arbeit" setzte die verknüpften Fehler NICHT nach — nur „erledigt" zog auf
+  „behoben". Jetzt entscheidet die reine Regel `fehlerStatusNachReparatur`
+  (`lib/fehler-status.ts`, Vitest): „in Arbeit" → „in Arbeit" für offene und
+  quittierte Fehler, „erledigt" → „behoben"; ein behobener Fehler wird nie
+  wieder geöffnet, „offen" ändert nichts. `actions/repairs.ts` wendet sie je
+  Fehler an (create + update); Formular-Hinweis und Hilfe angepasst;
+  E2E `reparatur-status.spec.ts`.
 - **Sofortiges Warte-Feedback** (Frank, 26.09.): EIN `Spinner`-Baustein
   (`ui/spinner.tsx`); `Button` ist jetzt Client-Komponente und erkennt per
   `useFormStatus` selbst, wenn sein Formular läuft (Kinder unsichtbar, Spinner
