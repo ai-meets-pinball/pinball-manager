@@ -102,7 +102,7 @@ export function ModelSearch({
                   <img
                     src={r.imageUrl}
                     alt=""
-                    className="h-9 w-12 flex-none rounded-[var(--radius)] object-cover"
+                    className="h-9 w-12 flex-none rounded-[var(--radius)] bg-[var(--color-inset)] object-contain"
                   />
                 ) : (
                   <div className="h-9 w-12 flex-none rounded-[var(--radius)] bg-[var(--color-inset)]" />

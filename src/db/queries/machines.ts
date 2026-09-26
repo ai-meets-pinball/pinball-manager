@@ -100,6 +100,11 @@ async function maschinenFuer(userId: string, suche?: string) {
   Mitglied ist. Der Client filtert je nach gewähltem Club auf die passende
   Teilmenge (Club-Eintrag ↔ Club-Maschine, privater Eintrag ↔ private Maschine).
 */
+/* Anzeigename eines Besitzers: bei verknüpftem Konto der AKTUELLE Kontoname,
+   sonst der gespeicherte. Die Katalogzeile trägt nur eine Kopie von damals —
+   wer sich umbenennt, soll überall neu heißen (Feedback 09/2026). */
+const besitzerName = sql<string>`coalesce(${user.name}, ${machineBesitzer.name})`;
+
 export async function getBesitzerKatalog(currentUser: SessionUser) {
   const clubIds = await getUserClubIds(currentUser.id);
   const bedingungen: SQL[] = [
@@ -111,18 +116,20 @@ export async function getBesitzerKatalog(currentUser: SessionUser) {
   if (clubIds.length > 0) {
     bedingungen.push(inArray(machineBesitzer.clubId, clubIds));
   }
-  return db
+  const rows = await db
     .select({
       id: machineBesitzer.id,
-      name: machineBesitzer.name,
+      name: besitzerName,
       email: machineBesitzer.email,
       clubId: machineBesitzer.clubId,
       userId: machineBesitzer.userId,
     })
     .from(machineBesitzer)
-    .where(or(...bedingungen))
-    .orderBy(machineBesitzer.name);
+    .leftJoin(user, eq(user.id, machineBesitzer.userId))
+    .where(or(...bedingungen));
+  return rows.sort((a, b) => a.name.localeCompare(b.name, "de"));
 }
+
 
 /* ── Termine (datierte Ereignisse) ────────────────────────────────────────── */
 
@@ -305,12 +312,13 @@ export async function ensureUserSammlungToken(userId: string): Promise<string> {
   return nachher?.qrToken ?? token;
 }
 
-/** Die eingetragenen Besitzer EINER Maschine (n:m), alphabetisch. */
+/** Die eingetragenen Besitzer EINER Maschine (n:m), alphabetisch, mit
+    Live-Namen (siehe besitzerName). */
 export async function getMachineBesitzer(machineId: string) {
-  return db
+  const rows = await db
     .select({
       id: machineBesitzer.id,
-      name: machineBesitzer.name,
+      name: besitzerName,
       email: machineBesitzer.email,
       userId: machineBesitzer.userId,
     })
@@ -319,8 +327,45 @@ export async function getMachineBesitzer(machineId: string) {
       machineBesitzer,
       eq(machineBesitzer.id, machineBesitzerZuordnung.besitzerId),
     )
-    .where(eq(machineBesitzerZuordnung.machineId, machineId))
-    .orderBy(machineBesitzer.name);
+    .leftJoin(user, eq(user.id, machineBesitzer.userId))
+    .where(eq(machineBesitzerZuordnung.machineId, machineId));
+  return rows.sort((a, b) => a.name.localeCompare(b.name, "de"));
+}
+
+/** Der Besitzer-Katalog EINES Clubs für die Verwaltung auf der Club-Seite:
+    Live-Name, Konto, ob das Konto Mitglied ist, Zahl der Maschinen. */
+export async function getClubBesitzer(clubId: string) {
+  const rows = await db
+    .select({
+      id: machineBesitzer.id,
+      name: besitzerName,
+      email: machineBesitzer.email,
+      userId: machineBesitzer.userId,
+      maschinen: count(machineBesitzerZuordnung.id),
+    })
+    .from(machineBesitzer)
+    .leftJoin(user, eq(user.id, machineBesitzer.userId))
+    .leftJoin(
+      machineBesitzerZuordnung,
+      eq(machineBesitzerZuordnung.besitzerId, machineBesitzer.id),
+    )
+    .where(eq(machineBesitzer.clubId, clubId))
+    .groupBy(machineBesitzer.id, user.name);
+  const mitglieder = new Set(
+    (
+      await db
+        .select({ userId: roleAssignments.userId })
+        .from(roleAssignments)
+        .where(eq(roleAssignments.clubId, clubId))
+    ).map((m) => m.userId),
+  );
+  return rows
+    .map((b) => ({
+      ...b,
+      maschinen: Number(b.maschinen),
+      istMitglied: Boolean(b.userId && mitglieder.has(b.userId)),
+    }))
+    .sort((a, b) => a.name.localeCompare(b.name, "de"));
 }
 
 /** Die Ausstattung/Add-ons EINER Maschine (1:n), alphabetisch nach Name —

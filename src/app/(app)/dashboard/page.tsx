@@ -34,6 +34,12 @@ import { ButtonLink } from "@/components/ui/button";
 import { cookies } from "next/headers";
 import { RememberParams } from "@/components/remember-params";
 import { klebrig } from "@/lib/sticky-view";
+import {
+  FEHLER_SORTIERUNGEN,
+  FEHLER_SORTIERUNG_LABEL,
+  fehlerSortierungAusParam,
+  sortiereFehler,
+} from "@/lib/fehler-sortierung";
 import { bereichKeys } from "@/lib/bereich";
 import { mindestens } from "@/lib/rechte";
 import { requireUser } from "@/lib/session";
@@ -47,7 +53,12 @@ import { requireUser } from "@/lib/session";
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ bereich?: string; scope?: string; ansicht?: string }>;
+  searchParams: Promise<{
+    bereich?: string;
+    scope?: string;
+    ansicht?: string;
+    fehlerSort?: string;
+  }>;
 }) {
   const user = await requireUser();
   const alleMaschinen = await getMeineMaschinen(user);
@@ -120,12 +131,24 @@ export default async function DashboardPage({
   ) as "karten" | "liste";
   const kompakt = ansicht === "liste";
 
-  // Gemeinsamer URL-Bauer: hält Bereich UND Ansicht (jede Änderung erhält das
-  // jeweils andere). Volle/leere Bereichswahl und die Karten-Ansicht sind der
-  // parameterfreie Normalfall.
+  // Sortierung der offenen Fehler (Feedback 09/2026): nach Priorität oder die
+  // neuesten zuerst — Regel in lib/fehler-sortierung.ts, Wahl gemerkt.
+  const fehlerSort = fehlerSortierungAusParam(
+    klebrig(
+      sp.fehlerSort,
+      cookieStore.get("dashboardFehlerSort")?.value,
+      (v) => (FEHLER_SORTIERUNGEN as readonly string[]).includes(v),
+      "prioritaet",
+    ),
+  );
+
+  // Gemeinsamer URL-Bauer: hält Bereich, Ansicht UND Fehler-Sortierung (jede
+  // Änderung erhält die anderen). Volle/leere Bereichswahl und die
+  // Karten-Ansicht sind der parameterfreie Normalfall.
   const href = (naechste: {
     bereich?: string[];
     ansicht?: "karten" | "liste";
+    fehlerSort?: string;
   }) => {
     const bereiche = naechste.bereich ?? gewaehlt;
     const a = naechste.ansicht ?? ansicht;
@@ -142,13 +165,17 @@ export default async function DashboardPage({
         : "",
     );
     p.set("ansicht", a);
+    p.set("fehlerSort", naechste.fehlerSort ?? fehlerSort);
     return `/dashboard?${p.toString()}`;
   };
 
   const machines = alleMaschinen.filter((m) => aktiv.has(scopeKey(m.clubId)));
   const erlaubteIds = new Set(machines.map((m) => m.id));
   const wartungen = wartungenAlle.filter((w) => erlaubteIds.has(w.machineId));
-  const fehler = fehlerAlle.filter((f) => erlaubteIds.has(f.machineId));
+  const fehler = sortiereFehler(
+    fehlerAlle.filter((f) => erlaubteIds.has(f.machineId)),
+    fehlerSort,
+  );
   const termine = termineAlle.filter((t) => erlaubteIds.has(t.machineId));
   const termineFaellig = termine.filter(
     (t) => tageDazwischen(new Date(), t.datum) <= 0,
@@ -247,7 +274,10 @@ export default async function DashboardPage({
       {/* `bereich` gilt für die ganze App (Default-path "/"), damit die Wahl
           auch auf /machines gilt; die Ansicht bleibt seitenspezifisch. */}
       <RememberParams params={{ bereich: gewaehlt.join(",") }} />
-      <RememberParams path="/dashboard" params={{ dashboardView: ansicht }} />
+      <RememberParams
+        path="/dashboard"
+        params={{ dashboardView: ansicht, dashboardFehlerSort: fehlerSort }}
+      />
       <PageHeader
         title="Übersicht"
         actions={
@@ -491,9 +521,21 @@ export default async function DashboardPage({
 
       {fehler.length > 0 ? (
       <section id="fehler" className="scroll-mt-20 space-y-3">
-        <h2 className="text-lg font-semibold">
-          Offene Fehler ({fehler.length})
-        </h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-lg font-semibold">
+            Offene Fehler ({fehler.length})
+          </h2>
+          <ChipFilter
+            label="Sortierung:"
+            ariaLabel="Fehler sortieren"
+            options={FEHLER_SORTIERUNGEN.map((s) => ({
+              key: s,
+              label: FEHLER_SORTIERUNG_LABEL[s],
+              href: `${href({ fehlerSort: s })}#fehler`,
+              aktiv: fehlerSort === s,
+            }))}
+          />
+        </div>
         <List empty="Keine offenen Fehler — läuft." kompakt={kompakt}>
           {fehler.map((f) => (
             <ListRow

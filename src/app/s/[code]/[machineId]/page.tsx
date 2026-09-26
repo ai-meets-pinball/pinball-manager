@@ -43,7 +43,7 @@ export default async function SammlungMeldenPage({
           <img
             src={maschine.fotoUrl}
             alt={modellName(maschine)}
-            className="h-16 w-16 flex-none rounded-[var(--radius)] object-cover"
+            className="h-16 w-16 flex-none rounded-[var(--radius)] bg-[var(--color-inset)] object-contain"
           />
         ) : null}
         <div>

@@ -86,7 +86,7 @@ export default async function SammlungPage({
                   <img
                     src={m.fotoUrl}
                     alt={modellName(m)}
-                    className="h-12 w-12 flex-none rounded-[var(--radius)] object-cover"
+                    className="h-12 w-12 flex-none rounded-[var(--radius)] bg-[var(--color-inset)] object-contain"
                   />
                 ) : (
                   <div className="h-12 w-12 flex-none rounded-[var(--radius)] bg-[var(--color-inset)]" />

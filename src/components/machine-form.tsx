@@ -116,32 +116,37 @@ export function MachineForm({
   const [neuName, setNeuName] = useState("");
   const [neuEmail, setNeuEmail] = useState("");
 
+  /*
+    Jede Person GENAU EINMAL im Picker (Feedback 09/2026 „Besitzer und
+    Mitglieder gedoppelt"): Nutzer des Geltungsbereichs stehen unter
+    „Club-Mitglieder" (bzw. „Du selbst"), reine Namen unter „Bisherige
+    Besitzer". Ein Katalog-Eintrag, der mit einem dieser Nutzer verknüpft ist,
+    erscheint deshalb NICHT zusätzlich — der Server nimmt beim Nutzer ohnehin
+    den verknüpften Eintrag wieder (besitzerAufloesen, Pfad 2a).
+  */
+  const nutzerImScope = clubSel
+    ? mitglieder.filter((m) => m.clubId === clubSel)
+    : [{ userId: aktuellerNutzer.id, name: aktuellerNutzer.name, clubId: null }];
+  const nutzerIdsImScope = new Set(nutzerImScope.map((m) => m.userId));
+  // Konten, die über einen Chip schon gewählt sind (direkt oder über den
+  // verknüpften Katalog-Eintrag).
+  const gewaehlteKonten = new Set(
+    chips.flatMap((c) =>
+      c.art === "nutzer"
+        ? [c.userId]
+        : c.art === "eintrag"
+          ? [besitzerKatalog.find((b) => b.id === c.id)?.userId ?? ""]
+          : [],
+    ),
+  );
   const besitzerAuswahl = besitzerKatalog.filter(
     (b) =>
       (clubSel ? b.clubId === clubSel : b.clubId === null) &&
-      !chips.some((c) => c.art === "eintrag" && c.id === b.id),
+      !chips.some((c) => c.art === "eintrag" && c.id === b.id) &&
+      !(b.userId && nutzerIdsImScope.has(b.userId)),
   );
-  // Nutzer als Besitzer: Club-Maschine → Mitglieder dieses Clubs; private →
-  // nur man selbst. Wer schon gewählt ist oder einen verknüpften Katalog-
-  // Eintrag hat, taucht nicht (doppelt) auf.
-  const nutzerAuswahl = (
-    clubSel
-      ? mitglieder.filter((m) => m.clubId === clubSel)
-      : [
-          {
-            userId: aktuellerNutzer.id,
-            name: aktuellerNutzer.name,
-            clubId: null,
-          },
-        ]
-  ).filter(
-    (m) =>
-      !chips.some((c) => c.art === "nutzer" && c.userId === m.userId) &&
-      !besitzerKatalog.some(
-        (b) =>
-          b.userId === m.userId &&
-          (clubSel ? b.clubId === clubSel : b.clubId === null),
-      ),
+  const nutzerAuswahl = nutzerImScope.filter(
+    (m) => !gewaehlteKonten.has(m.userId),
   );
 
   function addChip(chip: BesitzerChip) {

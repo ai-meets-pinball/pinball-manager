@@ -356,7 +356,7 @@ export default async function AdminModellePage({
                     <img
                       src={m.imageUrl}
                       alt=""
-                      className="h-12 w-16 rounded-[var(--radius)] object-cover"
+                      className="h-12 w-16 rounded-[var(--radius)] bg-[var(--color-inset)] object-contain"
                     />
                   ) : (
                     <div className="h-12 w-16 rounded-[var(--radius)] bg-[var(--color-inset)]" />

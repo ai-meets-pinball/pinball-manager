@@ -44,7 +44,7 @@ export function MachineCard({
           <img
             src={machine.fotoUrl}
             alt={modellName(machine)}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain"
           />
         ) : null}
       </div>

@@ -11,6 +11,15 @@ id und Signale bleiben erhalten).
 
 ## Umgesetzt 09/2026 (Stand 2026-09-26)
 
+- **Feedback-Runde 26.09.** (Dirk, Kai): Listen-Vorschauen passen das Foto ins
+  einheitliche Quadrat ein statt zu beschneiden; Besitzer-Katalog je Club auf
+  der Club-Seite pflegbar (umbenennen, mit Mitglied verknüpfen, zusammenführen,
+  löschen ohne Maschinen — Regeln in `lib/besitzer.ts`, Actions in
+  `db/actions/besitzer.ts`), verknüpfte Besitzer zeigen den Live-Kontonamen,
+  Picker zeigt jede Person genau einmal; „Gemeldet von" beim Fehler-Bearbeiten
+  wählbar (Mitglied oder Gast, Scope-Check in `updateFault`); offene Fehler auf
+  der Übersicht nach Priorität mit Umschalter „Neueste" (`lib/fehler-sortierung.ts`).
+
 - **Nutzungsübersicht** (`/admin/nutzung`, Super-Admin): je Nutzer (Clubs,
   Maschinen, Fehler, Reparaturen, Wissen, Feedback, KI, Logins, aktive Tage,
   zuletzt gesehen), je Club, und ein Ereignis-Feed als UNION über die

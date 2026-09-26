@@ -7,8 +7,9 @@ import { ZoomIn } from "lucide-react";
     Seitenverhältnis, nur nach oben begrenzt. Uploads und Katalogbilder sind
     heterogen (Backglass hochkant, Gerät quer), ein fester Rahmen beschneidet
     oder letterboxt.
-  - quadrat (Vorschauen in Listen, z. B. Fehler-Fotos): festes Quadrat mit
-    Beschnitt — nebeneinander wären wechselnde Formate unruhig.
+  - quadrat (Vorschauen in Listen, z. B. Fehler-Fotos): festes Quadrat,
+    das Bild darin EINGEPASST (nichts abgeschnitten) — nebeneinander wären
+    wechselnde Rahmen unruhig, ein Beschnitt nähme Translites den Rand.
 */
 export function FotoZoom({
   src,
@@ -17,7 +18,7 @@ export function FotoZoom({
 }: {
   src: string;
   alt: string;
-  /** Festes 80-px-Quadrat mit Beschnitt statt freiem Seitenverhältnis. */
+  /** Festes 80-px-Quadrat (Bild eingepasst) statt freiem Seitenverhältnis. */
   quadrat?: boolean;
 }) {
   return (
@@ -28,7 +29,7 @@ export function FotoZoom({
       title="Foto vergrößern"
       className={
         quadrat
-          ? "relative block h-20 w-20 flex-none overflow-hidden rounded-[var(--radius)] border border-[var(--color-border)]"
+          ? "relative block h-20 w-20 flex-none overflow-hidden rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-inset)]"
           : "relative flex-none"
       }
     >
@@ -38,7 +39,7 @@ export function FotoZoom({
         alt={alt}
         className={
           quadrat
-            ? "h-full w-full object-cover"
+            ? "h-full w-full object-contain"
             : "h-auto max-h-24 w-auto max-w-40 rounded-[var(--radius)] border border-[var(--color-border)] sm:max-h-36 sm:max-w-56"
         }
       />

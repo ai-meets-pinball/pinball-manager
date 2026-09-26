@@ -207,7 +207,7 @@ export default async function WissensbasisPage({
                   <img
                     src={m.imageUrl}
                     alt=""
-                    className="h-24 w-28 flex-none object-cover"
+                    className="h-24 w-28 flex-none bg-[var(--color-inset)] object-contain"
                   />
                 ) : null}
                 <div className="min-w-0 flex-1 p-3">

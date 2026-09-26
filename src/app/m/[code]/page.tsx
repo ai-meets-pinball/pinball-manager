@@ -48,7 +48,7 @@ export default async function MeldenPage({
           <img
             src={machine.fotoUrl}
             alt={modellName(machine)}
-            className="h-12 w-12 flex-none rounded-[var(--radius)] object-cover"
+            className="h-12 w-12 flex-none rounded-[var(--radius)] bg-[var(--color-inset)] object-contain"
           />
         ) : null}
         <div>

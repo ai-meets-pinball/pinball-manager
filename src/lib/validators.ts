@@ -45,6 +45,13 @@ export const faultSchema = z.object({
   status: z.enum(["offen", "quittiert", "in Arbeit", "behoben"]),
 });
 
+/** Beim Bearbeiten zusätzlich der Melder: eine Nutzer-ID oder "gast" (dann
+    mit Namen). Fehlt das Feld, bleibt der Melder unverändert. */
+export const faultEditSchema = faultSchema.extend({
+  gemeldetVon: optionalString,
+  gemeldetVonName: optionalString,
+});
+
 /** Maschinen-Betriebsstatus manuell setzen (Dashboard). Die Werte kommen aus
     lib/betriebsstatus.ts, damit Schema, Auswahlfeld und Regel nicht driften. */
 export const machineStatusSchema = z.object({

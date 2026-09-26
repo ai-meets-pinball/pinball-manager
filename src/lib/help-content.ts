@@ -72,7 +72,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Offene Fehler",
-        text: "Alle noch nicht behobenen Fehler (offen, quittiert, in Arbeit) mit Priorität — ebenfalls direkt verlinkt. Wie in allen Listen der Übersicht steht das Gerät fett in der ersten Zeile, die Fehlerbeschreibung darunter.",
+        text: "Alle noch nicht behobenen Fehler (offen, quittiert, in Arbeit) mit Priorität — ebenfalls direkt verlinkt. Wie in allen Listen der Übersicht steht das Gerät fett in der ersten Zeile, die Fehlerbeschreibung darunter. Sortiert nach Priorität (kritisch zuerst, innerhalb die neuesten oben); über der Liste schaltest du auf »Neueste« um — die Wahl bleibt gemerkt.",
       },
       {
         titel: "Turniermodus (Club)",
@@ -123,7 +123,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Bearbeiten",
-        text: "Über »Bearbeiten« änderst du Daten, Foto, Modell- und Club-Zuordnung sowie Besitzer und Ausstattung. Ein bereits gewähltes Modell wird dabei nur angezeigt (keine erneute Suche) — über »Anderes Modell wählen« oder »Manuell anpassen« änderst du es bei Bedarf. Beim Foto gehen JPG, PNG, WebP, GIF und AVIF bis 10 MB (zu große Dateien meldet das Feld sofort); am besten passt ein Querformat (etwa 5:3) — der Detail-Kopf zeigt das Foto ganz, die kleinen Vorschaubilder in Listen sind quadratische Ausschnitte. Beim Foto (wie bei jedem Upload) steht ein Urheberrechts-Hinweis: Wer hochlädt, ist für die Rechte verantwortlich. Verlässt du ein Formular mit ungespeicherten Änderungen — über »Abbrechen« oder irgendeinen Link —, fragt ein Dialog »Weiter bearbeiten / Verwerfen / Speichern«; still verworfen wird nichts.",
+        text: "Über »Bearbeiten« änderst du Daten, Foto, Modell- und Club-Zuordnung sowie Besitzer und Ausstattung. Ein bereits gewähltes Modell wird dabei nur angezeigt (keine erneute Suche) — über »Anderes Modell wählen« oder »Manuell anpassen« änderst du es bei Bedarf. Beim Foto gehen JPG, PNG, WebP, GIF und AVIF bis 10 MB (zu große Dateien meldet das Feld sofort); am besten passt ein Querformat (etwa 5:3) — der Detail-Kopf zeigt das Foto in seinem eigenen Format (Lupe öffnet es groß), die kleinen Vorschaubilder in Listen passen es in ein einheitliches Quadrat ein — nichts wird abgeschnitten. Beim Foto (wie bei jedem Upload) steht ein Urheberrechts-Hinweis: Wer hochlädt, ist für die Rechte verantwortlich. Verlässt du ein Formular mit ungespeicherten Änderungen — über »Abbrechen« oder irgendeinen Link —, fragt ein Dialog »Weiter bearbeiten / Verwerfen / Speichern«; still verworfen wird nichts.",
       },
       {
         titel: "Besitzer",
@@ -143,7 +143,7 @@ export const ANLEITUNG: HilfeSektion[] = [
     schritte: [
       {
         titel: "Melden",
-        text: "Auf der Maschinen-Detailseite im Reiter »Fehler« auf »Neuer Fehler«. Beschreibe das Symptom und wähle optional eine Kategorie (Spule, Schalter, Beleuchtung, Anzeige, Elektrik, Elektronik, Mechanik, Baugruppe, Software, Sonstiges), eine Priorität (niedrig, mittel, hoch, kritisch) und den Status. Direkt beim Anlegen kannst du ein oder mehrere FOTOS anhängen — am Handy wahlweise mit der Kamera oder aus der Galerie; sie erscheinen später als Vorschau am Fehler. Ein offener KRITISCHER Fehler setzt die Maschine automatisch auf »Eingeschränkt« (siehe Betriebsstatus).",
+        text: "Auf der Maschinen-Detailseite im Reiter »Fehler« auf »Neuer Fehler«. Beschreibe das Symptom und wähle optional eine Kategorie (Spule, Schalter, Beleuchtung, Anzeige, Elektrik, Elektronik, Mechanik, Baugruppe, Software, Sonstiges), eine Priorität (niedrig, mittel, hoch, kritisch) und den Status. Direkt beim Anlegen kannst du ein oder mehrere FOTOS anhängen — am Handy wahlweise mit der Kamera oder aus der Galerie; sie erscheinen später als Vorschau am Fehler. Ein offener KRITISCHER Fehler setzt die Maschine automatisch auf »Eingeschränkt« (siehe Betriebsstatus). Beim Bearbeiten lässt sich auch »Gemeldet von« ändern — auf ein Club-Mitglied (bei privaten Maschinen: dich) oder auf einen Gast mit Namen.",
       },
       {
         titel: "Status & Filter",
@@ -303,6 +303,10 @@ export const ANLEITUNG: HilfeSektion[] = [
       {
         titel: "Mitglieder einladen",
         text: "Auf der Club-Seite (als Owner oder Admin) öffnet »Mitglied einladen« neben der Überschrift einen Dialog: E-Mail eingeben, Rolle wählen und »Einladen«. Der Empfänger bekommt eine E-Mail mit Beitritts-Link — hat die Adresse schon ein Konto, wird dieses weiterverwendet (anmelden, annehmen); nur neue Adressen registrieren sich. Offene Einladungen stehen unter der Mitgliederliste und lassen sich über den Papierkorb zurückziehen; verfallene tauchen dort nicht mehr auf.",
+      },
+      {
+        titel: "Besitzer verwalten",
+        text: "Owner und Admins sehen auf der Club-Seite den Abschnitt »Besitzer« — den Katalog der Geräte-Besitzer dieses Clubs (rein informativ, vergibt keine Rechte). Der Stift öffnet einen Dialog: Name ändern, den Eintrag mit einem Club-Mitglied verknüpfen (der Name folgt dann dem Konto) oder ihn mit einem anderen Eintrag zusammenführen — die Maschinen wandern mit, die Dublette verschwindet. Einträge ohne Maschinen lassen sich löschen; mit Maschinen ist der Papierkorb ausgegraut und nennt den Grund. Im Maschinen-Formular erscheint jede Person genau einmal: Mitglieder unter »Club-Mitglieder«, reine Namen unter »Bisherige Besitzer«.",
       },
       {
         titel: "Rollen",

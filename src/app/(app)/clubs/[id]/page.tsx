@@ -3,16 +3,19 @@ import { ConfirmButton } from "@/components/ui/confirm-button";
 import Link from "next/link";
 import { QrCode, Trash2 } from "lucide-react";
 import { MitgliedEinladen } from "@/components/add-member-form";
+import { BesitzerActions } from "@/components/besitzer-actions";
 import { ClubLogoForm } from "@/components/club-logo-form";
 import { MachineCard } from "@/components/machine-card";
 import { MemberActions } from "@/components/member-actions";
 import { RoleInfo } from "@/components/role-info";
 import { ShareSettingsForm } from "@/components/share-settings-form";
+import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { CountPill } from "@/components/ui/count-pill";
 import { ICON_BTN } from "@/components/ui/icon-button";
 import { List, ListRow } from "@/components/ui/list";
 import { PageHeader } from "@/components/ui/page-header";
-import { getSettingsFor } from "@/db/queries";
+import { getClubBesitzer, getSettingsFor } from "@/db/queries";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { deleteClub } from "@/db/actions/clubs";
 import { revokeInvitation } from "@/db/actions/invitations";
@@ -67,6 +70,8 @@ export default async function ClubDetailPage({
   });
 
   const clubShareSettings = await getSettingsFor("club", id);
+  // Besitzer-Katalog des Clubs (nur für Manager sichtbar/pflegbar).
+  const besitzer = manager ? await getClubBesitzer(id) : [];
 
   // Rollen-Katalog (Club-Rollen) für die Erklärung hinter dem Info-Icon.
   const rollenKatalog = await db
@@ -209,6 +214,51 @@ export default async function ClubDetailPage({
           </div>
         ) : null}
       </section>
+
+      {/* Besitzer-Katalog (nur Owner/Admin): die Namen, die als Geräte-Besitzer
+          wählbar sind — rein informativ. Hier lassen sich Tippfehler und
+          Dubletten beheben (Feedback 09/2026). */}
+      {manager ? (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">Besitzer</h2>
+          <p className="text-sm text-[var(--color-muted)]">
+            Die Besitzer-Namen dieses Clubs (rein informativ, vergeben keine
+            Rechte): umbenennen, mit einem Mitglied verknüpfen, Dubletten
+            zusammenführen — verknüpfte Einträge zeigen den aktuellen Kontonamen.
+          </p>
+          <List empty="Noch keine Besitzer eingetragen.">
+            {besitzer.map((b) => (
+              <ListRow
+                key={b.id}
+                title={b.name}
+                subtitle={b.email ?? undefined}
+                meta={
+                  <>
+                    {b.istMitglied ? (
+                      <Badge tone="success">Mitglied</Badge>
+                    ) : b.userId ? (
+                      <Badge tone="muted">auf der Plattform</Badge>
+                    ) : null}
+                    <CountPill
+                      n={`${b.maschinen} ${b.maschinen === 1 ? "Maschine" : "Maschinen"}`}
+                    />
+                  </>
+                }
+                actions={
+                  <BesitzerActions
+                    clubId={club.id}
+                    besitzer={b}
+                    mitglieder={members.map((m) => ({ userId: m.id, name: m.name }))}
+                    andere={besitzer
+                      .filter((x) => x.id !== b.id)
+                      .map((x) => ({ id: x.id, name: x.name }))}
+                  />
+                }
+              />
+            ))}
+          </List>
+        </section>
+      ) : null}
 
       {/* Vereins-Logo (nur Owner/Admin) — erscheint u. a. auf den QR-Etiketten. */}
       {manager ? (

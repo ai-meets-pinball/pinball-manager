@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { BildFeld } from "@/components/bild-feld";
 import { Button } from "@/components/ui/button";
-import { Field, Select, Textarea } from "@/components/ui/input";
+import { Field, Input, Select, Textarea } from "@/components/ui/input";
 import { FormLeaveGuard } from "@/components/ui/form-leave-guard";
 import type { FormState } from "@/db/actions/form-state";
 
@@ -30,19 +30,31 @@ type FaultValues = {
   status: "offen" | "quittiert" | "in Arbeit" | "behoben";
 };
 
+/** Melder-Auswahl beim Bearbeiten: wählbare Nutzer (Club-Mitglieder bzw. der
+    Eigentümer) und der aktuelle Stand (Nutzer-ID oder Gast-Name). */
+type Melder = {
+  optionen: { userId: string; name: string }[];
+  userId: string | null;
+  gastName: string | null;
+};
+
 export function FaultForm({
   action,
   machineId,
   fault,
+  melder,
 }: {
   action: (prev: FormState, formData: FormData) => Promise<FormState>;
   machineId: string;
   fault?: FaultValues;
+  /** Nur beim Bearbeiten: „Gemeldet von" wird wählbar (Feedback 09/2026). */
+  melder?: Melder;
 }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(
     action,
     {},
   );
+  const [melderSel, setMelderSel] = useState(melder?.userId ?? "gast");
 
   return (
     <form action={formAction} className="flex max-w-lg flex-col gap-4">
@@ -90,6 +102,36 @@ export function FaultForm({
           </Select>
         </Field>
       </div>
+
+      {/* Melder nur beim Bearbeiten: ein Nutzer aus dem Geltungsbereich oder ein
+          Gast mit Namen (der Server prüft die Zugehörigkeit erneut). */}
+      {fault && melder ? (
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <Field label="Gemeldet von">
+            <Select
+              name="gemeldetVon"
+              value={melderSel}
+              onChange={(e) => setMelderSel(e.target.value)}
+            >
+              {melder.optionen.map((o) => (
+                <option key={o.userId} value={o.userId}>
+                  {o.name}
+                </option>
+              ))}
+              <option value="gast">Gast (Name daneben)</option>
+            </Select>
+          </Field>
+          {melderSel === "gast" ? (
+            <Field label="Gast-Name">
+              <Input
+                name="gemeldetVonName"
+                defaultValue={melder.gastName ?? ""}
+                placeholder="z. B. Mr. X"
+              />
+            </Field>
+          ) : null}
+        </div>
+      ) : null}
 
       {/* Fotos nur beim ANLEGEN (beim Melden); Bearbeiten ändert nur die Daten.
           Kein <label> drumherum — sonst öffnet der Klick den Dialog doppelt. */}

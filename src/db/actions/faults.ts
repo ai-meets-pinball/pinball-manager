@@ -4,13 +4,13 @@ import { and, eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/db";
-import { faultImages, faults } from "@/db/schema";
-import { requireMachineWrite } from "@/lib/session";
+import { faultImages, faults, machines } from "@/db/schema";
+import { isClubMember, requireMachineWrite } from "@/lib/session";
 import { mitStatusNachzug } from "@/db/machine-status-core";
 import { benachrichtigeUeberNeuenFehler } from "@/db/whatsapp-benachrichtigung";
 import { maileEigentuemerUeberNeuenFehler } from "@/db/fehler-mail-benachrichtigung";
 import { MAX_FAULT_IMAGES, uploadFaultImages } from "@/lib/storage";
-import { faultSchema } from "@/lib/validators";
+import { faultEditSchema, faultSchema } from "@/lib/validators";
 import type { FormState } from "@/db/actions/form-state";
 
 export async function createFault(
@@ -93,6 +93,40 @@ export async function createFault(
   redirect(`/machines/${machineId}`);
 }
 
+/*
+  Melder aus dem Bearbeiten-Formular: "gast" + Name, oder ein Nutzer, der zum
+  Geltungsbereich der Maschine gehört (Club-Maschine → Mitglied, private →
+  der Eigentümer; kein Durchprobieren fremder IDs — dieselbe Regel wie beim
+  Besitzer-Picker). Ohne Feld bleibt der Melder, wie er ist.
+*/
+async function melderAusFormular(
+  machineId: string,
+  gemeldetVon: string | undefined,
+  gemeldetVonName: string | undefined,
+): Promise<
+  | { werte: { gemeldetVon: string | null; gemeldetVonName: string | null } | Record<never, never> }
+  | { error: string }
+> {
+  if (!gemeldetVon) return { werte: {} };
+  if (gemeldetVon === "gast") {
+    return {
+      werte: { gemeldetVon: null, gemeldetVonName: gemeldetVonName?.trim() || "Gast" },
+    };
+  }
+  const machine = await db.query.machines.findFirst({
+    where: eq(machines.id, machineId),
+    columns: { clubId: true, ownerId: true },
+  });
+  if (!machine) return { error: "Maschine nicht gefunden." };
+  const erlaubt = machine.clubId
+    ? await isClubMember(gemeldetVon, machine.clubId)
+    : gemeldetVon === machine.ownerId;
+  if (!erlaubt) {
+    return { error: "Dieser Nutzer gehört nicht zum Geltungsbereich der Maschine." };
+  }
+  return { werte: { gemeldetVon, gemeldetVonName: null } };
+}
+
 export async function updateFault(
   _prev: FormState,
   formData: FormData,
@@ -101,10 +135,16 @@ export async function updateFault(
   const id = String(formData.get("id"));
   await requireMachineWrite(machineId);
 
-  const parsed = faultSchema.safeParse(Object.fromEntries(formData));
+  const parsed = faultEditSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) {
     return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
   }
+  const melder = await melderAusFormular(
+    machineId,
+    parsed.data.gemeldetVon,
+    parsed.data.gemeldetVonName,
+  );
+  if ("error" in melder) return { error: melder.error };
 
   await mitStatusNachzug(machineId, (tx) =>
     tx
@@ -114,6 +154,7 @@ export async function updateFault(
         kategorie: parsed.data.kategorie ?? null,
         prioritaet: parsed.data.prioritaet,
         status: parsed.data.status,
+        ...melder.werte,
       })
       .where(and(eq(faults.id, id), eq(faults.machineId, machineId))),
   );
