@@ -369,13 +369,12 @@ id und Signale bleiben erhalten).
   (`filtereHilfe`) — beide Regeln existieren, es fehlt nur die Seite/Palette.
   Zurückgestellt, weil /machines und /help je ein eigenes Suchfeld haben.
 
-- **`npm run lint` meldet 7 vorbestehende Fehler** (Stand 2026-09-12, auch auf
-  16.2.9): fünf `react/no-unescaped-entities` (rohe `"` in JSX auf
-  /datenschutz, /features, /log, /preview, /s/[code]) und zwei
-  `react-hooks/set-state-in-effect` in `qr-print.tsx` (localStorage-Restore
-  im Effekt). Kein Build-Blocker — Next 16 lintet im Build nicht mehr. Die
-  fünf Anführungszeichen sind Einzeiler; `qr-print` bräuchte ein
-  `useSyncExternalStore` oder einen Lazy-Initializer.
+- ~~**`npm run lint` meldet vorbestehende Fehler**~~ — erledigt 2026-10-15
+  (1.86): vier deutsche Anführungszeichen schlossen mit `"` statt “ (auch ein
+  sichtbarer Tippfehler); `qr-print.tsx`: Mount-Merker per
+  `useSyncExternalStore`, der localStorage-Restore bleibt bewusst ein Effekt
+  (erster Render muss dem Server gleichen) — begründete Lint-Ausnahme.
+  `npm run lint` ist grün.
 
 - **Review 09/2026 — was nach dem Abräumen bewusst blieb:** der Rollen-Dialog
   (`admin-user-roles.tsx` ↔ `member-actions.tsx`) bleibt zweimal gebaut — eine

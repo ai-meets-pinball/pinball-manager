@@ -337,7 +337,7 @@ export default async function LogPage() {
             in der App — <em>global</em>, <em>pro Hersteller</em> oder{" "}
             <em>pro Generation</em>. Der spezifischste Treffer gewinnt, sonst der
             Standard. So lässt sich ein Prompt gezielt schärfen (z. B. für
-            „Bally/Williams WPC"), ohne die anderen zu berühren.
+            „Bally/Williams WPC“), ohne die anderen zu berühren.
           </p>
 
           {/* Featured: Reparaturvorschlag */}

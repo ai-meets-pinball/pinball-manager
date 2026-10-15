@@ -60,7 +60,7 @@ export default async function SammlungMeldenPage({
         <span className="font-medium text-[var(--color-fg)]">
           {modellName(maschine)}
         </span>{" "}
-        — aus der Sammlung „{sammlung.name}" gewählt.
+        — aus der Sammlung „{sammlung.name}“ gewählt.
       </p>
 
       <SammelFehlerForm

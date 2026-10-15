@@ -155,7 +155,7 @@ export default function DatenschutzPage() {
           </p>
           <p className="mt-2">
             <strong>Konto &amp; Daten löschen:</strong> Angemeldet unter{" "}
-            <a href="/account" className={A}>Konto</a> → „Konto löschen" kannst du
+            <a href="/account" className={A}>Konto</a> → „Konto löschen“ kannst du
             dein Konto samt zugehöriger Daten selbst und unwiderruflich löschen.
             Alternativ genügt eine formlose E-Mail an uns.
           </p>

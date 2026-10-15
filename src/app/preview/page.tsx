@@ -94,7 +94,7 @@ export default function PreviewPage() {
                 Preview heißt: der Kern steht und trägt den Alltag, aber es gibt
                 Ecken und Kanten, und Details ändern sich noch. Genau dafür machen
                 wir das jetzt öffentlich. Dein Feedback ist ausdrücklich erwünscht
-                — direkt über den „Problem melden"-Knopf in der App. Je konkreter,
+                — direkt über den „Problem melden“-Knopf in der App. Je konkreter,
                 desto besser.
               </p>
             </div>

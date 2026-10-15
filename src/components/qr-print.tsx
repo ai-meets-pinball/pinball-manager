@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   type CSSProperties,
+  useSyncExternalStore,
 } from "react";
 import { createPortal } from "react-dom";
 import { ChevronDown, Plus, Printer, Search, X } from "lucide-react";
@@ -21,6 +22,10 @@ import {
   SCORECARD_FORMATS,
   formatePassendZuHersteller,
 } from "@/lib/scorecard-formats";
+
+/** Kein externes Abo nötig — useSyncExternalStore dient hier nur als
+    „läuft im Browser?“-Schalter (Server false, Client true). */
+const nichtAbonnieren = () => () => {};
 
 /*
   Druck-Studio für den QR-Melde-Code: druckt exakt physisch — entweder ein
@@ -100,10 +105,14 @@ export function QrPrint({
   // geladen und gesetzt. Nur der QR/Name/Logo selbst kommt je Maschine aus Props.
   const [geladen, setGeladen] = useState(false);
   useEffect(() => {
+    // Bewusst setState im Effekt: localStorage gibt es erst im Browser, und der
+    // erste Render muss dem Server gleichen (sonst Hydration-Fehler). Ein
+    // Lazy-Initializer ginge nur mit einem rein clientseitigen Druckstudio.
     try {
       const roh = localStorage.getItem(EINSTELLUNGEN_KEY);
       if (roh) {
         const s = JSON.parse(roh);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Restore nach dem Mount, siehe oben
         if (s.modus === "etikett" || s.modus === "scorecard") setModus(s.modus);
         if (typeof s.breite === "string") setBreite(s.breite);
         if (typeof s.hoehe === "string") setHoehe(s.hoehe);
@@ -162,9 +171,13 @@ export function QrPrint({
     blatt,
   ]);
 
-  // Portal-Ziel steht erst nach dem Mount (kein document beim SSR).
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
+  // Portal-Ziel steht erst im Browser (kein document beim SSR): Server-Snapshot
+  // false, Client-Snapshot true — ohne setState im Effekt.
+  const mounted = useSyncExternalStore(
+    nichtAbonnieren,
+    () => true,
+    () => false,
+  );
 
   // „Weitere Karten auf die Seite" (nur A4): Maschinen-Suche + Zusatzkarten.
   const [weitere, setWeitere] = useState(false);
