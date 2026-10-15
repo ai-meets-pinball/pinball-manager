@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { del } from "@vercel/blob";
-import { addFault, createMachine, sql, userIdByEmail } from "./helpers/db";
+import { addFault, addRepair, createMachine, sql, userIdByEmail } from "./helpers/db";
 import { loginAs, USERS } from "./helpers/auth";
 
 /*
@@ -96,5 +96,18 @@ test.describe("Fehler erfassen", () => {
     await zeile.getByRole("link", { name: "Fehler bearbeiten" }).click();
     await page.waitForURL((u) => u.pathname.endsWith("/edit"));
     await expect(page.getByLabel("Beschreibung / Symptom")).toHaveValue("E2E Ball hängt am Scoop");
+  });
+
+  test("behobener Fehler zeigt die Lösung aus der Reparatur", async ({ page }) => {
+    const faultId = await addFault({ machineId, beschreibung: "E2E Fehler mit Lösung", status: "behoben" });
+    const repairId = await addRepair(machineId); // Maßnahme „E2E Massnahme", erledigt
+    await sql`INSERT INTO repair_faults (repair_id, fault_id) VALUES (${repairId}, ${faultId})`;
+
+    await loginAs(page, USERS.owner);
+    await page.goto(`/machines/${machineId}?bereich=fehler`);
+    const zeile = page.getByRole("listitem").filter({ hasText: "E2E Fehler mit Lösung" });
+    const loesung = zeile.getByRole("link", { name: /Lösung: E2E Massnahme/ });
+    await expect(loesung).toBeVisible();
+    await expect(loesung).toHaveAttribute("href", `/machines/${machineId}/repairs/${repairId}/edit`);
   });
 });

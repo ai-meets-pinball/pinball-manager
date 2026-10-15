@@ -42,6 +42,14 @@ id und Signale bleiben erhalten).
     Jetzt wird nur die durchfallende Datei gelöscht (per Sonde im echten Store
     belegt: alter Code löschte das fremde Foto, neuer lässt es stehen).
 
+  - **Lösung am Fehler** (Dirk, 1.85): Ein behobener Fehler zeigte nicht, was
+    gemacht wurde — die Reparatur gab es, nur sah man sie an der Fehlerzeile
+    nicht. Jetzt steht unter jedem Fehler mit verknüpfter Reparatur „Lösung:
+    <Maßnahme>" (sonst Diagnose; laufende als „Reparatur läuft:") mit Link zur
+    Reparatur. Auswahl als reine Regel `lib/loesung.ts`; die Reparaturen kommen
+    korreliert in derselben Abfrage (`getMachineFaults`). 9 von 31 behobenen
+    Fehlern haben gar keine Reparatur — dort bleibt die Zeile wie bisher.
+
 ### Offen aus dieser Runde
 
 - **Alten Supabase-Bucket `machine-photos` löschen**, sobald der Umzug
@@ -50,6 +58,9 @@ id und Signale bleiben erhalten).
 - **Verwaiste Direkt-Uploads** (gewählt, nie abgeschickt) bleiben im Store —
   nur erlaubte Typen, aber sie sammeln sich. Aufräum-Job (älter als 1 Tag und
   nicht referenziert → `del`) fehlt.
+- **Suche nach Fehlern und Lösungen** (Dirk): im Fehler-Reiter (Text,
+  Diagnose, Maßnahme) und/oder übers Modell (eigene baugleiche Geräte +
+  geteilte Reparaturen). Frank: „erst sichtbar machen", Suche später.
 - `serverActions.bodySizeLimit`/`proxyClientMaxBodySize` (52 MB) in
   `next.config.ts` sind für Fotos/Dokumente überflüssig geworden; vor dem
   Zurücksetzen prüfen, ob der lokale Handbuch-Weg (Ollama) noch darauf baut.

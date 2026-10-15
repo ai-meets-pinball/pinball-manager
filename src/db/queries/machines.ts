@@ -27,12 +27,15 @@ import {
   machineModels,
   machines,
   maintenanceLog,
+  repairFaults,
+  repairs,
   roleAssignments,
   termine,
   user,
   userSettings,
 } from "@/db/schema";
 import { getUserClubIds, isSuperAdmin, type SessionUser } from "@/lib/session";
+import { loesungAmFehler } from "@/lib/loesung";
 
 /*
   Maschinen: Sichtbarkeit, Fehler und die Kennzahlen der Detailseite.
@@ -462,8 +465,9 @@ export async function getOpenFaultsForMachines(
     .orderBy(desc(faults.datum));
 }
 
-/** Fehler EINER Maschine mit Melder-Name (gemeldetVon → user.name). Speist die
-    Fehler-Vorschau auf der Übersicht (nurOffen + limit) UND die volle Liste. */
+/** Fehler EINER Maschine mit Melder-Name (gemeldetVon → user.name), Fotos und
+    der Lösung aus der verknüpften Reparatur. Speist die Fehler-Vorschau auf der
+    Übersicht (nurOffen + limit) UND die volle Liste. */
 export async function getMachineFaults(
   machineId: string,
   opts: { nurOffen?: boolean; limit?: number } = {},
@@ -485,6 +489,11 @@ export async function getMachineFaults(
       bilder: sql<
         string[]
       >`(select coalesce(array_agg(${faultImages.url} order by ${faultImages.createdAt}), '{}') from ${faultImages} where ${faultImages.faultId} = ${faults.id})`,
+      // Verknüpfte Reparaturen (für „Lösung" an der Zeile, lib/loesung.ts) —
+      // ebenfalls korreliert in DERSELBEN Abfrage, kein zweiter Rundgang.
+      reparaturenRoh: sql<
+        { id: string; status: string; datum: string; massnahme: string | null; diagnose: string | null }[]
+      >`(select coalesce(json_agg(json_build_object('id', ${repairs.id}, 'status', ${repairs.status}, 'datum', ${repairs.datum}, 'massnahme', ${repairs.massnahme}, 'diagnose', ${repairs.diagnose})), '[]') from ${repairFaults} join ${repairs} on ${repairs.id} = ${repairFaults.repairId} where ${repairFaults.faultId} = ${faults.id})`,
     })
     .from(faults)
     .leftJoin(user, eq(user.id, faults.gemeldetVon))
@@ -494,7 +503,13 @@ export async function getMachineFaults(
         : eq(faults.machineId, machineId),
     )
     .orderBy(desc(faults.datum));
-  return opts.limit ? q.limit(opts.limit) : q;
+  const zeilen = await (opts.limit ? q.limit(opts.limit) : q);
+  return zeilen.map(({ reparaturenRoh, ...f }) => ({
+    ...f,
+    loesung: loesungAmFehler(
+      reparaturenRoh.map((r) => ({ ...r, datum: new Date(r.datum) })),
+    ),
+  }));
 }
 
 /** Datum der jüngsten erledigten Wartung dieser Maschine (oder null). */
