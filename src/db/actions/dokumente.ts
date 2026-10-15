@@ -7,7 +7,7 @@ import { db } from "@/db";
 import { machineDokumente } from "@/db/schema";
 import { requireMachineWrite } from "@/lib/session";
 import { dokumentSchema } from "@/lib/validators";
-import { deleteStorageObject, uploadDocument } from "@/lib/storage";
+import { deleteStorageObject, uebernehmeUpload } from "@/lib/storage";
 import type { FormState } from "@/db/actions/form-state";
 
 /*
@@ -35,6 +35,11 @@ function rohWerte(formData: FormData): Record<string, unknown> {
   return roh;
 }
 
+/** Original-Dateiname (vom Upload-Feld mitgeschickt), für Anzeige/Download. */
+function dateinameAus(formData: FormData): string {
+  return String(formData.get("dateiName") ?? "").trim().slice(0, 200) || "dokument";
+}
+
 export async function createDokument(
   _prev: FormState,
   formData: FormData,
@@ -57,17 +62,13 @@ export async function createDokument(
         error: "Bitte bestätige, dass du diese Datei speichern darfst.",
       };
     }
-    const file = formData.get("datei") as File | null;
-    if (!file || file.size === 0) {
-      return { error: "Bitte eine Datei auswählen." };
-    }
     try {
-      const hoch = await uploadDocument(file, user.id);
-      url = hoch.url;
-      dateiname = hoch.dateiname;
+      url = await uebernehmeUpload("dokument", user.id, formData.get("dateiUrl"));
+      dateiname = dateinameAus(formData);
     } catch (e) {
       return { error: e instanceof Error ? e.message : "Upload fehlgeschlagen." };
     }
+    if (!url) return { error: "Bitte eine Datei auswählen." };
   }
 
   await db.insert(machineDokumente).values({
@@ -115,20 +116,19 @@ export async function updateDokument(
   if (vorhanden.typ === "link") {
     url = d.url ?? null;
   } else if (vorhanden.typ === "datei") {
-    // Datei-Ersatz ist optional: nur wenn eine neue Datei mitkommt, hochladen
-    // und die alte aus dem Storage entfernen.
-    const file = formData.get("datei") as File | null;
-    if (file && file.size > 0) {
+    // Datei-Ersatz ist optional: nur wenn eine neue Datei mitkommt (schon
+    // direkt hochgeladen), prüfen und die alte aus dem Speicher entfernen.
+    const neueDatei = formData.get("dateiUrl");
+    if (neueDatei) {
       if (formData.get("attest") !== "on") {
         return {
           error: "Bitte bestätige, dass du diese Datei speichern darfst.",
         };
       }
       try {
-        const hoch = await uploadDocument(file, user.id);
+        url = await uebernehmeUpload("dokument", user.id, neueDatei);
         await deleteStorageObject(vorhanden.url);
-        url = hoch.url;
-        dateiname = hoch.dateiname;
+        dateiname = dateinameAus(formData);
       } catch (e) {
         return {
           error: e instanceof Error ? e.message : "Upload fehlgeschlagen.",

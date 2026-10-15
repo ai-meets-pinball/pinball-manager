@@ -9,6 +9,44 @@ Melde-Warnung bleibt rein anzeigend) und **In-Place-Editor + Bearbeitungs-
 Verlauf** (`knowledge_revisions`; Neu-Generierung/Import aktualisiert in place —
 id und Signale bleiben erhalten).
 
+## Umgesetzt 10/2026 (Stand 2026-10-15)
+
+- **Feedback-Runde 15.10.** (Amu ×3, Kai, Dirk):
+  - **Datei-Speicher auf Vercel Blob, alle Uploads direkt** (Kai, Frank):
+    QR-Meldung mit großem Galeriefoto endete auf „Seite konnte nicht geladen
+    werden" — Vercel nimmt pro Anfrage höchstens 4,5 MB an, alle Uploads liefen
+    durchs Formular (kein gespeichertes Bild war größer als 4,5 MB). Jetzt:
+    Supabase ist nur noch Postgres; Dateien liegen in Vercel Blob (public,
+    fra1). Fehlerfotos, Maschinenfoto, Avatar, Feedback-Screenshot und
+    Dokumente gehen per `upload()` direkt in den Store; `/api/upload` gibt das
+    Token nur mit Berechtigung je Zweck aus (gleiche Regeln wie die Aktionen,
+    Gäste nur für QR-Fehlerfotos) und begrenzt Typ/Größe. Regeln rein in
+    `lib/upload-zweck.ts` (Vitest); beim Speichern prüft `uebernehmeUploads`
+    eigenen Store-Host, eigenen Ordner und die echten Bytes und löscht, was
+    nicht passt. **Logos** bewusst weiter durchs Formular (SVG wird VOR dem
+    Speichern geprüft), Raster-Logos dafür auf 4 MB begrenzt. Bestand per
+    `npm run storage:umzug` (Vorschau / `--apply`, idempotent). CSP um Blob
+    erweitert; `logoAlsDataUrl` holt nur noch aus dem eigenen Store (I1).
+  - **Kategorien** (Amu): Flipperfinger, Ballhänger, Targets & Spinner, Rampen
+    & Ballguides, Plastics, Gummis, Gehäuse & Beine neu; Elektrik + Elektronik
+    → „Elektrik/Elektronik" (Bestand per SQL). Alte Werte bleiben im
+    Bearbeiten-Formular wählbar statt still gelöscht zu werden.
+  - **„Speichern & nächster Fehler"** (Amu) im Neu-Formular.
+  - **Werkzeuge in der Übersicht** (Dirk): `FehlerZeilenAktionen` (aus
+    `fault-list.tsx` gezogen) auch in der „Offene Fehler"-Vorschau.
+
+### Offen aus dieser Runde
+
+- **Alten Supabase-Bucket `machine-photos` löschen**, sobald der Umzug
+  kontrolliert ist (26 nicht referenzierte Objekte bleiben dort liegen), und
+  `*.supabase.co` aus der CSP (`src/proxy.ts`) nehmen. Eigenes go.
+- **Verwaiste Direkt-Uploads** (gewählt, nie abgeschickt) bleiben im Store —
+  nur erlaubte Typen, aber sie sammeln sich. Aufräum-Job (älter als 1 Tag und
+  nicht referenziert → `del`) fehlt.
+- `serverActions.bodySizeLimit`/`proxyClientMaxBodySize` (52 MB) in
+  `next.config.ts` sind für Fotos/Dokumente überflüssig geworden; vor dem
+  Zurücksetzen prüfen, ob der lokale Handbuch-Weg (Ollama) noch darauf baut.
+
 ## Umgesetzt 09/2026 (Stand 2026-09-26)
 
 - **Reparatur führt den Fehlerstatus** (Feedback Kai, 26.09.): eine Reparatur

@@ -75,7 +75,7 @@ export async function loeschBlocker(
 /** Löscht das Konto. Voraussetzung: loeschBlocker(...) war null. */
 export async function loescheNutzer(userId: string, fallbackId: string): Promise<void> {
   // ── Storage-Objekte einsammeln, VOR dem DB-Löschen (Cascade räumt kein
-  //    Supabase-Storage; sonst Waisen). ──
+  //    Datei-Speicher; sonst Waisen). ──
   const meineMaschinen = await db
     .select({ id: machines.id, fotoUrl: machines.fotoUrl })
     .from(machines)

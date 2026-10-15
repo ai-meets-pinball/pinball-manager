@@ -29,7 +29,7 @@ import {
   requireMachineWrite,
   requireUser,
 } from "@/lib/session";
-import { uploadMachinePhoto } from "@/lib/storage";
+import { uebernehmeUpload } from "@/lib/storage";
 import { machineSchema } from "@/lib/validators";
 import type { FormState } from "@/db/actions/form-state";
 
@@ -459,7 +459,7 @@ export async function createMachine(
   let fotoUrl: string | null;
   try {
     fotoUrl =
-      (await uploadMachinePhoto(formData.get("foto") as File | null, user.id)) ??
+      (await uebernehmeUpload("maschinenfoto", user.id, formData.get("fotoUrl"))) ??
       opdbImageUrl(formData);
   } catch (e) {
     // Zu groß / falscher Typ: als Zeile im Formular, nicht als Fehlerseite.
@@ -530,7 +530,7 @@ export async function updateMachine(
   let neuesFoto: string | null;
   try {
     neuesFoto =
-      (await uploadMachinePhoto(formData.get("foto") as File | null, user.id)) ??
+      (await uebernehmeUpload("maschinenfoto", user.id, formData.get("fotoUrl"))) ??
       opdbImageUrl(formData);
   } catch (e) {
     return { error: (e as Error).message };

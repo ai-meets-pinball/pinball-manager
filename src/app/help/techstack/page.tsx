@@ -109,10 +109,17 @@ const sections: StackSection[] = [
       },
       {
         name: "Supabase",
-        version: "supabase-js 2.109.0",
+        version: "Postgres",
         beschreibung:
-          "Wird BEWUSST nur als Postgres + Datei-Storage verwendet — nicht als Auth- oder API-Ebene. Es gibt absichtlich KEIN Row-Level-Security: die Zugriffsregeln stehen im TypeScript (siehe Architektur unten). Der Storage-Bucket machine-photos hält die Maschinenfotos.",
-        imCode: "src/lib/storage.ts (Upload), src/db",
+          "Wird BEWUSST nur als Postgres-Datenbank verwendet — nicht als Auth- oder API-Ebene und seit 10/2026 auch nicht mehr als Datei-Speicher. Es gibt absichtlich KEIN Row-Level-Security: die Zugriffsregeln stehen im TypeScript (siehe Architektur unten).",
+        imCode: "src/db",
+      },
+      {
+        name: "Vercel Blob",
+        version: "@vercel/blob 2.8.2",
+        beschreibung:
+          "Datei-Speicher für Fotos, Logos und Dokumente. Uploads gehen DIREKT vom Browser in den Speicher (sonst greift Vercels 4,5-MB-Grenze pro Anfrage); /api/upload gibt dafür ein Token aus, das Typ und Größe je Zweck begrenzt. Beim Speichern prüft der Server die echten Bytes.",
+        imCode: "src/lib/upload-zweck.ts (Regeln), src/app/api/upload, src/lib/storage.ts",
       },
       {
         name: "Zod",

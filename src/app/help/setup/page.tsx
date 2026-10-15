@@ -104,7 +104,7 @@ const abschnitte: Abschnitt[] = [
       },
       {
         titel: "Auch die Nicht-Entscheidungen festhalten",
-        text: "Ebenso wichtig: Supabase wird NUR als Datenbank und Dateispeicher genutzt — nicht für Anmeldung, nicht als API. Und es gibt bewusst kein Row-Level-Security. Solche Sätze im PRD verhindern, dass sich später schleichend eine zweite Architektur einschleicht.",
+        text: "Ebenso wichtig: Supabase wird NUR als Datenbank genutzt — nicht für Anmeldung, nicht als API, nicht als Dateispeicher. Und es gibt bewusst kein Row-Level-Security. Solche Sätze im PRD verhindern, dass sich später schleichend eine zweite Architektur einschleicht.",
       },
       {
         titel: "Die Festlegung an einer zweiten Stelle wiederholen",
@@ -138,7 +138,7 @@ const abschnitte: Abschnitt[] = [
       },
       {
         titel: "Konten anlegen",
-        text: "Kostenlos und jeweils in wenigen Minuten: GitHub (Code), Vercel (Hosting), Supabase (Datenbank + Dateispeicher). Später kommen Resend (E-Mail), OPDB (Flipperdaten) und Anthropic (KI-Auswertung) dazu.",
+        text: "Kostenlos und jeweils in wenigen Minuten: GitHub (Code), Vercel (Hosting + Dateispeicher), Supabase (Datenbank). Später kommen Resend (E-Mail), OPDB (Flipperdaten) und Anthropic (KI-Auswertung) dazu.",
       },
     ],
   },
@@ -191,10 +191,10 @@ const abschnitte: Abschnitt[] = [
     ],
   },
   {
-    titel: "6 · Supabase: Datenbank und Dateispeicher",
+    titel: "6 · Supabase (Datenbank) und Vercel Blob (Dateien)",
     icon: <Database size={18} className={ICON} />,
     einleitung:
-      "Supabase wird hier BEWUSST nur als Postgres-Datenbank und Dateispeicher genutzt — nicht für Anmeldung, nicht als API.",
+      "Supabase wird hier BEWUSST nur als Postgres-Datenbank genutzt — nicht für Anmeldung, nicht als API. Dateien (Fotos, Logos, Dokumente) liegen in Vercel Blob.",
     schritte: [
       {
         titel: "Projekt anlegen",
@@ -207,10 +207,10 @@ const abschnitte: Abschnitt[] = [
           "Schema-Änderungen (Migrationen) über den Pooler schlagen fehl — teils sogar STILL, mit Erfolgsmeldung und ohne Wirkung. Migrationen deshalb immer gegen die DIREKTE URL (Port 5432) fahren und danach nachsehen, ob die Tabellen wirklich da sind.",
       },
       {
-        titel: "Speicher-Bucket für Fotos",
-        text: "Unter Storage einen öffentlichen Bucket `machine-photos` anlegen. Öffentlich, damit Bilder ohne Umweg ausgeliefert werden.",
+        titel: "Blob-Store für Dateien",
+        text: "Im Vercel-Dashboard unter Storage einen Blob-Store anlegen (Zugriff Public, Region Frankfurt) und mit dem Projekt verbinden — auch für Development, damit `BLOB_READ_WRITE_TOKEN` lokal verfügbar ist. Öffentlich, damit Bilder ohne Umweg ausgeliefert werden.",
         falle:
-          "Weil der Bucket öffentlich ist, darf man Dateiendung und Dateityp NIE aus der hochgeladenen Datei übernehmen — sonst lädt jemand eine HTML-Datei hoch, die dann als aktive Seite ausgeliefert wird. Wir prüfen deshalb die ersten Bytes der Datei (siehe `src/lib/storage.ts`).",
+          "Weil der Store öffentlich ist, darf der Browser nur hochladen, was das Token erlaubt (Typ und Größe je Zweck, `src/lib/upload-zweck.ts`) — sonst läge dort eine HTML-Datei, die als aktive Seite ausgeliefert wird. Beim Speichern prüft der Server zusätzlich die ersten Bytes (`src/lib/storage.ts`) und löscht, was nicht passt.",
       },
       {
         titel: "Keine Row-Level-Security-POLICIES — aber RLS als Türschloss",
@@ -303,7 +303,7 @@ const abschnitte: Abschnitt[] = [
         titel: "Alle übrigen Variablen eintragen",
         text: "Was lokal in `.env.local` steht, muss auch bei Vercel hinterlegt werden — sonst funktioniert online genau das nicht, was den fehlenden Schlüssel braucht.",
         befehl:
-          "BETTER_AUTH_SECRET, BETTER_AUTH_URL (echte Domain!), SUPER_ADMIN_EMAILS,\nRESEND_API_KEY, EMAIL_FROM, MATCHPLAY_API_KEY, ANTHROPIC_API_KEY,\nNEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, NEXT_PUBLIC_SUPABASE_BUCKET",
+          "BETTER_AUTH_SECRET, BETTER_AUTH_URL (echte Domain!), SUPER_ADMIN_EMAILS,\nRESEND_API_KEY, EMAIL_FROM, MATCHPLAY_API_KEY, ANTHROPIC_API_KEY,\nBLOB_READ_WRITE_TOKEN (setzt Vercel selbst, sobald der Blob-Store verbunden ist)",
         falle:
           "`BETTER_AUTH_URL` muss online die echte Domain sein. Bleibt dort localhost, gehen Anmelde- und Einladungslinks ins Leere.",
       },

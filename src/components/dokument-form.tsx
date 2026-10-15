@@ -8,6 +8,7 @@ import { FormatTextarea } from "@/components/ui/format-textarea";
 import { Field, Input } from "@/components/ui/input";
 import { FormLeaveGuard } from "@/components/ui/form-leave-guard";
 import type { FormState } from "@/db/actions/form-state";
+import { UploadFeld } from "@/components/blob-upload";
 
 export type DokumentArt = "link" | "notiz" | "datei";
 
@@ -25,9 +26,6 @@ const ARTEN = [
   { wert: "notiz", label: "Notiz", icon: StickyNote },
   { wert: "datei", label: "Datei", icon: FileText },
 ] as const;
-
-const fileInputStyles =
-  "w-full rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm text-[var(--color-fg)] outline-none file:mr-3 file:rounded-[var(--radius)] file:border-0 file:bg-[var(--color-inset)] file:px-3 file:py-1 file:text-[var(--color-fg)] focus:border-[var(--color-primary)]";
 
 /* Anlegen/Bearbeiten eines Dokuments (Link / Notiz / Datei) — Vorbild
    TerminForm. Ein Formular für alle drei Arten: der Art-Umschalter blendet die
@@ -119,12 +117,12 @@ export function DokumentForm({
             label={bearbeiten ? "Datei ersetzen (optional)" : "Datei"}
             hint="PDF, Bild (JPG/PNG/WebP/GIF/AVIF), DOCX/XLSX/PPTX, TXT/CSV — max. 25 MB."
           >
-            <input
-              type="file"
-              name="datei"
+            <UploadFeld
+              kontext={{ zweck: "dokument", machineId }}
+              name="dateiUrl"
+              dateinameFeld="dateiName"
               required={!bearbeiten}
               accept=".pdf,.jpg,.jpeg,.png,.webp,.gif,.avif,.docx,.xlsx,.pptx,.txt,.csv,application/pdf,image/*"
-              className={fileInputStyles}
             />
           </Field>
           <UrheberHinweis />

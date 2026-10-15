@@ -1,30 +1,25 @@
-import { createClient } from "@supabase/supabase-js";
-import { MAX_BILD_MB } from "@/lib/bild-upload";
+import { del, head, put } from "@vercel/blob";
+import {
+  BILD_TYPEN,
+  pruefeUploadUrls,
+  UPLOAD_ZWECKE,
+  type UploadZweck,
+} from "@/lib/upload-zweck";
 
 /*
-  Supabase wird AUSSCHLIESSLICH als Storage genutzt (PRD §7) — nicht für Auth, nicht für Daten.
-  Der Service-Role-Key bleibt serverseitig; diese Datei darf nie aus Client-Code importiert werden.
+  Datei-Speicher: Vercel Blob (öffentlicher Store, Region Frankfurt). Supabase
+  ist seit 10/2026 nur noch die Postgres-Datenbank.
+
+  Zwei Wege hinein:
+  1. DIREKT aus dem Browser (Fotos, Avatar, Screenshot, Dokumente): Token über
+     /api/upload, Regeln in lib/upload-zweck.ts. Hier wird beim Speichern nur
+     noch GEPRÜFT (uebernehmeUploads) — echte Bytes, Größe, eigener Store.
+  2. DURCH DAS FORMULAR (nur Logos, klein): uploadClubLogo / uploadUserLogo.
+
+  Der Token (BLOB_READ_WRITE_TOKEN) bleibt serverseitig; diese Datei darf nie
+  aus Client-Code importiert werden.
 */
 
-const bucket = process.env.NEXT_PUBLIC_SUPABASE_BUCKET ?? "machine-photos";
-
-// SUPABASE_URL ist der Fallback, den die Vercel-Supabase-Integration automatisch setzt.
-const supabaseUrl =
-  process.env.NEXT_PUBLIC_SUPABASE_URL ?? process.env.SUPABASE_URL!;
-
-function storageClient() {
-  return createClient(supabaseUrl, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
-    auth: { persistSession: false },
-  });
-}
-
-/*
-  Erlaubte Bildformate. Der Bucket ist ÖFFENTLICH lesbar — würden Endung und
-  Content-Type aus der hochgeladenen Datei übernommen, ließe sich dort eine
-  `payload.html` als `text/html` ablegen und ausliefern. Deshalb wird weder
-  `file.name` noch `file.type` vertraut: der Typ wird aus den echten
-  Dateibytes bestimmt, und Endung wie Content-Type folgen daraus.
-*/
 const ERLAUBTE_BILDTYPEN = {
   "image/jpeg": "jpg",
   "image/png": "png",
@@ -33,7 +28,19 @@ const ERLAUBTE_BILDTYPEN = {
   "image/avif": "avif",
 } as const;
 
-const MAX_BYTES = MAX_BILD_MB * 1024 * 1024;
+/*
+  Host des eigenen Stores (öffentliche URLs) — so prüft der Server, dass eine
+  zurückgereichte URL wirklich aus UNSEREM Speicher stammt. Die Store-ID setzt
+  Vercel als BLOB_STORE_ID („store_<id>"); sonst steckt sie im Token
+  (vercel_blob_rw_<id>_<geheim>).
+*/
+export function storeHost(): string {
+  const storeId =
+    process.env.BLOB_STORE_ID?.replace(/^store_/, "") ??
+    (process.env.BLOB_READ_WRITE_TOKEN ?? "").split("_")[3];
+  if (!storeId) throw new Error("BLOB_STORE_ID / BLOB_READ_WRITE_TOKEN fehlt.");
+  return `${storeId.toLowerCase()}.public.blob.vercel-storage.com`;
+}
 
 /** Bestimmt den Bildtyp anhand der Signatur (Magic Bytes), nicht anhand des
     vom Client gemeldeten MIME-Typs. Liefert null bei allem anderen. */
@@ -52,91 +59,76 @@ function erkenneBildtyp(b: Uint8Array): keyof typeof ERLAUBTE_BILDTYPEN | null {
   return null;
 }
 
-/** Gemeinsamer Upload-Kern: prüfen (Größe + echte Bytes), hochladen,
-    öffentliche URL zurückgeben. `ordner` trennt die Anwendungsfälle im Bucket. */
-async function uploadBild(
-  file: File,
-  ordner: string,
-  userId: string,
-): Promise<string> {
-  if (file.size > MAX_BYTES) {
-    throw new Error(`Bild zu groß (maximal ${MAX_BILD_MB} MB).`);
-  }
-
-  const kopf = new Uint8Array(await file.slice(0, 16).arrayBuffer());
-  const typ = erkenneBildtyp(kopf);
-  if (!typ) {
-    throw new Error(
-      "Nur Bilddateien werden akzeptiert (JPEG, PNG, WebP, GIF, AVIF).",
-    );
-  }
-
-  const supabase = storageClient();
-  // Endung und Content-Type aus dem ERKANNTEN Typ, nicht aus der Datei.
-  const path = `${ordner}${userId}/${crypto.randomUUID()}.${ERLAUBTE_BILDTYPEN[typ]}`;
-
-  const { error } = await supabase.storage
-    .from(bucket)
-    .upload(path, file, { contentType: typ, upsert: false });
-
-  if (error) {
-    throw new Error(`Foto-Upload fehlgeschlagen: ${error.message}`);
-  }
-
-  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-  return data.publicUrl;
+/** Die ersten Bytes einer hochgeladenen Datei (für die Signatur-Prüfung). */
+async function kopfBytes(url: string): Promise<Uint8Array> {
+  const res = await fetch(url, { headers: { Range: "bytes=0-15" }, cache: "no-store" });
+  if (!res.ok) throw new Error("Eine Datei ist nicht angekommen. Bitte erneut auswählen.");
+  return new Uint8Array(await res.arrayBuffer()).slice(0, 16);
 }
 
-/**
- * Lädt ein Maschinenfoto hoch und gibt die öffentliche URL zurück.
- * Gibt null zurück, wenn keine Datei übergeben wurde.
- */
-export async function uploadMachinePhoto(
-  file: File | null,
-  userId: string,
-): Promise<string | null> {
-  if (!file || file.size === 0) return null;
-  return uploadBild(file, "", userId);
+/*
+  Prüft EINE direkt hochgeladene Datei: Größe und Typ laut Speicher (das Token
+  hat beides schon begrenzt — hier die zweite Linie), dann die echten Bytes:
+  ein Bild muss seine Signatur tragen, ein PDF %PDF, Office ein ZIP-Container.
+  Reiner Text (txt/csv) hat keine Signatur; er wird als text/* ausgeliefert und
+  ist damit im Browser nicht ausführbar.
+*/
+async function pruefeHochgeladen(zweck: UploadZweck, url: string): Promise<void> {
+  const regel = UPLOAD_ZWECKE[zweck];
+  const meta = await head(url);
+  const typ = meta.contentType.split(";")[0].trim();
+  if (meta.size > regel.maxBytes) {
+    throw new Error(`Datei zu groß (maximal ${regel.maxBytes / 1024 / 1024} MB).`);
+  }
+  if (!(regel.typen as readonly string[]).includes(typ)) throw new Error("Dieser Dateityp ist hier nicht erlaubt.");
+  if (typ.startsWith("text/")) return;
+
+  const kopf = await kopfBytes(url);
+  const passt = (BILD_TYPEN as readonly string[]).includes(typ)
+    ? erkenneBildtyp(kopf) === typ
+    : typ === "application/pdf"
+      ? istPdf(kopf)
+      : istZip(kopf); // docx/xlsx/pptx
+  if (!passt) {
+    throw new Error("Die Datei passt nicht zu ihrem Typ (beschädigt oder umbenannt?).");
+  }
 }
 
-/** Lädt ein Profilbild (Avatar) hoch — eigener Ordner im selben Bucket. */
-export async function uploadAvatar(
-  file: File | null,
-  userId: string,
-): Promise<string | null> {
-  if (!file || file.size === 0) return null;
-  return uploadBild(file, "avatars/", userId);
+/*
+  Übernimmt direkt hochgeladene Dateien beim Speichern eines Formulars:
+  URLs prüfen (eigener Store, eigener Ordner, Anzahl — reine Regel), dann jede
+  Datei (pruefeHochgeladen). Scheitert eine, werden ALLE dieses Aufrufs gelöscht
+  und der Fehler geworfen — es entsteht kein Datensatz mit halben Dateien.
+*/
+export async function uebernehmeUploads(
+  zweck: UploadZweck,
+  uploader: string,
+  werte: unknown[],
+): Promise<string[]> {
+  const geprueft = pruefeUploadUrls(zweck, uploader, werte, storeHost());
+  if ("error" in geprueft) throw new Error(geprueft.error);
+  try {
+    for (const url of geprueft.urls) await pruefeHochgeladen(zweck, url);
+  } catch (e) {
+    if (geprueft.urls.length > 0) await del(geprueft.urls).catch(() => {});
+    throw e;
+  }
+  return geprueft.urls;
 }
 
-/** Optionaler Screenshot zu einer Feedback-Meldung (eigener Ordner). */
-export async function uploadFeedbackScreenshot(
-  file: File | null,
-  userId: string,
+/** Wie uebernehmeUploads für Felder mit EINER Datei; leer → null. */
+export async function uebernehmeUpload(
+  zweck: UploadZweck,
+  uploader: string,
+  wert: FormDataEntryValue | null,
 ): Promise<string | null> {
-  if (!file || file.size === 0) return null;
-  return uploadBild(file, "feedback/", userId);
+  if (wert === null || wert === "") return null;
+  const [url] = await uebernehmeUploads(zweck, uploader, [wert]);
+  return url ?? null;
 }
 
 /** Höchstzahl Fotos je Fehlermeldung (angemeldet wie Gast). */
-export const MAX_FAULT_IMAGES = 5;
-
-/*
-  Fotos zu einer Fehlermeldung. `uploaderId` ist die Nutzer-id oder — bei
-  Gast-Meldungen über den QR-Code — der feste Segment-Name „gast" (nur für den
-  Ablagepfad; die Magic-Byte-/Größenprüfung von uploadBild greift für beide).
-  Lädt bis zu MAX_FAULT_IMAGES nicht-leere Dateien hoch und liefert die URLs.
-*/
-export async function uploadFaultImages(
-  files: File[],
-  uploaderId: string,
-): Promise<string[]> {
-  const echte = files
-    .filter((f) => f instanceof File && f.size > 0)
-    .slice(0, MAX_FAULT_IMAGES);
-  return Promise.all(
-    echte.map((f) => uploadBild(f, "fault-images/", uploaderId)),
-  );
-}
+export const MAX_FAULT_IMAGES = UPLOAD_ZWECKE.fehlerfoto.maxAnzahl;
 
 /*
   Club-Logo: erlaubt sind JPG, PNG und SVG. SVG ist kein Magic-Byte-Format,
@@ -144,7 +136,7 @@ export async function uploadFaultImages(
   Event-Handler) werden abgelehnt — zwar liefert der Storage von einer fremden
   Origin aus (kein Zugriff auf App-Cookies) und die App bindet Logos nur per
   <img> ein (führt nichts aus), aber ein Skript-SVG hat trotzdem nichts im
-  öffentlichen Bucket verloren.
+  öffentlichen Speicher verloren.
 */
 const MAX_SVG_BYTES = 1 * 1024 * 1024; // 1 MB — Logos sind klein.
 
@@ -156,9 +148,9 @@ const MAX_SVG_BYTES = 1 * 1024 * 1024; // 1 MB — Logos sind klein.
   (XXE), CSS-@import und Meta-Refresh werden abgelehnt.
 
   Kontext-Einordnung: Das Logo liegt in einem Bucket auf FREMDER Origin
-  (*.supabase.co) und wird in der App nur per <img> eingebunden (führt nichts
+  (*.public.blob.vercel-storage.com) und wird in der App nur per <img> eingebunden (führt nichts
   aus). Ein Skript-SVG kann also keine App-Session stehlen; die Prüfung
-  verhindert primär, dass der öffentliche Bucket aktive Inhalte unter der
+  verhindert primär, dass der öffentliche Speicher aktive Inhalte unter der
   Projekt-Domain hostet. Gibt bei einem Treffer das verletzte Muster zurück
   (für die Fehlermeldung), sonst null.
 
@@ -183,6 +175,11 @@ export function svgVerletzung(text: string): RegExp | null {
   return SVG_VERBOTEN.find((re) => re.test(text)) ?? null;
 }
 
+/* Logos laufen durchs Formular (nicht direkt): ein SVG wird VOR dem Speichern
+   geprüft und liegt nie ungeprüft im öffentlichen Store. Raster-Logos sind auf
+   4 MB begrenzt, damit die Anfrage unter Vercels 4,5-MB-Grenze bleibt. */
+const MAX_LOGO_BYTES = 4 * 1024 * 1024;
+
 /* Generischer Logo-Upload (JPG/PNG/SVG) in einen Ordner — Kern für Club- UND
    Nutzer-Logos. JPG/PNG per Magic Bytes; SVG als Text mit svgVerletzung-Prüfung. */
 async function uploadLogo(
@@ -192,11 +189,16 @@ async function uploadLogo(
 ): Promise<string | null> {
   if (!file || file.size === 0) return null;
 
-  // Raster-Zweig: nur JPG/PNG (per Magic Bytes erkannt).
   const kopf = new Uint8Array(await file.slice(0, 16).arrayBuffer());
   const rasterTyp = erkenneBildtyp(kopf);
   if (rasterTyp === "image/jpeg" || rasterTyp === "image/png") {
-    return uploadBild(file, ordner, userId);
+    if (file.size > MAX_LOGO_BYTES) throw new Error("Logo zu groß (maximal 4 MB).");
+    const blob = await put(
+      `${ordner}${userId}/${crypto.randomUUID()}.${ERLAUBTE_BILDTYPEN[rasterTyp]}`,
+      file,
+      { access: "public", contentType: rasterTyp },
+    );
+    return blob.url;
   }
 
   // SVG-Zweig: als Text prüfen, dann mit festem Content-Type hochladen.
@@ -212,48 +214,11 @@ async function uploadLogo(
       "SVG mit aktiven Inhalten (Skripte, Handler, externe Verweise) ist nicht erlaubt.",
     );
   }
-
-  const supabase = storageClient();
-  const path = `${ordner}${userId}/${crypto.randomUUID()}.svg`;
-  const { error } = await supabase.storage
-    .from(bucket)
-    .upload(path, new Blob([text], { type: "image/svg+xml" }), {
-      contentType: "image/svg+xml",
-      upsert: false,
-    });
-  if (error) {
-    throw new Error(`Logo-Upload fehlgeschlagen: ${error.message}`);
-  }
-  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-  return data.publicUrl;
-}
-
-/*
-  Dokumente je Gerät (Ordner machine-docs/). Anders als bei Bildern/Logos sind
-  hier PDF, Bilder und Office/Text erlaubt. Wo eine verlässliche Signatur
-  existiert (PDF, Bilder, ZIP-basierte Office-Formate), wird sie geprüft; bei
-  reinem Text (txt/csv) gibt es keine Signatur — dort entscheiden Endung + der
-  gemeldete text/*-MIME (bewusst schwächer, mit dem Nutzer so abgestimmt). Der
-  Content-Type wird für ausführbare Formate NICHT vom Client übernommen: Office
-  und Text bekommen einen festen, nicht im Browser ausführbaren Content-Type.
-*/
-const DOKUMENT_MAX_BYTES = 25 * 1024 * 1024; // 25 MB
-
-// Endung → fester Content-Type für die Nicht-Bild-Formate (ZIP-basiert / Text).
-const OFFICE_TYPEN = {
-  docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-  xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-} as const;
-const TEXT_TYPEN = {
-  txt: "text/plain; charset=utf-8",
-  csv: "text/csv; charset=utf-8",
-} as const;
-
-/** Endung (klein, ohne Punkt) aus einem Dateinamen. */
-function endung(name: string): string {
-  const m = /\.([a-z0-9]+)$/i.exec(name.trim());
-  return m ? m[1].toLowerCase() : "";
+  const blob = await put(`${ordner}${userId}/${crypto.randomUUID()}.svg`, text, {
+    access: "public",
+    contentType: "image/svg+xml",
+  });
+  return blob.url;
 }
 
 /** Prüft die ersten Bytes auf PDF- bzw. ZIP-Signatur (Office = ZIP-Container). */
@@ -265,88 +230,24 @@ function istZip(b: Uint8Array): boolean {
 }
 
 /*
-  Lädt eine Dokument-Datei hoch und liefert öffentliche URL + bereinigten
-  Originalnamen (für Anzeige/Download). Entscheidungsreihenfolge:
-  1. Bild? → derselbe Magic-Byte-Weg wie Fotos (Content-Type aus den Bytes).
-  2. PDF?  → Signatur %PDF, Content-Type application/pdf.
-  3. ZIP-Signatur + Endung docx/xlsx/pptx → Office (fester Content-Type).
-  4. keine Signatur + Endung txt/csv + text/*-MIME → Text (fester Content-Type).
-  Alles andere wird abgelehnt.
-*/
-export async function uploadDocument(
-  file: File,
-  userId: string,
-): Promise<{ url: string; dateiname: string }> {
-  if (!file || file.size === 0) throw new Error("Keine Datei ausgewählt.");
-  if (file.size > DOKUMENT_MAX_BYTES) {
-    throw new Error("Datei zu groß (maximal 25 MB).");
-  }
-
-  const dateiname = file.name.trim().slice(0, 200) || "dokument";
-  const ext = endung(dateiname);
-  const kopf = new Uint8Array(await file.slice(0, 16).arrayBuffer());
-
-  // 1) Bild — Content-Type aus den echten Bytes (wie uploadBild).
-  const bildTyp = erkenneBildtyp(kopf);
-  let contentType: string;
-  let zielExt: string;
-  if (bildTyp) {
-    contentType = bildTyp;
-    zielExt = ERLAUBTE_BILDTYPEN[bildTyp];
-  } else if (istPdf(kopf)) {
-    contentType = "application/pdf";
-    zielExt = "pdf";
-  } else if (istZip(kopf) && ext in OFFICE_TYPEN) {
-    contentType = OFFICE_TYPEN[ext as keyof typeof OFFICE_TYPEN];
-    zielExt = ext;
-  } else if (
-    ext in TEXT_TYPEN &&
-    (file.type.startsWith("text/") || file.type === "")
-  ) {
-    contentType = TEXT_TYPEN[ext as keyof typeof TEXT_TYPEN];
-    zielExt = ext;
-  } else {
-    throw new Error(
-      "Erlaubt sind PDF, Bilder (JPG/PNG/WebP/GIF/AVIF) sowie DOCX/XLSX/PPTX/TXT/CSV.",
-    );
-  }
-
-  const supabase = storageClient();
-  const path = `machine-docs/${userId}/${crypto.randomUUID()}.${zielExt}`;
-  const { error } = await supabase.storage
-    .from(bucket)
-    .upload(path, file, { contentType, upsert: false });
-  if (error) {
-    throw new Error(`Datei-Upload fehlgeschlagen: ${error.message}`);
-  }
-  const { data } = supabase.storage.from(bucket).getPublicUrl(path);
-  return { url: data.publicUrl, dateiname };
-}
-
-/*
-  Löscht ein Storage-Objekt anhand seiner öffentlichen URL — der EINZIGE Ort im
-  Projekt, der aktiv aus dem Bucket löscht (Fotos/Logos bleiben bewusst liegen;
-  Dokumente sollen beim Löschen wirklich verschwinden). Best-effort: schlägt es
-  fehl (URL fremd, Objekt schon weg), wird nur geloggt — das Löschen der
-  Datenbankzeile darf daran nicht scheitern.
+  Löscht eine Datei anhand ihrer öffentlichen URL — der EINZIGE Ort im Projekt,
+  der aktiv aus dem Speicher löscht (Fotos/Logos bleiben bewusst liegen;
+  Dokumente sollen beim Löschen wirklich verschwinden). Nur URLs des EIGENEN
+  Stores; fremde (OPDB, externe Links) werden still übersprungen. Best-effort:
+  schlägt es fehl, wird nur geloggt — das Löschen der Datenbankzeile darf daran
+  nicht scheitern.
 */
 export async function deleteStorageObject(url: string | null): Promise<void> {
   if (!url) return;
   try {
-    const marker = `/object/public/${bucket}/`;
-    const i = url.indexOf(marker);
-    if (i === -1) return; // keine URL aus unserem öffentlichen Bucket
-    const path = decodeURIComponent(url.slice(i + marker.length));
-    if (!path) return;
-    const supabase = storageClient();
-    const { error } = await supabase.storage.from(bucket).remove([path]);
-    if (error) console.error("Storage-Löschen fehlgeschlagen:", error.message);
+    if (new URL(url).host !== storeHost()) return;
+    await del(url);
   } catch (e) {
-    console.error("Storage-Löschen fehlgeschlagen:", e);
+    console.error("Speicher-Löschen fehlgeschlagen:", e);
   }
 }
 
-/** Vereins-Logo (Ordner club-logos/). */
+/** Club-Logo hochladen (JPG/PNG bis 4 MB, SVG bis 1 MB mit Aktiv-Inhalts-Prüfung). */
 export async function uploadClubLogo(
   file: File | null,
   userId: string,
@@ -354,7 +255,7 @@ export async function uploadClubLogo(
   return uploadLogo(file, "club-logos/", userId);
 }
 
-/** Persönliches Logo einer Einzelperson (Ordner user-logos/). */
+/** Nutzer-Logo (Sammel-QR) hochladen — gleiche Regeln wie das Club-Logo. */
 export async function uploadUserLogo(
   file: File | null,
   userId: string,

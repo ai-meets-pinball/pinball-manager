@@ -8,7 +8,7 @@ import { feedback } from "@/db/schema";
 import { setzeFeedbackStatus, superAdminEmails } from "@/db/feedback-core";
 import { sendFeedbackNotificationEmail } from "@/lib/email";
 import { isSuperAdmin, requireUser } from "@/lib/session";
-import { uploadFeedbackScreenshot } from "@/lib/storage";
+import { uebernehmeUpload } from "@/lib/storage";
 import { FEEDBACK_STATUS, feedbackSchema } from "@/lib/validators";
 import { APP_VERSION } from "@/lib/version";
 import type { FormState } from "@/db/actions/form-state";
@@ -38,9 +38,10 @@ export async function submitFeedback(
 
   let screenshotUrl: string | null = null;
   try {
-    screenshotUrl = await uploadFeedbackScreenshot(
-      formData.get("screenshot") as File | null,
+    screenshotUrl = await uebernehmeUpload(
+      "feedback",
       currentUser.id,
+      formData.get("screenshotUrl"),
     );
   } catch (e) {
     return { error: (e as Error).message };

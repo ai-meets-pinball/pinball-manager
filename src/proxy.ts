@@ -33,10 +33,12 @@ function buildCsp(nonce: string): string {
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${dev ? " 'unsafe-eval'" : ""}`,
     // Inline-Styles: Next + React style={{…}} (z. B. die farbcodierten Chips).
     `style-src 'self' 'unsafe-inline'`,
-    // Bilder: Supabase-Storage (Fotos) + OPDB + data: (Favicons u. Ä.).
-    `img-src 'self' data: blob: https://*.supabase.co https://img.opdb.org`,
+    // Bilder: Vercel Blob (Fotos, Logos) + OPDB + data: (Favicons u. Ä.).
+    // *.supabase.co nur noch, bis der alte Speicher nach dem Umzug gelöscht ist.
+    `img-src 'self' data: blob: https://*.public.blob.vercel-storage.com https://*.supabase.co https://img.opdb.org`,
     `font-src 'self'`, // next/font/google wird selbst gehostet
-    `connect-src 'self'${dev ? " ws:" : ""}`, // Dev: HMR-WebSocket
+    // Direkt-Upload: @vercel/blob/client lädt an vercel.com/api/blob hoch.
+    `connect-src 'self' https://vercel.com${dev ? " ws:" : ""}`, // Dev: HMR-WebSocket
     `object-src 'none'`,
     `base-uri 'self'`,
     `form-action 'self'`,

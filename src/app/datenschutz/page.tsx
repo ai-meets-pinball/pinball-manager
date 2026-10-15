@@ -99,11 +99,14 @@ export default function DatenschutzPage() {
           </p>
           <ul className="mt-2 list-disc space-y-1 pl-5">
             <li>
-              <strong>Supabase</strong> — Datenbank &amp; Datei-Speicher; die Daten
-              liegen in einem Rechenzentrum in der <strong>EU (Frankfurt)</strong>.
+              <strong>Supabase</strong> — Datenbank; die Daten liegen in einem
+              Rechenzentrum in der <strong>EU (Frankfurt)</strong>.
             </li>
             <li>
-              <strong>Vercel</strong> — Hosting/Auslieferung der Anwendung (USA).
+              <strong>Vercel</strong> — Hosting/Auslieferung der Anwendung (USA)
+              sowie Datei-Speicher für Fotos, Logos und Dokumente (Vercel Blob;
+              gespeichert in der Region <strong>Frankfurt</strong>, ausgeliefert
+              über Vercels weltweites Netz).
             </li>
             <li>
               <strong>Resend</strong> — Versand transaktionaler E-Mails (USA).

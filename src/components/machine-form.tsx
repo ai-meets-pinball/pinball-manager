@@ -7,7 +7,8 @@ import { UrheberHinweis } from "@/components/ui/urheber-hinweis";
 import { Field, Input, Select } from "@/components/ui/input";
 import { FormLeaveGuard } from "@/components/ui/form-leave-guard";
 import { modellName } from "@/lib/format";
-import { BILD_ACCEPT, BILD_HINWEIS, MAX_BILD_MB } from "@/lib/bild-upload";
+import { BILD_ACCEPT, BILD_HINWEIS } from "@/lib/bild-upload";
+import { UploadFeld } from "@/components/blob-upload";
 import type { FormState } from "@/db/actions/form-state";
 
 type Club = { id: string; name: string };
@@ -195,7 +196,6 @@ export function MachineForm({
   // Foto: Größe schon bei der Auswahl prüfen (Muster wie manual-upload) —
   // der Server prüft dieselbe Grenze (lib/storage.ts), aber erst nach dem
   // Absenden, und das Formular wäre dann schon einmal umsonst abgeschickt.
-  const [fotoZuGross, setFotoZuGross] = useState(false);
 
   function ausstattungHinzufuegen() {
     const name = ausName.trim();
@@ -704,22 +704,12 @@ export function MachineForm({
             : "Optional — überschreibt das Katalog-/OPDB-Bild."
         }`}
       >
-        <Input
-          name="foto"
-          type="file"
+        <UploadFeld
+          kontext={{ zweck: "maschinenfoto", machineId: machine?.id }}
+          name="fotoUrl"
           accept={BILD_ACCEPT}
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            setFotoZuGross(!!f && f.size > MAX_BILD_MB * 1024 * 1024);
-          }}
         />
       </Field>
-      {fotoZuGross ? (
-        <p className="text-sm text-[var(--color-danger)]">
-          Foto zu groß (maximal {MAX_BILD_MB} MB). Bitte ein kleineres Bild
-          wählen — Speichern ist so lange gesperrt.
-        </p>
-      ) : null}
       <UrheberHinweis />
 
       {state.error ? (
@@ -727,7 +717,7 @@ export function MachineForm({
       ) : null}
 
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" disabled={!bereit || fotoZuGross}>
+        <Button type="submit" disabled={!bereit}>
           Speichern
         </Button>
         <FormLeaveGuard backHref={backHref} />

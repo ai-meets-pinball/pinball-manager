@@ -45,7 +45,7 @@ test.describe("Maschinen-Status (Dashboard)", () => {
     await page.goto(`/machines/${machineId}/faults/new`);
     await page.getByLabel("Beschreibung / Symptom").fill("E2E Rechter Flipper tot");
     await page.getByLabel("Priorität").selectOption("kritisch");
-    await page.getByRole("button", { name: "Speichern" }).click();
+    await page.getByRole("button", { name: "Speichern", exact: true }).click();
     await page.waitForURL((u) => u.pathname === `/machines/${machineId}`);
 
     expect((await machineStatus(machineId)).status).toBe("eingeschraenkt");
@@ -62,7 +62,7 @@ test.describe("Maschinen-Status (Dashboard)", () => {
     await loginAs(page, USERS.owner);
     await page.goto(`/machines/${machineId}/faults/${f.id}/edit`);
     await page.getByLabel("Status").selectOption("behoben");
-    await page.getByRole("button", { name: "Speichern" }).click();
+    await page.getByRole("button", { name: "Speichern", exact: true }).click();
     await page.waitForURL((u) => u.pathname === `/machines/${machineId}`);
 
     expect((await machineStatus(machineId)).status).toBe("spielbereit");
@@ -88,7 +88,7 @@ test.describe("Maschinen-Status (Dashboard)", () => {
     await addFault({ machineId, prioritaet: "kritisch", status: "offen" });
     await page.goto(`/machines/${machineId}/faults/new`);
     await page.getByLabel("Beschreibung / Symptom").fill("E2E weiterer Fehler");
-    await page.getByRole("button", { name: "Speichern" }).click();
+    await page.getByRole("button", { name: "Speichern", exact: true }).click();
     await page.waitForURL((u) => u.pathname === `/machines/${machineId}`);
     expect((await machineStatus(machineId)).status).toBe("ausser_betrieb");
   });

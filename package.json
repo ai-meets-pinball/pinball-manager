@@ -18,13 +18,14 @@
     "feedback": "tsx scripts/feedback.ts",
     "e2e": "playwright test",
     "e2e:ui": "playwright test --ui",
-    "e2e:install": "playwright install chromium"
+    "e2e:install": "playwright install chromium",
+    "storage:umzug": "tsx scripts/storage-umzug.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.111.0",
     "@napi-rs/canvas": "^0.1.100",
-    "@supabase/supabase-js": "^2.109.0",
     "@types/qrcode": "^1.5.6",
+    "@vercel/blob": "^2.8.2",
     "better-auth": "^1.6.23",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.22.0",
@@ -50,7 +51,7 @@
     "drizzle-kit": "^0.31.10",
     "eslint": "^9",
     "eslint-config-next": "^16.3.5",
-    "redlining": "^0.9.0",
+    "redlining": "^0.9.1",
     "tailwindcss": "^4.3.2",
     "tsx": "^4.23.12",
     "typescript": "^5",

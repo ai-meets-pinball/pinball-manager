@@ -16,6 +16,7 @@ import { Field, Input, Select, Textarea } from "@/components/ui/input";
 import { FormFeedback } from "@/components/ui/form-feedback";
 import { submitFeedback, updateFeedback } from "@/db/actions/feedback";
 import type { FormState } from "@/db/actions/form-state";
+import { UploadSperre, UploadUrls, useBlobUpload } from "@/components/blob-upload";
 import { FEEDBACK_STATUS_LABEL } from "@/lib/feedback-status";
 import { FEEDBACK_STATUS } from "@/lib/validators";
 
@@ -27,8 +28,8 @@ import { FEEDBACK_STATUS } from "@/lib/validators";
   - ScreenshotFeld: Drop-Zone für den Screenshot — Klick (Dateiauswahl),
     Hineinziehen ODER einfach Strg/Cmd+V irgendwo auf der Seite (der Paste-
     Listener greift nur bei BILDERN in der Zwischenablage und stört Text-
-    Eingaben nicht). Die Datei landet in einem echten <input type="file">,
-    damit sie im normalen Form-Submit mitreist.
+    Eingaben nicht). Die Datei geht sofort direkt in den Speicher; im
+    Formular reist nur ihre URL mit (screenshotUrl).
   - FeedbackBearbeiten: Stift-Icon je Meldung, das den Dialog „Meldung
     bearbeiten" (Status + Antwort) öffnet — wird nur für Super-Admins
     gerendert; die Action prüft das zusätzlich.
@@ -36,33 +37,22 @@ import { FEEDBACK_STATUS } from "@/lib/validators";
 
 function ScreenshotFeld() {
   const inputRef = useRef<HTMLInputElement>(null);
-  const [datei, setDatei] = useState<File | null>(null);
   const [ueberZone, setUeberZone] = useState(false);
-  // Vorschau-URL wird im Handler erzeugt und dort auch wieder freigegeben —
-  // kein Nebeneffekt beim Rendern (StrictMode würde sonst eine URL je Datei leaken).
-  const [vorschau, setVorschau] = useState<string | null>(null);
-  function vorschauSetzen(file: File | null) {
-    setVorschau((alt) => {
-      if (alt) URL.revokeObjectURL(alt);
-      return file ? URL.createObjectURL(file) : null;
-    });
-  }
-  useEffect(() => () => vorschauSetzen(null), []);
+  // Direkt-Upload in den Speicher (components/blob-upload.tsx); das Formular
+  // trägt nur die URL. Der Hook verwaltet auch die Vorschau-URL.
+  const up = useBlobUpload({ zweck: "feedback" });
+  const eintrag = up.dateien[0];
+  const datei = eintrag?.file ?? null;
+  const vorschau = eintrag?.vorschau ?? null;
 
   function uebernehmen(file: File | null) {
     if (!file || !file.type.startsWith("image/")) return;
-    // In den echten File-Input legen — so reist die Datei im Form-Submit mit.
-    const dt = new DataTransfer();
-    dt.items.add(file);
-    if (inputRef.current) inputRef.current.files = dt.files;
-    setDatei(file);
-    vorschauSetzen(file);
+    void up.hinzufuegen([file]);
   }
 
   function entfernen() {
     if (inputRef.current) inputRef.current.value = "";
-    setDatei(null);
-    vorschauSetzen(null);
+    if (eintrag) up.entfernen(eintrag.id);
   }
 
   function onDrop(e: DragEvent<HTMLDivElement>) {
@@ -91,10 +81,11 @@ function ScreenshotFeld() {
 
   return (
     <div className="space-y-2">
+      <UploadUrls name="screenshotUrl" dateien={up.dateien} />
+      <UploadSperre laedt={up.laedt} />
       <input
         ref={inputRef}
         type="file"
-        name="screenshot"
         accept="image/*"
         className="hidden"
         onChange={(e) => uebernehmen(e.target.files?.[0] ?? null)}
@@ -112,6 +103,8 @@ function ScreenshotFeld() {
           <span className="min-w-0 flex-1 truncate text-sm text-[var(--color-muted)]">
             {datei.name || "Eingefügtes Bild"} ·{" "}
             {Math.max(1, Math.round(datei.size / 1024))} KB
+            {up.laedt ? " · wird hochgeladen …" : ""}
+            {up.fehlgeschlagen ? " · Hochladen fehlgeschlagen" : ""}
           </span>
           <button
             type="button"

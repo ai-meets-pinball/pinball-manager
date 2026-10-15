@@ -10,13 +10,19 @@ import type { FormState } from "@/db/actions/form-state";
 /* Fehlerbilder grob nach Baugruppe/Disziplin (Wunsch aus dem Feedback, 09/2026).
    Freier Text in faults.kategorie — beim Umbenennen den Bestand per SQL mitziehen. */
 const KATEGORIEN = [
+  "Flipperfinger",
+  "Ballhänger",
   "Spule",
   "Schalter",
+  "Targets & Spinner",
+  "Rampen & Ballguides",
   "Beleuchtung",
   "Anzeige",
-  "Elektrik",
-  "Elektronik",
+  "Elektrik/Elektronik",
   "Mechanik",
+  "Plastics",
+  "Gummis",
+  "Gehäuse & Beine",
   "Baugruppe",
   "Software",
   "Sonstiges",
@@ -73,6 +79,11 @@ export function FaultForm({
       <Field label="Kategorie">
         <Select name="kategorie" defaultValue={fault?.kategorie ?? ""}>
           <option value="">— Keine —</option>
+          {/* Ein gespeicherter Wert außerhalb der Liste (ältere Kategorie) bleibt
+              wählbar — sonst stünde „Keine" da und Speichern würde ihn löschen. */}
+          {fault?.kategorie && !KATEGORIEN.includes(fault.kategorie) ? (
+            <option value={fault.kategorie}>{fault.kategorie}</option>
+          ) : null}
           {KATEGORIEN.map((k) => (
             <option key={k} value={k}>
               {k}
@@ -138,7 +149,7 @@ export function FaultForm({
       {!fault ? (
         <div className="flex flex-col gap-1.5 text-sm">
           <span className="font-medium">Fotos (optional)</span>
-          <BildFeld />
+          <BildFeld kontext={{ machineId }} />
         </div>
       ) : null}
 
@@ -150,6 +161,12 @@ export function FaultForm({
         <Button type="submit">
           Speichern
         </Button>
+        {/* Nur beim Anlegen: mehrere Fehler am Stück erfassen (Feedback 10/2026). */}
+        {!fault ? (
+          <Button type="submit" name="weiter" value="1" variant="secondary">
+            Speichern & nächster Fehler
+          </Button>
+        ) : null}
         <FormLeaveGuard backHref={`/machines/${machineId}?bereich=fehler`} />
       </div>
     </form>

@@ -3,6 +3,7 @@ import { ChevronRight } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { QuelleBadge } from "@/components/ui/quelle-badge";
+import { FehlerZeilenAktionen } from "@/components/fehler-zeilen-aktionen";
 
 /*
   Kompakte „Offene Fehler"-Vorschau auf dem Übersichts-Reiter (Dashboard-Optik):
@@ -22,9 +23,12 @@ type Zeile = {
 export function MachineFaultsPreview({
   machineId,
   faults,
+  schreibbar = false,
 }: {
   machineId: string;
   faults: Zeile[];
+  /** true = Reparatur/Bearbeiten/Löschen direkt in der Zeile (Feedback Dirk). */
+  schreibbar?: boolean;
 }) {
   return (
     <Card className="space-y-2 py-3">
@@ -54,6 +58,11 @@ export function MachineFaultsPreview({
                 <th className="pb-2 pr-3 font-medium">Status</th>
                 <th className="pb-2 pr-3 font-medium">Zeit</th>
                 <th className="pb-2 font-medium">Gemeldet von</th>
+                {schreibbar ? (
+                  <th className="pb-2 pl-3">
+                    <span className="sr-only">Aktionen</span>
+                  </th>
+                ) : null}
               </tr>
             </thead>
             <tbody>
@@ -78,6 +87,13 @@ export function MachineFaultsPreview({
                       <QuelleBadge quelle={f.quelle} />
                     </span>
                   </td>
+                  {schreibbar ? (
+                    <td className="py-2 pl-3">
+                      <div className="flex items-center justify-end gap-1">
+                        <FehlerZeilenAktionen machineId={machineId} faultId={f.id} />
+                      </div>
+                    </td>
+                  ) : null}
                 </tr>
               ))}
             </tbody>

@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/db";
 import { user } from "@/db/schema";
 import { requireUser } from "@/lib/session";
-import { uploadAvatar } from "@/lib/storage";
+import { uebernehmeUpload } from "@/lib/storage";
 import type { FormState } from "@/db/actions/form-state";
 
 /*
@@ -36,7 +36,7 @@ export async function updateProfile(
 
   let imageUrl: string | null = null;
   try {
-    imageUrl = await uploadAvatar(formData.get("avatar") as File | null, me.id);
+    imageUrl = await uebernehmeUpload("avatar", me.id, formData.get("avatarUrl"));
   } catch (e) {
     return { error: (e as Error).message };
   }

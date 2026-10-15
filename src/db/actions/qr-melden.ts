@@ -8,7 +8,7 @@ import { benachrichtigeUeberNeuenFehler } from "@/db/whatsapp-benachrichtigung";
 import { maileEigentuemerUeberNeuenFehler } from "@/db/fehler-mail-benachrichtigung";
 import { getMachineByQrToken, getSammlungByToken } from "@/db/queries";
 import { getCurrentUser } from "@/lib/session";
-import { MAX_FAULT_IMAGES, uploadFaultImages } from "@/lib/storage";
+import { uebernehmeUploads } from "@/lib/storage";
 import type { FormState } from "@/db/actions/form-state";
 
 /*
@@ -88,7 +88,7 @@ async function meldeFehlerKern(eingabe: {
   machineId: string;
   beschreibung: string;
   name: string;
-  bilder: File[];
+  bildUrls: unknown[];
   quelle: "geraet_qr" | "sammel_qr";
 }): Promise<FormState> {
   const beschreibung = eingabe.beschreibung.trim();
@@ -118,17 +118,16 @@ async function meldeFehlerKern(eingabe: {
     }
   }
 
-  // Fotos ZUERST hochladen (Prüfung greift für Gäste wie Angemeldete); scheitert
-  // es, wird kein Fehler angelegt. Gäste laden unter dem Segment „gast".
-  if (
-    eingabe.bilder.filter((f) => f instanceof File && f.size > 0).length >
-    MAX_FAULT_IMAGES
-  ) {
-    return { error: `Höchstens ${MAX_FAULT_IMAGES} Bilder.` };
-  }
+  // Fotos ZUERST übernehmen (Prüfung greift für Gäste wie Angemeldete); scheitert
+  // es, wird kein Fehler angelegt. Gäste laden unter dem Segment „gast" — und
+  // können nur Dateien unter genau diesem Segment einreichen.
   let urls: string[];
   try {
-    urls = await uploadFaultImages(eingabe.bilder, currentUser?.id ?? "gast");
+    urls = await uebernehmeUploads(
+      "fehlerfoto",
+      currentUser?.id ?? "gast",
+      eingabe.bildUrls,
+    );
   } catch (e) {
     return { error: (e as Error).message };
   }
@@ -194,7 +193,7 @@ export async function meldeFehlerPerQr(
     machineId: machine.id,
     beschreibung: String(formData.get("beschreibung") ?? ""),
     name: String(formData.get("name") ?? ""),
-    bilder: formData.getAll("bilder") as File[],
+    bildUrls: formData.getAll("bildUrl"),
     quelle: "geraet_qr",
   });
 }
@@ -221,7 +220,7 @@ export async function meldeFehlerPerSammelQr(
     machineId,
     beschreibung: String(formData.get("beschreibung") ?? ""),
     name: String(formData.get("name") ?? ""),
-    bilder: formData.getAll("bilder") as File[],
+    bildUrls: formData.getAll("bildUrl"),
     quelle: "sammel_qr",
   });
 }

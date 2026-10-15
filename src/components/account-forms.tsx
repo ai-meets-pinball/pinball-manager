@@ -7,6 +7,8 @@ import { UrheberHinweis } from "@/components/ui/urheber-hinweis";
 import { Avatar } from "@/components/ui/avatar";
 import { FormFeedback } from "@/components/ui/form-feedback";
 import { Field, Input } from "@/components/ui/input";
+import { UploadFeld } from "@/components/blob-upload";
+import { BILD_ACCEPT } from "@/lib/bild-upload";
 import { PasswordField } from "@/components/ui/password-field";
 import { removeAvatar, updateProfile } from "@/db/actions/profile";
 import { changeEmail, changePassword } from "@/lib/auth-client";
@@ -88,7 +90,7 @@ export function ProfileForm({
           />
         </Field>
         <Field label="Profilbild (optional)" hint="Wird in der Kopfzeile gezeigt.">
-          <Input name="avatar" type="file" accept="image/*" />
+          <UploadFeld kontext={{ zweck: "avatar" }} name="avatarUrl" accept={BILD_ACCEPT} />
         </Field>
         <UrheberHinweis />
         <FormFeedback state={state} />

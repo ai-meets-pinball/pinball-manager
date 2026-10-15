@@ -34,13 +34,14 @@ Das Projekt ist gleichzeitig das durchgängige Lehrbeispiel der Gruppe **„KI m
 - **Framework:** Next.js (Turbopack, React 19, Node 20+)
 - **Auth:** Better Auth (App-Layer-Autorisierung, sichtbare TS-Konfiguration)
 - **Styling:** Tailwind CSS v4, Lucide React
-- **Daten & Storage:** Supabase als reines Postgres + Storage
+- **Daten:** Supabase als reine Postgres-Datenbank
+- **Dateien:** Vercel Blob (Fotos, Logos, Dokumente — Upload direkt aus dem Browser)
 - **Deployment:** Vercel
 - **Domain:** United Domains
 
 ## Erste Schritte
 
-Voraussetzungen: **Node 20+** und ein **Supabase-Projekt** (für Postgres + Storage).
+Voraussetzungen: **Node 20+**, ein **Supabase-Projekt** (Postgres) und ein **Vercel-Blob-Store** (Dateien).
 
 > **Paketmanager: npm.** `package-lock.json` ist die eine Quelle — Vercel baut
 > damit. Bitte nicht mit pnpm oder yarn installieren: die lösen Versionen
@@ -76,10 +77,10 @@ DATABASE_URL="postgresql://..."
 BETTER_AUTH_SECRET="<zufälliges-secret>"
 BETTER_AUTH_URL="http://localhost:3100"
 
-# Supabase Storage (nur Storage — nicht Auth, nicht Daten)
-NEXT_PUBLIC_SUPABASE_URL="https://<projekt>.supabase.co"
-SUPABASE_SERVICE_ROLE_KEY="<service-role-key>"
-NEXT_PUBLIC_SUPABASE_BUCKET="machine-photos"
+# Datei-Speicher: Vercel Blob (öffentlicher Store). Fotos, Logos, Dokumente.
+# Den Wert setzt Vercel, sobald der Store mit dem Projekt verbunden ist;
+# lokal aus dem Store-Dashboard übernehmen (Uploads gehen sonst nicht).
+BLOB_READ_WRITE_TOKEN="vercel_blob_rw_<store-id>_<geheim>"
 ```
 
 Weitere – optionale – Variablen stehen mit Erklärung in [`.env.example`](.env.example):
@@ -103,8 +104,11 @@ npm run db:migrate     # produktiv IMMER migrate (push schreibt kein Log — nur
 npm run db:status      # nachher: 0 ausstehend? drizzle-kit migrate ist bei Fehlern stumm
 ```
 
-Außerdem im Supabase-Dashboard einen **öffentlichen Storage-Bucket** namens
-`machine-photos` anlegen (für die Maschinenfotos).
+Außerdem im Vercel-Dashboard unter **Storage** einen **Blob-Store** anlegen
+(Zugriff **Public**, Region Frankfurt) und mit dem Projekt verbinden — inklusive
+Development, damit `BLOB_READ_WRITE_TOKEN` auch lokal verfügbar ist. Uploads
+gehen direkt vom Browser in den Store (`/api/upload` gibt das Token aus); so gilt
+Vercels 4,5-MB-Grenze pro Anfrage nicht für Fotos und Dokumente.
 
 > Stack-Notiz: Datenzugriff über **Drizzle ORM** (Schema in [`src/db/schema.ts`](src/db/schema.ts)),
 > Auth über **Better Auth** ([`src/lib/auth.ts`](src/lib/auth.ts)). Die Autorisierung liegt

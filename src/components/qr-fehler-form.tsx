@@ -74,7 +74,7 @@ export function QrFehlerForm({
       {/* Fotos vom Defekt — mobil direkt per Kamera. Kein <label> drumherum. */}
       <div className="flex flex-col gap-1.5 text-sm">
         <span className="font-medium">Fotos (optional)</span>
-        <BildFeld />
+        <BildFeld kontext={{ token }} />
       </div>
       {state.error ? (
         <p className="text-sm text-[var(--color-danger)]">{state.error}</p>

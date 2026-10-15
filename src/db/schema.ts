@@ -114,7 +114,7 @@ export const feedbackStatus = pgEnum("feedback_status", [
 export const clubs = pgTable("clubs", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
-  // Vereins-Logo (JPG/PNG/SVG, Supabase Storage club-logos/) — optional.
+  // Vereins-Logo (JPG/PNG/SVG, Blob-Speicher club-logos/) — optional.
   logoUrl: text("logo_url"),
   // Turniermodus (geteilt): AN → das Dashboard schlägt Alarm, solange ein
   // OFFENER (unquittierter) Fehler an einer Club-Maschine steht. Owner/Admin

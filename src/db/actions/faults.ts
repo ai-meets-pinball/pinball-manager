@@ -9,7 +9,7 @@ import { isClubMember, requireMachineWrite } from "@/lib/session";
 import { mitStatusNachzug } from "@/db/machine-status-core";
 import { benachrichtigeUeberNeuenFehler } from "@/db/whatsapp-benachrichtigung";
 import { maileEigentuemerUeberNeuenFehler } from "@/db/fehler-mail-benachrichtigung";
-import { MAX_FAULT_IMAGES, uploadFaultImages } from "@/lib/storage";
+import { uebernehmeUploads } from "@/lib/storage";
 import { faultEditSchema, faultSchema } from "@/lib/validators";
 import type { FormState } from "@/db/actions/form-state";
 
@@ -26,18 +26,12 @@ export async function createFault(
     return { error: parsed.error.issues[0]?.message ?? "Ungültige Eingabe" };
   }
 
-  // Fotos ZUERST hochladen (Magic-Byte-/Größenprüfung) — schlägt es fehl, wird
-  // gar kein Fehler angelegt, und die Meldung geht sauber an den Nutzer zurück.
-  const bilder = formData.getAll("bilder") as File[];
-  if (
-    bilder.filter((f) => f instanceof File && f.size > 0).length >
-    MAX_FAULT_IMAGES
-  ) {
-    return { error: `Höchstens ${MAX_FAULT_IMAGES} Bilder.` };
-  }
+  // Fotos liegen schon im Speicher (Direkt-Upload aus dem Browser); hier
+  // ZUERST prüfen (eigener Ordner, echte Bytes) — schlägt es fehl, wird gar
+  // kein Fehler angelegt.
   let urls: string[];
   try {
-    urls = await uploadFaultImages(bilder, user.id);
+    urls = await uebernehmeUploads("fehlerfoto", user.id, formData.getAll("bildUrl"));
   } catch (e) {
     return { error: (e as Error).message };
   }
@@ -90,6 +84,11 @@ export async function createFault(
   }
 
   revalidatePath(`/machines/${machineId}`);
+  // „Speichern & nächster Fehler": zurück ins leere Formular; die id im Query
+  // gibt dem Formular einen neuen Schlüssel (frischer Zustand, keine alten Fotos).
+  if (formData.get("weiter")) {
+    redirect(`/machines/${machineId}/faults/new?gespeichert=${neu.id}`);
+  }
   redirect(`/machines/${machineId}`);
 }
 

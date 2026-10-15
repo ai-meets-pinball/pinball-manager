@@ -1,14 +1,8 @@
-import Link from "next/link";
-import { Pencil, Trash2, Wrench } from "lucide-react";
-import { ActionForm } from "@/components/ui/action-form";
-import { ButtonLink } from "@/components/ui/button";
-import { ConfirmButton } from "@/components/ui/confirm-button";
+import { FehlerZeilenAktionen } from "@/components/fehler-zeilen-aktionen";
 import { FotoZoom } from "@/components/ui/foto-zoom";
-import { ICON_BTN } from "@/components/ui/icon-button";
 import { List, ListRow } from "@/components/ui/list";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { QuelleBadge } from "@/components/ui/quelle-badge";
-import { deleteFault } from "@/db/actions/faults";
 
 type Fault = {
   id: string;
@@ -59,36 +53,7 @@ export function FaultList({
           }
           actions={
             schreibbar ? (
-              <>
-                <ButtonLink
-                  href={`/machines/${machineId}/repairs/new?faultId=${fault.id}`}
-                  variant="secondary"
-                  size="sm"
-                >
-                  <Wrench size={14} /> Reparatur
-                </ButtonLink>
-                <Link
-                  href={`/machines/${machineId}/faults/${fault.id}/edit`}
-                  aria-label="Fehler bearbeiten"
-                  title="Bearbeiten"
-                  className={ICON_BTN}
-                >
-                  <Pencil size={14} />
-                </Link>
-                <ActionForm action={deleteFault}>
-                  <input type="hidden" name="machineId" value={machineId} />
-                  <input type="hidden" name="id" value={fault.id} />
-                  <ConfirmButton
-                    question="Diesen Fehler löschen? Verknüpfte Reparaturen bleiben erhalten, verweisen aber nicht mehr auf ihn."
-                    confirmLabel="Ja, löschen"
-                    aria-label="Fehler löschen"
-                    title="Löschen"
-                    className={`${ICON_BTN} hover:text-[var(--color-danger)]`}
-                  >
-                    <Trash2 size={14} />
-                  </ConfirmButton>
-                </ActionForm>
-              </>
+              <FehlerZeilenAktionen machineId={machineId} faultId={fault.id} />
             ) : null
           }
         >

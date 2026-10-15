@@ -537,6 +537,7 @@ export default async function MachineDetailPage({
               <MachineFaultsPreview
                 machineId={machine.id}
                 faults={offeneFehler.slice(0, 5)}
+                schreibbar={darf.bearbeiten}
               />
             }
           />

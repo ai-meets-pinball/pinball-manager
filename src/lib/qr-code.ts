@@ -1,3 +1,4 @@
+import { storeHost } from "@/lib/storage";
 import QRCode from "qrcode";
 
 /*
@@ -33,12 +34,15 @@ export async function erzeugeQrSvg(token: string): Promise<string> {
   Komposition (Canvas/SVG in QrDownload), die so CORS-/Taint-Fragen des Storage
   komplett umgeht. Größenwache, damit keine Riesendatei in die Seite wandert.
   Server-only (Buffer/fetch). Geteilt von allen QR-Seiten (Maschine, Club, privat).
+  Geholt wird NUR aus dem eigenen Speicher — kein Server-Fetch auf beliebige
+  URLs (Befund I1, docs/security-review-2026-08-11.md).
 */
 export async function logoAlsDataUrl(
   url: string | null,
 ): Promise<string | null> {
   if (!url) return null;
   try {
+    if (new URL(url).host !== storeHost()) return null;
     const res = await fetch(url);
     if (!res.ok) return null;
     const bytes = Buffer.from(await res.arrayBuffer());

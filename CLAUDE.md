@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-**Phase 1 (MVP) scaffolded and implemented.** The Next.js app exists with auth, machine CRUD, fault tracking, repair history, clubs/memberships, and search/filter. Data access is **Drizzle ORM** ([src/db/schema.ts](src/db/schema.ts)); auth is **Better Auth** ([src/lib/auth.ts](src/lib/auth.ts)). Runtime needs a Supabase Postgres + a public Storage bucket `machine-photos` (see README).
+**Phase 1 (MVP) scaffolded and implemented.** The Next.js app exists with auth, machine CRUD, fault tracking, repair history, clubs/memberships, and search/filter. Data access is **Drizzle ORM** ([src/db/schema.ts](src/db/schema.ts)); auth is **Better Auth** ([src/lib/auth.ts](src/lib/auth.ts)). Runtime needs a Supabase Postgres + a public **Vercel Blob** store (`BLOB_READ_WRITE_TOKEN`, see README).
 
 The product is a repair/management database for pinball machines (German-language domain: *Maschinen* = machines, *Fehler* = faults, *Reparaturen* = repairs). It doubles as a teaching example for the "KI meets Pinball" group, so **readability and visible architecture are valued over scalability** (PRD §8).
 
@@ -67,7 +67,7 @@ App runs on http://localhost:3100.
 - **Next.js** with Turbopack, React 19, Node 20+
 - **Better Auth** for authentication — TS config is intentionally visible/readable
 - **Tailwind CSS v4** (CSS-first config) + Lucide React icons
-- **Supabase used as Postgres + Storage only** — not as an auth or API layer
+- **Supabase used as Postgres only** — not as an auth, API or file layer. **Files live in Vercel Blob** (public store, since 10/2026): uploads go browser → Blob with a token from `/api/upload` (per-purpose rules in [src/lib/upload-zweck.ts](src/lib/upload-zweck.ts)); the server verifies the real bytes on save ([src/lib/storage.ts](src/lib/storage.ts)). Logos are the exception — they go through the form so an SVG is checked before it is ever public.
 - **AI provider is switchable** (`AI_PROVIDER`): **Anthropic Claude is the default**; an optional **local Ollama** path (code in [src/lib/ai/](src/lib/ai/)) covers the three AI features for local/self-hosted runs (never on Vercel — `localhost` is unreachable there). Ollama is an *addition*, not a substitution of the stack.
 - **Vercel** deployment; **light "editorial" theme** with a burgundy accent (from a Claude Design handoff v2; light default + dark variant, toggle in nav; tokens/fonts in [src/app/globals.css](src/app/globals.css); logo/favicons from the handoff's brand assets); mobile-friendly (repairs happen at the machine)
 
