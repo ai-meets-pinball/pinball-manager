@@ -97,8 +97,15 @@ async function pruefeHochgeladen(zweck: UploadZweck, url: string): Promise<void>
 /*
   Übernimmt direkt hochgeladene Dateien beim Speichern eines Formulars:
   URLs prüfen (eigener Store, eigener Ordner, Anzahl — reine Regel), dann jede
-  Datei (pruefeHochgeladen). Scheitert eine, werden ALLE dieses Aufrufs gelöscht
-  und der Fehler geworfen — es entsteht kein Datensatz mit halben Dateien.
+  Datei (pruefeHochgeladen). Scheitert eine, wird der Fehler geworfen — es
+  entsteht kein Datensatz mit halben Dateien.
+
+  Gelöscht wird dabei NUR die Datei, die selbst durchfällt. Nie die übrigen
+  URLs des Aufrufs: alle Gäste teilen sich das Segment „gast", ein Gast könnte
+  sonst die URL eines fremden, längst gespeicherten Fotos neben eine kaputte
+  Datei legen und es so löschen lassen. Eine gespeicherte Datei hat die Prüfung
+  bestanden und kann sie nicht nachträglich verfehlen — die durchfallende ist
+  also immer ein neuer, ungültiger Upload.
 */
 export async function uebernehmeUploads(
   zweck: UploadZweck,
@@ -107,11 +114,13 @@ export async function uebernehmeUploads(
 ): Promise<string[]> {
   const geprueft = pruefeUploadUrls(zweck, uploader, werte, storeHost());
   if ("error" in geprueft) throw new Error(geprueft.error);
-  try {
-    for (const url of geprueft.urls) await pruefeHochgeladen(zweck, url);
-  } catch (e) {
-    if (geprueft.urls.length > 0) await del(geprueft.urls).catch(() => {});
-    throw e;
+  for (const url of geprueft.urls) {
+    try {
+      await pruefeHochgeladen(zweck, url);
+    } catch (e) {
+      await del(url).catch(() => {});
+      throw e;
+    }
   }
   return geprueft.urls;
 }

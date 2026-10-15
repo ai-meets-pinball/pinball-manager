@@ -35,6 +35,13 @@ id und Signale bleiben erhalten).
   - **Werkzeuge in der Übersicht** (Dirk): `FehlerZeilenAktionen` (aus
     `fault-list.tsx` gezogen) auch in der „Offene Fehler"-Vorschau.
 
+  - **Sicherheits-Fix 1.84** (Commit-Review zu 1.83): `uebernehmeUploads`
+    löschte bei einer durchfallenden Datei ALLE URLs des Aufrufs. Da alle Gäste
+    das Segment `gast` teilen, konnte ein Gast die URL eines fremden, schon
+    gespeicherten Fotos neben eine kaputte Datei legen und es löschen lassen.
+    Jetzt wird nur die durchfallende Datei gelöscht (per Sonde im echten Store
+    belegt: alter Code löschte das fremde Foto, neuer lässt es stehen).
+
 ### Offen aus dieser Runde
 
 - **Alten Supabase-Bucket `machine-photos` löschen**, sobald der Umzug
