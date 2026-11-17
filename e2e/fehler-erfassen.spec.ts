@@ -110,4 +110,11 @@ test.describe("Fehler erfassen", () => {
     await expect(loesung).toBeVisible();
     await expect(loesung).toHaveAttribute("href", `/machines/${machineId}/repairs/${repairId}/edit`);
   });
+
+  test("Übersicht: „Neuer Fehler“ direkt am Gerät (Feedback Averell)", async ({ page }) => {
+    await loginAs(page, USERS.owner);
+    await page.goto(`/machines/${machineId}`);
+    await page.getByRole("link", { name: "Neuer Fehler" }).click();
+    await page.waitForURL((u) => u.pathname === `/machines/${machineId}/faults/new`);
+  });
 });

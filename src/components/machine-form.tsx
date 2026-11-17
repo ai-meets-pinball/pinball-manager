@@ -27,6 +27,8 @@ type MachineValues = {
   hersteller: string;
   modell: string;
   baujahr: number | null;
+  /** JJJJ-MM-TT oder null. */
+  kaufdatum: string | null;
   opdbRef: string | null;
   ipdbRef: string | null;
   clubId: string | null;
@@ -214,6 +216,9 @@ export function MachineForm({
   });
   const set = (key: keyof typeof vals) => (value: string) =>
     setVals((v) => ({ ...v, [key]: value }));
+  // Eigenes State, nicht in `vals`: die Modell-Wahl ersetzt `vals` komplett,
+  // das Kaufdatum gehört aber zum Gerät, nicht zum Modell.
+  const [kaufdatum, setKaufdatum] = useState(machine?.kaufdatum ?? "");
 
   // Frisch gewähltes Modell (Anzeige-Panel + Hidden-Inputs).
   const [auswahl, setAuswahl] = useState<Auswahl | null>(null);
@@ -456,6 +461,18 @@ export function MachineForm({
           .
         </p>
       )}
+
+      <Field
+        label="Kaufdatum (optional)"
+        hint="Wann dieses Gerät gekauft wurde — erscheint in der Maschinen-Liste neben „Hinzugefügt“."
+      >
+        <Input
+          name="kaufdatum"
+          type="date"
+          value={kaufdatum}
+          onChange={(e) => setKaufdatum(e.target.value)}
+        />
+      </Field>
 
       <Field
         label="Club (optional)"

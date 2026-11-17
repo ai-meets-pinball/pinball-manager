@@ -107,6 +107,7 @@ export default async function MachinesPage({
     hersteller: m.hersteller,
     modell: m.modell,
     baujahr: m.baujahr,
+    kaufdatum: m.kaufdatum,
     createdAt: m.createdAt,
     fotoUrl: m.fotoUrl,
     clubId: m.clubId,

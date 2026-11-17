@@ -91,7 +91,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Filter & Ansichten",
-        text: "In der Steuerzeile über der Liste liegen die Bereichs-Chips: »Privat« und einer je Club (mit Anzahl), mehrere gleichzeitig wählbar — dieselben wie im Kopf der Übersicht, und die Wahl gilt seitenübergreifend. Rechts wechselst du zwischen der Tabelle (kompakt, sortierbar — die Voreinstellung) und der Kartenansicht (mit Fotos und Badges). Die Tabelle zeigt auch, wann eine Maschine hinzugefügt wurde; eine Club-Spalte, die in allen Zeilen dasselbe sagen würde, blendet sie aus.",
+        text: "In der Steuerzeile über der Liste liegen die Bereichs-Chips: »Privat« und einer je Club (mit Anzahl), mehrere gleichzeitig wählbar — dieselben wie im Kopf der Übersicht, und die Wahl gilt seitenübergreifend. Rechts wechselst du zwischen der Tabelle (kompakt, sortierbar — die Voreinstellung) und der Kartenansicht (mit Fotos und Badges). Die Tabelle zeigt auch, wann eine Maschine hinzugefügt wurde und — wenn im Formular unter »Kaufdatum« eingetragen — wann sie gekauft wurde (Spalte »Gekauft«); eine Club-Spalte, die in allen Zeilen dasselbe sagen würde, blendet sie aus.",
       },
       {
         titel: "Suchen & sortieren",
@@ -143,7 +143,7 @@ export const ANLEITUNG: HilfeSektion[] = [
     schritte: [
       {
         titel: "Melden",
-        text: "Auf der Maschinen-Detailseite im Reiter »Fehler« auf »Neuer Fehler«. Beschreibe das Symptom und wähle optional eine Kategorie (Flipperfinger, Ballhänger, Spule, Schalter, Targets & Spinner, Rampen & Ballguides, Beleuchtung, Anzeige, Elektrik/Elektronik, Mechanik, Plastics, Gummis, Gehäuse & Beine, Baugruppe, Software, Sonstiges), eine Priorität (niedrig, mittel, hoch, kritisch) und den Status. Direkt beim Anlegen kannst du ein oder mehrere FOTOS anhängen — am Handy wahlweise mit der Kamera oder aus der Galerie, bis 10 MB pro Bild. Jedes Foto wird gleich nach der Auswahl hochgeladen (kleiner Kreisel auf der Vorschau); gespeichert werden kann, sobald alle angekommen sind. Sie erscheinen später als Vorschau am Fehler. Mit »Speichern & nächster Fehler« landest du nach dem Speichern direkt wieder im leeren Formular — praktisch, wenn mehrere Fehler auf einmal zu erfassen sind. Ein offener KRITISCHER Fehler setzt die Maschine automatisch auf »Eingeschränkt« (siehe Betriebsstatus). Hängt an einem Fehler eine Reparatur, steht ihre Lösung (Maßnahme, sonst Diagnose) direkt unter dem Fehler — ein Klick öffnet die Reparatur. So bleibt auch nach »behoben« sichtbar, was gemacht wurde. Beim Bearbeiten lässt sich auch »Gemeldet von« ändern — auf ein Club-Mitglied (bei privaten Maschinen: dich) oder auf einen Gast mit Namen.",
+        text: "Auf der Maschinen-Detailseite auf »Neuer Fehler« — gleich in der Übersicht an der Karte »Offene Fehler« oder im Reiter »Fehler«. Beschreibe das Symptom und wähle optional eine Kategorie (Flipperfinger, Ballhänger, Spule, Schalter, Targets & Spinner, Rampen & Ballguides, Beleuchtung, Anzeige, Elektrik/Elektronik, Mechanik, Plastics, Gummis, Gehäuse & Beine, Baugruppe, Software, Sonstiges), eine Priorität (niedrig, mittel, hoch, kritisch) und den Status. Direkt beim Anlegen kannst du ein oder mehrere FOTOS anhängen — am Handy wahlweise mit der Kamera oder aus der Galerie, bis 10 MB pro Bild. Jedes Foto wird gleich nach der Auswahl hochgeladen (kleiner Kreisel auf der Vorschau); gespeichert werden kann, sobald alle angekommen sind. Sie erscheinen später als Vorschau am Fehler. Mit »Speichern & nächster Fehler« landest du nach dem Speichern direkt wieder im leeren Formular — praktisch, wenn mehrere Fehler auf einmal zu erfassen sind. Ein offener KRITISCHER Fehler setzt die Maschine automatisch auf »Eingeschränkt« (siehe Betriebsstatus). Hängt an einem Fehler eine Reparatur, steht ihre Lösung (Maßnahme, sonst Diagnose) direkt unter dem Fehler — ein Klick öffnet die Reparatur. So bleibt auch nach »behoben« sichtbar, was gemacht wurde. Beim Bearbeiten lässt sich auch »Gemeldet von« ändern — auf ein Club-Mitglied (bei privaten Maschinen: dich) oder auf einen Gast mit Namen.",
       },
       {
         titel: "Status & Filter",
@@ -381,7 +381,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Ansehen",
-        text: "Alle Faktentabellen stehen offen da; Switch- und Lampen-Matrix erscheinen als farbcodiertes Raster (WPC-Draht-Farbcodes, Opto-Schalter markiert). Die Kennzahl-Karten oben sind Sprunglinks zu den Tabellen; ein Klick auf den Tabellenkopf klappt eine lange Tabelle zu. Tabellen mit einer Typ-Spalte lassen sich filtern.",
+        text: "Alle Faktentabellen stehen offen da; Switch- und Lampen-Matrix erscheinen als farbcodiertes Raster (WPC-Draht-Farbcodes, Opto-Schalter markiert) — auch größere Raster wie Segas 8×10-Lampenmatrix vollständig. Die Kennzahl-Karten oben sind Sprunglinks zu den Tabellen; ein Klick auf den Tabellenkopf klappt eine lange Tabelle zu. Tabellen mit einer Typ-Spalte lassen sich filtern.",
       },
     ],
   },

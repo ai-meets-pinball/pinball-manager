@@ -50,4 +50,21 @@ test.describe("Maschinen-Liste zeigt offene Fehler", () => {
     await expect(zeile).toContainText("1 offen");
     await expect(zeile).toContainText("E2E Flipperfinger klemmt links");
   });
+
+  test("Kaufdatum: im Formular setzen, in der Tabelle „Gekauft“ sehen (Feedback Reinhard)", async ({
+    page,
+  }) => {
+    await loginAs(page, USERS.owner);
+    await page.goto(`/machines/${machineId}/edit`);
+    await page.getByLabel("Kaufdatum (optional)").fill("2019-05-04");
+    await page.getByRole("button", { name: "Speichern", exact: true }).click();
+    await page.waitForURL((u) => u.pathname === `/machines/${machineId}`);
+
+    const [r] = await sql`SELECT kaufdatum::text AS k FROM machines WHERE id = ${machineId}`;
+    expect(r.k).toBe("2019-05-04");
+
+    await page.goto("/machines?ansicht=tabelle");
+    await expect(page.getByRole("columnheader", { name: "Gekauft" })).toBeVisible();
+    await expect(page.getByRole("row", { name: /E2E Listengerät/ })).toContainText("04.05.2019");
+  });
 });

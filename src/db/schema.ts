@@ -366,6 +366,8 @@ export const machines = pgTable("machines", {
   hersteller: text("hersteller").notNull(),
   modell: text("modell").notNull(),
   baujahr: integer("baujahr"),
+  // Wann DIESES Gerät gekauft wurde (≠ createdAt = wann es eingetragen wurde).
+  kaufdatum: date("kaufdatum"),
   opdbRef: text("opdb_ref"),
   ipdbRef: text("ipdb_ref"),
   fotoUrl: text("foto_url"),

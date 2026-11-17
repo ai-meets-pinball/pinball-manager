@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { ChevronDown } from "lucide-react";
 import type { FactTable, FactType } from "@/lib/validators";
+import { buildMatrix, type Matrix } from "@/lib/fakten-matrix";
 
 /*
   Faktentabelle als klassische Tabelle und — nur bei Switch-/Lamp-Matrix —
@@ -12,9 +13,6 @@ import type { FactTable, FactType } from "@/lib/validators";
   Alles rein aus den extrahierten Fakten abgeleitet — funktioniert generisch für
   jedes künftige Handbuch.
 */
-
-type MatrixCell = { num: string; label: string; typ: string };
-type Matrix = { cols: number; rows: number; cells: Map<string, MatrixCell> };
 
 /** Nur diese Typen ergeben eine Matrix. */
 function isMatrixType(t: FactType): boolean {
@@ -123,10 +121,12 @@ function WireSwatch({ code }: { code: string }) {
 }
 
 /** WPC-Draht-Farbcode: 2. Band nach Widerstands-Reihenfolge; kollidiert es mit
-    der Basisfarbe, wird „Blk" verwendet (z. B. Yel-Blk statt Yel-Yel). */
+    der Basisfarbe, wird „Blk" verwendet (z. B. Yel-Blk statt Yel-Yel). Jenseits
+    von 8 gibt es kein Band → leer (z. B. Reihe 9/10 einer Sega-Matrix). */
 const BAND = ["Brn", "Red", "Org", "Yel", "Grn", "Blu", "Vio", "Gry"];
 function wire(base: string, i: number): string {
-  const second = BAND[i - 1] ?? "";
+  const second = BAND[i - 1];
+  if (!second) return "";
   return `${base}-${second.toLowerCase() === base.toLowerCase() ? "Blk" : second}`;
 }
 const AXIS: Record<string, { col: string; row: string }> = {
@@ -135,49 +135,6 @@ const AXIS: Record<string, { col: string; row: string }> = {
 };
 // Opto-Schalter werden dezent grün getönt (color-mix als Inline-Style → theme-aware).
 const OPTO_BG = "color-mix(in srgb, var(--color-success) 12%, transparent)";
-
-/** Leitet aus einer Tabelle eine Matrix (Spalte×Reihe) ab. */
-function buildMatrix(table: FactTable): Matrix | null {
-  const lower = table.columns.map((c) => c.toLowerCase());
-  const colIdx = lower.findIndex(
-    (c) => c === "column" || c === "col" || c === "spalte",
-  );
-  const rowIdx = lower.findIndex(
-    (c) => c === "row" || c === "reihe" || c === "zeile",
-  );
-  const typIdx = lower.findIndex(
-    (c) => c === "typ" || c === "type" || c === "art",
-  );
-  const idIdx = 0;
-  const labelIdx = table.columns.length - 1;
-
-  const cells = new Map<string, MatrixCell>();
-  let maxC = 0;
-  let maxR = 0;
-
-  for (const r of table.rows) {
-    let c: number;
-    let rw: number;
-    if (colIdx >= 0 && rowIdx >= 0) {
-      c = Number.parseInt(r[colIdx], 10);
-      rw = Number.parseInt(r[rowIdx], 10);
-    } else {
-      const n = Number.parseInt(r[idIdx], 10); // Fallback: Nummer = Spalte×10 + Reihe
-      if (!Number.isFinite(n) || n < 11 || n > 99) continue;
-      c = Math.floor(n / 10);
-      rw = n % 10;
-    }
-    if (!(c >= 1 && c <= 9 && rw >= 1 && rw <= 9)) continue;
-    maxC = Math.max(maxC, c);
-    maxR = Math.max(maxR, rw);
-    cells.set(`${c}-${rw}`, {
-      num: r[idIdx] ?? "",
-      label: r[labelIdx] ?? "",
-      typ: typIdx >= 0 ? (r[typIdx] ?? "") : "",
-    });
-  }
-  return cells.size >= 4 ? { cols: maxC, rows: maxR, cells } : null;
-}
 
 function TableGrid({
   columns,
@@ -262,9 +219,10 @@ function MatrixGrid({ matrix, typ }: { matrix: Matrix; typ: FactType }) {
   const isSwitch = typ === "switches";
   const axis = AXIS[typ];
 
+  const formel = matrix.nrIstSpalteReihe ? " · Nr. = Spalte×10 + Reihe" : "";
   const hint = isSwitch
-    ? `${matrix.cols}×${matrix.rows}-Matrix · Spalte = Antriebsleitung, Reihe = Rückleitung · Nr. = Spalte×10 + Reihe · Details per Hover`
-    : `${matrix.cols}×${matrix.rows}-Lampenmatrix · Lamp-Nr. = Spalte×10 + Reihe · Details per Hover`;
+    ? `${matrix.cols}×${matrix.rows}-Matrix · Spalte = Antriebsleitung, Reihe = Rückleitung${formel} · Details per Hover`
+    : `${matrix.cols}×${matrix.rows}-Lampenmatrix${formel} · Details per Hover`;
 
   return (
     <div className="space-y-3 p-3">

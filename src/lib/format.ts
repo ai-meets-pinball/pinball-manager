@@ -72,3 +72,10 @@ export function datumISO(d: Date): string {
   const t = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${t}`;
 }
+
+/** „JJJJ-MM-TT" (Postgres-`date`) als „TT.MM.JJJJ" — reine Umstellung, ohne
+    `new Date()`, das den String als UTC liest und so den Tag kippen könnte. */
+export function datumDE(iso: string): string {
+  const [y, m, t] = iso.split("-");
+  return `${t}.${m}.${y}`;
+}

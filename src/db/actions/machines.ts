@@ -484,6 +484,7 @@ export async function createMachine(
       hersteller: data.hersteller,
       modell: data.modell,
       baujahr: data.baujahr ?? null,
+      kaufdatum: data.kaufdatum ?? null,
       opdbRef: data.opdbRef ?? null,
       ipdbRef: data.ipdbRef ?? null,
       fotoUrl,
@@ -563,6 +564,7 @@ export async function updateMachine(
       hersteller: data.hersteller,
       modell: data.modell,
       baujahr: data.baujahr ?? null,
+      kaufdatum: data.kaufdatum ?? null,
       opdbRef: data.opdbRef ?? null,
       ipdbRef: data.ipdbRef ?? null,
       // Foto nur ersetzen, wenn ein neues hochgeladen oder aus OPDB gewählt wurde.

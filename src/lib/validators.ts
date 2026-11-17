@@ -33,6 +33,10 @@ export const machineSchema = z.object({
   hersteller: z.string().trim().min(1, "Hersteller ist erforderlich").max(80, "Hersteller: höchstens 80 Zeichen"),
   modell: z.string().trim().min(1, "Modell ist erforderlich").max(80, "Modell: höchstens 80 Zeichen"),
   baujahr: optionalInt,
+  // <input type="date"> liefert JJJJ-MM-TT (oder leer).
+  kaufdatum: optionalString.pipe(
+    z.iso.date("Kaufdatum: ungültiges Datum").optional(),
+  ),
   opdbRef: optionalString,
   ipdbRef: optionalString,
   clubId: optionalUuid,

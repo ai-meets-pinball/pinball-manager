@@ -12,7 +12,7 @@ import {
   deleteMachines,
   type BulkAssignState,
 } from "@/db/actions/machines";
-import { modellName } from "@/lib/format";
+import { datumDE, modellName } from "@/lib/format";
 import { spalteEinheitlich } from "@/lib/tabelle";
 import { SortKopf } from "@/components/ui/sort-kopf";
 
@@ -28,6 +28,8 @@ type Item = {
   hersteller: string;
   modell: string;
   baujahr: number | null;
+  /** JJJJ-MM-TT oder null (nicht erfasst). */
+  kaufdatum: string | null;
   createdAt: Date;
   fotoUrl: string | null;
   clubId: string | null;
@@ -265,6 +267,7 @@ export function MachinesBoard({
                   dir={dir}
                   href={sortLinks.neu.href}
                 />
+                <th className="py-2 pr-4 font-medium">Gekauft</th>
                 {clubSpalte ? (
                   <th className="py-2 pr-4 font-medium">Club</th>
                 ) : null}
@@ -302,6 +305,9 @@ export function MachinesBoard({
                   <td className="py-2 pr-4">{m.baujahr ?? "—"}</td>
                   <td className="py-2 pr-4 text-[var(--color-muted)]">
                     {m.createdAt.toLocaleDateString("de-DE")}
+                  </td>
+                  <td className="py-2 pr-4 text-[var(--color-muted)]">
+                    {m.kaufdatum ? datumDE(m.kaufdatum) : "—"}
                   </td>
                   {clubSpalte ? (
                     <td className="py-2 pr-4 text-[var(--color-muted)]">

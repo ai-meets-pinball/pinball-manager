@@ -435,6 +435,13 @@
       "when": 1790424111223,
       "tag": "0061_mixed_sharon_carter",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1794940205129,
+      "tag": "0062_abnormal_the_fury",
+      "breakpoints": true
     }
   ]
 }

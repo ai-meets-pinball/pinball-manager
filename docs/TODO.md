@@ -9,6 +9,29 @@ Melde-Warnung bleibt rein anzeigend) und **In-Place-Editor + Bearbeitungs-
 Verlauf** (`knowledge_revisions`; Neu-Generierung/Import aktualisiert in place —
 id und Signale bleiben erhalten).
 
+## Umgesetzt 11/2026 (Stand 2026-11-17)
+
+- **Feedback-Runde 17.11.** (Averell, Reinhard ×2):
+  - **„Neuer Fehler" in der Übersicht** (Averell): der Knopf saß nur im
+    Fehler-Reiter; jetzt auch im Kopf der „Offene Fehler"-Karte (gleiche
+    Rechteprüfung `darf.bearbeiten`).
+  - **Lampenmatrix Space Jam: Reihe 10 fehlte** (Reinhard): `buildMatrix`
+    verwarf alles über 9 — passt zu WPC (8×8), nicht zu Sega/Whitestar (8×10,
+    fortlaufend 1–80). Jetzt rein in `lib/fakten-matrix.ts` (Vitest): mit
+    ausdrücklicher Spalte/Reihe bis 16, aus der Nummer abgeleitet weiter bis 9.
+    Der Hinweis „Nr. = Spalte×10 + Reihe" erscheint nur noch, wenn er stimmt;
+    jenseits von 8 kein erfundener Draht-Farbcode mehr.
+  - **Kaufdatum** (Reinhard): neue Spalte `machines.kaufdatum` (date, optional,
+    Migration 0062), Feld im Maschinen-Formular, Spalte „Gekauft" neben
+    „Hinzugefügt" in der Tabellenansicht (nicht sortierbar).
+
+### Offen aus dieser Runde
+
+- **Migration 0062 produktiv** — VOR dem Deploy (sonst fragt die Liste eine
+  fehlende Spalte ab). Auf der E2E-DB geprobt (`db:migrate` grün).
+- Sega-Raster zeigt in Spalten 1–8 weiter die WPC-Draht-Farben — für Sega
+  falsch. Ggf. Farben nur bei WPC-Nummerierung (`nrIstSpalteReihe`) zeigen.
+
 ## Umgesetzt 10/2026 (Stand 2026-10-15)
 
 - **Feedback-Runde 15.10.** (Amu ×3, Kai, Dirk):

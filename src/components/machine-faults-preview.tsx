@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Plus } from "lucide-react";
+import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { QuelleBadge } from "@/components/ui/quelle-badge";
@@ -40,12 +41,24 @@ export function MachineFaultsPreview({
             <span className="text-sm text-[var(--color-muted)]">keine.</span>
           ) : null}
         </div>
-        <Link
-          href={`/machines/${machineId}?bereich=fehler`}
-          className="inline-flex items-center gap-1 text-sm text-[var(--color-primary)] hover:underline"
-        >
-          Alle Fehler anzeigen <ChevronRight size={15} />
-        </Link>
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          {/* Direkt von der Übersicht melden, ohne Umweg über die Liste (Feedback Averell). */}
+          {schreibbar ? (
+            <ButtonLink
+              href={`/machines/${machineId}/faults/new`}
+              variant="secondary"
+              size="sm"
+            >
+              <Plus size={14} /> Neuer Fehler
+            </ButtonLink>
+          ) : null}
+          <Link
+            href={`/machines/${machineId}?bereich=fehler`}
+            className="inline-flex items-center gap-1 text-sm text-[var(--color-primary)] hover:underline"
+          >
+            Alle Fehler anzeigen <ChevronRight size={15} />
+          </Link>
+        </div>
       </div>
 
       {faults.length === 0 ? null : (
