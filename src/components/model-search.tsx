@@ -12,7 +12,7 @@ import { modellName } from "@/lib/format";
 
 /*
   Typeahead über den EIGENEN Modell-Katalog (machine_models) — die Modell-Auswahl
-  beim Anlegen einer Maschine (der Katalog stammt aus dem OPDB-Export, siehe
+  beim Anlegen einer Maschine und die Suche auf der Wissensbasis (der Katalog stammt aus dem OPDB-Export, siehe
   scripts/import-opdb.mjs). Zeigt je Treffer Thumbnail, Name („Modell | Hersteller"),
   Baujahr und Generation; ein Klick liefert den vollen Datensatz an onSelect.
   Debounce + latestReq-Guard gegen veraltete Antworten.

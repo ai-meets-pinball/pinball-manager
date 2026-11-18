@@ -1,11 +1,12 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileText } from "lucide-react";
 import { KnowledgeFacts } from "@/components/knowledge-facts";
 import { KnowledgeGuides } from "@/components/knowledge-guides";
 import { KnowledgeTipps } from "@/components/knowledge-tipps";
 import { MachineTabs, type MachineTab } from "@/components/machine-tabs";
 import { SharedRepairs } from "@/components/shared-repairs";
+import { ButtonLink } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { FotoZoom } from "@/components/ui/foto-zoom";
 import {
@@ -61,12 +62,13 @@ export default async function GeraetetypPage({
   ];
 
   /*
-    Auf dieser Seite wird nichts angelegt — jeder Einstieg dazu sitzt an der
-    eigenen MASCHINE dieses Modells (Handbuch auswerten, Guide erzeugen, Tipp
-    schreiben, Reparatur freigeben). Weil das Wissen aber am MODELL hängt und
-    für alle gilt, ist die häufigste offene Frage hier: „lohnt sich ein
-    zweiter Eintrag?" — und die Antwort ist je Bereich verschieden. Deshalb
-    ein Satz je Reiter statt eines allgemeinen Hinweises.
+    Angelegt wird hier nur EINES: Handbuch-Daten („Handbuch auswerten", Frank
+    2026-11-18 — viele Handbücher, aber nicht jedes Gerät im eigenen Bestand).
+    Guide, Tipp und Reparatur-Freigabe bleiben an der eigenen MASCHINE dieses
+    Modells. Weil das Wissen am MODELL hängt und für alle gilt, ist die
+    häufigste offene Frage hier: „lohnt sich ein zweiter Eintrag?" — und die
+    Antwort ist je Bereich verschieden. Deshalb ein Satz je Reiter statt eines
+    allgemeinen Hinweises.
 
     ACHTUNG beim Formulieren: GELTUNGSBEREICH und SICHTBARKEIT sind zwei
     getrennte Achsen (CONTEXT.md). „Gilt fürs ganze Modell" heißt NICHT „sehen
@@ -75,7 +77,7 @@ export default async function GeraetetypPage({
   */
   const hinweise: Record<string, string> = {
     handbuch:
-      "Handbuch-Daten hängen am MODELL, nicht an der einzelnen Maschine — wer sie zu sehen bekommt, entscheidet davon unabhängig die Sichtbarkeit des Eintrags. Ein weiteres Handbuch wertest du an deiner eigenen Maschine dieses Modells aus; nötig ist das nur, wenn im vorhandenen Auszug Tabellen fehlen.",
+      "Handbuch-Daten hängen am MODELL, nicht an der einzelnen Maschine — wer sie zu sehen bekommt, entscheidet davon unabhängig die Sichtbarkeit des Eintrags. Ein Handbuch wertest du über „Handbuch auswerten“ oben aus — eine eigene Maschine dieses Modells brauchst du dafür nicht; ein weiterer Auszug lohnt sich nur, wenn im vorhandenen Tabellen fehlen.",
     guide:
       "Ein Guide gilt ebenfalls fürs ganze Modell; wer ihn sieht, steuert die Sichtbarkeit am Eintrag. An deiner eigenen Maschine lässt sich ein weiterer erzeugen oder ein fertiger als JSON einspielen — nötig ist das nur, wenn der vorhandene etwas Wesentliches übergeht.",
     tipps:
@@ -131,6 +133,14 @@ export default async function GeraetetypPage({
             ) : null}
           </p>
         </div>
+        <ButtonLink
+          variant="secondary"
+          size="sm"
+          href={`/modelle/${modelId}/handbuch/auswerten`}
+          className="ml-auto"
+        >
+          <FileText size={14} /> Handbuch auswerten
+        </ButtonLink>
       </div>
 
       {leer ? (
@@ -138,7 +148,8 @@ export default async function GeraetetypPage({
           <p className="text-sm text-[var(--color-muted)]">
             Für dieses Modell ist dir gegenüber noch kein Wissen sichtbar.
             Sobald jemand Handbuch-Daten oder Reparaturen freigibt, erscheinen
-            sie hier.
+            sie hier — ein eigenes Handbuch wertest du über „Handbuch
+            auswerten“ oben aus.
           </p>
         </Card>
       ) : (

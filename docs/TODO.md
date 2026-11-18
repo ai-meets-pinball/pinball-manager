@@ -9,8 +9,16 @@ Melde-Warnung bleibt rein anzeigend) und **In-Place-Editor + Bearbeitungs-
 Verlauf** (`knowledge_revisions`; Neu-Generierung/Import aktualisiert in place —
 id und Signale bleiben erhalten).
 
-## Umgesetzt 11/2026 (Stand 2026-11-17)
+## Umgesetzt 11/2026 (Stand 2026-11-18)
 
+- **Handbuch auswerten am Modell** (Frank, 1.88): viele Handbücher, aber nicht
+  jedes Gerät im eigenen Bestand. Wissensbasis → »Modell suchen« (ganzer
+  Katalog, `ModelSearch`) → Modellseite → »Handbuch auswerten«
+  (`/modelle/[modelId]/handbuch/auswerten`, Route `api/modelle/[modelId]/
+  extract-manual`). Jeder Angemeldete darf (eigener Eintrag, privat);
+  KI in der App weiter nur Super-Admin (`darfKi`), sonst Abo-Weg. Ebene-Regel
+  rein in `lib/handbuch-ziel.ts`, Route-Kern geteilt in `lib/handbuch-route.ts`.
+  Keine Migration.
 - **Feedback-Runde 17.11.** (Averell, Reinhard ×2):
   - **„Neuer Fehler" in der Übersicht** (Averell): der Knopf saß nur im
     Fehler-Reiter; jetzt auch im Kopf der „Offene Fehler"-Karte (gleiche
@@ -27,8 +35,8 @@ id und Signale bleiben erhalten).
 
 ### Offen aus dieser Runde
 
-- **Migration 0062 produktiv** — VOR dem Deploy (sonst fragt die Liste eine
-  fehlende Spalte ab). Auf der E2E-DB geprobt (`db:migrate` grün).
+- ~~Migration 0062 produktiv~~ — erledigt 2026-11-17 vor dem Deploy von 1.87
+  (E2E-Probe und `db:status` vorher/nachher grün); Melder beantwortet.
 - Sega-Raster zeigt in Spalten 1–8 weiter die WPC-Draht-Farben — für Sega
   falsch. Ggf. Farben nur bei WPC-Nummerierung (`nrIstSpalteReihe`) zeigen.
 

@@ -3,6 +3,7 @@ import { db } from "@/db";
 import { getFamilie } from "@/db/queries/familie";
 import { knowledge, knowledgeRevisions } from "@/db/schema";
 import { modellName } from "@/lib/format";
+import { wissensEbene, type HandbuchZiel } from "@/lib/handbuch-ziel";
 import { extractSchema, FACT_TYPES } from "@/lib/validators";
 
 /*
@@ -61,30 +62,26 @@ async function schreibeMitRevision(opts: {
 
 /*
   Datenmodell-Redesign (Phase 1): Handbuch-Fakten als MODELL-Wissen schreiben.
-  Ein `knowledge`-Eintrag (typ='handbuch_fakten') je Autor und Ebene (Modell,
-  wenn die Maschine ein Modell hat, sonst Maschine). Existiert er, wird er per
+  Ein `knowledge`-Eintrag (typ='handbuch_fakten') je Autor und Ebene
+  (lib/handbuch-ziel: Modell, wenn bekannt, sonst Maschine — eingestiegen an der
+  Maschine oder direkt am Modell). Existiert er, wird er per
   `schreibeMitRevision` in place aktualisiert (id/Signale bleiben, alter Stand →
   Verlauf). `inhalt` ist das extractSchema-Objekt, aber nur mit den vorhandenen
   (nicht-leeren) Typen. Skip-if-empty: ein leeres Ergebnis schreibt nichts.
 */
 export async function upsertModelKnowledge(opts: {
   userId: string;
-  machine: {
-    id: string;
-    modelId: string | null;
-    hersteller: string;
-    modell: string;
-  };
+  ziel: HandbuchZiel;
   result: ExtractResult;
   visibility: "privat" | "club" | "oeffentlich";
   clubId?: string | null;
 }): Promise<number> {
-  const { userId, machine, result, visibility, clubId } = opts;
+  const { userId, ziel, result, visibility, clubId } = opts;
   const present = FACT_TYPES.filter((t) => result[t].rows.length > 0);
   if (present.length === 0) return 0;
 
   const inhalt = Object.fromEntries(present.map((t) => [t, result[t]]));
-  const amModell = machine.modelId != null;
+  const ebene = wissensEbene(ziel);
 
   // Der eigene Eintrag darf an einer baugleichen Edition hängen (Familie) —
   // dann wird DER aktualisiert statt ein zweiter angelegt.
@@ -92,20 +89,20 @@ export async function upsertModelKnowledge(opts: {
     where: and(
       eq(knowledge.createdBy, userId),
       eq(knowledge.typ, "handbuch_fakten"),
-      amModell
-        ? inArray(knowledge.modelId, (await getFamilie(machine.modelId!)).ids)
-        : eq(knowledge.machineId, machine.id),
+      ebene.art === "modell"
+        ? inArray(knowledge.modelId, (await getFamilie(ebene.modelId)).ids)
+        : eq(knowledge.machineId, ebene.machineId),
     )!,
     userId,
     kommentar: "Neu extrahiert/importiert",
     neu: {
       typ: "handbuch_fakten",
-      titel: `${modellName(machine)} — Handbuch-Daten`,
+      titel: `${modellName(ziel)} — Handbuch-Daten`,
       inhalt,
       sourceType: "extrahiert",
       visibility,
-      modelId: amModell ? machine.modelId : null,
-      machineId: amModell ? null : machine.id,
+      modelId: ebene.art === "modell" ? ebene.modelId : null,
+      machineId: ebene.art === "maschine" ? ebene.machineId : null,
       clubId: visibility === "club" ? (clubId ?? null) : null,
       createdBy: userId,
     },

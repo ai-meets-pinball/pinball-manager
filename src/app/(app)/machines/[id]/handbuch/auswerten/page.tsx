@@ -34,7 +34,7 @@ export default async function HandbuchAuswertenPage({
       />
       <Card className="space-y-4">
         <ManualExtract
-          machineId={machine.id}
+          einstieg={{ art: "maschine", id: machine.id }}
           providers={availableProviders()}
           centralKey={Boolean(process.env.ANTHROPIC_API_KEY)}
           byoErlaubt={ki.byo}

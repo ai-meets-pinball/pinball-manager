@@ -68,7 +68,7 @@ async function lauf(opts: Partial<Parameters<typeof extractManualFactsStream>[0]
   const events = [];
   const stream = extractManualFactsStream({
     userId: "u1",
-    machine: { id: "m1", modelId: "mo1", hersteller: "Williams", modell: "Monster Bash" },
+    ziel: { machineId: "m1", modelId: "mo1", hersteller: "Williams", modell: "Monster Bash" },
     visibility: "privat",
     file: await pdfDatei(),
     attest: true,

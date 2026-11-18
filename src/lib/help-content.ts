@@ -361,7 +361,7 @@ export const ANLEITUNG: HilfeSektion[] = [
     schritte: [
       {
         titel: "Hochladen",
-        text: "Auf der Maschinen-Detailseite im Reiter »Handbuch« öffnet der Knopf »Handbuch auswerten« (rechts oben) eine eigene Seite. Standardweg ist »In der App«: bestätigen, dass du das Handbuch besitzt bzw. die Rechte hast, das PDF wählen und auswerten. Anbieter, Detailstufe und Sichtbarkeit liegen unter »Erweiterte Optionen« — für den Normalfall musst du sie nicht anfassen.",
+        text: "Auf der Maschinen-Detailseite im Reiter »Handbuch« öffnet der Knopf »Handbuch auswerten« (rechts oben) eine eigene Seite. Standardweg ist »In der App«: bestätigen, dass du das Handbuch besitzt bzw. die Rechte hast, das PDF wählen und auswerten. Anbieter, Detailstufe und Sichtbarkeit liegen unter »Erweiterte Optionen« — für den Normalfall musst du sie nicht anfassen. Eine eigene Maschine brauchst du dafür nicht: In der »Wissensbasis« findest du über »Modell suchen« jedes Modell aus dem Katalog, und auf der Modellseite steht derselbe Knopf »Handbuch auswerten« — die Handbuch-Daten hängen ohnehin am Modell.",
       },
       {
         titel: "Was passiert",
@@ -429,7 +429,7 @@ export const ANLEITUNG: HilfeSektion[] = [
     schritte: [
       {
         titel: "Der Katalog",
-        text: "»Wissensbasis« in der Navigation zeigt alle Modelle, zu denen für dich Wissen sichtbar ist (eigenes plus geteiltes). Voreingestellt ist eine Tabelle: ein Klick auf »Modell«, »Baujahr« oder »Generation« sortiert danach, ein zweiter Klick dreht die Richtung um. Oben rechts schaltest du auf Karten mit Foto um; die Wahl bleibt gemerkt. Beide Ansichten nennen die Anzahl der Einträge. Baugleiche Editionen einer Maschine (z. B. Premium und LE — gleiche ersten zwei Teile der OPDB-Kennung) teilen ihr Wissen und erscheinen als ein Eintrag mit »auch …«; die Modellseite nennt sie unter »Baugleich mit«. Die Pro-Ausführung ist eine andere Maschine.",
+        text: "»Wissensbasis« in der Navigation zeigt alle Modelle, zu denen für dich Wissen sichtbar ist (eigenes plus geteiltes). Voreingestellt ist eine Tabelle: ein Klick auf »Modell«, »Baujahr« oder »Generation« sortiert danach, ein zweiter Klick dreht die Richtung um. Oben rechts schaltest du auf Karten mit Foto um; die Wahl bleibt gemerkt. Beide Ansichten nennen die Anzahl der Einträge. Baugleiche Editionen einer Maschine (z. B. Premium und LE — gleiche ersten zwei Teile der OPDB-Kennung) teilen ihr Wissen und erscheinen als ein Eintrag mit »auch …«; die Modellseite nennt sie unter »Baugleich mit«. Die Pro-Ausführung ist eine andere Maschine. Über »Modell suchen« oben erreichst du jedes Modell des Katalogs — auch eines ohne Wissen —, etwa um dort ein Handbuch auszuwerten, ohne das Gerät selbst zu besitzen.",
       },
       {
         titel: "Modellseite",

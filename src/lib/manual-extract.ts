@@ -1,5 +1,6 @@
 import { extractSchema, FACT_TYPES } from "@/lib/validators";
 import { upsertModelKnowledge } from "@/lib/facts-store";
+import type { HandbuchZiel } from "@/lib/handbuch-ziel";
 import { extractSpaltenBlock } from "@/lib/prompts";
 import { resolvePrompt } from "@/db/queries";
 import { parseFacts } from "@/lib/import-facts";
@@ -17,7 +18,7 @@ import { istPdf } from "@/lib/storage";
 
   Kein "use server": die eigentliche Arbeit läuft als async Generator, der
   Fortschritts-Events liefert. Aufgerufen wird er von der streamenden API-Route
-  (src/app/api/machines/[id]/extract-manual/route.ts), damit der Client bei großen
+  (lib/handbuch-route.ts, an der Maschine oder am Modell), damit der Client bei großen
   gescannten Handbüchern live sieht, wo die Verarbeitung steht.
 
   Der Anbieter kommt hier nur noch als Wert vor, nicht als Verzweigung:
@@ -264,16 +265,11 @@ function fehlertext(e: unknown, fallback: string): string {
   Der eigentliche Extraktions-Lauf als Generator. Validiert Attestation/Datei,
   lässt das PDF für den Anbieter aufbereiten, liefert unterwegs Fortschritts-
   Events und schreibt die Fakten am Ende als Modell-Wissen. Autorisierung
-  passiert VOR dem Aufruf in der Route (requireMachineWrite).
+  passiert VOR dem Aufruf in der Route (lib/handbuch-route.ts).
 */
 export async function* extractManualFactsStream(opts: {
   userId: string;
-  machine: {
-    id: string;
-    modelId: string | null;
-    hersteller: string;
-    modell: string;
-  };
+  ziel: HandbuchZiel;
   visibility: "privat" | "club" | "oeffentlich";
   file: File;
   attest: boolean;
@@ -284,7 +280,7 @@ export async function* extractManualFactsStream(opts: {
 }): AsyncGenerator<ExtractProgress> {
   const {
     userId,
-    machine,
+    ziel,
     visibility,
     file,
     attest,
@@ -348,7 +344,7 @@ export async function* extractManualFactsStream(opts: {
   // Extraktions-Prompt einmal auflösen (Registry/Override, ggf. pro Hersteller);
   // der {{spalten}}-Block ist strukturell fix. Bei DB-Problemen → Code-Standard.
   const { text: extractPrompt } = await resolvePrompt("extract", {
-    hersteller: machine.hersteller,
+    hersteller: ziel.hersteller,
     vars: { spalten: extractSpaltenBlock() },
   });
 
@@ -453,7 +449,7 @@ export async function* extractManualFactsStream(opts: {
   }
 
   yield { type: "info", message: "Fakten werden gespeichert …" };
-  await upsertModelKnowledge({ userId, machine, result: parsed, visibility });
+  await upsertModelKnowledge({ userId, ziel, result: parsed, visibility });
   const counts: Record<string, number> = {};
   for (const t of present) counts[t] = parsed[t].rows.length;
   yield { type: "done", counts };

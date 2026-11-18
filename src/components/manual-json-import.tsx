@@ -16,6 +16,7 @@ import {
 } from "@/lib/import-facts";
 import { tippsFuerFakten } from "@/lib/import-tipps";
 import type { FormState } from "@/db/actions/form-state";
+import type { HandbuchEinstieg } from "@/lib/handbuch-ziel";
 
 /*
   Der Prompt-Weg für Handbuch-Fakten — für alle außer dem Betreiber der EINZIGE
@@ -38,7 +39,7 @@ const LABELS: Record<string, string> = {
   electronics: "Elektronik-Bauteile",
 };
 
-export function ManualJsonImport({ machineId }: { machineId: string }) {
+export function ManualJsonImport({ einstieg }: { einstieg: HandbuchEinstieg }) {
   const [json, setJson] = useState("");
   const [check, setCheck] = useState<ImportResult | null>(null);
   const [copied, setCopied] = useState(false);
@@ -119,7 +120,11 @@ export function ManualJsonImport({ machineId }: { machineId: string }) {
 
       {/* Import — erst nach erfolgreicher Prüfung aktiv. */}
       <form action={formAction} className="space-y-2">
-        <input type="hidden" name="machineId" value={machineId} />
+        <input
+          type="hidden"
+          name={einstieg.art === "maschine" ? "machineId" : "modelId"}
+          value={einstieg.id}
+        />
         <input type="hidden" name="json" value={json} />
         <VisibilityField />
         <UrheberHinweis />

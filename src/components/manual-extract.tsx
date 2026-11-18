@@ -5,6 +5,7 @@ import { Cpu, FileJson } from "lucide-react";
 import { ManualJsonImport } from "@/components/manual-json-import";
 import { ManualUpload } from "@/components/manual-upload";
 import type { AiProvider } from "@/lib/ai/provider";
+import type { HandbuchEinstieg } from "@/lib/handbuch-ziel";
 
 /*
   Handbuch-Fakten per KI extrahieren — zwei Wege für DASSELBE Ziel, nur an
@@ -18,14 +19,15 @@ const MODI = [
 ];
 
 export function ManualExtract({
-  machineId,
+  einstieg,
   providers,
   centralKey,
   byoErlaubt,
   appErlaubt,
   appGrund,
 }: {
-  machineId: string;
+  /** An der Maschine oder direkt am Modell eingestiegen. */
+  einstieg: HandbuchEinstieg;
   providers: AiProvider[];
   centralKey: boolean;
   byoErlaubt: boolean;
@@ -77,13 +79,13 @@ export function ManualExtract({
 
       {modus === "app" ? (
         <ManualUpload
-          machineId={machineId}
+          einstieg={einstieg}
           providers={providers}
           centralKey={centralKey}
           byoErlaubt={byoErlaubt}
         />
       ) : (
-        <ManualJsonImport machineId={machineId} />
+        <ManualJsonImport einstieg={einstieg} />
       )}
     </div>
   );

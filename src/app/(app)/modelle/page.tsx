@@ -5,6 +5,7 @@ import { BookOpen, LayoutGrid, Table2 } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { CountPill } from "@/components/ui/count-pill";
 import { RememberParams } from "@/components/remember-params";
+import { WissensbasisSuche } from "@/components/wissensbasis-suche";
 import { SortKopf } from "@/components/ui/sort-kopf";
 import { ViewToggle } from "@/components/ui/view-toggle";
 import { getKnowledgeModels } from "@/db/queries";
@@ -98,7 +99,7 @@ export default async function WissensbasisPage({
     <div className="space-y-6">
       <PageHeader
         title="Wissensbasis"
-        description="Geteiltes Wissen je Modell — Infos aus dem Handbuch, Guides und mehr. Einmal am Modell gepflegt, für alle Instanzen sichtbar; du musst den Automaten nicht selbst besitzen. Es erscheinen nur Modelle mit für dich sichtbarem Wissen."
+        description="Geteiltes Wissen je Modell — Infos aus dem Handbuch, Guides und mehr. Einmal am Modell gepflegt, für alle Instanzen sichtbar; du musst den Automaten nicht selbst besitzen. Es erscheinen nur Modelle mit für dich sichtbarem Wissen; über die Suche erreichst du jedes Modell — auch, um ein Handbuch auszuwerten."
         actions={
           modelle.length > 0 ? (
             <ViewToggle
@@ -124,6 +125,7 @@ export default async function WissensbasisPage({
         path="/modelle"
         params={{ wissenView: ansicht, wissenSort: sort, wissenDir: dir }}
       />
+      <WissensbasisSuche />
 
       {modelle.length === 0 ? (
         <Card>

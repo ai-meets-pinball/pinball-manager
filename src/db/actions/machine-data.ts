@@ -1,14 +1,15 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { requireMachineAccess } from "@/lib/session";
+import { requireMachineAccess, requireUser } from "@/lib/session";
 import { parseFactsText } from "@/lib/import-facts";
 import { parseGuideText } from "@/lib/import-guide";
 import {
   upsertModelKnowledge,
   upsertTroubleshootingKnowledge,
 } from "@/lib/facts-store";
-import { getModelGeneration } from "@/db/queries";
+import { getMachineModel, getModelGeneration } from "@/db/queries";
+import type { HandbuchZiel } from "@/lib/handbuch-ziel";
 import type { FormState } from "@/db/actions/form-state";
 
 /*
@@ -24,12 +25,41 @@ export async function importManualFacts(
   formData: FormData,
 ): Promise<FormState> {
   const machineId = String(formData.get("machineId") ?? "");
+  const modelId = String(formData.get("modelId") ?? "");
   const raw = String(formData.get("json") ?? "");
 
-  // Schreibrecht wie beim PDF-Upload (Eigentümer/Club-Manager/Super-Admin).
-  const { user, machine, darf } = await requireMachineAccess(machineId);
-  if (!darf.bearbeiten) {
-    return { error: "Kein Schreibzugriff auf diese Maschine." };
+  // Eingestiegen an einer Maschine: Schreibrecht wie beim PDF-Upload
+  // (Eigentümer/Club-Manager/Super-Admin). Direkt am Modell: jeder Angemeldete
+  // — der Eintrag gehört ihm und steht zunächst auf privat (wie in
+  // api/modelle/[modelId]/extract-manual).
+  let userId: string;
+  let ziel: HandbuchZiel;
+  let pfad: string;
+  if (machineId) {
+    const { user, machine, darf } = await requireMachineAccess(machineId);
+    if (!darf.bearbeiten) {
+      return { error: "Kein Schreibzugriff auf diese Maschine." };
+    }
+    userId = user.id;
+    ziel = {
+      machineId: machine.id,
+      modelId: machine.modelId,
+      hersteller: machine.hersteller,
+      modell: machine.modell,
+    };
+    pfad = `/machines/${machineId}`;
+  } else {
+    const user = await requireUser();
+    const model = await getMachineModel(modelId).catch(() => undefined);
+    if (!model) return { error: "Modell nicht gefunden." };
+    userId = user.id;
+    ziel = {
+      machineId: null,
+      modelId: model.id,
+      hersteller: model.hersteller,
+      modell: model.modell,
+    };
+    pfad = `/modelle/${model.id}`;
   }
 
   const pruefung = parseFactsText(raw);
@@ -43,17 +73,12 @@ export async function importManualFacts(
 
   // Datenmodell-Redesign: als MODELL-Wissen schreiben (nicht mehr machine_data).
   const n = await upsertModelKnowledge({
-    userId: user.id,
-    machine: {
-      id: machine.id,
-      modelId: machine.modelId,
-      hersteller: machine.hersteller,
-      modell: machine.modell,
-    },
+    userId,
+    ziel,
     result: pruefung.result,
     visibility,
   });
-  revalidatePath(`/machines/${machineId}`);
+  revalidatePath(pfad);
 
   return { message: `Importiert: ${n} Faktentabelle${n === 1 ? "" : "n"}.` };
 }

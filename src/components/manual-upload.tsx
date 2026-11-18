@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { VisibilityField } from "@/components/ui/visibility-field";
 import { UrheberHinweis } from "@/components/ui/urheber-hinweis";
 import type { AiProvider } from "@/lib/ai/provider";
+import type { HandbuchEinstieg } from "@/lib/handbuch-ziel";
 
 /*
   Upload eines eigenen Handbuchs (PDF) zur Fakten-Extraktion. Läuft über die
@@ -47,12 +48,12 @@ type Fortschritt =
 const MAX_MB = 50;
 
 export function ManualUpload({
-  machineId,
+  einstieg,
   providers,
   centralKey,
   byoErlaubt = true,
 }: {
-  machineId: string;
+  einstieg: HandbuchEinstieg;
   /** Verfügbare KI-Anbieter (Auswahl, wenn mehrere). */
   providers: AiProvider[];
   /** Zentraler Anthropic-Key vorhanden? Sonst BYO-Feld beim Claude-Weg. */
@@ -76,7 +77,8 @@ export function ManualUpload({
     setProg({ kind: "running", label: "Handbuch wird hochgeladen …" });
 
     try {
-      const res = await fetch(`/api/machines/${machineId}/extract-manual`, {
+      const basis = einstieg.art === "maschine" ? "machines" : "modelle";
+      const res = await fetch(`/api/${basis}/${einstieg.id}/extract-manual`, {
         method: "POST",
         body: fd,
       });
