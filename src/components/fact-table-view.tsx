@@ -140,10 +140,13 @@ function TableGrid({
   columns,
   rows,
   typ,
+  wpc,
 }: {
   columns: string[];
   rows: string[][];
   typ: FactType;
+  /** false = Nummerierung ist sicher NICHT WPC (siehe MatrixGrid) → keine Draht-Farben. */
+  wpc: boolean;
 }) {
   // Bei Switch-/Lamp-Matrix die Column/Row-Zellen um den WPC-Draht-Farbcode ergänzen.
   const lower = columns.map((c) => c.toLowerCase());
@@ -153,7 +156,7 @@ function TableGrid({
   const rowIdx = lower.findIndex(
     (c) => c === "row" || c === "reihe" || c === "zeile",
   );
-  const axis = AXIS[typ];
+  const axis = wpc ? AXIS[typ] : undefined;
 
   const renderCell = (cell: string, ci: number) => {
     if (parseWire(cell)) return <WireSwatch code={cell} />; // Draht-Farbe → Chip + Text
@@ -217,7 +220,9 @@ function MatrixGrid({ matrix, typ }: { matrix: Matrix; typ: FactType }) {
   const cols = Array.from({ length: matrix.cols }, (_, i) => i + 1);
   const rows = Array.from({ length: matrix.rows }, (_, i) => i + 1);
   const isSwitch = typ === "switches";
-  const axis = AXIS[typ];
+  // Draht-Farben sind WPC-Code — nur zeigen, wo die Nummerierung WPC ist
+  // (Nr. = Spalte×10 + Reihe); Sega/Whitestar zählt fortlaufend und hat andere Farben.
+  const axis = matrix.nrIstSpalteReihe ? AXIS[typ] : undefined;
 
   const formel = matrix.nrIstSpalteReihe ? " · Nr. = Spalte×10 + Reihe" : "";
   const hint = isSwitch
@@ -501,7 +506,12 @@ export function FactTableView({
       {showMatrix && matrix ? (
         <MatrixGrid matrix={matrix} typ={typ} />
       ) : (
-        <TableGrid columns={table.columns} rows={rows} typ={typ} />
+        <TableGrid
+          columns={table.columns}
+          rows={rows}
+          typ={typ}
+          wpc={matrix ? matrix.nrIstSpalteReihe : true}
+        />
       )}
     </details>
   );

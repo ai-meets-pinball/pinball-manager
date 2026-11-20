@@ -48,6 +48,8 @@ import { deleteMachine } from "@/db/actions/machines";
 import { getMachineDetail } from "@/db/machine-detail";
 import { getKiZugang, getLoeschfolgen, resolvePrompt } from "@/db/queries";
 import { FEHLER_FILTER, FEHLER_FILTER_LABEL } from "@/lib/fehler-status";
+import { fehlerPasst } from "@/lib/fehler-suche";
+import { SearchToolbar } from "@/components/ui/search-toolbar";
 import { modellName, relativeZeit } from "@/lib/format";
 import { tageDazwischen } from "@/lib/faelligkeit";
 import { buildGuideImportPrompt } from "@/lib/import-guide";
@@ -88,10 +90,11 @@ export default async function MachineDetailPage({
     faultStatus?: string;
     bereich?: string;
     ansicht?: string;
+    q?: string;
   }>;
 }) {
   const { id } = await params;
-  const { faultStatus, bereich, ansicht } = await searchParams;
+  const { faultStatus, bereich, ansicht, q } = await searchParams;
   // Tipps-Ansicht (karten | liste): URL gewinnt, sonst Cookie, sonst Karten —
   // dasselbe klebrige Muster wie die Nutzerliste im Admin.
   const tippsAnsicht = klebrig(
@@ -154,9 +157,14 @@ export default async function MachineDetailPage({
   // unabhängig vom Filter stimmen.
   const aktiverFilter =
     faultStatus && faultStatus !== "alle" ? faultStatus : undefined;
-  const machineFaults = aktiverFilter
-    ? alleFehler.filter((f) => f.status === aktiverFilter)
-    : alleFehler;
+  // Dazu die Suche über Symptom + Lösungen (lib/fehler-suche.ts), ebenfalls
+  // in-memory — die Fehler einer Maschine sind ohnehin vollständig geladen.
+  const fehlerSuche = q?.trim() ?? "";
+  const machineFaults = alleFehler.filter(
+    (f) =>
+      (!aktiverFilter || f.status === aktiverFilter) &&
+      fehlerPasst(f, fehlerSuche),
+  );
 
   // Kopierbarer Guide-Import-Prompt mit dem AUFGELÖSTEN System-Prompt
   // (Registry/Override), damit die Kopiervorlage denselben Text nutzt wie die
@@ -556,11 +564,11 @@ export default async function MachineDetailPage({
                 return (
                   <Link
                     key={f}
-                    href={
-                      f === "alle"
-                        ? `/machines/${machine.id}?bereich=fehler`
-                        : `/machines/${machine.id}?bereich=fehler&faultStatus=${encodeURIComponent(f)}`
-                    }
+                    href={`/machines/${machine.id}?${new URLSearchParams({
+                      bereich: "fehler",
+                      ...(f === "alle" ? {} : { faultStatus: f }),
+                      ...(fehlerSuche ? { q: fehlerSuche } : {}),
+                    }).toString()}`}
                     className={`rounded-full border px-3 py-0.5 ${
                       aktiv
                         ? "border-[var(--color-primary)] text-[var(--color-primary)]"
@@ -583,10 +591,34 @@ export default async function MachineDetailPage({
             ) : null}
           </div>
 
+          {/* Suche über Symptom, Diagnose und Maßnahme (Feedback Dirk) — hält
+              Reiter und Statusfilter. */}
+          <SearchToolbar
+            action={`/machines/${machine.id}`}
+            placeholder="Fehler und Lösungen durchsuchen …"
+            label="Fehler und Lösungen durchsuchen"
+            defaultValue={fehlerSuche}
+            keep={{
+              bereich: "fehler",
+              ...(aktiverFilter ? { faultStatus: aktiverFilter } : {}),
+            }}
+            aktiv={Boolean(fehlerSuche)}
+            resetHref={`/machines/${machine.id}?${new URLSearchParams({
+              bereich: "fehler",
+              ...(aktiverFilter ? { faultStatus: aktiverFilter } : {}),
+            }).toString()}`}
+            ohneButton
+          />
+
           <FaultList
             faults={machineFaults}
             machineId={machine.id}
             schreibbar={darf.bearbeiten}
+            leer={
+              fehlerSuche
+                ? `Kein Fehler passt zu „${fehlerSuche}“.`
+                : undefined
+            }
           />
         </div>
       ) : null}

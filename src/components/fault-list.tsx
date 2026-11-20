@@ -33,14 +33,17 @@ export function FaultList({
   faults,
   machineId,
   schreibbar = true,
+  leer = "Keine Fehler erfasst.",
 }: {
   faults: Fault[];
   machineId: string;
   /** false = nur Lesen: keine Bearbeiten-/Lösch-/Reparatur-Aktionen. */
   schreibbar?: boolean;
+  /** Text bei leerer Liste (z. B. „Kein Fehler passt zu …" bei einer Suche). */
+  leer?: string;
 }) {
   return (
-    <List empty="Keine Fehler erfasst.">
+    <List empty={leer}>
       {faults.map((fault) => (
         <ListRow
           key={fault.id}

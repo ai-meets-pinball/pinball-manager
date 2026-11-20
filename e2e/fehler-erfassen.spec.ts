@@ -111,6 +111,32 @@ test.describe("Fehler erfassen", () => {
     await expect(loesung).toHaveAttribute("href", `/machines/${machineId}/repairs/${repairId}/edit`);
   });
 
+  test("Suche im Fehler-Reiter findet auch die Lösung aus der Reparatur (Feedback Dirk)", async ({
+    page,
+  }) => {
+    const faultId = await addFault({ machineId, beschreibung: "E2E Flipper links lahm", status: "behoben" });
+    await addFault({ machineId, beschreibung: "E2E Display flackert" });
+    const repairId = await addRepair(machineId);
+    await sql`UPDATE repairs SET diagnose = 'E2E Spulenhülse ausgeschlagen' WHERE id = ${repairId}`;
+    await sql`INSERT INTO repair_faults (repair_id, fault_id) VALUES (${repairId}, ${faultId})`;
+
+    await loginAs(page, USERS.owner);
+    await page.goto(`/machines/${machineId}?bereich=fehler`);
+    const suche = page.getByLabel("Fehler und Lösungen durchsuchen");
+    // Begriff steht NUR in der Diagnose der verknüpften Reparatur.
+    await suche.fill("spulenhülse");
+    await suche.press("Enter");
+    await page.waitForURL((u) => u.searchParams.get("q") === "spulenhülse");
+    await expect(page.getByRole("listitem").filter({ hasText: "E2E Flipper links lahm" })).toBeVisible();
+    await expect(page.getByRole("listitem").filter({ hasText: "E2E Display flackert" })).toHaveCount(0);
+    expect(new URL(page.url()).searchParams.get("bereich")).toBe("fehler");
+
+    // Statusfilter hält die Suche; „Offen" schließt den behobenen Treffer aus.
+    await page.getByRole("link", { name: "Offen", exact: true }).click();
+    await page.waitForURL((u) => u.searchParams.get("faultStatus") === "offen");
+    await expect(page.getByText("Kein Fehler passt zu „spulenhülse“.")).toBeVisible();
+  });
+
   test("Übersicht: „Neuer Fehler“ direkt am Gerät (Feedback Averell)", async ({ page }) => {
     await loginAs(page, USERS.owner);
     await page.goto(`/machines/${machineId}`);

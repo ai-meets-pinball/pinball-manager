@@ -9,7 +9,28 @@ Melde-Warnung bleibt rein anzeigend) und **In-Place-Editor + Bearbeitungs-
 Verlauf** (`knowledge_revisions`; Neu-Generierung/Import aktualisiert in place —
 id und Signale bleiben erhalten).
 
-## Umgesetzt 11/2026 (Stand 2026-11-18)
+## Umgesetzt 11/2026 (Stand 2026-11-20)
+
+- **Aufräumen nach dem Blob-Umzug** (1.89):
+  - **Suche im Fehler-Reiter** (Dirk): ein Feld über Symptom, Kategorie und
+    Diagnose/Maßnahme ALLER verknüpften Reparaturen (`lib/fehler-suche.ts`,
+    Vitest; `getMachineFaults` liefert die Reparatur-Texte mit). In-memory wie
+    der Statusfilter, beide halten einander (`?q=` + `?faultStatus=`).
+  - **Verwaiste Direkt-Uploads** — täglicher Cron
+    `api/cron/verwaiste-uploads` (03:00): Blob in einem Direkt-Upload-Ordner,
+    älter als 24 h, von keiner URL-Spalte referenziert → `del`. Regel rein in
+    `lib/verwaiste-uploads.ts`, Gegenprobe `getReferenzierteDateiUrls` (eine
+    UNION über alle 7 URL-Spalten — neue Datei-Spalte dort ergänzen!).
+    `?probe=1` listet nur. Probe 2026-11-20: 50 Blobs, 2 verwaist (Fehlerfotos
+    vom 24.10.). Cron-Secret-Prüfung in `lib/cron-auth.ts` (statt Kopie je Route).
+  - **Supabase-Bucket `machine-photos` gelöscht** (2026-11-20, 67 Objekte,
+    47 MB; keine DB-Zeile verwies mehr auf supabase.co) und `*.supabase.co`
+    aus der CSP genommen.
+  - **Body-Limits**: `serverActions.bodySizeLimit` 52 → 5 MB (nur noch das
+    4-MB-Logo geht durch eine Action), `proxyClientMaxBodySize` entfernt
+    (Handbuch-PDFs gehen an eine API-Route, die der Proxy nicht sieht).
+  - **Sega-Raster ohne WPC-Draht-Farben**: Farben nur noch, wenn die
+    Nummerierung WPC-Art ist (`nrIstSpalteReihe`); gilt für Raster UND Tabelle.
 
 - **Handbuch auswerten am Modell** (Frank, 1.88): viele Handbücher, aber nicht
   jedes Gerät im eigenen Bestand. Wissensbasis → »Modell suchen« (ganzer
@@ -37,8 +58,14 @@ id und Signale bleiben erhalten).
 
 - ~~Migration 0062 produktiv~~ — erledigt 2026-11-17 vor dem Deploy von 1.87
   (E2E-Probe und `db:status` vorher/nachher grün); Melder beantwortet.
-- Sega-Raster zeigt in Spalten 1–8 weiter die WPC-Draht-Farben — für Sega
-  falsch. Ggf. Farben nur bei WPC-Nummerierung (`nrIstSpalteReihe`) zeigen.
+- ~~Sega-Raster zeigt WPC-Draht-Farben~~ — erledigt in 1.89.
+- **Große Handbücher auf Vercel**: eine Funktion nimmt höchstens 4,5 MB je
+  Anfrage an — »In der App« scheitert live an fast jedem Service-Handbuch
+  (lokal bis 50 MB). Frank 2026-11-20: live möglich machen — PDF in einen
+  PRIVATEN Blob-Store, Server liest und löscht direkt nach der Extraktion.
+  Ändert die Copyright-Regel „nie gespeichert" zu „Minuten, dann gelöscht"
+  (Frank hat zugestimmt); braucht einen zweiten, privaten Store (Zugriff ist
+  je Store fest).
 
 ## Umgesetzt 10/2026 (Stand 2026-10-15)
 
@@ -83,18 +110,12 @@ id und Signale bleiben erhalten).
 
 ### Offen aus dieser Runde
 
-- **Alten Supabase-Bucket `machine-photos` löschen**, sobald der Umzug
-  kontrolliert ist (26 nicht referenzierte Objekte bleiben dort liegen), und
-  `*.supabase.co` aus der CSP (`src/proxy.ts`) nehmen. Eigenes go.
-- **Verwaiste Direkt-Uploads** (gewählt, nie abgeschickt) bleiben im Store —
-  nur erlaubte Typen, aber sie sammeln sich. Aufräum-Job (älter als 1 Tag und
-  nicht referenziert → `del`) fehlt.
-- **Suche nach Fehlern und Lösungen** (Dirk): im Fehler-Reiter (Text,
-  Diagnose, Maßnahme) und/oder übers Modell (eigene baugleiche Geräte +
-  geteilte Reparaturen). Frank: „erst sichtbar machen", Suche später.
-- `serverActions.bodySizeLimit`/`proxyClientMaxBodySize` (52 MB) in
-  `next.config.ts` sind für Fotos/Dokumente überflüssig geworden; vor dem
-  Zurücksetzen prüfen, ob der lokale Handbuch-Weg (Ollama) noch darauf baut.
+- ~~Alten Supabase-Bucket löschen + CSP~~ — erledigt 2026-11-20 (1.89).
+- ~~Verwaiste Direkt-Uploads~~ — Cron seit 1.89.
+- ~~Suche nach Fehlern und Lösungen~~ (Dirk) — im Fehler-Reiter seit 1.89.
+  Offen bleibt die Suche ÜBERS MODELL (baugleiche Geräte + geteilte
+  Reparaturen).
+- ~~Body-Limits in `next.config.ts`~~ — 1.89.
 
 ## Umgesetzt 09/2026 (Stand 2026-09-26)
 

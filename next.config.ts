@@ -3,19 +3,15 @@ import { withRedlining } from "redlining/next";
 
 const nextConfig: NextConfig = {
   experimental: {
-    // Handbuch-PDFs kommen als FormData an die Server Action (siehe
-    // src/lib/manual-extract.ts). Das Default-Limit (1 MB) ist viel zu klein;
-    // Handbücher können bis ~50 MB groß sein (die In-Memory-Extraktion deckelt
-    // bei 50 MB). Etwas Luft für Multipart-Overhead → 52 MB.
+    // Server Actions mit Datei: nur noch das Club-/Druck-Logo (bis 4 MB, geht
+    // bewusst durchs Formular, damit ein SVG geprüft ist, bevor es öffentlich
+    // wird — lib/storage.ts). Fotos/Dokumente laden direkt nach Vercel Blob,
+    // Handbuch-PDFs an eine API-Route (lib/handbuch-route.ts) — beide laufen
+    // weder durch eine Server Action noch durch den Proxy. Default wäre 1 MB.
+    // Das Proxy-Limit (Default 10 MB) liegt darüber und bleibt unangetastet.
     serverActions: {
-      bodySizeLimit: "52mb",
+      bodySizeLimit: "5mb",
     },
-    // WICHTIG: Weil src/proxy.ts (Middleware) auf diesen Routen läuft, kappt Next
-    // den Request-Body zusätzlich am Proxy — Default nur 10 MB. Größere Handbücher
-    // würden dort abgeschnitten und scheitern kryptisch mit „Unexpected end of
-    // form" (der Multipart-Parser sieht die Schluss-Boundary nie), BEVOR die
-    // Größenprüfung der Action greift. Auf dieselbe Grenze wie oben anheben.
-    proxyClientMaxBodySize: "52mb",
   },
   // Der lokale Ollama-Pfad (AI_PROVIDER=ollama, src/lib/ai/prepare-pdf.ts) nutzt
   // unpdf + das native @napi-rs/canvas zum Rendern gescannter Seiten. Native

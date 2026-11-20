@@ -465,8 +465,8 @@ export async function getOpenFaultsForMachines(
     .orderBy(desc(faults.datum));
 }
 
-/** Fehler EINER Maschine mit Melder-Name (gemeldetVon → user.name), Fotos und
-    der Lösung aus der verknüpften Reparatur. Speist die Fehler-Vorschau auf der
+/** Fehler EINER Maschine mit Melder-Name (gemeldetVon → user.name), Fotos,
+    der Lösung aus der verknüpften Reparatur und deren Texten für die Suche. Speist die Fehler-Vorschau auf der
     Übersicht (nurOffen + limit) UND die volle Liste. */
 export async function getMachineFaults(
   machineId: string,
@@ -509,6 +509,12 @@ export async function getMachineFaults(
     loesung: loesungAmFehler(
       reparaturenRoh.map((r) => ({ ...r, datum: new Date(r.datum) })),
     ),
+    // Volltexte aller verknüpften Reparaturen — für die Suche im Reiter
+    // (lib/fehler-suche.ts), nicht nur die eine Zeile der Lösung.
+    reparaturen: reparaturenRoh.map((r) => ({
+      diagnose: r.diagnose,
+      massnahme: r.massnahme,
+    })),
   }));
 }
 

@@ -1,6 +1,6 @@
-import { timingSafeEqual } from "node:crypto";
 import { and, eq, inArray, isNull, lt, or, sql } from "drizzle-orm";
 import { db } from "@/db";
+import { cronBerechtigt } from "@/lib/cron-auth";
 import { machines, termine, user } from "@/db/schema";
 import { sendTerminReminderEmail } from "@/lib/email";
 import { faelligBis, tageDazwischen } from "@/lib/faelligkeit";
@@ -18,21 +18,8 @@ const REMIND_AFTER_TAGE = 7;
 
 export const dynamic = "force-dynamic";
 
-/** Timing-sicherer Vergleich zweier Strings gleicher Bedeutung. */
-function sicherGleich(a: string, b: string): boolean {
-  const ba = Buffer.from(a);
-  const bb = Buffer.from(b);
-  if (ba.length !== bb.length) {
-    timingSafeEqual(ba, ba);
-    return false;
-  }
-  return timingSafeEqual(ba, bb);
-}
-
 export async function GET(req: Request) {
-  const secret = process.env.CRON_SECRET;
-  const auth = req.headers.get("authorization") ?? "";
-  if (!secret || !sicherGleich(auth, `Bearer ${secret}`)) {
+  if (!cronBerechtigt(req)) {
     return new Response("Unauthorized", { status: 401 });
   }
 
