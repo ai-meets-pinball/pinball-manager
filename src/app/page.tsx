@@ -32,7 +32,7 @@ const features = [
   { num: "02", title: "Fehler & Reparaturen", desc: "Symptom, Ursache, Teile und Kosten je Reparatur — mit Fotos und durchsuchbarer Historie." },
   { num: "03", title: "Betrieb & Wartung", desc: "Betriebsstatus je Maschine, Wartungspläne mit Fälligkeiten und Termine — jeweils mit Erinnerung." },
   { num: "04", title: "Club-Modus", desc: "Maschinen und Wissen im Verein oder in der Location teilen — mit Rollen für Mitglieder." },
-  { num: "05", title: "Handbücher per KI", desc: "Ein PDF-Handbuch wird zu Referenztabellen: Spulen, Schalter, Lampen, Sicherungen, Teile. Das PDF selbst wird nicht gespeichert." },
+  { num: "05", title: "Handbücher per KI", desc: "Ein PDF-Handbuch wird zu Referenztabellen: Spulen, Schalter, Lampen, Sicherungen, Teile. Das PDF selbst wird nicht dauerhaft gespeichert." },
   { num: "06", title: "Melden per QR", desc: "QR-Etikett am Gerät — auch Gäste ohne Konto melden einen Fehler direkt vor Ort." },
 ];
 

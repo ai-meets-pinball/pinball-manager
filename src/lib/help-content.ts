@@ -365,7 +365,7 @@ export const ANLEITUNG: HilfeSektion[] = [
       },
       {
         titel: "Was passiert",
-        text: "Die KI liest das PDF und extrahiert ausschließlich Faktentabellen (Spulen, Schalter-/Lampen-Matrix, Sicherungen, Teile, Regeln, Schrauben, Gummiteile, Elektronik-Bauteile). Das PDF wird dabei NIE gespeichert — nur die Fakten landen in der Datenbank, als Wissenseintrag am Modell. Der Handbuch-Reiter erklärt das Prinzip gleich im Kopf; solange noch nichts da ist, zeigt »Vorschau: so sehen Handbuch-Daten aus« mit erfundenen Beispielwerten, wie das Ergebnis aussehen wird.",
+        text: "Die KI liest das PDF und extrahiert ausschließlich Faktentabellen (Spulen, Schalter-/Lampen-Matrix, Sicherungen, Teile, Regeln, Schrauben, Gummiteile, Elektronik-Bauteile). Das PDF wird dabei nie dauerhaft gespeichert (große Dateien liegen nur während der Auswertung in einem privaten Zwischenspeicher und werden danach gelöscht) — nur die Fakten landen in der Datenbank, als Wissenseintrag am Modell. Der Handbuch-Reiter erklärt das Prinzip gleich im Kopf; solange noch nichts da ist, zeigt »Vorschau: so sehen Handbuch-Daten aus« mit erfundenen Beispielwerten, wie das Ergebnis aussehen wird.",
       },
       {
         titel: "Der Prompt-Weg (für alle)",
@@ -973,7 +973,7 @@ export const EINSTIEG: (HilfeSektion & { zielgruppe?: Zielgruppe })[] = [
     schritte: [
       {
         titel: "Was die KI kann",
-        text: "Handbuch-Daten aus deinem Handbuch-PDF extrahieren (nur Faktentabellen, das PDF wird nie gespeichert), einen Troubleshooting-Guide für dein Modell schreiben (mit Websuche gegen IPDB, PinWiki, Pinside), Wartungspunkte aus dem Guide ableiten — und beim Anlegen einer Reparatur einen Vorschlag für Diagnose, Maßnahme und Teile machen.",
+        text: "Handbuch-Daten aus deinem Handbuch-PDF extrahieren (nur Faktentabellen, das PDF wird nicht dauerhaft gespeichert), einen Troubleshooting-Guide für dein Modell schreiben (mit Websuche gegen IPDB, PinWiki, Pinside), Wartungspunkte aus dem Guide ableiten — und beim Anlegen einer Reparatur einen Vorschlag für Diagnose, Maßnahme und Teile machen.",
       },
       {
         titel: "Die Regel",

@@ -356,7 +356,7 @@ const abschnitte: Abschnitt[] = [
       },
       {
         titel: "Urheberrecht: die Pipeline ist der Schutz",
-        text: "Das hochgeladene Handbuch-PDF wird NIE gespeichert. Es lebt nur im Arbeitsspeicher, geht an das Modell, und nur die extrahierten Faktentabellen landen in der Datenbank. Dazu die Bestätigung des Nutzers, dass er das Handbuch besitzen darf.",
+        text: "Das hochgeladene Handbuch-PDF wird nie dauerhaft gespeichert. Bis 4 MB lebt es nur im Arbeitsspeicher; größere liegen für die Minuten der Auswertung in einem privaten Blob-Store (nur mit Server-Token lesbar) und werden danach gelöscht. Nur die extrahierten Faktentabellen landen in der Datenbank. Dazu die Bestätigung des Nutzers, dass er das Handbuch besitzen darf.",
         falle:
           "Große Antworten müssen gestreamt werden. Mit einem zu kleinen Antwort-Limit bricht die Ausgabe mitten im JSON ab — der Fehler sieht dann wie ein Parser-Problem aus, ist aber ein Limit-Problem.",
       },

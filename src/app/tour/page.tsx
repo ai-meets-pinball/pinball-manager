@@ -524,7 +524,7 @@ export default async function TourPage() {
               runs in the app for everyone, pre-filled into a repair that a
               person reviews before saving. A repair that worked can be shared
               — inside your club or publicly — so the next person with the same
-              machine does not start over. The manual PDF is never stored: only
+              machine does not start over. The manual PDF is never kept: only
               the extracted facts are kept, never the copyrighted text.
             </p>
           </div>

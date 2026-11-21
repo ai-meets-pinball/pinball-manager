@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { upload } from "@vercel/blob/client";
 import { ChevronDown, FileText } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { AiProviderField } from "@/components/ui/ai-provider-field";
@@ -10,12 +11,17 @@ import { VisibilityField } from "@/components/ui/visibility-field";
 import { UrheberHinweis } from "@/components/ui/urheber-hinweis";
 import type { AiProvider } from "@/lib/ai/provider";
 import type { HandbuchEinstieg } from "@/lib/handbuch-ziel";
+import { DIREKT_MAX_BYTES, HANDBUCH_MAX_BYTES } from "@/lib/handbuch-tmp";
 
 /*
   Upload eines eigenen Handbuchs (PDF) zur Fakten-Extraktion. Läuft über die
   streamende API-Route /api/machines/[id]/extract-manual: der Client liest die
   Fortschritts-Events (NDJSON) und zeigt bei großen gescannten Handbüchern live an,
-  welcher Abschnitt gerade verarbeitet wird. Das PDF wird nie gespeichert.
+  welcher Abschnitt gerade verarbeitet wird.
+
+  Bis 4 MB geht das PDF im Formular mit und wird nie gespeichert. Größere lädt
+  der Browser vorher in den privaten Zwischen-Store (lib/handbuch-tmp.ts) und
+  schickt nur den Pfad — die Route löscht das PDF nach der Auswertung.
 */
 
 const LABELS: Record<string, string> = {
@@ -45,7 +51,22 @@ type Fortschritt =
   | { kind: "done"; counts: Record<string, number> }
   | { kind: "error"; error: string };
 
-const MAX_MB = 50;
+const MAX_MB = HANDBUCH_MAX_BYTES / 1024 / 1024;
+
+/** Großes PDF in den privaten Store; liefert den Pfad für die Auswertung. */
+async function zwischenablegen(file: File, fortschritt: (prozent: number) => void): Promise<string> {
+  const res = await fetch("/api/handbuch-upload");
+  const daten = (await res.json()) as { praefix?: string; error?: string };
+  if (!daten.praefix) throw new Error(daten.error ?? "Upload nicht möglich.");
+  const blob = await upload(`${daten.praefix}handbuch.pdf`, file, {
+    access: "private",
+    handleUploadUrl: "/api/handbuch-upload",
+    contentType: "application/pdf",
+    multipart: true,
+    onUploadProgress: (p) => fortschritt(Math.round(p.percentage)),
+  });
+  return blob.pathname;
+}
 
 export function ManualUpload({
   einstieg,
@@ -63,8 +84,7 @@ export function ManualUpload({
   const router = useRouter();
   const [pending, setPending] = useState(false);
   const [zuGross, setZuGross] = useState(false);
-  // Client-Vorabprüfung der Größe: ein zu großes PDF würde sonst am Proxy-Body-
-  // Limit abgeschnitten und kryptisch scheitern.
+  // Client-Vorabprüfung der Größe: über 50 MB lehnt die Auswertung ohnehin ab.
   const [prog, setProg] = useState<Fortschritt>({ kind: "idle" });
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -77,6 +97,15 @@ export function ManualUpload({
     setProg({ kind: "running", label: "Handbuch wird hochgeladen …" });
 
     try {
+      const file = fd.get("manual");
+      if (file instanceof File && file.size > DIREKT_MAX_BYTES) {
+        const pfad = await zwischenablegen(file, (prozent) =>
+          setProg({ kind: "running", label: `Handbuch wird hochgeladen … ${prozent}%` }),
+        );
+        fd.delete("manual");
+        fd.set("blobPfad", pfad);
+        setProg({ kind: "running", label: "Handbuch wird verarbeitet …" });
+      }
       const basis = einstieg.art === "maschine" ? "machines" : "modelle";
       const res = await fetch(`/api/${basis}/${einstieg.id}/extract-manual`, {
         method: "POST",
@@ -180,8 +209,9 @@ export function ManualUpload({
         />
         <span>
           Ich bestätige, dass ich dieses Handbuch besitze bzw. die Rechte habe, es
-          zu verarbeiten. Es wird nicht gespeichert — nur die extrahierten
-          Faktentabellen (Spulen, Lampen, Schalter, Sicherungen, Teile, Regeln,
+          zu verarbeiten. Es wird nicht dauerhaft gespeichert (große Dateien liegen
+          nur während der Auswertung in einem privaten Zwischenspeicher) — nur die
+          extrahierten Faktentabellen (Spulen, Lampen, Schalter, Sicherungen, Teile, Regeln,
           Schrauben, Gummi, Elektronik).
         </span>
       </label>

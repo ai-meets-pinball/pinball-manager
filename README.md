@@ -110,6 +110,11 @@ Development, damit `BLOB_READ_WRITE_TOKEN` auch lokal verfügbar ist. Uploads
 gehen direkt vom Browser in den Store (`/api/upload` gibt das Token aus); so gilt
 Vercels 4,5-MB-Grenze pro Anfrage nicht für Fotos und Dokumente.
 
+Für große Handbuch-PDFs (> 4 MB) einen **zweiten** Blob-Store anlegen: Zugriff
+**Private**, Region Frankfurt, beim Verbinden das Env-Präfix **`HANDBUCH_BLOB`**
+setzen und „read-write token" anhaken → `HANDBUCH_BLOB_READ_WRITE_TOKEN`. Die
+PDFs liegen dort nur während der Auswertung und werden danach gelöscht.
+
 > Stack-Notiz: Datenzugriff über **Drizzle ORM** (Schema in [`src/db/schema.ts`](src/db/schema.ts)),
 > Auth über **Better Auth** ([`src/lib/auth.ts`](src/lib/auth.ts)). Die Autorisierung liegt
 > bewusst in der App-Schicht ([`src/lib/session.ts`](src/lib/session.ts)) — kein Supabase RLS.

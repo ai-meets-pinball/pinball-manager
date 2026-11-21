@@ -29,8 +29,10 @@ import { istPdf } from "@/lib/storage";
 
   Copyright-Leitplanken (PRD §6):
   - Upload nur mit Eigentums-/Rechtebestätigung (Attestation).
-  - Das PDF wird NIE gespeichert: die Bytes leben nur im Request-Speicher und
-    werden danach verworfen (kein Storage, nichts zu löschen).
+  - Das PDF wird nie DAUERHAFT gespeichert: hier leben die Bytes nur im
+    Request-Speicher. Große PDFs (> 4 MB) liegen davor kurz im privaten
+    Zwischen-Store — die Route löscht sie nach der Auswertung
+    (lib/handbuch-tmp.ts, lib/handbuch-route.ts).
   - Nur die extrahierten Faktentabellen landen als Modell-Wissen in der DB.
 */
 

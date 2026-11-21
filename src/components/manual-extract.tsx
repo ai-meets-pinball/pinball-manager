@@ -44,7 +44,7 @@ export function ManualExtract({
         Referenztabellen (Spulen, Lampen-/Schalter-Matrix, Sicherungen, Teile,
         Regeln, Schrauben, Gummi, Elektronik) werden per KI aus dem Handbuch
         gezogen — entweder direkt in der
-        App (das PDF wird nicht gespeichert, nur die Fakten) oder mit deinem
+        App (das PDF wird nicht dauerhaft gespeichert, nur die Fakten) oder mit deinem
         eigenen ChatGPT-/Claude-Abo.
       </p>
 

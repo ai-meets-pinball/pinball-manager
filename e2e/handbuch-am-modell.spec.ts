@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { list } from "@vercel/blob";
 import { sql, userIdByEmail } from "./helpers/db";
 import { loginAs, USERS } from "./helpers/auth";
 
@@ -9,6 +10,10 @@ import { loginAs, USERS } from "./helpers/auth";
   normale Nutzer ist die KI in der App gesperrt — Abo-Weg (JSON einfügen) —,
   der Super-Admin darf sie. Der Eintrag hängt am Modell, gehört dem Autor und
   steht auf privat.
+
+  Große PDFs (> 4 MB) gehen über den PRIVATEN Zwischen-Store
+  (lib/handbuch-tmp.ts) — der Test schreibt in den ECHTEN Store und prüft, dass
+  danach nichts mehr dort liegt.
 */
 const MODELL = "E2E Modellweg Handbuch";
 const JSON_FAKTEN = JSON.stringify({
@@ -86,5 +91,44 @@ test.describe("Handbuch am Modell", () => {
     await loginAs(page, USERS.admin);
     await page.goto(`/modelle/${modelId}/handbuch/auswerten`);
     await expect(page.getByRole("button", { name: "In der App" })).toBeEnabled();
+  });
+
+  test("Super-Admin: PDF über 4 MB läuft über den privaten Store und ist danach weg", async ({
+    page,
+  }) => {
+    const adminId = await userIdByEmail(USERS.admin);
+    // 5 MB ohne PDF-Signatur: Upload, Lesen und Löschen laufen echt, die
+    // Signaturprüfung stoppt vor dem Modell — kein KI-Aufruf im Test.
+    const unechtesPdf = Buffer.alloc(5 * 1024 * 1024, 0x41);
+
+    await loginAs(page, USERS.admin);
+    await page.goto(`/modelle/${modelId}/handbuch/auswerten`);
+    await page.getByRole("button", { name: "In der App" }).click();
+    await page
+      .locator('input[name="manual"]')
+      .setInputFiles({ name: "gross.pdf", mimeType: "application/pdf", buffer: unechtesPdf });
+    await page.locator('input[name="attest"]').check();
+    const tokenAnfrage = page.waitForRequest(
+      (r) => r.url().endsWith("/api/handbuch-upload") && r.method() === "POST",
+      { timeout: 15_000 },
+    );
+    await page.getByRole("button", { name: "Handbuch auswerten" }).click();
+    await tokenAnfrage; // ging wirklich über den Zwischen-Store, nicht durchs Formular
+
+    // Die Meldung kommt aus der Extraktion — also hat die Route das PDF aus dem Store gelesen.
+    await expect(page.getByText("Die Datei ist kein PDF (Signatur fehlt).")).toBeVisible({
+      timeout: 60_000,
+    });
+    const rest = await list({
+      prefix: `handbuch-tmp/${adminId}/`,
+      token: process.env.HANDBUCH_BLOB_READ_WRITE_TOKEN,
+    });
+    expect(rest.blobs).toEqual([]);
+  });
+
+  test("Mitglied bekommt kein Upload-Token für den Zwischen-Store", async ({ page }) => {
+    await loginAs(page, USERS.member);
+    const res = await page.request.get("/api/handbuch-upload");
+    expect(res.status()).toBe(403);
   });
 });

@@ -59,13 +59,14 @@ id und Signale bleiben erhalten).
 - ~~Migration 0062 produktiv~~ — erledigt 2026-11-17 vor dem Deploy von 1.87
   (E2E-Probe und `db:status` vorher/nachher grün); Melder beantwortet.
 - ~~Sega-Raster zeigt WPC-Draht-Farben~~ — erledigt in 1.89.
-- **Große Handbücher auf Vercel**: eine Funktion nimmt höchstens 4,5 MB je
-  Anfrage an — »In der App« scheitert live an fast jedem Service-Handbuch
-  (lokal bis 50 MB). Frank 2026-11-20: live möglich machen — PDF in einen
-  PRIVATEN Blob-Store, Server liest und löscht direkt nach der Extraktion.
-  Ändert die Copyright-Regel „nie gespeichert" zu „Minuten, dann gelöscht"
-  (Frank hat zugestimmt); braucht einen zweiten, privaten Store (Zugriff ist
-  je Store fest).
+- ~~Große Handbücher auf Vercel~~ — erledigt in 1.90 (2026-11-21): PDFs über
+  4 MB lädt der Browser in den PRIVATEN Store `pinball-manager-private-blob`
+  (`HANDBUCH_BLOB_*`), die Route liest und löscht im `finally`, der nächtliche
+  Cron räumt Reste älter als 1 h ab. Copyright-Regel jetzt „nie dauerhaft,
+  große nur für die Minuten der Auswertung" (Frank hat zugestimmt). Probe:
+  E2E gegen den echten Store (Upload → Lesen → Löschen, Store danach leer),
+  dazu einmal echt lokal: 5-MB-PDF → privater Store → Claude → 4 Spulen
+  extrahiert, Store danach leer. Offen: ein echtes Handbuch auf Production.
 
 ## Umgesetzt 10/2026 (Stand 2026-10-15)
 

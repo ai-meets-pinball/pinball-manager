@@ -1,6 +1,8 @@
 import { del, list } from "@vercel/blob";
 import { getReferenzierteDateiUrls } from "@/db/queries";
 import { cronBerechtigt } from "@/lib/cron-auth";
+import { alleHandbuecher, loescheHandbuch } from "@/lib/handbuch-speicher";
+import { abgelaufeneHandbuecher } from "@/lib/handbuch-tmp";
 import { verwaisteBlobs, type GespeicherterBlob } from "@/lib/verwaiste-uploads";
 
 /*
@@ -8,6 +10,10 @@ import { verwaisteBlobs, type GespeicherterBlob } from "@/lib/verwaiste-uploads"
   die keine Zeile mehr verweist — gewählt und nie gespeichert, oder übrig von
   gelöschten Fehlern/Maschinen. WAS gelöscht wird, entscheidet die reine Regel
   lib/verwaiste-uploads.ts; hier nur Speicher lesen, DB gegenprüfen, löschen.
+
+  Dazu der PRIVATE Zwischen-Store für große Handbücher (lib/handbuch-tmp.ts):
+  die Auswertung löscht ihr PDF selbst; was älter als eine Stunde dort liegt,
+  ist hängen geblieben und geht hier weg.
 
   `?probe=1` löscht nichts und liefert nur die Liste — zum Nachsehen, bevor der
   Job scharf läuft. Absicherung wie alle Crons: CRON_SECRET (lib/cron-auth.ts).
@@ -43,11 +49,18 @@ export async function GET(req: Request) {
   if (!probe && verwaist.length > 0) {
     await del(verwaist.map((b) => b.url));
   }
+
+  const handbuecher = abgelaufeneHandbuecher(await alleHandbuecher(), new Date());
+  if (!probe) {
+    for (const h of handbuecher) await loescheHandbuch(h.pathname);
+  }
+
   return Response.json({
     probe,
     geprueft: blobs.length,
     verwaist: verwaist.length,
     geloescht: probe ? 0 : verwaist.length,
     pfade: verwaist.map((b) => b.pathname),
+    handbuecher: handbuecher.map((h) => h.pathname),
   });
 }

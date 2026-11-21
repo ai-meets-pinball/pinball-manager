@@ -5,6 +5,8 @@ import {
 } from "@/lib/manual-extract";
 import { getKiInDerApp } from "@/db/queries/settings";
 import { darfEigenenSchluessel, darfKi } from "@/lib/ki-zugang";
+import { holeHandbuch, loescheHandbuch } from "@/lib/handbuch-speicher";
+import { pruefeHandbuchPfad } from "@/lib/handbuch-tmp";
 import type { HandbuchZiel } from "@/lib/handbuch-ziel";
 import type { SessionUser } from "@/lib/session";
 
@@ -17,8 +19,13 @@ import type { SessionUser } from "@/lib/session";
   Als API-Route statt Server Action, weil große gescannte Handbücher batchweise
   verarbeitet werden und der Client den Fortschritt LIVE sehen soll — ein Server
   Action liefert nur ein Endergebnis. Antwort: NDJSON (eine JSON-Zeile je
-  Fortschritts-Event, siehe ExtractProgress). Das PDF bleibt nur im Speicher
-  (Copyright-Pipeline), nur die extrahierten Fakten landen in der DB.
+  Fortschritts-Event, siehe ExtractProgress). Nur die extrahierten Fakten
+  landen in der DB (Copyright-Pipeline, PRD §6):
+  - bis 4 MB kommt das PDF im Formular (`manual`) und bleibt nur im Speicher;
+  - größere hat der Browser vorher in den PRIVATEN Store geladen
+    (lib/handbuch-tmp.ts), das Formular trägt nur den Pfad (`blobPfad`). Das
+    PDF wird dort gelesen und im `finally` gelöscht — auch wenn die Auswertung
+    scheitert. Was trotzdem liegen bleibt, räumt der nächtliche Job ab.
 */
 export async function handbuchStreamAntwort(opts: {
   user: SessionUser;
@@ -36,7 +43,11 @@ export async function handbuchStreamAntwort(opts: {
   }
 
   const formData = await request.formData();
-  const file = formData.get("manual");
+  const roherPfad = formData.get("blobPfad");
+  const blobPfad = typeof roherPfad === "string" ? roherPfad : null;
+  if (blobPfad !== null && !pruefeHandbuchPfad(user.id, blobPfad)) {
+    return Response.json({ error: "Ungültiger Upload-Pfad." }, { status: 400 });
+  }
   const attest = formData.get("attest") === "on";
   const provider = resolveProvider(formData);
   const apiKey = darfEigenenSchluessel(user, kiInDerApp)
@@ -53,6 +64,7 @@ export async function handbuchStreamAntwort(opts: {
       const send = (ev: ExtractProgress) =>
         controller.enqueue(encoder.encode(JSON.stringify(ev) + "\n"));
       try {
+        const file = blobPfad ? await holeHandbuch(blobPfad) : formData.get("manual");
         for await (const ev of extractManualFactsStream({
           userId: user.id,
           ziel,
@@ -70,6 +82,11 @@ export async function handbuchStreamAntwort(opts: {
         console.error("[extract-manual route]", (e as Error).message);
         send({ type: "error", error: "Verarbeitung fehlgeschlagen. Bitte erneut versuchen." });
       } finally {
+        if (blobPfad) {
+          await loescheHandbuch(blobPfad).catch((e: Error) =>
+            console.error("[extract-manual] Zwischen-PDF nicht gelöscht, der Aufräum-Job holt es:", e.message),
+          );
+        }
         controller.close();
       }
     },

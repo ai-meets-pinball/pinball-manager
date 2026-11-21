@@ -233,7 +233,7 @@ const sections: StackSection[] = [
         name: "Handbuch-Pipeline (Copyright)",
         version: "Muster · Phase 2",
         beschreibung:
-          "Eigenes Handbuch-PDF hochladen → Claude (claude-sonnet-5, @anthropic-ai/sdk) extrahiert nur Faktentabellen → als Wissenseintrag (knowledge) am Modell gespeichert. Der Schutz ist die Pipeline: Attestation Pflicht, das PDF bleibt nur im Speicher und wird NIE gespeichert, nur die Fakten landen in der DB.",
+          "Eigenes Handbuch-PDF hochladen → Claude (claude-sonnet-5, @anthropic-ai/sdk) extrahiert nur Faktentabellen → als Wissenseintrag (knowledge) am Modell gespeichert. Der Schutz ist die Pipeline: Attestation Pflicht, das PDF wird nie dauerhaft gespeichert (große PDFs liegen nur während der Auswertung in einem privaten Blob-Store und werden danach gelöscht), nur die Fakten landen in der DB.",
         imCode: "src/lib/manual-extract.ts, src/components/machine-data-tables.tsx",
       },
       {
